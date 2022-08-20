@@ -1,2 +1,2 @@
-# PyTreeClassNN
- NN layers for pytreeclass
+# Osiris
+ JAX NN library
