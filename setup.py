@@ -8,13 +8,13 @@ _CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def _get_version():
-    with open(os.path.join(_CURRENT_DIR, "osiris", "__init__.py")) as fp:
+    with open(os.path.join(_CURRENT_DIR, "heka", "__init__.py")) as fp:
         for line in fp:
             if line.startswith("__version__") and "=" in line:
                 version = line[line.find("=") + 1 :].strip(" '\"\n")
                 if version:
                     return version
-        raise ValueError("`__version__` not defined in `osiris/__init__.py`")
+        raise ValueError("`__version__` not defined in `heka/__init__.py`")
 
 
 def _parse_requirements(path):
@@ -26,9 +26,9 @@ def _parse_requirements(path):
 
 
 setup(
-    name="osiris",
+    name="heka",
     version=_get_version(),
-    url="https://github.com/ASEM000/osiris",
+    url="https://github.com/ASEM000/heka",
     license="MIT",
     author="Mahmoud Asem",
     description=("JAX NN library."),

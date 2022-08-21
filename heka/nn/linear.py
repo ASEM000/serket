@@ -59,9 +59,9 @@ class FNN:
         keys = jr.split(key, len(layers))
         self.act_func = act_func
 
-        # Done like this for better visualisation in tree_viz
+        # Done like this for better repr
         # in essence instead of using a python container (list/tuple) to store the layers
-        # we register each layer to the class
+        # we register each layer to the class separately
         for i, (ki, in_dim, out_dim) in enumerate(zip(keys, layers[:-1], layers[1:])):
 
             setattr(

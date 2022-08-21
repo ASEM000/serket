@@ -18,8 +18,9 @@ class Lambda:
 @pytc.treeclass
 class Sequential:
     def __init__(self, layers: Sequence[pytc.treeclass]):
-        # done like that for better repr
-        # setattr register the treeclass as a trainable field
+        # Done like this for better repr
+        # in essence instead of using a python container (list/tuple) to store the layers
+        # we register each layer to the class separately
         for i, layer in enumerate(layers):
             setattr(self, f"Layer_{i}", layer)
 
