@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Callable, Sequence
 
 import jax
@@ -41,13 +43,12 @@ class Linear:
 
 
 @pytc.treeclass
-class MLP:
+class FNN:
     act_func: Callable = pytc.static_field()
-    names: Sequence[str] = pytc.static_field(repr=False)
 
     def __init__(
         self,
-        layers,
+        layers: Sequence[int, ...],
         *,
         act_func: Callable = jax.nn.relu,
         weight_init_func: Callable = jax.nn.initializers.he_normal(),
@@ -56,27 +57,32 @@ class MLP:
     ):
 
         keys = jr.split(key, len(layers))
-        self.names = []
         self.act_func = act_func
 
-        # Done like this for better __repr__/summary/tree_diagram
+        # Done like this for better visualisation in tree_viz
         # in essence instead of using a python container (list/tuple) to store the layers
         # we register each layer to the class
         for i, (ki, in_dim, out_dim) in enumerate(zip(keys, layers[:-1], layers[1:])):
-            self.register_node(
+
+            setattr(
+                self,
+                f"Linear_{i}",
                 Linear(
                     in_dim,
                     out_dim,
+                    key=ki,
                     weight_init_func=weight_init_func,
                     bias_init_func=bias_init_func,
-                    key=ki,
                 ),
-                name=f"Linear_{i}",
             )
-            self.names.append(f"Linear_{i}")
 
     def __call__(self, x):
-        for name in self.names[:-1]:
-            x = self.__dict__[name](x)
+
+        *layers, last = [
+            self.__dict__[k] for k in self.__dict__ if k.startswith("Linear_")
+        ]
+
+        for layer in layers:
+            x = layer(x)
             x = self.act_func(x)
-        return self.__dict__[self.names[-1]](x)
+        return last(x)

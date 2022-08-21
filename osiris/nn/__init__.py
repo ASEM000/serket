@@ -1,3 +1,4 @@
-from .linear import MLP, Linear
+from .dropout import Dropout
+from .linear import FNN, Linear
 
-__all__ = ("MLP", "Linear")
+__all__ = ("FNN", "Linear", "Dropout")

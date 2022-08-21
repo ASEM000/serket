@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 
-from osiris.nn import MLP
+from osiris.nn import FNN
 
 
 def test_linear():
@@ -18,7 +18,7 @@ def test_linear():
         value, grad = loss_func(model, x, y)
         return value, model - 1e-3 * grad
 
-    model = MLP([1, 128, 128, 1])
+    model = FNN([1, 128, 128, 1])
 
     for _ in range(20_000):
         value, model = update(model, x, y)
