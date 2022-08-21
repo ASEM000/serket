@@ -17,7 +17,7 @@ pip install osiris
 
 
 ## 📖 Description<a id="Description"></a>
-- `osiris` aims to be the most intuitive easy to use Neural network library in JAX.
+- `osiris` aims to be the most intuitive and easy-to-use Neural network library in JAX.
 - `osiris` is build on top of `pytreeclass`
 - `osiris` currently implements 
   - `Linear`, `FNN`
