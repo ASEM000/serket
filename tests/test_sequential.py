@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 
-from osiris.nn import Sequential,Lambda
+from heka.nn import Sequential,Lambda
 
 
 def test_sequential():

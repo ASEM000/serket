@@ -1,6 +1,6 @@
 
 <div align="center">
-<img width="350px" src="assets/hekaLogo.svg"></div>
+<img width="350px" src="assets/HekaLogo.svg"></div>
 <h2 align="center">The JAX NN Library.</h2>
 
 

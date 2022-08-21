@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 
-from osiris.nn import FNN
+from heka.nn import FNN
 
 
 def test_linear():
