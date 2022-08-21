@@ -23,4 +23,4 @@ def test_linear():
     for _ in range(20_000):
         value, model = update(model, x, y)
 
-    npt.assert_allclose(jnp.array(4.933563e-05), value)
+    npt.assert_allclose(jnp.array(4.933563e-05), value,atol=1e-3)
