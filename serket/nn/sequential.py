@@ -9,7 +9,7 @@ import pytreeclass as pytc
 
 @pytc.treeclass
 class Lambda:
-    func: Callable
+    func: Callable = pytc.static_field()
 
     def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
         return self.func(x)

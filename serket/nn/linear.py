@@ -38,7 +38,7 @@ class Linear:
             bias_init_func(key, (out_features,)) if (bias_init_func is not None) else 0
         )
 
-    def __call__(self, x):
+    def __call__(self, x,**kwargs):
         return x @ self.weight + self.bias
 
 
@@ -76,7 +76,7 @@ class FNN:
                 ),
             )
 
-    def __call__(self, x):
+    def __call__(self, x, **kwargs):
 
         *layers, last = [
             self.__dict__[k] for k in self.__dict__ if k.startswith("Linear_")
