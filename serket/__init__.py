@@ -1,5 +1,6 @@
 from . import nn
+from pytreeclass import treeclass
 
-__all__ = ("nn",)
+__all__ = ("nn","treeclass")
 
-__version__ = "0.0.0rc0"
+__version__ = "0.0.1"
