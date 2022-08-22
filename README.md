@@ -36,9 +36,10 @@ pip install serket
 
 Simple Fully connected neural network.
 
-### Model definition
+### 🏗️ Model definition
 ```python
 import serket as sk 
+import jax
 import jax.numpy as jnp
 import jax.random as jr
 
@@ -124,10 +125,18 @@ Frozen size :	0.00B(0.00B)
 ===================================================
 ```
 
-### Train
+### ‍🔧 Train
 ```python
+import matplotlib.pyplot as plt
+
 x = jnp.linspace(0,1,100)[:,None]
 y = x**3 + jax.random.uniform(jax.random.PRNGKey(0),(100,1))*0.01
+
+model = NN(
+    in_features=1, 
+    out_features=1, 
+    hidden_features=128, 
+    key=jr.PRNGKey(0))
 
 @jax.value_and_grad
 def loss_func(model,x,y):
@@ -138,9 +147,80 @@ def update(model,x,y):
     value,grad = loss_func(model,x,y)
     return value , model - 1e-3*grad
 
+plt.plot(x,y,'-k',label='True')
+plt.plot(x,model(x),'-r',label='Prediction')
+plt.title("Before training")
+plt.legend()
+
+plt.savefig("assets/before_training.svg")
+plt.show()
 for _ in range(20_000):
     value,model = update(model,x,y)
+
+plt.plot(x,y,'-k',label='True')
+plt.plot(x,model(x),'-r',label='Prediction')
+plt.title("After training")
+plt.legend()
+plt.savefig("assets/after_training.svg")
+plt.show()
 ```
+<table><tr>
+<td><div align = "center" > <img width = "350px" src= "assets/before_training.svg" ></div></td>
+<td><div align = "center" > <img width = "350px" src= "assets/after_training.svg" ></div></td>
+</tr>
+</table>
+
+
+### 🥶 Freezing parameters /Fine tuning
+In `serket` simply use `.freeze()`/`.unfreeze()` on `treeclass` instance to freeze/unfreeze it is parameters.
+```python
+import matplotlib.pyplot as plt
+
+x = jnp.linspace(0,1,100)[:,None]
+y = x**3 + jax.random.uniform(jax.random.PRNGKey(0),(100,1))*0.01
+
+model = NN(
+    in_features=1, 
+    out_features=1, 
+    hidden_features=128, 
+    key=jr.PRNGKey(0))
+
+model = model.freeze()
+
+@jax.value_and_grad
+def loss_func(model,x,y):
+    return jnp.mean((model(x)-y)**2)
+
+@jax.jit
+def update(model,x,y):
+    value,grad = loss_func(model,x,y)
+    return value , model - 1e-3*grad
+
+plt.plot(x,y,'-k',label='True')
+plt.plot(x,model(x),'-r',label='Prediction')
+plt.title("Before training")
+plt.legend()
+
+plt.savefig("assets/froezen_before_training.svg")
+plt.show()
+for _ in range(20_000):
+    value,model = update(model,x,y)
+
+plt.plot(x,y,'-k',label='True')
+plt.plot(x,model(x),'-r',label='Prediction')
+plt.title("After training")
+plt.legend()
+plt.savefig("assets/frozen_after_training.svg")
+plt.show()
+```
+
+<table>
+<tr>
+<td><div align = "center" > <img width = "350px" src= "assets/frozen_before_training.svg" ></div></td>
+<td><div align = "center" > <img width = "350px" src= "assets/frozen_after_training.svg" ></div></td>
+</tr>
+</table>
+
 
 ### Filter
 - Filter by (1)value, (2)`field` name, (3)`field` type, (4)`field` metadata
