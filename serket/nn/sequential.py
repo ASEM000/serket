@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Sequence
+from typing import Any, Callable, Sequence
 
 import jax.numpy as jnp
 import jax.random as jr
@@ -17,16 +17,14 @@ class Lambda:
 
 @pytc.treeclass
 class Sequential:
-    def __init__(self, layers: Sequence[pytc.treeclass]):
-        # Done like this for better repr
-        # in essence instead of using a python container (list/tuple) to store the layers
-        # we register each layer to the class separately
-        for i, layer in enumerate(layers):
-            setattr(self, f"Layer_{i}", layer)
+    layers: Sequence[Any]
 
     def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
-        layers = [self.__dict__[k] for k in self.__dict__ if k.startswith("Layer_")]
-        keys = jr.split(key, len(layers)) if key is not None else [None] * len(layers)
-        for ki, layer in zip(keys, layers):
+        keys = (
+            jr.split(key, len(self.layers))
+            if key is not None
+            else [None] * len(self.layers)
+        )
+        for ki, layer in zip(keys, self.layers):
             x = layer(x, key=ki)
         return x

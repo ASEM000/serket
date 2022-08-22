@@ -38,12 +38,13 @@ class Linear:
             bias_init_func(key, (out_features,)) if (bias_init_func is not None) else 0
         )
 
-    def __call__(self, x,**kwargs):
+    def __call__(self, x, **kwargs):
         return x @ self.weight + self.bias
 
 
 @pytc.treeclass
 class FNN:
+    layers: Sequence[Linear]
     act_func: Callable = pytc.static_field()
 
     def __init__(
@@ -58,30 +59,19 @@ class FNN:
 
         keys = jr.split(key, len(layers))
         self.act_func = act_func
-
-        # Done like this for better repr
-        # in essence instead of using a python container (list/tuple) to store the layers
-        # we register each layer to the class separately
-        for i, (ki, in_dim, out_dim) in enumerate(zip(keys, layers[:-1], layers[1:])):
-
-            setattr(
-                self,
-                f"Linear_{i}",
-                Linear(
-                    in_dim,
-                    out_dim,
-                    key=ki,
-                    weight_init_func=weight_init_func,
-                    bias_init_func=bias_init_func,
-                ),
+        self.layers = [
+            Linear(
+                in_features=in_dim,
+                out_features=out_dim,
+                key=ki,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
             )
-
-    def __call__(self, x, **kwargs):
-
-        *layers, last = [
-            self.__dict__[k] for k in self.__dict__ if k.startswith("Linear_")
+            for (ki, in_dim, out_dim) in (zip(keys, layers[:-1], layers[1:]))
         ]
 
+    def __call__(self, x, **kwargs):
+        *layers, last = self.layers
         for layer in layers:
             x = layer(x)
             x = self.act_func(x)
