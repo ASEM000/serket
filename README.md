@@ -5,6 +5,13 @@
 <h2 align="center">The ✨Magical✨ JAX NN Library.</h2>
 <h5 align = "center"> *Serket is the goddess of magic in Egyptian mythology </h5>
 
+[**Installation**](#Installation)
+|[**Description**](#Description)
+|[**Quick Example**](#QuickExample)
+|[**Freezing/Fine tuning**](#Freezing)
+|[**Filtering**](#Filtering)
+
+
 ![Tests](https://github.com/ASEM000/serket/actions/workflows/tests.yml/badge.svg)
 ![pyver](https://img.shields.io/badge/python-3.7%203.8%203.9%203.10-red)
 ![codestyle](https://img.shields.io/badge/codestyle-black-lightgrey)
@@ -19,6 +26,10 @@
 
 ```python
 pip install serket
+```
+**Install development version**
+```python
+pip install git+https://github.com/ASEM000/serket
 ```
 
 
@@ -71,7 +82,9 @@ model = NN(
     hidden_features=128, 
     key=jr.PRNGKey(0))
 ```
+### 🎨 Visualize
 
+#### Tree diagram
 ```python
 # `*` represents untrainable(static) nodes.
 print(model.tree_diagram())
@@ -99,6 +112,7 @@ NN
         └*─ bias_init_func=Lambda(key,shape) 
 ```
 
+#### Tree summary
 ```python
 >>> print(model.summary())
 ┌────┬──────┬─────────┬───────┬───────────────────┐
@@ -164,7 +178,7 @@ plt.show()
 </table>
 </div>
 
-### 🥶 Freezing parameters /Fine tuning
+## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
 In `serket` simply use `.freeze()`/`.unfreeze()` on `treeclass` instance to freeze/unfreeze it is parameters.
 ```python
 
@@ -205,9 +219,9 @@ plt.show()
 </div>
 
 
-### Filtering by masking
+## 🔘 Filtering by masking<a id="Filterning" >
 
-**Filter by value**
+### Filter by value
 ```python
 # get model negative values
 negative_model = model.at[model<0].get()
@@ -218,7 +232,7 @@ zeroed_model = model.at[model<0].set(0)
 # Apply `jnp.cos` to negative values
 cosined_model = model.at[model<0].apply(jnp.cos)
 ```
-**Filter by field name**
+### Filter by field name 
 ```python
 # get model layer named `l1`
 l1_model = model.at[model == "l1" ].get()
@@ -230,7 +244,7 @@ zeroed_model = model.at[model == "l1" ].set(0)
 cosined_model = model.at[model == "l1" ].apply(jnp.cos)
 ```
 
-**Filter by field type**
+### Filter by field type
 ```python
 # get all model `Linear` layers
 l1_model = model.at[model == sk.nn.Linear ].get()
@@ -242,7 +256,7 @@ zeroed_model = model.at[model == sk.nn.Linear ].set(0)
 cosined_model = model.at[model == sk.nn.Linear ].apply(jnp.cos)
 ```
 
-**Filter by mixed masks**
+### Filter by mixed masks
 ```
 # Set all `Linear` bias to 0
 mask = (model == sk.nn.Linear) & (model == "bias" )
