@@ -1,6 +1,7 @@
-from . import nn
-from pytreeclass import treeclass
+from pytreeclass import static_field, treeclass
 
-__all__ = ("nn","treeclass")
+from . import nn
+
+__all__ = ("nn", "treeclass, static_field")
 
 __version__ = "0.0.1"

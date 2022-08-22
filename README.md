@@ -181,7 +181,6 @@ plt.show()
 ## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
 In `serket` simply use `.freeze()`/`.unfreeze()` on `treeclass` instance to freeze/unfreeze it is parameters.
 ```python
-
 # Freeze the entire model
 frozen_model = model.freeze()
 
