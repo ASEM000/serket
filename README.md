@@ -151,9 +151,8 @@ plt.plot(x,y,'-k',label='True')
 plt.plot(x,model(x),'-r',label='Prediction')
 plt.title("Before training")
 plt.legend()
-
-plt.savefig("assets/before_training.svg")
 plt.show()
+
 for _ in range(20_000):
     value,model = update(model,x,y)
 
@@ -161,7 +160,6 @@ plt.plot(x,y,'-k',label='True')
 plt.plot(x,model(x),'-r',label='Prediction')
 plt.title("After training")
 plt.legend()
-plt.savefig("assets/after_training.svg")
 plt.show()
 ```
 <table><tr>
@@ -185,6 +183,7 @@ model = NN(
     hidden_features=128, 
     key=jr.PRNGKey(0))
 
+# Freeze the entire model
 model = model.freeze()
 
 @jax.value_and_grad
@@ -201,7 +200,6 @@ plt.plot(x,model(x),'-r',label='Prediction')
 plt.title("Before training")
 plt.legend()
 
-plt.savefig("assets/froezen_before_training.svg")
 plt.show()
 for _ in range(20_000):
     value,model = update(model,x,y)
@@ -210,12 +208,10 @@ plt.plot(x,y,'-k',label='True')
 plt.plot(x,model(x),'-r',label='Prediction')
 plt.title("After training")
 plt.legend()
-plt.savefig("assets/frozen_after_training.svg")
 plt.show()
 ```
 
-<table>
-<tr>
+<table><tr>
 <td><div align = "center" > <img width = "350px" src= "assets/frozen_before_training.svg" ></div></td>
 <td><div align = "center" > <img width = "350px" src= "assets/frozen_after_training.svg" ></div></td>
 </tr>
