@@ -43,7 +43,6 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 
-
 @sk.treeclass
 class NN:
     def __init__(
@@ -65,7 +64,6 @@ class NN:
         x = jax.nn.relu(x)
         x = self.l3(x)
         return x
-
 
 model = NN(
     in_features=1, 
@@ -132,11 +130,6 @@ import matplotlib.pyplot as plt
 x = jnp.linspace(0,1,100)[:,None]
 y = x**3 + jax.random.uniform(jax.random.PRNGKey(0),(100,1))*0.01
 
-model = NN(
-    in_features=1, 
-    out_features=1, 
-    hidden_features=128, 
-    key=jr.PRNGKey(0))
 
 @jax.value_and_grad
 def loss_func(model,x,y):
@@ -162,29 +155,21 @@ plt.title("After training")
 plt.legend()
 plt.show()
 ```
+
+<div align = "center" >
 <table><tr>
 <td><div align = "center" > <img width = "350px" src= "assets/before_training.svg" ></div></td>
 <td><div align = "center" > <img width = "350px" src= "assets/after_training.svg" ></div></td>
 </tr>
 </table>
-
+</div>
 
 ### 🥶 Freezing parameters /Fine tuning
 In `serket` simply use `.freeze()`/`.unfreeze()` on `treeclass` instance to freeze/unfreeze it is parameters.
 ```python
-import matplotlib.pyplot as plt
-
-x = jnp.linspace(0,1,100)[:,None]
-y = x**3 + jax.random.uniform(jax.random.PRNGKey(0),(100,1))*0.01
-
-model = NN(
-    in_features=1, 
-    out_features=1, 
-    hidden_features=128, 
-    key=jr.PRNGKey(0))
 
 # Freeze the entire model
-model = model.freeze()
+frozen_model = model.freeze()
 
 @jax.value_and_grad
 def loss_func(model,x,y):
@@ -196,28 +181,72 @@ def update(model,x,y):
     return value , model - 1e-3*grad
 
 plt.plot(x,y,'-k',label='True')
-plt.plot(x,model(x),'-r',label='Prediction')
+plt.plot(x,frozen_model(x),'-r',label='Prediction')
 plt.title("Before training")
 plt.legend()
 
 plt.show()
 for _ in range(20_000):
-    value,model = update(model,x,y)
+    value,frozen_model = update(frozen_model,x,y)
 
 plt.plot(x,y,'-k',label='True')
-plt.plot(x,model(x),'-r',label='Prediction')
+plt.plot(x,frozen_model(x),'-r',label='Prediction')
 plt.title("After training")
 plt.legend()
 plt.show()
 ```
 
+<div align="center">
 <table><tr>
 <td><div align = "center" > <img width = "350px" src= "assets/frozen_before_training.svg" ></div></td>
 <td><div align = "center" > <img width = "350px" src= "assets/frozen_after_training.svg" ></div></td>
 </tr>
 </table>
+</div>
 
 
-### Filter
-- Filter by (1)value, (2)`field` name, (3)`field` type, (4)`field` metadata
-- See [here](https://github.com/ASEM000/PyTreeClass#%EF%B8%8F-filtering-with-at-) for more
+### Filtering by masking
+
+**Filter by value**
+```python
+# get model negative values
+negative_model = model.at[model<0].get()
+
+# Set negative values to 0
+zeroed_model = model.at[model<0].set(0)
+
+# Apply `jnp.cos` to negative values
+cosined_model = model.at[model<0].apply(jnp.cos)
+```
+**Filter by field name**
+```python
+# get model layer named `l1`
+l1_model = model.at[model == "l1" ].get()
+
+# Set `l1` values to 0
+zeroed_model = model.at[model == "l1" ].set(0)
+
+# Apply `jnp.cos` to `l1` 
+cosined_model = model.at[model == "l1" ].apply(jnp.cos)
+```
+
+**Filter by field type**
+```python
+# get all model `Linear` layers
+l1_model = model.at[model == sk.nn.Linear ].get()
+
+# Set `Linear` layers to 0
+zeroed_model = model.at[model == sk.nn.Linear ].set(0)
+
+# Apply `jnp.cos` to all `Linear` layers 
+cosined_model = model.at[model == sk.nn.Linear ].apply(jnp.cos)
+```
+
+**Filter by mixed masks**
+```
+# Set all `Linear` bias to 0
+mask = (model == sk.nn.Linear) & (model == "bias" )
+zero_bias_model = model.at[mask].set(0.)
+```
+
+✨[See here for more about filterning ](https://github.com/ASEM000/PyTreeClass#%EF%B8%8F-filtering-with-at-)✨
