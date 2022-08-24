@@ -38,7 +38,7 @@ pip install git+https://github.com/ASEM000/serket
 - `serket` is built on top of [`pytreeclass`](https://github.com/ASEM000/pytreeclass)
 - `serket` currently implements 
   - `Linear` 
-  - `FNN`
+  - Fully connected network `FNN`, Parallel fully connected network `PFNN`
   - `Dropout`
   - `Sequential`, `Lambda`
   - `AdaptiveReLU`, `AdaptiveLeakyReLU`, `AdaptiveSigmoid`, `AdaptiveTanh`
