@@ -5,7 +5,8 @@ from .adaptive_activation import (
     AdaptiveTanh,
 )
 from .dropout import Dropout
-from .linear import FNN, Linear
+from .fully_connected import FNN, PFNN
+from .linear import Linear
 from .sequential import Lambda, Sequential
 
 __all__ = (
@@ -18,4 +19,5 @@ __all__ = (
     "AdaptiveLeakyReLU",
     "AdaptiveSigmoid",
     "AdaptiveTanh",
+    "PFNN",
 )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Sequence
+from typing import Callable
 
 import jax
 import jax.numpy as jnp
@@ -40,39 +40,3 @@ class Linear:
 
     def __call__(self, x, **kwargs):
         return x @ self.weight + self.bias
-
-
-@pytc.treeclass
-class FNN:
-    layers: Sequence[Linear]
-    act_func: Callable = pytc.static_field()
-
-    def __init__(
-        self,
-        layers: Sequence[int, ...],
-        *,
-        act_func: Callable = jax.nn.relu,
-        weight_init_func: Callable = jax.nn.initializers.he_normal(),
-        bias_init_func: Callable = lambda key, shape: jnp.ones(shape),
-        key=jr.PRNGKey(0),
-    ):
-
-        keys = jr.split(key, len(layers))
-        self.act_func = act_func
-        self.layers = [
-            Linear(
-                in_features=in_dim,
-                out_features=out_dim,
-                key=ki,
-                weight_init_func=weight_init_func,
-                bias_init_func=bias_init_func,
-            )
-            for (ki, in_dim, out_dim) in (zip(keys, layers[:-1], layers[1:]))
-        ]
-
-    def __call__(self, x, **kwargs):
-        *layers, last = self.layers
-        for layer in layers:
-            x = layer(x)
-            x = self.act_func(x)
-        return last(x)
