@@ -8,7 +8,6 @@ from .dropout import Dropout
 from .fully_connected import FNN, PFNN
 from .linear import Linear
 from .sequential import Lambda, Sequential
-from .adaptive_fd import AdaptiveFD
 
 __all__ = (
     "FNN",
@@ -21,5 +20,4 @@ __all__ = (
     "AdaptiveSigmoid",
     "AdaptiveTanh",
     "PFNN",
-    "AdaptiveFD"
 )
