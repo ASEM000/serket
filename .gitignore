@@ -1,0 +1,14 @@
+*.pyc
+**/__pycache__
+**/.ipynb_checkpoints
+**/.DS_Store
+*.Icon
+*.egg-info/
+dist
+examples
+tensorboard
+test.ipynb
+.trunk
+.vscode/settings.json
+build
+serket/experimental
