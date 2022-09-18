@@ -48,7 +48,7 @@ class ConvND:
     in_features: int = pytc.nondiff_field()  # number of input features
     out_features: int = pytc.nondiff_field()  # number of output features
     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
-    stride: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
+    strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
     rate: int | tuple[int, ...] = pytc.nondiff_field()
     padding: str | tuple[tuple[int, int], ...] = pytc.nondiff_field()
     weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
@@ -63,7 +63,7 @@ class ConvND:
         out_features: int,
         kernel_size: int | tuple[int, ...],
         *,
-        stride: int | tuple[int, ...] = 1,
+        strides: int | tuple[int, ...] = 1,
         padding: str | tuple[tuple[int, int], ...] = "SAME",
         rate: int = 1,
         weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
@@ -116,7 +116,7 @@ class ConvND:
         self.in_features = in_features
         self.out_features = out_features
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.stride = _check_and_return_stride(stride, ndim)
+        self.strides = _check_and_return_stride(strides, ndim)
         self.rate = _check_and_return_rate(rate, ndim)
         self.padding = _check_and_return_padding(padding, ndim)
         self.groups = groups
@@ -143,7 +143,7 @@ class ConvND:
         y += jax.lax.conv_general_dilated(
             x[None],
             self.weight,
-            self.stride,
+            self.strides,
             self.padding,
             self.kernel_dilation,
             self.rate,
@@ -162,7 +162,7 @@ class Conv1D(ConvND):
         out_features,
         kernel_size,
         *,
-        stride=1,
+        strides=1,
         padding="SAME",
         rate=1,
         weight_init_func=jax.nn.initializers.glorot_uniform(),
@@ -174,7 +174,7 @@ class Conv1D(ConvND):
             in_features,
             out_features,
             kernel_size,
-            stride=stride,
+            strides=strides,
             padding=padding,
             rate=rate,
             weight_init_func=weight_init_func,
@@ -193,7 +193,7 @@ class Conv2D(ConvND):
         out_features,
         kernel_size,
         *,
-        stride=1,
+        strides=1,
         padding="SAME",
         rate=1,
         weight_init_func=jax.nn.initializers.glorot_uniform(),
@@ -205,7 +205,7 @@ class Conv2D(ConvND):
             in_features,
             out_features,
             kernel_size,
-            stride=stride,
+            strides=strides,
             padding=padding,
             rate=rate,
             weight_init_func=weight_init_func,
@@ -224,7 +224,7 @@ class Conv3D(ConvND):
         out_features,
         kernel_size,
         *,
-        stride=1,
+        strides=1,
         padding="SAME",
         rate=1,
         weight_init_func=jax.nn.initializers.glorot_uniform(),
@@ -236,7 +236,7 @@ class Conv3D(ConvND):
             in_features,
             out_features,
             kernel_size,
-            stride=stride,
+            strides=strides,
             padding=padding,
             rate=rate,
             weight_init_func=weight_init_func,

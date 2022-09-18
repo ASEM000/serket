@@ -37,12 +37,12 @@ pip install git+https://github.com/ASEM000/serket
 - `serket` aims to be the most intuitive and easy-to-use Neural network library in JAX.
 - `serket` is built on top of [`pytreeclass`](https://github.com/ASEM000/pytreeclass)
 - `serket` currently implements 
-  - `Linear` 
-  - Fully connected network `FNN`, Parallel fully connected network `PFNN`
+  - `Linear`, `FNN` (Fully connected network), and `PFNN` (Parallel fully connected network)
+  - `Conv1D`, `Conv2D`, and `Conv3D`
   - `Dropout`
   - `Sequential`, `Lambda`
   - `AdaptiveReLU`, `AdaptiveLeakyReLU`, `AdaptiveSigmoid`, `AdaptiveTanh`
-
+  - `MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, and `AvgPool3D` (`kernex` backend)
 
 ## ⏩ Quick Example <a id="QuickExample">
 
