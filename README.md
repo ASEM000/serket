@@ -472,7 +472,7 @@ plt.show()
 </div>
 
 ## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
-In `serket` simply use `.at[...].freeze()`/`.at[...].unfreeze()` on `treeclass` instance to freeze/unfreeze it is parameters.
+<!-- In `serket` simply use `.at[...].freeze()`/`.at[...].unfreeze()` on `treeclass` instance to freeze/unfreeze it is parameters.
 ```python
 # Freeze the entire model
 frozen_model = model.at[...].freeze()
@@ -511,7 +511,7 @@ plt.show()
 <td><div align = "center" > <img width = "350px" src= "assets/frozen_after_training.svg" ></div></td>
 </tr>
 </table>
-</div>
+</div> -->
 
 
 ## 🔘 Filtering by masking<a id="Filterning" >
