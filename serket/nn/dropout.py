@@ -5,7 +5,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class Dropout:
     p: float
     eval: bool | None

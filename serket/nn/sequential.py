@@ -8,7 +8,7 @@ import pytreeclass as pytc
 from pytreeclass._src.tree_util import is_treeclass
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class Lambda:
     func: Callable = pytc.static_field()
 
@@ -16,7 +16,7 @@ class Lambda:
         return self.func(x)
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class Sequential:
     layers: Sequence[Any]
 

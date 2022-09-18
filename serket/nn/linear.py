@@ -8,7 +8,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class Linear:
     weight: jnp.ndarray
     bias: jnp.ndarray

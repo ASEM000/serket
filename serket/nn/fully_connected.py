@@ -13,7 +13,7 @@ from pytreeclass._src.tree_util import is_treeclass
 from serket.nn.linear import Linear
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class FNN:
     layers: Sequence[Linear]
     act_func: Callable
@@ -51,7 +51,7 @@ class FNN:
         return last(x)
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class PFNN:
     """Parallel fully connected neural network
 
