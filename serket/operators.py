@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 
 
-def diff(func, **kwargs):
+def diff(func, *args, **kwargs):
     """grad of summed func"""
     return jax.grad(lambda *ar, **kw: jnp.sum(func(*ar, **kw)), **kwargs)
 

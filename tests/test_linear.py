@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytreeclass as pytc
 
 from serket.nn import FNN
 
@@ -20,7 +21,9 @@ def test_linear():
 
     model = FNN([1, 128, 128, 1])
 
+    model = pytc.filter_nondiff(model)
+    print(model.tree_diagram())
     for _ in range(20_000):
         value, model = update(model, x, y)
 
-    npt.assert_allclose(jnp.array(4.933563e-05), value,atol=1e-3)
+    npt.assert_allclose(jnp.array(4.933563e-05), value, atol=1e-3)

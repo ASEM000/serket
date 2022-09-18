@@ -15,8 +15,6 @@ class Linear:
 
     in_features: int = pytc.static_field()
     out_features: int = pytc.static_field()
-    weight_init_func: Callable = pytc.static_field()
-    bias_init_func: Callable = pytc.static_field()
 
     def __init__(
         self,
@@ -27,11 +25,18 @@ class Linear:
         bias_init_func: Callable = lambda key, shape: jnp.ones(shape),
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
+        """Fully connected layer
+
+        Args:
+            in_features (int): number of input features
+            out_features (int): number of output features
+            weight_init_func (Callable, optional): . Defaults to jax.nn.initializers.he_normal().
+            bias_init_func (Callable, optional): . Defaults to lambdakey.
+            key (jr.PRNGKey, optional):  . Defaults to jr.PRNGKey(0).
+        """
 
         self.in_features = in_features
         self.out_features = out_features
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
 
         self.weight = weight_init_func(key, (in_features, out_features))
         self.bias = (

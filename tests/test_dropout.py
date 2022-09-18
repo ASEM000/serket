@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import numpy.testing as npt
-from pytreeclass.src.tree_util import is_treeclass_equal
+from pytreeclass._src.tree_util import is_treeclass_equal
 
 from serket.nn import Dropout
 

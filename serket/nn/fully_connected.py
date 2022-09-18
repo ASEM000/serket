@@ -6,7 +6,9 @@ from typing import Callable, Sequence
 import jax
 import jax.numpy as jnp
 import jax.random as jr
+import jax.tree_util as jtu
 import pytreeclass as pytc
+from pytreeclass._src.tree_util import is_treeclass
 
 from serket.nn.linear import Linear
 
@@ -14,7 +16,7 @@ from serket.nn.linear import Linear
 @pytc.treeclass(field_only=True)
 class FNN:
     layers: Sequence[Linear]
-    act_func: Callable = pytc.static_field()
+    act_func: Callable
 
     def __init__(
         self,
@@ -27,7 +29,9 @@ class FNN:
     ):
 
         keys = jr.split(key, len(layers))
-        self.act_func = act_func
+        self.act_func = (
+            jtu.Partial(act_func) if not is_treeclass(act_func) else act_func
+        )
         self.layers = [
             Linear(
                 in_features=in_dim,
@@ -53,6 +57,22 @@ class PFNN:
 
     Each output node is represented by a seperate subnetwork.
     see https://github.com/lululxvi/deepxde/blob/master/deepxde/nn/pytorch/fnn.py
+
+    Args:
+        layers (tuple[int, ...]):
+            tuple item `i` maps to the number of neurons in the layer `i`
+            (1,2,2,3) -> 1 input, 2 hidden layers with 2 neurons each, 3 output
+
+        act_func (Callable, optional):
+            Activation function for hidden layers. Defaults to jax.nn.relu.
+
+        weight_init_func (Callable, optional):
+            Weight initializer function . Defaults to jax.nn.initializers.he_normal().
+
+        bias_init_func (Callable, optional):
+            Bias initializer function . Defaults to ones.
+
+        key (_type_, optional):
 
     Example:
         >>> print(PFNN([3,[5,4], 2]).tree_diagram())
@@ -92,7 +112,7 @@ class PFNN:
     """
 
     layers: Sequence[Sequence[Linear, ...], ...]
-    act_func: Callable = pytc.static_field()
+    act_func: Callable
 
     def __init__(
         self,
@@ -104,9 +124,9 @@ class PFNN:
         key=jr.PRNGKey(0),
     ):
 
-        self.act_func = act_func
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
+        self.act_func = (
+            jtu.Partial(act_func) if not is_treeclass(act_func) else act_func
+        )
 
         # check input/output node
         assert isinstance(layers[0], int), "Input node must be an integer"

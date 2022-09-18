@@ -5,7 +5,7 @@ from typing import Any, Callable, Sequence
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
-from pytreeclass.src.tree_util import is_treeclass
+from pytreeclass._src.tree_util import is_treeclass
 
 
 @pytc.treeclass(field_only=True)

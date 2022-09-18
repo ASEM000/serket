@@ -5,7 +5,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class AdaptiveReLU:
     # https://arxiv.org/pdf/1906.01170.pdf
     a: float
@@ -14,7 +14,7 @@ class AdaptiveReLU:
         return jnp.maximum(0, self.a * x)
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class AdaptiveLeakyReLU:
     # https://arxiv.org/pdf/1906.01170.pdf
     a: float
@@ -24,7 +24,7 @@ class AdaptiveLeakyReLU:
         return jnp.maximum(0, self.a * x) - self.v * jnp.maximum(0, -self.a * x)
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class AdaptiveSigmoid:
     # https://arxiv.org/pdf/1906.01170.pdf
     a: float
@@ -33,7 +33,7 @@ class AdaptiveSigmoid:
         return 1 / (1 + jnp.exp(-self.a * x))
 
 
-@pytc.treeclass(field_only=True)
+@pytc.treeclass
 class AdaptiveTanh:
     # https://arxiv.org/pdf/1906.01170.pdf
     a: float
