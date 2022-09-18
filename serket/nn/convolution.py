@@ -4,13 +4,21 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Callable
+from types import FunctionType
+from typing import Any, Callable
 
 import jax
 import jax.numpy as jnp
 import jax.random as jr
+import jax.tree_util as jtu
 import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
+
+
+def _wrap_partial(func: Any) -> jtu.Partial | Callable:
+    if isinstance(func, FunctionType):
+        return ft.wraps(jtu.Partial(func))
+    return func
 
 
 def _check_and_return(value, ndim, name):
@@ -36,8 +44,10 @@ def _check_and_return_padding(value, ndim):
         assert all(
             isinstance(v, tuple) and len(v) == 2 for v in value
         ), f"Expected tuple of tuples of length 2 (begin,end) for each dimension padding, got {value}."
+    elif isinstance(value, int):
+        value = ((value, value),) * ndim
     else:
-        raise ValueError(f"Expected int or tuple for padding got {value}.")
+        raise ValueError(f"Expected int, str or tuple for padding got {value}.")
     return value
 
 
@@ -53,8 +63,8 @@ class ConvND:
     padding: str | tuple[tuple[int, int], ...] = pytc.nondiff_field()
     weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
-    groups: int = pytc.nondiff_field()
-    dimension_numbers: jax.lax.ConvDimensionNumbers = pytc.nondiff_field()
+    groups: int = pytc.nondiff_field(repr=False)
+    dimension_numbers: jax.lax.ConvDimensionNumbers = pytc.nondiff_field(repr=False)
     kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
 
     def __init__(
@@ -120,9 +130,8 @@ class ConvND:
         self.rate = _check_and_return_rate(rate, ndim)
         self.padding = _check_and_return_padding(padding, ndim)
         self.groups = groups
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
-
+        self.weight_init_func = _wrap_partial(weight_init_func)
+        self.bias_init_func = _wrap_partial(bias_init_func)
         # OIHW
         self.weight = weight_init_func(
             key,

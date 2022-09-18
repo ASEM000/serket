@@ -47,7 +47,7 @@ def test_check_and_return():
 def test_conv1D():
 
     layer = Conv1D(
-        in_features=1, out_features=1, kernel_size=2, padding="SAME", stride=1
+        in_features=1, out_features=1, kernel_size=2, padding="SAME", strides=1
     )
 
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2], dtype=jnp.float32))  # OIW
@@ -55,7 +55,7 @@ def test_conv1D():
     npt.assert_allclose(layer(x), jnp.array([[3, 5, 7, 9, 11, 13, 15, 17, 19, 10]]))
 
     layer = Conv1D(
-        in_features=1, out_features=1, kernel_size=2, padding="SAME", stride=2
+        in_features=1, out_features=1, kernel_size=2, padding="SAME", strides=2
     )
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2], dtype=jnp.float32))
     x = jnp.arange(1, 11).reshape([1, 10]).astype(jnp.float32)
@@ -63,7 +63,7 @@ def test_conv1D():
     npt.assert_allclose(layer(x), jnp.array([[3, 7, 11, 15, 19]]))
 
     layer = Conv1D(
-        in_features=1, out_features=1, kernel_size=2, padding="VALID", stride=1
+        in_features=1, out_features=1, kernel_size=2, padding="VALID", strides=1
     )
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2], dtype=jnp.float32))
     x = jnp.arange(1, 11).reshape([1, 10]).astype(jnp.float32)
@@ -100,7 +100,7 @@ def test_conv2D():
     )
 
     layer = Conv2D(
-        in_features=1, out_features=2, kernel_size=2, padding="SAME", stride=2
+        in_features=1, out_features=2, kernel_size=2, padding="SAME", strides=2
     )
     layer = layer.at["weight"].set(jnp.ones([2, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
@@ -116,7 +116,7 @@ def test_conv2D():
     )
 
     layer = Conv2D(
-        in_features=1, out_features=2, kernel_size=2, padding="SAME", stride=1
+        in_features=1, out_features=2, kernel_size=2, padding="SAME", strides=1
     )
     layer = layer.at["weight"].set(jnp.ones([2, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
