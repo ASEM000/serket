@@ -4,12 +4,13 @@ from .adaptive_activation import (
     AdaptiveSigmoid,
     AdaptiveTanh,
 )
+from .containers import Lambda, Sequential
 from .convolution import Conv1D, Conv2D, Conv3D
 from .dropout import Dropout
+from .flatten import Flatten, Unflatten
 from .fully_connected import FNN, PFNN
 from .linear import Linear
 from .pooling import AvgPool1D, AvgPool2D, AvgPool3D, MaxPool1D, MaxPool2D, MaxPool3D
-from .sequential import Lambda, Sequential
 
 __all__ = (
     "FNN",
@@ -31,4 +32,6 @@ __all__ = (
     "Conv1D",
     "Conv2D",
     "Conv3D",
+    "Flatten",
+    "Unflatten",
 )

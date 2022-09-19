@@ -43,6 +43,7 @@ pip install git+https://github.com/ASEM000/serket
   - `Sequential`, `Lambda`
   - `AdaptiveReLU`, `AdaptiveLeakyReLU`, `AdaptiveSigmoid`, `AdaptiveTanh`
   - `MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, and `AvgPool3D` (`kernex` backend)
+  - `Flatten`, `Unflatten`
 
 ## ⏩ Quick Example <a id="QuickExample">
 

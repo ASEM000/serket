@@ -49,3 +49,24 @@ class Flatten:
         shape += [ft.reduce(op.mul, x.shape[start : end + 1])]
         shape += list(x.shape[end + 1 :])
         return jnp.reshape(x, shape)
+
+
+@pytc.treeclass
+class Unflatten:
+    dim: int = pytc.nondiff_field(default=0)
+    shape: tuple = pytc.nondiff_field(default=None)
+
+    """
+    See https://pytorch.org/docs/stable/generated/torch.nn.Unflatten.html?highlight=unflatten
+    Example:
+        >>> Unflatten(0, (1,2,3,4,5))(jnp.ones([120])).shape
+        (1, 2, 3, 4, 5)
+
+        >>> Unflatten(2,(2,3))(jnp.ones([1,2,6])).shape
+        (1, 2, 2, 3)
+    """
+
+    def __call__(self, x):
+        shape = list(x.shape)
+        shape = [*shape[: self.dim], *self.shape, *shape[self.dim + 1 :]]
+        return jnp.reshape(x, shape)
