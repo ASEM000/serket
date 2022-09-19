@@ -10,6 +10,7 @@ from .dropout import Dropout
 from .flatten import Flatten, Unflatten
 from .fully_connected import FNN, PFNN
 from .linear import Linear
+from .normalization import LayerNorm
 from .pooling import (
     AvgPool1D,
     AvgPool2D,
@@ -57,4 +58,5 @@ __all__ = (
     "GlobalMaxPool1D",
     "GlobalMaxPool2D",
     "GlobalMaxPool3D",
+    "LayerNorm",
 )

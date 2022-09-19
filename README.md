@@ -47,6 +47,7 @@ pip install git+https://github.com/ASEM000/serket
   - `Flatten`, and `Unflatten`, 
   - `Repeat1D`, `Repeat2D`, `Repeat3D`
   - `RNN`
+  - `LayerNorm`
 
 ## ⏩ Quick Example <a id="QuickExample">
 
