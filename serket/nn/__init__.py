@@ -11,6 +11,7 @@ from .flatten import Flatten, Unflatten
 from .fully_connected import FNN, PFNN
 from .linear import Linear
 from .pooling import AvgPool1D, AvgPool2D, AvgPool3D, MaxPool1D, MaxPool2D, MaxPool3D
+from .repeat import Repeat1D, Repeat2D, Repeat3D
 
 __all__ = (
     "FNN",
@@ -34,4 +35,7 @@ __all__ = (
     "Conv3D",
     "Flatten",
     "Unflatten",
+    "Repeat1D",
+    "Repeat2D",
+    "Repeat3D",
 )

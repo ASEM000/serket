@@ -66,7 +66,7 @@ class Unflatten:
         (1, 2, 2, 3)
     """
 
-    def __call__(self, x):
+    def __call__(self, x, **kwargs):
         shape = list(x.shape)
         shape = [*shape[: self.dim], *self.shape, *shape[self.dim + 1 :]]
         return jnp.reshape(x, shape)

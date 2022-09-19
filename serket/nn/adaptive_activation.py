@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import jax.numpy as jnp
-import jax.random as jr
 import pytreeclass as pytc
 
 
@@ -10,7 +9,7 @@ class AdaptiveReLU:
     # https://arxiv.org/pdf/1906.01170.pdf
     a: float
 
-    def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return jnp.maximum(0, self.a * x)
 
 
@@ -20,7 +19,7 @@ class AdaptiveLeakyReLU:
     a: float
     v: float = pytc.static_field()
 
-    def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return jnp.maximum(0, self.a * x) - self.v * jnp.maximum(0, -self.a * x)
 
 
@@ -29,7 +28,7 @@ class AdaptiveSigmoid:
     # https://arxiv.org/pdf/1906.01170.pdf
     a: float
 
-    def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return 1 / (1 + jnp.exp(-self.a * x))
 
 
@@ -38,7 +37,7 @@ class AdaptiveTanh:
     # https://arxiv.org/pdf/1906.01170.pdf
     a: float
 
-    def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return (jnp.exp(self.a * x) - jnp.exp(-self.a * x)) / (
             jnp.exp(self.a * x) + jnp.exp(-self.a * x)
         )

@@ -103,7 +103,7 @@ class AvgPoolND:
         self.strides = strides
         self.padding = padding
 
-    def __call__(self, x):
+    def __call__(self, x, **kwargs):
 
         # `vmap` on channel dimension
         @jax.vmap
