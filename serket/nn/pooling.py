@@ -5,6 +5,9 @@ import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
+# Based on colab hardware benchmarks `kernex` seems to
+# be faster on CPU and on par with JAX on GPU.
+
 
 @pytc.treeclass
 class MaxPoolND:
@@ -118,8 +121,8 @@ class AvgPoolND:
 class AvgPool1D(AvgPoolND):
     def __init__(
         self,
-        *,
         kernel_size: tuple[int, ...] | int,
+        *,
         strides: tuple[int, ...] | int = 1,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
@@ -132,8 +135,8 @@ class AvgPool1D(AvgPoolND):
 class AvgPool2D(AvgPoolND):
     def __init__(
         self,
-        *,
         kernel_size: tuple[int, ...] | int,
+        *,
         strides: tuple[int, ...] | int = 1,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
@@ -146,11 +149,71 @@ class AvgPool2D(AvgPoolND):
 class AvgPool3D(AvgPoolND):
     def __init__(
         self,
-        *,
         kernel_size: tuple[int, ...] | int,
+        *,
         strides: tuple[int, ...] | int = 1,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
             kernel_size=kernel_size, strides=strides, padding=padding, ndim=3
         )
+
+
+@pytc.treeclass
+class GlobalAvgPool1D:
+    keepdims: bool = pytc.nondiff_field(default=True)
+    """ Average last channels """
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        assert x.ndim == 2, "Input must be 2D."
+        return jnp.mean(x, axis=1, keepdims=self.keepdims)
+
+
+@pytc.treeclass
+class GlobalAvgPool2D:
+    keepdims: bool = pytc.nondiff_field(default=True)
+    """ Average last channels """
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        assert x.ndim == 3, "Input must be 3D."
+        return jnp.mean(x, axis=(1, 2), keepdims=self.keepdims)
+
+
+@pytc.treeclass
+class GlobalAvgPool3D:
+    keepdims: bool = pytc.nondiff_field(default=True)
+    """ Average last channels """
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        assert x.ndim == 4, "Input must be 4D."
+        return jnp.mean(x, axis=(1, 2, 3), keepdims=self.keepdims)
+
+
+@pytc.treeclass
+class GlobalMaxPool1D:
+    keepdims: bool = pytc.nondiff_field(default=True)
+    """ Average last channels """
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        assert x.ndim == 2, "Input must be 2D."
+        return jnp.max(x, axis=1, keepdims=self.keepdims)
+
+
+@pytc.treeclass
+class GlobalMaxPool2D:
+    keepdims: bool = pytc.nondiff_field(default=True)
+    """ Average last channels """
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        assert x.ndim == 3, "Input must be 3D."
+        return jnp.max(x, axis=(1, 2), keepdims=self.keepdims)
+
+
+@pytc.treeclass
+class GlobalMaxPool3D:
+    keepdims: bool = pytc.nondiff_field(default=True)
+    """ Get maximum last channels """
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        assert x.ndim == 4, "Input must be 4D."
+        return jnp.max(x, axis=(1, 2, 3), keepdims=self.keepdims)

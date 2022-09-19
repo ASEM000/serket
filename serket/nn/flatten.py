@@ -41,9 +41,9 @@ class Flatten:
     """
 
     def __call__(self, x):
-        # normalize start_dim and end_dim
-        start = self.start_dim if self.start_dim >= 0 else len(x.shape) + self.start_dim
-        end = self.end_dim if self.end_dim >= 0 else len(x.shape) + self.end_dim
+        # normalize start_dim and end_dim for negative indices
+        start = self.start_dim + (0 if self.start_dim >= 0 else len(x.shape))
+        end = self.end_dim + (0 if self.end_dim >= 0 else len(x.shape))
 
         shape = list(x.shape[:start])
         shape += [ft.reduce(op.mul, x.shape[start : end + 1])]

@@ -10,7 +10,20 @@ from .dropout import Dropout
 from .flatten import Flatten, Unflatten
 from .fully_connected import FNN, PFNN
 from .linear import Linear
-from .pooling import AvgPool1D, AvgPool2D, AvgPool3D, MaxPool1D, MaxPool2D, MaxPool3D
+from .pooling import (
+    AvgPool1D,
+    AvgPool2D,
+    AvgPool3D,
+    GlobalAvgPool1D,
+    GlobalAvgPool2D,
+    GlobalAvgPool3D,
+    GlobalMaxPool1D,
+    GlobalMaxPool2D,
+    GlobalMaxPool3D,
+    MaxPool1D,
+    MaxPool2D,
+    MaxPool3D,
+)
 from .repeat import Repeat1D, Repeat2D, Repeat3D
 
 __all__ = (
@@ -38,4 +51,10 @@ __all__ = (
     "Repeat1D",
     "Repeat2D",
     "Repeat3D",
+    "GlobalAvgPool1D",
+    "GlobalAvgPool2D",
+    "GlobalAvgPool3D",
+    "GlobalMaxPool1D",
+    "GlobalMaxPool2D",
+    "GlobalMaxPool3D",
 )

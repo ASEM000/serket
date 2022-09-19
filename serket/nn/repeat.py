@@ -21,7 +21,7 @@ class Repeat1D:
 
 @pytc.treeclass
 class Repeat2D:
-    """repeats input along axis 1,2"""
+    """repeats input along axes 1,2"""
 
     scale: int = pytc.nondiff_field(default=1)
 
@@ -35,7 +35,7 @@ class Repeat2D:
 
 @pytc.treeclass
 class Repeat3D:
-    """repeats input along axis 1,2,3"""
+    """repeats input along axes 1,2,3"""
 
     scale: int = pytc.nondiff_field(default=1)
 
