@@ -17,7 +17,7 @@ from jax.lax import ConvDimensionNumbers
 
 def _wrap_partial(func: Any) -> jtu.Partial | Callable:
     if isinstance(func, FunctionType):
-        return ft.wraps(jtu.Partial(func))
+        return jtu.Partial(func)
     return func
 
 

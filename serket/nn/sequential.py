@@ -5,6 +5,7 @@ from typing import Any, Callable, Sequence
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
+from pytreeclass._src.dispatch import dispatch
 from pytreeclass._src.tree_util import is_treeclass
 
 
@@ -35,3 +36,27 @@ class Sequential:
         for ki, layer in zip(keys, self.layers):
             x = layer(x, key=ki)
         return x
+
+    @dispatch(argnum=1)
+    def __getitem__(self, index: int | slice) -> Any:
+        raise TypeError(f"`index` must be int or slice. Found {type(index)}")
+
+    @__getitem__.register(int)
+    def _(self, index: int):
+        return self.layers[index]
+
+    @__getitem__.register(slice)
+    def _(self, index: slice):
+        return Sequential(self.layers[index])
+
+    def __len__(self):
+        return len(self.layers)
+
+    def __iter__(self):
+        return iter(self.layers)
+
+    def __reversed__(self):
+        return reversed(self.layers)
+
+    def __contains__(self, item):
+        return item in self.layers
