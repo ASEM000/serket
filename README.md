@@ -46,7 +46,7 @@ pip install git+https://github.com/ASEM000/serket
   - `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D`
   - `Flatten`, and `Unflatten`, 
   - `Repeat1D`, `Repeat2D`, `Repeat3D`
-  - `RNN`
+  - `RNNCell`, `LSTMCell`
   - `LayerNorm`
 
 ## ⏩ Quick Example <a id="QuickExample">
