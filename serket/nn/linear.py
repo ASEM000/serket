@@ -43,5 +43,5 @@ class Linear:
             bias_init_func(key, (out_features,)) if (bias_init_func is not None) else 0
         )
 
-    def __call__(self, x, **kwargs):
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return x @ self.weight + self.bias
