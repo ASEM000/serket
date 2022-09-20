@@ -13,8 +13,8 @@ class Linear:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: int = pytc.static_field()
-    out_features: int = pytc.static_field()
+    in_features: int = pytc.nondiff_field()
+    out_features: int = pytc.nondiff_field()
 
     def __init__(
         self,

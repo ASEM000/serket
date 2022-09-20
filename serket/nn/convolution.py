@@ -11,6 +11,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import jax.tree_util as jtu
+import kernex as kex
 import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
@@ -254,3 +255,124 @@ class Conv3D(ConvND):
             ndim=3,
             key=key,
         )
+
+
+# @pytc.treeclass
+# class _ConvND:
+#     weight: jnp.ndarray
+#     bias: jnp.ndarray
+#     in_features: int = pytc.nondiff_field()  # number of input features
+#     out_features: int = pytc.nondiff_field()  # number of output features
+#     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
+#     strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
+#     padding: str | tuple[tuple[int, int], ...] = pytc.nondiff_field()
+#     weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
+#     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
+#     op: Callable[[jnp.ndarray], jnp.ndarray] = pytc.nondiff_field(repr=False)
+
+#     def __init__(
+#         self,
+#         in_features: int,
+#         out_features: int,
+#         kernel_size: int | tuple[int, ...],
+#         *,
+#         strides: int | tuple[int, ...] = 1,
+#         padding: str | tuple[tuple[int, int], ...] = "SAME",
+#         weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
+#         bias_init_func: Callable | None = jax.nn.initializers.zeros,
+#         ndim: int = 2,
+#         key: jr.PRNGKey = jr.PRNGKey(0),
+#     ):
+#         """Convolutional layer with kernex backend.
+#         Does not support dilation and groups.
+
+#         Args:
+#             in_features (int): number of input features
+#             out_features (int): number of output features
+#             kernel_size (int | tuple[int, ...]): size of the convolutional kernel
+#             stride (int | tuple[int, ...], optional): stride . Defaults to 1.
+#             padding (str | tuple[tuple[int, int], ...], optional): padding. Defaults to "SAME".
+#             weight_init_func (Callable | None, optional): weight initialization function.
+#             bias_init_func (Callable | None, optional): _description_. Defaults to jax.nn.initializers.zeros.
+#             ndim (int, optional): spatial dimensions. Defaults to 2.
+#             key (jr.PRNGKey, optional): key for random number generation. Defaults to jr.PRNGKey(0).
+#         """
+#         # type assertions
+#         assert isinstance(
+#             in_features, int
+#         ), f"Expected int for in_features, got {in_features}."
+
+#         assert isinstance(
+#             out_features, int
+#         ), f"Expected int for out_features, got {out_features}."
+
+#         assert isinstance(
+#             weight_init_func, Callable
+#         ), f"Expected Callable for weight_init_func, got {weight_init_func}."
+
+#         assert isinstance(
+#             bias_init_func, Callable
+#         ), f"Expected Callable for bias_init_func, got {bias_init_func}."
+
+#         # assert proper values
+#         assert in_features > 0, "`in_features` must be greater than 0."
+#         assert out_features > 0, "`out_features` must be greater than 0."
+
+#         self.in_features = in_features
+#         self.out_features = out_features
+#         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
+#         self.strides = _check_and_return_stride(strides, ndim)
+#         self.padding = _check_and_return_padding(padding, ndim)
+#         self.weight_init_func = _wrap_partial(weight_init_func)
+#         self.bias_init_func = _wrap_partial(bias_init_func)
+#         # OIHW
+#         self.weight = weight_init_func(
+#             key,
+#             (out_features, in_features, *self.kernel_size),
+#         )
+
+#         self.bias = (
+#             bias_init_func(key, (out_features, *(1,) * ndim))
+#             if bias_init_func is not None
+#             else None
+#         )
+
+#         @kex.kmap(
+#             kernel_size=(in_features, *self.kernel_size),
+#             strides=(1, *self.strides),
+#             padding=("valid", self.padding),
+#         )
+#         def func(x: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
+#             return jnp.sum(x * w)
+
+#         self.op = func
+
+#     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+#         return self.op(x, self.weight) + self.bias
+
+
+# @pytc.treeclass
+# class _Conv2D(_ConvND):
+#     def __init__(
+#         self,
+#         in_features,
+#         out_features,
+#         kernel_size,
+#         *,
+#         strides=1,
+#         padding="SAME",
+#         weight_init_func=jax.nn.initializers.glorot_uniform(),
+#         bias_init_func=jax.nn.initializers.zeros,
+#         key=jr.PRNGKey(0),
+#     ):
+#         super().__init__(
+#             in_features,
+#             out_features,
+#             kernel_size,
+#             strides=strides,
+#             padding=padding,
+#             weight_init_func=weight_init_func,
+#             bias_init_func=bias_init_func,
+#             ndim=2,
+#             key=key,
+#         )

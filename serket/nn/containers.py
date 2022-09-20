@@ -11,7 +11,7 @@ from pytreeclass._src.tree_util import is_treeclass
 
 @pytc.treeclass
 class Lambda:
-    func: Callable = pytc.static_field()
+    func: Callable = pytc.nondiff_field()
 
     def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
         return self.func(x)

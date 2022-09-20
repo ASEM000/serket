@@ -13,6 +13,8 @@ class RNNCell:
     in_features: int = pytc.nondiff_field()
     hidden_features: int = pytc.nondiff_field()
 
+    in_and_hidden_to_hidden: Linear
+
     def __init__(
         self, in_features: int, hidden_features: int, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ):
@@ -26,13 +28,18 @@ class RNNCell:
         """
 
         k1, k2 = jr.split(key, 2)
-        self.hidden_to_hidden = Linear(hidden_features, hidden_features, key=k1)
-        self.input_to_hidden = Linear(in_features, hidden_features, key=k2)
+        self.in_features = in_features
+        self.hidden_features = hidden_features
+        self.in_and_hidden_to_hidden = Linear(
+            in_features=in_features + hidden_features,
+            out_features=hidden_features,
+            key=key,
+        )
 
     def __call__(
         self, x: jnp.ndarray, h: jnp.ndarray, **kwargs
     ) -> tuple[jnp.ndarray, jnp.ndarray]:
-        h = jnp.tanh(self.hidden_to_hidden(h) + self.input_to_hidden(x))
+        h = jnp.tanh(self.in_and_hidden_to_hidden(jnp.concatenate([x, h], axis=-1)))
         return h, h
 
 
@@ -40,6 +47,8 @@ class RNNCell:
 class LSTMCell:
     in_features: int = pytc.nondiff_field()
     hidden_features: int = pytc.nondiff_field()
+    forget_bias: float
+    in_and_hidden_to_hidden: Linear
 
     def __init__(
         self,
@@ -47,28 +56,29 @@ class LSTMCell:
         hidden_features: int,
         *,
         layer_norm: bool,
+        forget_bias: float = 0.0,
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
-        key_hh, key_ih = jr.split(key, 2)
 
         self.hidden_features = hidden_features
         self.in_features = in_features
+        self.forget_bias = forget_bias
 
-        self.hidden_to_hidden = Linear(hidden_features, 4 * hidden_features, key=key_hh)
-        self.input_to_hidden = Linear(
-            in_features,
-            hidden_features,
+        self.in_and_hidden_to_hidden = Linear(
+            in_features=in_features + hidden_features,
+            out_features=hidden_features,
             bias_init_func=None,
-            key=key_ih,
+            key=key,
         )
 
     def __call__(
         self, x: jnp.ndarray, h_c: jnp.ndarray, **kwargs
-    ) -> tuple[jnp.ndarray, jnp.ndarray]:
+    ) -> tuple[tuple[jnp.ndarray, jnp.ndarray], jnp.ndarray]:
 
         h, c = h_c
-        ifgo = self.hidden_to_hidden(h) + self.input_to_hidden(x)
+        ifgo = self.in_and_hidden_to_hidden(jnp.concatenate([x, h], axis=-1))
         i, f, g, o = jnp.split(ifgo, 4, axis=-1)
-        c = jax.nn.sigmoid(f) * c + jax.nn.sigmoid(i) + jnp.tanh(g)
-        h = jax.nn.sigmoid(o) * jnp.tanh((c))
-        return h, c
+        f = jax.nn.sigmoid(f + self.forget_bias)
+        c = f * c + jax.nn.sigmoid(i) + jnp.tanh(g)
+        h = jax.nn.sigmoid(o) * jnp.tanh(c)
+        return (h, c), h
