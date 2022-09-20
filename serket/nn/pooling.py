@@ -164,7 +164,7 @@ class GlobalAvgPool1D:
     keepdims: bool = pytc.nondiff_field(default=True)
     """ Average last channels """
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 2, "Input must be 2D."
         return jnp.mean(x, axis=1, keepdims=self.keepdims)
 
@@ -174,7 +174,7 @@ class GlobalAvgPool2D:
     keepdims: bool = pytc.nondiff_field(default=True)
     """ Average last channels """
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 3, "Input must be 3D."
         return jnp.mean(x, axis=(1, 2), keepdims=self.keepdims)
 
@@ -184,7 +184,7 @@ class GlobalAvgPool3D:
     keepdims: bool = pytc.nondiff_field(default=True)
     """ Average last channels """
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 4, "Input must be 4D."
         return jnp.mean(x, axis=(1, 2, 3), keepdims=self.keepdims)
 
@@ -194,7 +194,7 @@ class GlobalMaxPool1D:
     keepdims: bool = pytc.nondiff_field(default=True)
     """ Average last channels """
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 2, "Input must be 2D."
         return jnp.max(x, axis=1, keepdims=self.keepdims)
 
@@ -204,7 +204,7 @@ class GlobalMaxPool2D:
     keepdims: bool = pytc.nondiff_field(default=True)
     """ Average last channels """
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 3, "Input must be 3D."
         return jnp.max(x, axis=(1, 2), keepdims=self.keepdims)
 
@@ -214,6 +214,6 @@ class GlobalMaxPool3D:
     keepdims: bool = pytc.nondiff_field(default=True)
     """ Get maximum last channels """
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 4, "Input must be 4D."
         return jnp.max(x, axis=(1, 2, 3), keepdims=self.keepdims)

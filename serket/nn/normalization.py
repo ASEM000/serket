@@ -42,7 +42,7 @@ class LayerNorm:
             self.γ = jnp.ones(normalized_shape)
             self.β = jnp.zeros(normalized_shape)
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
 
         dims = tuple(range(len(x.shape) - len(self.normalized_shape), len(x.shape)))
 

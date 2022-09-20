@@ -11,7 +11,7 @@ class Repeat1D:
 
     scale: int = pytc.nondiff_field(default=1)
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         @kex.kmap(kernel_size=(-1, -1), strides=(1, 1), padding="valid")
         def _repeat(x):
             return x.repeat(self.scale, axis=1)
@@ -25,7 +25,7 @@ class Repeat2D:
 
     scale: int = pytc.nondiff_field(default=1)
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         @kex.kmap(kernel_size=(-1, -1, -1), strides=(1, 1, 1), padding="valid")
         def _repeat(x):
             return x.repeat(self.scale, axis=2).repeat(self.scale, axis=1)

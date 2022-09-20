@@ -40,7 +40,7 @@ class Flatten:
         (1, 2, 60)
     """
 
-    def __call__(self, x):
+    def __call__(self, x, **kwargs):
         # normalize start_dim and end_dim for negative indices
         start = self.start_dim + (0 if self.start_dim >= 0 else len(x.shape))
         end = self.end_dim + (0 if self.end_dim >= 0 else len(x.shape))

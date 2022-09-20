@@ -189,7 +189,7 @@ class PFNN:
 
         self.layers = list(map(list, zip(*self.layers)))
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         X = [x] * len(self.layers)
         for i, sub_network in enumerate(self.layers):
             *layers, last = sub_network
