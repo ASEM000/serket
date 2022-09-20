@@ -3,7 +3,7 @@
 <img width="350px" src="assets/serketLogo.svg"></div>
 
 <h2 align="center">The ✨Magical✨ JAX NN Library.</h2>
-<h5 align = "center"> *Serket is the goddess of magic in Egyptian mythology </h5>
+<h5 align = "center"> *Serket is the goddess of magic in Egyptian mythology 
 
 [**Installation**](#Installation)
 |[**Description**](#Description)
@@ -19,7 +19,7 @@
 [![codecov](https://codecov.io/gh/ASEM000/serket/branch/main/graph/badge.svg?token=C6NXOK9EVS)](https://codecov.io/gh/ASEM000/serket)
 
 
-
+</h5>
 
 
 ## 🛠️ Installation<a id="Installation"></a>
