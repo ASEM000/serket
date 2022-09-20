@@ -20,4 +20,4 @@ def test_AvgBlur2D():
         ]
     ]
 
-    npt.assert_allclose(x, y)
+    npt.assert_allclose(x, y, atol=1e-5)
