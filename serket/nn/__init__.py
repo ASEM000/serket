@@ -4,11 +4,13 @@ from .adaptive_activation import (
     AdaptiveSigmoid,
     AdaptiveTanh,
 )
+from .blur import AvgBlur2D
 from .containers import Lambda, Sequential
 from .convolution import Conv1D, Conv2D, Conv3D
 from .dropout import Dropout
 from .flatten import Flatten, Unflatten
 from .fully_connected import FNN, PFNN
+from .laplace import Laplace2D
 from .linear import Linear
 from .normalization import LayerNorm
 from .pooling import (
@@ -59,4 +61,6 @@ __all__ = (
     "GlobalMaxPool2D",
     "GlobalMaxPool3D",
     "LayerNorm",
+    "AvgBlur2D",
+    "Laplace2D",
 )

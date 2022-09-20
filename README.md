@@ -48,6 +48,7 @@ pip install git+https://github.com/ASEM000/serket
   - `Repeat1D`, `Repeat2D`, `Repeat3D`
   - `RNNCell`, `LSTMCell`
   - `LayerNorm`
+  - `AvgBlur2D`, `Laplace2D`
 
 ## ⏩ Quick Example <a id="QuickExample">
 
