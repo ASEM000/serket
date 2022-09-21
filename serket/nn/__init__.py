@@ -9,6 +9,7 @@ from .containers import Lambda, Sequential
 from .convolution import Conv1D, Conv2D, Conv3D
 from .dropout import Dropout
 from .flatten import Flatten, Unflatten
+from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, PFNN
 from .laplace import Laplace2D
 from .linear import Linear
@@ -63,4 +64,6 @@ __all__ = (
     "LayerNorm",
     "AvgBlur2D",
     "Laplace2D",
+    "FlipLeftRight2D",
+    "FlipUpDown2D",
 )
