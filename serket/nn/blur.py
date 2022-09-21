@@ -49,7 +49,6 @@ class GaussianBlur2D:
         w = jnp.outer(w, w)
         w = w / w.sum()
 
-        @jax.jit
         @jax.vmap
         @kex.kmap(kernel_size=(d, d), padding="same")
         def conv(x):
