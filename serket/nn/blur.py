@@ -56,6 +56,6 @@ class GaussianBlur2D:
 
         self.func = conv
 
-    def __call__(self, x):
+    def __call__(self, x, **kwargs):
         assert x.ndim == 3, "`Input` must be 3D."
         return self.func(x)
