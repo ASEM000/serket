@@ -4,7 +4,7 @@ from .adaptive_activation import (
     AdaptiveSigmoid,
     AdaptiveTanh,
 )
-from .blur import AvgBlur2D
+from .blur import AvgBlur2D, GaussianBlur2D
 from .containers import Lambda, Sequential
 from .convolution import Conv1D, Conv2D, Conv3D
 from .dropout import Dropout
@@ -66,4 +66,5 @@ __all__ = (
     "Laplace2D",
     "FlipLeftRight2D",
     "FlipUpDown2D",
+    "GaussianBlur2D",
 )

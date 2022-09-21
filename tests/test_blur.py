@@ -3,7 +3,7 @@ from __future__ import annotations
 import jax.numpy as jnp
 import numpy.testing as npt
 
-from serket.nn import AvgBlur2D
+from serket.nn import AvgBlur2D, GaussianBlur2D
 
 
 def test_AvgBlur2D():
@@ -21,3 +21,24 @@ def test_AvgBlur2D():
     ]
 
     npt.assert_allclose(x, y, atol=1e-5)
+
+
+def test_GaussBlur2D():
+    layer = GaussianBlur2D(kernel_size=3, sigma=1.0)
+    x = jnp.ones([1, 5, 5])
+
+    npt.assert_allclose(
+        jnp.array(
+            [
+                [
+                    [0.5269764, 0.7259314, 0.7259314, 0.7259314, 0.5269764],
+                    [0.7259314, 1.0, 1.0, 1.0, 0.7259314],
+                    [0.7259314, 1.0, 1.0, 1.0, 0.7259314],
+                    [0.7259314, 1.0, 1.0, 1.0, 0.7259314],
+                    [0.5269764, 0.7259314, 0.7259314, 0.7259314, 0.5269764],
+                ]
+            ]
+        ),
+        layer(x),
+        atol=1e-5,
+    )
