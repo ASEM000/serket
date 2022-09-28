@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 
-from serket.nn import Repeat1D, Repeat2D, Repeat3D
+from serket.nn import Repeat1D, Repeat2D, Repeat3D, Resize1D, Resize2D, Resize3D
 
 
 def test_repeat1d():
@@ -13,3 +13,15 @@ def test_repeat2d():
 
 def test_repeat3d():
     assert Repeat3D(2)(jnp.ones([1, 2, 2, 2])).shape == (1, 4, 4, 4)
+
+
+def test_resize1d():
+    assert Resize1D(4)(jnp.ones([1, 2])).shape == (1, 4)
+
+
+def test_resize2d():
+    assert Resize2D(4)(jnp.ones([1, 2, 2])).shape == (1, 4, 4)
+
+
+def test_resize3d():
+    assert Resize3D(4)(jnp.ones([1, 2, 2, 2])).shape == (1, 4, 4, 4)
