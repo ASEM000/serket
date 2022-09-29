@@ -18,8 +18,8 @@ class MaxPoolND:
 
     def __init__(
         self,
-        *,
         kernel_size: tuple[int, ...] | int,
+        *,
         strides: tuple[int, ...] | int = 1,
         padding: tuple[tuple[int, int], ...] | str = "valid",
         ndim: int = 1,
@@ -46,8 +46,8 @@ class MaxPoolND:
 class MaxPool1D(MaxPoolND):
     def __init__(
         self,
-        *,
         kernel_size: tuple[int, ...] | int,
+        *,
         strides: tuple[int, ...] | int = 1,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
@@ -60,8 +60,8 @@ class MaxPool1D(MaxPoolND):
 class MaxPool2D(MaxPoolND):
     def __init__(
         self,
-        *,
         kernel_size: tuple[int, ...] | int,
+        *,
         strides: tuple[int, ...] | int = 1,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
@@ -74,8 +74,8 @@ class MaxPool2D(MaxPoolND):
 class MaxPool3D(MaxPoolND):
     def __init__(
         self,
-        *,
         kernel_size: tuple[int, ...] | int,
+        *,
         strides: tuple[int, ...] | int = 1,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
@@ -93,8 +93,8 @@ class AvgPoolND:
 
     def __init__(
         self,
-        *,
         kernel_size: tuple[int, ...] | int,
+        *,
         strides: tuple[int, ...] | int = 1,
         padding: tuple[tuple[int, int], ...] | str = "valid",
         ndim: int = 1,
