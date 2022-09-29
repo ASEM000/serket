@@ -36,21 +36,26 @@ pip install git+https://github.com/ASEM000/serket
 ## 📖 Description<a id="Description"></a>
 - `serket` aims to be the most intuitive and easy-to-use Neural network library in JAX.
 - `serket` is built on top of [`pytreeclass`](https://github.com/ASEM000/pytreeclass)
+
 - `serket` currently implements 
-  - `Linear`, `FNN` (Fully connected network), and `PFNN` (Parallel fully connected network)
-  - `Conv1D`, `Conv2D`, and `Conv3D`
-  - `Dropout`
-  - `Sequential`, `Lambda`
-  - `AdaptiveReLU`, `AdaptiveLeakyReLU`, `AdaptiveSigmoid`, `AdaptiveTanh`
-  - `MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, and `AvgPool3D` (`kernex` backend)
-  - `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D`
-  - `Flatten`, and `Unflatten`, 
-  - `Repeat1D`, `Repeat2D`, `Repeat3D`
-  - `RNNCell`, `LSTMCell`
-  - `LayerNorm`
-  - `AvgBlur2D`, `GaussianBlur2D`
-  - `FlipLeftRight2D`, `FlipUpDown2D`
-  - `Laplace2D`,
+
+| Group | Layers |
+| ------------- | ------------- |
+| Linear  | `Linear`, `Bilinear`, `FNN` (Fully connected network), `PFNN` (Parallel fully connected network)  |
+| Convolution | `Conv1D`, `Conv2D`, `Conv3D`, `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose` |
+| Containers| `Sequential`, `Lambda` |
+|Activation| `AdaptiveReLU`, `AdaptiveLeakyReLU`, `AdaptiveSigmoid`, `AdaptiveTanh`|
+|Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D`|
+|Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`  | 
+|Resizing|`Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsampling1D`, `Upsampling2D`, `Upsampling3D`  |
+|Recurrent|`RNNCell`, `LSTMCell`|
+|Normalization|`LayerNorm`|
+|Blurring| `AvgBlur2D`|
+|Physics|`Laplace2D` |
+
+
+
+
 
 ## ⏩ Quick Example <a id="QuickExample">
 
