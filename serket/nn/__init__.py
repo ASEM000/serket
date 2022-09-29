@@ -22,6 +22,7 @@ from .fully_connected import FNN, PFNN
 from .laplace import Laplace2D
 from .linear import Bilinear, Linear
 from .normalization import LayerNorm
+from .padding import Padding1D, Padding2D, Padding3D
 from .pooling import (
     AvgPool1D,
     AvgPool2D,
@@ -95,4 +96,7 @@ __all__ = (
     "Upsampling1D",
     "Upsampling2D",
     "Upsampling3D",
+    "Padding1D",
+    "Padding2D",
+    "Padding3D",
 )
