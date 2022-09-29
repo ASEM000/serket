@@ -1,3 +1,4 @@
+from . import blocks
 from .adaptive_activation import (
     AdaptiveLeakyReLU,
     AdaptiveReLU,
@@ -48,6 +49,7 @@ from .resize import (
 )
 
 __all__ = (
+    "blocks",
     "FNN",
     "Linear",
     "Bilinear",

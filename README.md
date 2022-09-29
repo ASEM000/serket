@@ -52,6 +52,8 @@ pip install git+https://github.com/ASEM000/serket
 |Normalization|`LayerNorm`|
 |Blurring| `AvgBlur2D`|
 |Physics|`Laplace2D` |
+|Blocks|`VGG16Block`, `VGG19Block`|
+
 
 
 
