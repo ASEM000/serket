@@ -35,7 +35,17 @@ from .pooling import (
     MaxPool2D,
     MaxPool3D,
 )
-from .resize import Repeat1D, Repeat2D, Repeat3D, Resize1D, Resize2D, Resize3D
+from .resize import (
+    Repeat1D,
+    Repeat2D,
+    Repeat3D,
+    Resize1D,
+    Resize2D,
+    Resize3D,
+    Upsampling1D,
+    Upsampling2D,
+    Upsampling3D,
+)
 
 __all__ = (
     "FNN",
@@ -79,4 +89,7 @@ __all__ = (
     "Resize1D",
     "Resize2D",
     "Resize3D",
+    "Upsampling1D",
+    "Upsampling2D",
+    "Upsampling3D",
 )

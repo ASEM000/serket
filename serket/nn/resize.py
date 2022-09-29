@@ -138,6 +138,7 @@ class Resize3D(ResizeND):
 class UpsamplingND:
     scale: int | tuple[int, ...]
     method: str = pytc.nondiff_field(default="nearest")
+    ndim: int = pytc.nondiff_field(default=1, repr=False)
 
     def __post_init__(self):
         # the difference between this and ResizeND is that UpsamplingND
