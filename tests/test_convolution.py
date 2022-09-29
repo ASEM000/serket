@@ -12,7 +12,7 @@ from serket.nn.convolution import (
     _check_and_return_kernel,
     _check_and_return_padding,
     _check_and_return_rate,
-    _check_and_return_stride,
+    _check_and_return_strides,
 )
 
 
@@ -35,9 +35,9 @@ def test_check_and_return():
     assert _check_and_return_rate((3, 3), 2) == (3, 3)
     assert _check_and_return_rate((3, 3, 3), 3) == (3, 3, 3)
 
-    assert _check_and_return_stride(3, 2) == (3, 3)
-    assert _check_and_return_stride((3, 3), 2) == (3, 3)
-    assert _check_and_return_stride((3, 3, 3), 3) == (3, 3, 3)
+    assert _check_and_return_strides(3, 2) == (3, 3)
+    assert _check_and_return_strides((3, 3), 2) == (3, 3)
+    assert _check_and_return_strides((3, 3, 3), 3) == (3, 3, 3)
 
     assert _check_and_return_padding(((1, 1), (1, 1)), 2) == ((1, 1), (1, 1))
     assert _check_and_return_padding(((1, 1), (1, 1), (1, 1)), 3) == (

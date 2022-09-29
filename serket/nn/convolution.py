@@ -32,7 +32,7 @@ def _check_and_return(value, ndim, name):
 
 
 _check_and_return_kernel = ft.partial(_check_and_return, name="kernel_size")
-_check_and_return_stride = ft.partial(_check_and_return, name="stride")
+_check_and_return_strides = ft.partial(_check_and_return, name="stride")
 _check_and_return_rate = ft.partial(_check_and_return, name="rate")
 
 
@@ -110,7 +110,7 @@ class ConvND:
         self.in_features = in_features
         self.out_features = out_features
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = _check_and_return_stride(strides, ndim)
+        self.strides = _check_and_return_strides(strides, ndim)
         self.rate = _check_and_return_rate(rate, ndim)
         self.padding = _check_and_return_padding(padding, ndim)
         self.groups = groups
@@ -293,7 +293,7 @@ class ConvNDTranspose:
         self.in_features = in_features
         self.out_features = out_features
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = _check_and_return_stride(strides, ndim)
+        self.strides = _check_and_return_strides(strides, ndim)
         self.rate = _check_and_return_rate(rate, ndim)
         self.padding = _check_and_return_padding(padding, ndim)
         self.weight_init_func = _wrap_partial(weight_init_func)

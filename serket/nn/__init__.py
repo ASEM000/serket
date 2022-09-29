@@ -19,7 +19,7 @@ from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, PFNN
 from .laplace import Laplace2D
-from .linear import Linear
+from .linear import Bilinear, Linear
 from .normalization import LayerNorm
 from .pooling import (
     AvgPool1D,
@@ -50,6 +50,7 @@ from .resize import (
 __all__ = (
     "FNN",
     "Linear",
+    "Bilinear",
     "Dropout",
     "Sequential",
     "Lambda",
