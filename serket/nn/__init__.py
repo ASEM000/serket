@@ -6,7 +6,14 @@ from .adaptive_activation import (
 )
 from .blur import AvgBlur2D
 from .containers import Lambda, Sequential
-from .convolution import Conv1D, Conv2D, Conv3D
+from .convolution import (
+    Conv1D,
+    Conv1DTranspose,
+    Conv2D,
+    Conv2DTranspose,
+    Conv3D,
+    Conv3DTranspose,
+)
 from .dropout import Dropout
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
@@ -50,6 +57,9 @@ __all__ = (
     "Conv1D",
     "Conv2D",
     "Conv3D",
+    "Conv1DTranspose",
+    "Conv2DTranspose",
+    "Conv3DTranspose",
     "Flatten",
     "Unflatten",
     "Repeat1D",
