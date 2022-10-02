@@ -102,3 +102,11 @@ class Bilinear:
         x = x1 @ self.weight.reshape(-1, self.in2_features * self.out_features)
         x = x2 @ x.reshape(-1, self.out_features)
         return x + self.bias
+
+
+@pytc.treeclass
+class Identity:
+    """Identity layer"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return x

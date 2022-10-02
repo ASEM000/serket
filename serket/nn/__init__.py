@@ -20,12 +20,12 @@ from .convolution import (
     DepthwiseConv2D,
     DepthwiseConv3D,
 )
-from .dropout import Dropout
+from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, PFNN
 from .laplace import Laplace2D
-from .linear import Bilinear, Linear
+from .linear import Bilinear, Identity, Linear
 from .normalization import LayerNorm
 from .padding import Padding1D, Padding2D, Padding3D
 from .pooling import (
@@ -60,6 +60,9 @@ __all__ = (
     "Linear",
     "Bilinear",
     "Dropout",
+    "Dropout1D",
+    "Dropout2D",
+    "Dropout3D",
     "Sequential",
     "Lambda",
     "AdaptiveReLU",
@@ -110,4 +113,6 @@ __all__ = (
     "ThresholdedReLU",
     "VGG16Block",
     "VGG19Block",
+    "Identity",
+
 )

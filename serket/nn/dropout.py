@@ -27,3 +27,65 @@ class Dropout:
                 jr.bernoulli(key, (1 - self.p), x.shape), x / (1 - self.p), 0
             )
         )
+
+
+@pytc.treeclass
+class DropoutND:
+    p: float = pytc.nondiff_field()
+    eval: bool | None
+
+    def __init__(self, p: float = 0.5, ndim: int = 1, eval: bool | None = None):
+        """
+        Drops full feature maps along the channel axis.
+
+        Args:
+            p: fraction of an elements to be zeroed out
+
+        Note:
+            See:
+                https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
+                https://arxiv.org/abs/1411.4280
+
+        Example:
+            >>> layer = DropoutND(0.5, ndim=1)
+            >>> layer(jnp.ones((1, 10)))
+            [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
+        """
+
+        if p < 0 or p > 1:
+            raise ValueError(f"p must be between 0 and 1, got {p}")
+
+        if isinstance(eval, bool) or eval is None:
+            self.eval = eval
+        else:
+            raise ValueError(f"eval must be a boolean or None, got {eval}")
+
+        self.p = p
+        self.ndim = ndim
+
+    def __call__(self, x, *, key=jr.PRNGKey(0)):
+        assert x.ndim == (self.ndim + 1), f"input must be {self.ndim+1}D, got {x.ndim}D"
+
+        if self.eval is True:
+            return x
+
+        mask = jr.bernoulli(key, 1 - self.p, shape=(x.shape[0],))
+        return jnp.where(mask, x / (1 - self.p), 0)
+
+
+@pytc.treeclass
+class Dropout1D(DropoutND):
+    def __init__(self, p: float = 0.5):
+        super().__init__(p=p, ndim=1)
+
+
+@pytc.treeclass
+class Dropout2D(DropoutND):
+    def __init__(self, p: float = 0.5):
+        super().__init__(p=p, ndim=2)
+
+
+@pytc.treeclass
+class Dropout3D(DropoutND):
+    def __init__(self, p: float = 0.5):
+        super().__init__(p=p, ndim=3)

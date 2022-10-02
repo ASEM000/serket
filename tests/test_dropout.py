@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 from pytreeclass._src.tree_util import is_treeclass_equal
 
-from serket.nn import Dropout
+from serket.nn import Dropout, Dropout1D, Dropout2D, Dropout3D
 
 
 def test_dropout():
@@ -16,3 +16,18 @@ def test_dropout():
     layer = layer.at[layer == "eval"].set(True, is_leaf=lambda x: x is None)
     assert is_treeclass_equal(layer, Dropout(0.5, eval=True))
     npt.assert_allclose(layer(x), x)
+
+
+def test_dropout1d():
+    layer = Dropout1D(0.5)
+    assert layer(jnp.ones((1, 10))).shape == (1, 10)
+
+
+def test_dropout2d():
+    layer = Dropout2D(0.5)
+    assert layer(jnp.ones((1, 10, 10))).shape == (1, 10, 10)
+
+
+def test_dropout3d():
+    layer = Dropout3D(0.5)
+    assert layer(jnp.ones((1, 10, 10, 10))).shape == (1, 10, 10, 10)

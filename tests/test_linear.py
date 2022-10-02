@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytreeclass as pytc
 
-from serket.nn import FNN, Bilinear
+from serket.nn import FNN, Bilinear, Identity
 
 
 def test_linear():
@@ -50,3 +50,9 @@ def test_bilinear():
     layer = layer.at["weight"].set(W)
 
     npt.assert_allclose(y, layer(x1, x2))
+
+
+def test_identity():
+    x = jnp.array([[1, 2, 3], [4, 5, 6]])
+    layer = Identity()
+    npt.assert_allclose(x, layer(x))
