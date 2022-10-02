@@ -1,10 +1,10 @@
 from . import blocks
-from .activation import ThresholdedReLU
-from .adaptive_activation import (
+from .activation import (
     AdaptiveLeakyReLU,
     AdaptiveReLU,
     AdaptiveSigmoid,
     AdaptiveTanh,
+    ThresholdedReLU,
 )
 from .blur import AvgBlur2D
 from .containers import Lambda, Sequential
