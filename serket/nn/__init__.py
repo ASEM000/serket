@@ -6,6 +6,7 @@ from .activation import (
     AdaptiveTanh,
     ThresholdedReLU,
 )
+from .blocks.vgg import VGG16Block, VGG19Block
 from .blur import AvgBlur2D
 from .containers import Lambda, Sequential
 from .convolution import (
@@ -107,4 +108,6 @@ __all__ = (
     "Padding2D",
     "Padding3D",
     "ThresholdedReLU",
+    "VGG16Block",
+    "VGG19Block",
 )
