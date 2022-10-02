@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 from pytreeclass._src.tree_util import is_treeclass_equal
 
-from serket.nn import Dropout, Dropout1D, Dropout2D, Dropout3D
+from serket.nn import Dropout, Dropout1D, Dropout2D, Dropout3D, MaxPool2D, RandomApply
 
 
 def test_dropout():
@@ -31,3 +31,11 @@ def test_dropout2d():
 def test_dropout3d():
     layer = Dropout3D(0.5)
     assert layer(jnp.ones((1, 10, 10, 10))).shape == (1, 10, 10, 10)
+
+
+def test_random_apply():
+    layer = RandomApply(MaxPool2D(kernel_size=2, strides=2), p=0.0)
+    assert layer(jnp.ones((1, 10, 10))).shape == (1, 10, 10)
+
+    layer = RandomApply(MaxPool2D(kernel_size=2, strides=2), p=1.0)
+    assert layer(jnp.ones((1, 10, 10))).shape == (1, 5, 5)

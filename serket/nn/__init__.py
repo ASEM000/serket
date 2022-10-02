@@ -20,7 +20,7 @@ from .convolution import (
     DepthwiseConv2D,
     DepthwiseConv3D,
 )
-from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D
+from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D, RandomApply
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, PFNN
@@ -114,5 +114,5 @@ __all__ = (
     "VGG16Block",
     "VGG19Block",
     "Identity",
-
+    "RandomApply",
 )
