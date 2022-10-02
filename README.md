@@ -17,7 +17,8 @@
 ![codestyle](https://img.shields.io/badge/codestyle-black-lightgrey)
 [![Downloads](https://pepy.tech/badge/serket)](https://pepy.tech/project/serket)
 [![codecov](https://codecov.io/gh/ASEM000/serket/branch/main/graph/badge.svg?token=C6NXOK9EVS)](https://codecov.io/gh/ASEM000/serket)
-
+[![DOI](https://zenodo.org/badge/526985786.svg)](https://zenodo.org/badge/latestdoi/526985786)
+![PyPI](https://img.shields.io/pypi/v/serket)
 
 </h5>
 
@@ -42,17 +43,17 @@ pip install git+https://github.com/ASEM000/serket
 | Group | Layers |
 | ------------- | ------------- |
 | Linear  | `Linear`, `Bilinear`, `FNN` (Fully connected network), `PFNN` (Parallel fully connected network)  |
-| Convolution | `Conv1D`, `Conv2D`, `Conv3D`, `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`, `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D` |
+| Convolution | `Conv1D`, `Conv2D`, `Conv3D`, `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`, `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`, `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D` |
 | Containers| `Sequential`, `Lambda` |
-|Activation| `AdaptiveReLU`, `AdaptiveLeakyReLU`, `AdaptiveSigmoid`, `AdaptiveTanh`|
+|Activation| `AdaptiveReLU`, `AdaptiveLeakyReLU`, `AdaptiveSigmoid`, `AdaptiveTanh`, `ThresholdedReLU`|
 |Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D`|
 |Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsampling1D`, `Upsampling2D`, `Upsampling3D`, `Padding1D`, `Padding2D`, `Padding3D` |
 |Recurrent|`RNNCell`, `LSTMCell`|
 |Normalization|`LayerNorm`|
-|Blurring| `AvgBlur2D`|
+|Blurring| `AvgBlur2D`, `GaussianBlur2D`|
+|Dropout|`Dropout`, `Dropout1D`, `Dropout2D`, `Dropout3D`, `RandomApply`|
 |Physics|`Laplace2D` |
 |Blocks|`VGG16Block`, `VGG19Block`|
-
 
 
 

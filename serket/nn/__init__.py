@@ -7,7 +7,7 @@ from .activation import (
     ThresholdedReLU,
 )
 from .blocks.vgg import VGG16Block, VGG19Block
-from .blur import AvgBlur2D
+from .blur import AvgBlur2D, GaussianBlur2D
 from .containers import Lambda, Sequential
 from .convolution import (
     Conv1D,
@@ -104,6 +104,7 @@ __all__ = (
     "GlobalMaxPool3D",
     "LayerNorm",
     "AvgBlur2D",
+    "GaussianBlur2D",
     "Laplace2D",
     "FlipLeftRight2D",
     "FlipUpDown2D",

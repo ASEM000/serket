@@ -2,58 +2,76 @@ from __future__ import annotations
 
 import jax
 import jax.numpy as jnp
-import kernex as kex
 import pytreeclass as pytc
 
-# from typing import Callable
+from .convolution import DepthwiseConv2D
 
 
 @pytc.treeclass
 class AvgBlur2D:
-    def __init__(self, kernel_size: int | tuple[int, int]):
+    def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
         kernel_size = (
             (kernel_size, kernel_size) if isinstance(kernel_size, int) else kernel_size
         )
 
         # vectorize on channels dimension
-        @jax.vmap
-        @kex.kmap(kernel_size=kernel_size, padding="SAME")
-        def op(x):
-            kernel = jnp.ones([*kernel_size]) / jnp.array(kernel_size).prod()
-            return jnp.sum(x * kernel, dtype=jnp.float32)
+        w = jnp.ones([*kernel_size]) / jnp.array(kernel_size).prod()
+        w = jnp.repeat(w[None, None], in_features, axis=0)
 
-        self.func = op
+        self.conv = DepthwiseConv2D(
+            in_features=in_features,
+            kernel_size=kernel_size,
+            padding="same",
+            bias_init_func=None,
+        )
+        self.conv = self.conv.at["weight"].set(w)
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 3, "`Input` must be 3D."
-        return self.func(x)
+        return self.conv(x)
 
 
-# @pytc.treeclass
-# class GaussianBlur2D:
-#     kernel_size: int = pytc.nondiff_field()
-#     sigma: float = pytc.nondiff_field()
-#     func: Callable = pytc.nondiff_field(repr=False, init=False)
+@pytc.treeclass
+class GaussianBlur2D:
+    in_features: int = pytc.nondiff_field()
+    kernel_size: int = pytc.nondiff_field()
+    sigma: float = pytc.nondiff_field()
 
-#     def __post_init__(self):
-#         # this implementation should be faster than
-#         # https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
-#         # that uses  depthwise conv with seperable filters for kernel_size<13
+    def __init__(self, in_features: int, kernel_size: int, *, sigma: int = 1.0):
+        """Apply Gaussian blur to a channel-first image.
 
-#         d = self.kernel_size
+        Args:
+            in_features (int): number of input features
+            kernel_size (int): kernel size
+            sigma (int, optional): sigma. Defaults to 1.
 
-#         x = jnp.linspace(-(d - 1) / 2.0, (d - 1) / 2.0, d)
-#         w = jnp.exp(-0.5 * jnp.square(x) * jax.lax.rsqrt(self.sigma))
-#         w = jnp.outer(w, w)
-#         w = w / w.sum()
+        """
+        # type assertions
+        assert isinstance(
+            in_features, int
+        ), f"Expected int for `in_features`, got {in_features}."
 
-#         @jax.vmap
-#         @kex.kmap(kernel_size=(d, d), padding="same")
-#         def conv(x):
-#             return jnp.sum(x * w)
+        # assert proper values
+        assert in_features > 0, "`in_features` must be greater than 0."
 
-#         self.func = conv
+        self.in_features = in_features
+        self.kernel_size = kernel_size
+        self.sigma = sigma
 
-#     def __call__(self, x, **kwargs):
-#         assert x.ndim == 3, "`Input` must be 3D."
-#         return self.func(x)
+        x = jnp.linspace(-(kernel_size - 1) / 2.0, (kernel_size - 1) / 2.0, kernel_size)
+        w = jnp.exp(-0.5 * jnp.square(x) * jax.lax.rsqrt(self.sigma))
+        w = jnp.outer(w, w)
+        w = w / jnp.sum(w)
+        w = jnp.repeat(w[None, None], in_features, axis=0)
+
+        self.conv = DepthwiseConv2D(
+            in_features=in_features,
+            kernel_size=kernel_size,
+            padding="same",
+            bias_init_func=None,
+        )
+        self.conv = self.conv.at["weight"].set(w)
+
+    def __call__(self, x, **kwargs):
+        assert x.ndim == 3, "`Input` must be 3D."
+        return self.conv(x)
