@@ -1,4 +1,5 @@
 from . import blocks
+from .activation import ThresholdedReLU
 from .adaptive_activation import (
     AdaptiveLeakyReLU,
     AdaptiveReLU,
@@ -99,4 +100,5 @@ __all__ = (
     "Padding1D",
     "Padding2D",
     "Padding3D",
+    "ThresholdedReLU",
 )
