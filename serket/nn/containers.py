@@ -10,9 +10,10 @@ from pytreeclass._src.tree_util import is_treeclass
 
 @pytc.treeclass
 class Lambda:
-    func: Callable = pytc.nondiff_field()
+    def __init__(self, func: Callable):
+        self.func = func
 
-    def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return self.func(x)
 
 

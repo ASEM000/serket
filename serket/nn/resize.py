@@ -138,12 +138,17 @@ class Resize3D(ResizeND):
 class UpsamplingND:
     scale: int | tuple[int, ...]
     method: str = pytc.nondiff_field(default="nearest")
-    ndim: int = pytc.nondiff_field(default=1, repr=False)
 
-    def __post_init__(self):
+    def __init__(
+        self, scale: int | tuple[int, ...], method: str = "nearest", ndim: int = 1
+    ):
         # the difference between this and ResizeND is that UpsamplingND
         # use scale instead of size
         # assert types
+        self.scale = scale
+        self.method = method
+        self.ndim = ndim
+
         if isinstance(self.scale, (int)):
             assert self.scale > 0, "scale must be a positive integer."
             self.scale = (self.scale,) * self.ndim

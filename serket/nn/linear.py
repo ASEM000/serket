@@ -7,8 +7,6 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-__all__ = ["Linear", "Bilinear"]
-
 
 @pytc.treeclass
 class Linear:

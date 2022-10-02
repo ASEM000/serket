@@ -10,9 +10,20 @@ from .convolution import DepthwiseConv2D
 @pytc.treeclass
 class AvgBlur2D:
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
-        kernel_size = (
-            (kernel_size, kernel_size) if isinstance(kernel_size, int) else kernel_size
-        )
+        if isinstance(kernel_size, int):
+            kernel_size = (kernel_size, kernel_size)
+        elif isinstance(kernel_size, tuple):
+            assert (
+                len(kernel_size) == 2
+            ), "`kernel_size` must be int or tuple[int, int]."
+            assert all(
+                isinstance(item, int) and item > 1 for item in kernel_size
+            ), "`kernel_size` must be int or tuple[int, int]."
+
+        else:
+            raise TypeError(
+                f"`kernel_size` must be int or tuple[int, int]. Found {type(kernel_size)}"
+            )
 
         # vectorize on channels dimension
         w = jnp.ones([*kernel_size]) / jnp.array(kernel_size).prod()
@@ -72,6 +83,6 @@ class GaussianBlur2D:
         )
         self.conv = self.conv.at["weight"].set(w)
 
-    def __call__(self, x, **kwargs):
+    def __call__(self, x, **kwargs) -> jnp.ndarray:
         assert x.ndim == 3, "`Input` must be 3D."
         return self.conv(x)
