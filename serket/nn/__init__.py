@@ -19,6 +19,9 @@ from .convolution import (
     DepthwiseConv1D,
     DepthwiseConv2D,
     DepthwiseConv3D,
+    SeparableConv1D,
+    SeparableConv2D,
+    SeparableConv3D,
 )
 from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D, RandomApply
 from .flatten import Flatten, Unflatten
@@ -85,6 +88,9 @@ __all__ = (
     "DepthwiseConv1D",
     "DepthwiseConv2D",
     "DepthwiseConv3D",
+    "SeparableConv1D",
+    "SeparableConv2D",
+    "SeparableConv3D",
     "Flatten",
     "Unflatten",
     "Repeat1D",

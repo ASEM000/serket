@@ -55,12 +55,14 @@ def _check_and_return_padding(value, ndim):
 class ConvND:
     weight: jnp.ndarray
     bias: jnp.ndarray
+
     in_features: int = pytc.nondiff_field()  # number of input features
     out_features: int = pytc.nondiff_field()  # number of output features
     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
     strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
     rate: int | tuple[int, ...] = pytc.nondiff_field()
     padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
+
     weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
     kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
@@ -109,8 +111,8 @@ class ConvND:
         ), f"Expected Callable for `weight_init_func`. Found {weight_init_func}."
 
         assert isinstance(
-            bias_init_func, Callable
-        ), f"Expected Callable for `bias_init_func`. Found {bias_init_func}."
+            bias_init_func, (Callable, type(None))
+        ), f"Expected Callable or None for `bias_init_func`. Found {bias_init_func}."
 
         # assert proper values
         assert in_features > 0, "`in_features` must be greater than 0."
@@ -250,11 +252,13 @@ class Conv3D(ConvND):
 class ConvNDTranspose:
     weight: jnp.ndarray
     bias: jnp.ndarray
+
     in_features: int = pytc.nondiff_field()  # number of input features
     out_features: int = pytc.nondiff_field()  # number of output features
     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
     strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
     rate: int | tuple[int, ...] = pytc.nondiff_field()
+
     padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
     weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
@@ -305,8 +309,8 @@ class ConvNDTranspose:
         ), f"Expected Callable for `weight_init_func`. Found  {weight_init_func}."
 
         assert isinstance(
-            bias_init_func, Callable
-        ), f"Expected Callable for `bias_init_func`. Found {bias_init_func}."
+            bias_init_func, (Callable, type(None))
+        ), f"Expected Callable or None for `bias_init_func`. Found {bias_init_func}."
 
         # assert proper values
         assert in_features > 0, "`in_features` must be greater than 0."
@@ -434,10 +438,12 @@ class Conv3DTranspose(ConvNDTranspose):
 class DepthwiseConvND:
     weight: jnp.ndarray
     bias: jnp.ndarray
+
     in_features: int = pytc.nondiff_field()  # number of input features
     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
     strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
     padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
+
     weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
     kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
@@ -490,8 +496,8 @@ class DepthwiseConvND:
         ), f"Expected Callable for `weight_init_func`. Found {weight_init_func}."
 
         assert isinstance(
-            bias_init_func, Callable
-        ), f"Expected Callable for `bias_init_func`. Found {bias_init_func}."
+            bias_init_func, (Callable, type(None))
+        ), f"Expected Callable or None for `bias_init_func`. Found {bias_init_func}."
 
         # assert proper values
         assert in_features > 0, "`in_features` must be greater than 0."
@@ -500,6 +506,7 @@ class DepthwiseConvND:
         self.in_features = in_features
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
+        self.depth_multiplier = depth_multiplier
         self.rate = _check_and_return_rate(1, ndim)
         self.padding = _check_and_return_padding(padding, ndim)
         self.weight_init_func = _wrap_partial(weight_init_func)
@@ -534,15 +541,15 @@ class DepthwiseConvND:
 class DepthwiseConv1D(DepthwiseConvND):
     def __init__(
         self,
-        in_features: int,
-        kernel_size: int,
+        in_features,
+        kernel_size,
         *,
-        depth_multiplier: int = 1,
-        strides: int = 1,
-        padding: str | tuple[tuple[int, int], ...] = "SAME",
-        weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
-        bias_init_func: Callable | None = jax.nn.initializers.zeros,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        depth_multiplier=1,
+        strides=1,
+        padding="SAME",
+        weight_init_func=jax.nn.initializers.glorot_uniform(),
+        bias_init_func=jax.nn.initializers.zeros,
+        key=jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -561,15 +568,15 @@ class DepthwiseConv1D(DepthwiseConvND):
 class DepthwiseConv2D(DepthwiseConvND):
     def __init__(
         self,
-        in_features: int,
-        kernel_size: int | tuple[int, ...],
+        in_features,
+        kernel_size,
         *,
         depth_multiplier: int = 1,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | tuple[tuple[int, int], ...] = "SAME",
-        weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
-        bias_init_func: Callable | None = jax.nn.initializers.zeros,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        strides=1,
+        padding="SAME",
+        weight_init_func=jax.nn.initializers.glorot_uniform(),
+        bias_init_func=jax.nn.initializers.zeros,
+        key=jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -588,15 +595,15 @@ class DepthwiseConv2D(DepthwiseConvND):
 class DepthwiseConv3D(DepthwiseConvND):
     def __init__(
         self,
-        in_features: int,
-        kernel_size: int | tuple[int, ...],
+        in_features,
+        kernel_size,
         *,
-        depth_multiplier: int = 1,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | tuple[tuple[int, int], ...] = "SAME",
-        weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
-        bias_init_func: Callable | None = jax.nn.initializers.zeros,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        depth_multiplier=1,
+        strides=1,
+        padding="SAME",
+        weight_init_func=jax.nn.initializers.glorot_uniform(),
+        bias_init_func=jax.nn.initializers.zeros,
+        key=jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -606,6 +613,229 @@ class DepthwiseConv3D(DepthwiseConvND):
             padding=padding,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
+            ndim=3,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class SeparableConvND:
+    depthwise_conv: DepthwiseConvND
+    pointwise_conv: DepthwiseConvND
+
+    in_features: int = pytc.nondiff_field()
+    out_features: int = pytc.nondiff_field()
+    depth_multiplier: int = pytc.nondiff_field()
+    kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
+    strides: int | tuple[int, ...] = pytc.nondiff_field()
+    rate: int | tuple[int, ...] = pytc.nondiff_field()
+    padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
+
+    depthwise_weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
+    pointwise_weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
+    pointwise_bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        depth_multiplier: int = 1,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[tuple[int, int], ...] = "SAME",
+        rate: int = 1,
+        depthwise_weight_init_func: Callable = jax.nn.initializers.glorot_uniform(),
+        pointwise_weight_init_func: Callable = jax.nn.initializers.glorot_uniform(),
+        pointwise_bias_init_func: Callable | None = jax.nn.initializers.zeros,
+        ndim: int = 2,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """Separable convolutional layer.
+
+        Note:
+            See:
+                https://en.wikipedia.org/wiki/Separable_filter
+                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
+
+        Args:
+            in_features: number of input features
+            out_features: number of output features
+            kernel_size: size of the convolutional kernel
+            strides: stride of the convolution
+            padding: padding of the input
+            rate: dilation rate to use for dilated convolution
+            depthwise_weight_init_func: function to initialize the depthwise convolution weights
+            pointwise_weight_init_func: function to initialize the pointwise convolution weights
+            pointwise_bias_init_func: function to initialize the pointwise convolution bias
+            ndim: number of spatial dimensions.
+            key: random key to use for weight initialization.
+
+        """
+
+        # type assertions
+        assert isinstance(
+            in_features, int
+        ), f"Expected int for `in_features`. Found {in_features}."
+
+        assert isinstance(
+            out_features, int
+        ), f"Expected int for `out_features`. Found {out_features}."
+
+        assert isinstance(
+            depthwise_weight_init_func, Callable
+        ), f"Expected Callable for `weight_init_func`. Found {depthwise_weight_init_func}."
+
+        assert isinstance(
+            pointwise_weight_init_func, Callable
+        ), f"Expected Callable for `bias_init_func`. Found {pointwise_weight_init_func}."
+
+        assert isinstance(
+            pointwise_bias_init_func, (Callable, type(None))
+        ), f"Expected Callable for `bias_init_func`. Found {pointwise_bias_init_func}."
+
+        # assert proper values
+        assert in_features > 0, "`in_features` must be greater than 0."
+        assert out_features > 0, "`out_features` must be greater than 0."
+
+        self.in_features = in_features
+        self.out_features = out_features
+        self.depth_multiplier = depth_multiplier
+        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
+        self.strides = _check_and_return_strides(strides, ndim)
+        self.rate = _check_and_return_rate(rate, ndim)
+        self.padding = _check_and_return_padding(padding, ndim)
+        self.depthwise_weight_init_func = _wrap_partial(depthwise_weight_init_func)
+        self.pointwise_weight_init_func = _wrap_partial(pointwise_weight_init_func)
+        self.pointwise_bias_init_func = _wrap_partial(pointwise_bias_init_func)
+
+        self.ndim = ndim
+
+        self.depthwise_conv = DepthwiseConvND(
+            in_features=in_features,
+            depth_multiplier=depth_multiplier,
+            kernel_size=self.kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
+            key=key,
+            ndim=ndim,
+        )
+
+        self.pointwise_conv = ConvND(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+            ndim=ndim,
+        )
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+
+@pytc.treeclass
+class SeparableConv1D(SeparableConvND):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        depth_multiplier=1,
+        strides=1,
+        padding="SAME",
+        rate=1,
+        depthwise_weight_init_func=jax.nn.initializers.glorot_uniform(),
+        pointwise_weight_init_func=jax.nn.initializers.glorot_uniform(),
+        pointwise_bias_init_func=jax.nn.initializers.zeros,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            rate=rate,
+            depthwise_weight_init_func=depthwise_weight_init_func,
+            pointwise_weight_init_func=pointwise_weight_init_func,
+            pointwise_bias_init_func=pointwise_bias_init_func,
+            ndim=1,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class SeparableConv2D(SeparableConvND):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        depth_multiplier=1,
+        strides=1,
+        padding="SAME",
+        rate=1,
+        depthwise_weight_init_func=jax.nn.initializers.glorot_uniform(),
+        pointwise_weight_init_func=jax.nn.initializers.glorot_uniform(),
+        pointwise_bias_init_func=jax.nn.initializers.zeros,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            rate=rate,
+            depthwise_weight_init_func=depthwise_weight_init_func,
+            pointwise_weight_init_func=pointwise_weight_init_func,
+            pointwise_bias_init_func=pointwise_bias_init_func,
+            ndim=2,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class SeparableConv3D(SeparableConvND):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        depth_multiplier=1,
+        strides=1,
+        padding="SAME",
+        rate=1,
+        depthwise_weight_init_func=jax.nn.initializers.glorot_uniform(),
+        pointwise_weight_init_func=jax.nn.initializers.glorot_uniform(),
+        pointwise_bias_init_func=jax.nn.initializers.zeros,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            rate=rate,
+            depthwise_weight_init_func=depthwise_weight_init_func,
+            pointwise_weight_init_func=pointwise_weight_init_func,
+            pointwise_bias_init_func=pointwise_bias_init_func,
             ndim=3,
             key=key,
         )
