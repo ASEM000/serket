@@ -15,6 +15,9 @@ from .convolution import (
     Conv2DTranspose,
     Conv3D,
     Conv3DTranspose,
+    DepthwiseConv1D,
+    DepthwiseConv2D,
+    DepthwiseConv3D,
 )
 from .dropout import Dropout
 from .flatten import Flatten, Unflatten
@@ -75,6 +78,9 @@ __all__ = (
     "Conv1DTranspose",
     "Conv2DTranspose",
     "Conv3DTranspose",
+    "DepthwiseConv1D",
+    "DepthwiseConv2D",
+    "DepthwiseConv3D",
     "Flatten",
     "Unflatten",
     "Repeat1D",

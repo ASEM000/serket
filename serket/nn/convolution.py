@@ -96,10 +96,21 @@ class ConvND:
             key (jr.PRNGKey, optional): key for random number generation. Defaults to jr.PRNGKey(0).
         """
         # type assertions
-        assert isinstance(in_features, int), f"Expected int for `in_features`, got {in_features}."  # fmt: skip
-        assert isinstance(out_features, int), f"Expected int for `out_features`, got {out_features}."  # fmt: skip
-        assert isinstance(weight_init_func, Callable), f"Expected Callable got {weight_init_func}."  # fmt: skip
-        assert isinstance(bias_init_func, Callable), f"Expected Callable for got {bias_init_func}."  # fmt: skip
+        assert isinstance(
+            in_features, int
+        ), f"Expected int for `in_features`, got {in_features}."
+
+        assert isinstance(
+            out_features, int
+        ), f"Expected int for `out_features`, got {out_features}."
+
+        assert isinstance(
+            weight_init_func, Callable
+        ), f"Expected Callable for `weight_init_func`. Found {weight_init_func}."
+
+        assert isinstance(
+            bias_init_func, Callable
+        ), f"Expected Callable for `bias_init_func`. Found {bias_init_func}."
 
         # assert proper values
         assert in_features > 0, "`in_features` must be greater than 0."
@@ -281,10 +292,21 @@ class ConvNDTranspose:
             padding follows the same convention as in jax.lax.conv_general_dilated
         """
         # type assertions
-        assert isinstance(in_features, int), f"Expected int for `in_features`, got {in_features}."  # fmt: skip
-        assert isinstance(out_features, int), f"Expected int for `out_features`, got {out_features}."  # fmt: skip
-        assert isinstance(weight_init_func, Callable), f"Expected Callable got {weight_init_func}."  # fmt: skip
-        assert isinstance(bias_init_func, Callable), f"Expected Callable for got {bias_init_func}."  # fmt: skip
+        assert isinstance(
+            in_features, int
+        ), f"Expected int for `in_features`. Found {in_features}."
+
+        assert isinstance(
+            out_features, int
+        ), f"Expected int for `out_features`. Found {out_features}."
+
+        assert isinstance(
+            weight_init_func, Callable
+        ), f"Expected Callable for `weight_init_func`. Found  {weight_init_func}."
+
+        assert isinstance(
+            bias_init_func, Callable
+        ), f"Expected Callable for `bias_init_func`. Found {bias_init_func}."
 
         # assert proper values
         assert in_features > 0, "`in_features` must be greater than 0."
@@ -401,6 +423,187 @@ class Conv3DTranspose(ConvNDTranspose):
             strides=strides,
             padding=padding,
             rate=rate,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            ndim=3,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class DepthwiseConvND:
+    weight: jnp.ndarray
+    bias: jnp.ndarray
+    in_features: int = pytc.nondiff_field()  # number of input features
+    kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
+    strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
+    padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
+    weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
+    bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
+    kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        in_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        depth_multiplier: int = 1,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
+        bias_init_func: Callable | None = jax.nn.initializers.zeros,
+        ndim: int = 2,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """Convolutional layer.
+
+        Args:
+            in_features (int): Number of input features (i.e. channels).
+            kernel_size (int | tuple[int, ...]): Size of the convolution kernel.
+            depth_multiplier (int, optional): Number of convolutional filters to apply per input channel. Defaults to 1.
+            strides (int | tuple[int, ...], optional): Stride of the convolution. Defaults to 1.
+            padding (str | tuple[tuple[int, int], ...], optional): Padding of the convolution. Defaults to "SAME".
+            weight_init_func (Callable, optional): Function to initialize the weights.
+            bias_init_func (Callable, optional): Function to initialize the bias.
+            ndim (int, optional): Number of spatial dimensions. Defaults to 2.
+            key (jr.PRNGKey, optional): PRNG key to use for initialization. Defaults to jr.PRNGKey(0).
+
+        Examples:
+            >>> l1 = DepthwiseConvND(3, 3, depth_multiplier=2, strides=2, padding="SAME")
+            >>> l1(jnp.ones((3, 32, 32))).shape
+            (3, 16, 16, 6)
+
+        Note:
+            See : https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+        """
+        # type assertions
+        assert isinstance(
+            in_features, int
+        ), f"Expected int for `in_features`. Found {in_features}."
+
+        assert isinstance(
+            depth_multiplier, int
+        ), f"Expected int for `depth_multiplier`. Found {depth_multiplier}."
+
+        assert isinstance(
+            weight_init_func, Callable
+        ), f"Expected Callable for `weight_init_func`. Found {weight_init_func}."
+
+        assert isinstance(
+            bias_init_func, Callable
+        ), f"Expected Callable for `bias_init_func`. Found {bias_init_func}."
+
+        # assert proper values
+        assert in_features > 0, "`in_features` must be greater than 0."
+        assert depth_multiplier > 0, "`depth_multiplier` must be greater than 0."
+
+        self.in_features = in_features
+        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
+        self.strides = _check_and_return_strides(strides, ndim)
+        self.rate = _check_and_return_rate(1, ndim)
+        self.padding = _check_and_return_padding(padding, ndim)
+        self.weight_init_func = _wrap_partial(weight_init_func)
+        self.bias_init_func = _wrap_partial(bias_init_func)
+
+        weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
+        self.weight = weight_init_func(key, weight_shape)
+
+        bias_shape = (depth_multiplier * in_features, *(1,) * ndim)
+        self.bias = bias_init_func(key, bias_shape) if bias_init_func is not None else 0
+
+        self.kernel_dilation = (1,) * ndim
+        self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        y = self.bias
+        y += jax.lax.conv_general_dilated(
+            lhs=x[None],
+            rhs=self.weight,
+            window_strides=self.strides,
+            padding=self.padding,
+            lhs_dilation=self.kernel_dilation,  # image dilation
+            rhs_dilation=self.rate,  # kernel dilation
+            dimension_numbers=self.dimension_numbers,
+            feature_group_count=self.in_features,
+        )
+
+        return y[0]
+
+
+@pytc.treeclass
+class DepthwiseConv1D(DepthwiseConvND):
+    def __init__(
+        self,
+        in_features: int,
+        kernel_size: int,
+        *,
+        depth_multiplier: int = 1,
+        strides: int = 1,
+        padding: str | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
+        bias_init_func: Callable | None = jax.nn.initializers.zeros,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features,
+            kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            ndim=1,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class DepthwiseConv2D(DepthwiseConvND):
+    def __init__(
+        self,
+        in_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        depth_multiplier: int = 1,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
+        bias_init_func: Callable | None = jax.nn.initializers.zeros,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features,
+            kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            ndim=2,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class DepthwiseConv3D(DepthwiseConvND):
+    def __init__(
+        self,
+        in_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        depth_multiplier: int = 1,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
+        bias_init_func: Callable | None = jax.nn.initializers.zeros,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features,
+            kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             ndim=3,

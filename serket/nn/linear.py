@@ -7,6 +7,8 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
+__all__ = ["Linear", "Bilinear"]
+
 
 @pytc.treeclass
 class Linear:
@@ -33,6 +35,11 @@ class Linear:
             weight_init_func (Callable, optional): . Defaults to jax.nn.initializers.he_normal().
             bias_init_func (Callable, optional): . Defaults to lambdakey.
             key (jr.PRNGKey, optional):  . Defaults to jr.PRNGKey(0).
+
+        Examples:
+            >>> l1 = Linear(10, 5)
+            >>> l1(jnp.ones((3, 10))).shape
+            (3, 5)
         """
 
         self.in_features = in_features
@@ -75,6 +82,11 @@ class Bilinear:
             weight_init_func (Callable, optional): . Defaults to jax.nn.initializers.he_normal().
             bias_init_func (Callable, optional): . Defaults to lambdakey.
             key (jr.PRNGKey, optional):  . Defaults to jr.PRNGKey(0).
+
+        Examples:
+            >>> b1 = Bilinear(10, 5, 3)
+            >>> b1(jnp.ones((3, 10)), jnp.ones((3, 5))).shape
+            (3, 3)
         """
 
         self.in1_features = in1_features
