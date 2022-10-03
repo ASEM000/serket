@@ -23,6 +23,7 @@ from .convolution import (
     SeparableConv2D,
     SeparableConv3D,
 )
+from .crop import Crop1D, Crop2D, RandomCrop1D, RandomCrop2D
 from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D, RandomApply
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
@@ -122,4 +123,8 @@ __all__ = (
     "VGG19Block",
     "Identity",
     "RandomApply",
+    "Crop1D",
+    "Crop2D",
+    "RandomCrop1D",
+    "RandomCrop2D",
 )

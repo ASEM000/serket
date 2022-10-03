@@ -48,6 +48,7 @@ pip install git+https://github.com/ASEM000/serket
 |Activation| `AdaptiveReLU`, `AdaptiveLeakyReLU`, `AdaptiveSigmoid`, `AdaptiveTanh`, `ThresholdedReLU`|
 |Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D`|
 |Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsampling1D`, `Upsampling2D`, `Upsampling3D`, `Padding1D`, `Padding2D`, `Padding3D` |
+|Crop|`Crop1D`, `Crop2D`, `RandomCrop1D`, `RandomCrop2D`|
 |Recurrent|`RNNCell`, `LSTMCell`|
 |Normalization|`LayerNorm`|
 |Blurring| `AvgBlur2D`, `GaussianBlur2D`|
