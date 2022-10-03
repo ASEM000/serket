@@ -3,7 +3,6 @@ from __future__ import annotations
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
-from pytreeclass._src.tree_util import is_treeclass
 
 
 @pytc.treeclass
@@ -90,48 +89,3 @@ class Dropout2D(DropoutND):
 class Dropout3D(DropoutND):
     def __init__(self, p: float = 0.5):
         super().__init__(p=p, ndim=3)
-
-
-@pytc.treeclass
-class RandomApply:
-    layer: int
-    p: float = pytc.nondiff_field(default=1.0)
-    eval: bool | None
-
-    def __init__(self, layer, p: float = 0.5, ndim: int = 1, eval: bool | None = None):
-        """
-        Randomly applies a layer with probability p.
-
-        Args:
-            p: probability of applying the layer
-
-        Example:
-            >>> layer = RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=0.0)
-            >>> layer(jnp.ones((1, 10, 10))).shape
-            (1, 10, 10)
-
-            >>> layer = RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=1.0)
-            >>> layer(jnp.ones((1, 10, 10))).shape
-            (1, 5, 5)
-        """
-
-        if p < 0 or p > 1:
-            raise ValueError(f"p must be between 0 and 1, got {p}")
-
-        if isinstance(eval, bool) or eval is None:
-            self.eval = eval
-        else:
-            raise ValueError(f"eval must be a boolean or None, got {eval}")
-
-        self.p = p
-
-        if not is_treeclass(layer):
-            raise ValueError("Layer must be a `treeclass`.")
-        self.layer = layer
-
-    def __call__(self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0)):
-
-        if self.eval is True or not jr.bernoulli(key, (self.p)):
-            return x
-
-        return self.layer(x)

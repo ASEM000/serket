@@ -23,8 +23,8 @@ from .convolution import (
     SeparableConv2D,
     SeparableConv3D,
 )
-from .crop import Crop1D, Crop2D, RandomCrop1D, RandomCrop2D
-from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D, RandomApply
+from .crop import Crop1D, Crop2D
+from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, PFNN
@@ -46,6 +46,7 @@ from .pooling import (
     MaxPool2D,
     MaxPool3D,
 )
+from .random_transform import RandomApply, RandomCrop1D, RandomCrop2D
 from .resize import (
     Repeat1D,
     Repeat2D,
