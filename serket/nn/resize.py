@@ -136,7 +136,7 @@ class Resize3D(ResizeND):
 
 @pytc.treeclass
 class UpsamplingND:
-    scale: int | tuple[int, ...]
+    scale: int | tuple[int, ...] = pytc.nondiff_field(default=1)
     method: str = pytc.nondiff_field(default="nearest")
 
     def __init__(

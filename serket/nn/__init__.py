@@ -6,7 +6,7 @@ from .activation import (
     AdaptiveTanh,
     ThresholdedReLU,
 )
-from .blocks.vgg import VGG16Block, VGG19Block
+from .blocks import UNetBlock, VGG16Block, VGG19Block
 from .blur import AvgBlur2D, GaussianBlur2D
 from .containers import Lambda, Sequential
 from .convolution import (
@@ -128,6 +128,7 @@ __all__ = (
     "ThresholdedReLU",
     "VGG16Block",
     "VGG19Block",
+    "UNetBlock",
     "Identity",
     "RandomApply",
     "Crop1D",
