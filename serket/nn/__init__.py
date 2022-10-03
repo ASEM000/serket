@@ -62,6 +62,8 @@ from .resize import (
     Upsampling3D,
 )
 
+from .preprocessing import HistogramEqualization2D
+
 __all__ = (
     "blocks",
     "FNN",
@@ -137,4 +139,5 @@ __all__ = (
     "RandomCrop2D",
     "RandomCutout1D",
     "RandomCutout2D",
+    "HistogramEqualization2D",
 )
