@@ -1,9 +1,11 @@
-# this script defines the convolutional layers
+# this script defines different convolutional layers
 # https://arxiv.org/pdf/1603.07285.pdf
+# Throughout the code, we use OIHW as the default data format for kernels. and NCHW for data.
 
 from __future__ import annotations
 
 import functools as ft
+import operator as op
 from types import FunctionType
 from typing import Any, Callable
 
@@ -36,19 +38,90 @@ _check_and_return_strides = ft.partial(_check_and_return, name="stride")
 _check_and_return_rate = ft.partial(_check_and_return, name="rate")
 
 
-def _check_and_return_padding(value, ndim):
-    if isinstance(value, str):
-        value = value.upper()
-        assert value in ["SAME", "VALID"], f"Expected 'SAME' or 'VALID' for padding, got {value}."  # fmt: skip
-    elif isinstance(value, tuple):
-        assert all(
-            isinstance(v, tuple) and len(v) == 2 for v in value
-        ), f"Expected tuple of tuples of length 2 (begin,end) for each dimension padding, got {value}."
-    elif isinstance(value, int):
-        value = ((value, value),) * ndim
-    else:
-        raise ValueError(f"Expected int, str or tuple for padding got {value}.")
-    return value
+def _check_and_return_padding(
+    padding: tuple[int | tuple[int, int] | str, ...] | int | str,
+    kernel_size: tuple[int, ...],
+):
+    """
+    Resolve padding to a tuple of tuples of ints.
+
+    Args:
+        padding: padding to resolve
+        kernel_size: kernel size to use for resolving padding
+
+    Examples:
+        >>> padding= (1, (2, 3), "same")
+        >>> kernel_size = (3, 3, 3)
+        >>> _check_and_return_padding(padding, kernel_size)
+        ((1, 1), (2, 3), (1, 1))
+    """
+
+    def _resolve_tuple_padding(padding, kernel_size):
+
+        assert len(padding) == len(
+            kernel_size
+        ), f"Expected padding to be of length {len(kernel_size)}, got {len(padding)}"
+
+        resolved_padding = [[]] * len(kernel_size)
+
+        for i, item in enumerate(padding):
+            if isinstance(item, int):
+                # ex: padding = (1, 2, 3)
+                resolved_padding[i] = (item, item)
+
+            elif isinstance(item, tuple):
+                # ex: padding = ((1, 2), (3, 4), (5, 6))
+                assert len(item) == 2, f"Expected tuple of length 2, got {len(item)}"
+                resolved_padding[i] = item
+
+            elif isinstance(item, str):
+                # ex: padding = ("same", "valid", "same")
+                if item.lower() == "same":
+                    resolved_padding[i] = ((kernel_size[i] - 1) // 2), (
+                        kernel_size[i] // 2
+                    )
+
+                elif item.lower() == "valid":
+                    resolved_padding[i] = (0, 0)
+
+                else:
+                    raise ValueError(
+                        f'string argument must be in ["same","valid"].Found {item}'
+                    )
+        return tuple(resolved_padding)
+
+    def _resolve_int_padding(padding, kernel_size):
+        return ((padding, padding),) * len(kernel_size)
+
+    def _resolve_string_padding(padding, kernel_size):
+        if padding.lower() == "same":
+            return tuple(((wi - 1) // 2, wi // 2) for wi in kernel_size)
+
+        elif padding.lower() == "valid":
+            return ((0, 0),) * len(kernel_size)
+
+        raise ValueError(f'string argument must be in ["same","valid"].Found {padding}')
+
+    if isinstance(padding, int):
+        return _resolve_int_padding(padding, kernel_size)
+
+    elif isinstance(padding, str):
+        return _resolve_string_padding(padding, kernel_size)
+
+    elif isinstance(padding, tuple):
+        return _resolve_tuple_padding(padding, kernel_size)
+
+    raise ValueError(
+        f"Expected padding to be of type int, str or tuple, got {type(padding)}"
+    )
+
+
+def _output_shape(shape, kernel_size, padding, strides):
+    """Compute the shape of the output of a convolutional layer."""
+    return tuple(
+        (xi + (li + ri) - ki) // si + 1
+        for xi, ki, si, (li, ri) in zip(shape, kernel_size, strides, padding)
+    )
 
 
 @pytc.treeclass
@@ -125,7 +198,7 @@ class ConvND:
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
         self.rate = _check_and_return_rate(rate, ndim)
-        self.padding = _check_and_return_padding(padding, ndim)
+        self.padding = _check_and_return_padding(padding, self.kernel_size)
         self.groups = groups
         self.weight_init_func = _wrap_partial(weight_init_func)
         self.bias_init_func = _wrap_partial(bias_init_func)
@@ -321,7 +394,7 @@ class ConvNDTranspose:
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
         self.rate = _check_and_return_rate(rate, ndim)
-        self.padding = _check_and_return_padding(padding, ndim)
+        self.padding = _check_and_return_padding(padding, self.kernel_size)
         self.weight_init_func = _wrap_partial(weight_init_func)
         self.bias_init_func = _wrap_partial(bias_init_func)
 
@@ -480,7 +553,9 @@ class DepthwiseConvND:
             (3, 16, 16, 6)
 
         Note:
-            See : https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+            See :
+                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+                https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
         # type assertions
         assert isinstance(
@@ -508,7 +583,7 @@ class DepthwiseConvND:
         self.strides = _check_and_return_strides(strides, ndim)
         self.depth_multiplier = depth_multiplier
         self.rate = _check_and_return_rate(1, ndim)
-        self.padding = _check_and_return_padding(padding, ndim)
+        self.padding = _check_and_return_padding(padding, self.kernel_size)
         self.weight_init_func = _wrap_partial(weight_init_func)
         self.bias_init_func = _wrap_partial(bias_init_func)
 
@@ -705,7 +780,7 @@ class SeparableConvND:
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
         self.rate = _check_and_return_rate(rate, ndim)
-        self.padding = _check_and_return_padding(padding, ndim)
+        self.padding = _check_and_return_padding(padding, self.kernel_size)
         self.depthwise_weight_init_func = _wrap_partial(depthwise_weight_init_func)
         self.pointwise_weight_init_func = _wrap_partial(pointwise_weight_init_func)
         self.pointwise_bias_init_func = _wrap_partial(pointwise_bias_init_func)
@@ -836,6 +911,268 @@ class SeparableConv3D(SeparableConvND):
             depthwise_weight_init_func=depthwise_weight_init_func,
             pointwise_weight_init_func=pointwise_weight_init_func,
             pointwise_bias_init_func=pointwise_bias_init_func,
+            ndim=3,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class ConvNDLocal:
+    weight: jnp.ndarray
+    bias: jnp.ndarray
+
+    in_features: int = pytc.nondiff_field()  # number of input features
+    out_features: int = pytc.nondiff_field()  # number of output features
+    kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
+    in_size: tuple[int, ...] = pytc.nondiff_field()  # size of input
+    strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
+    rate: int | tuple[int, ...] = pytc.nondiff_field()
+    padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
+
+    weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
+    bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
+    kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        in_size: tuple[int, ...],
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[tuple[int, int], ...] = "SAME",
+        rate: int = 1,
+        weight_init_func: Callable | None = jax.nn.initializers.glorot_uniform(),
+        bias_init_func: Callable | None = jax.nn.initializers.zeros,
+        ndim: int = 2,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """Local convolutional layer.
+
+        Args:
+            in_features (int): number of input features
+            out_features (int): number of output features
+            kernel_size (int | tuple[int, ...]): size of the convolutional kernel
+            stride (int | tuple[int, ...], optional): stride . Defaults to 1.
+            padding (str | tuple[tuple[int, int], ...], optional): padding. Defaults to "SAME".
+            rate (int, optional): dilation rate. Defaults to 1.
+            weight_init_func (Callable | None, optional): weight initialization function.
+            bias_init_func (Callable | None, optional): _description_. Defaults to jax.nn.initializers.zeros.
+            groups (int, optional): number of groups. Defaults to 1.
+            ndim (int, optional): spatial dimensions. Defaults to 2.
+            key (jr.PRNGKey, optional): key for random number generation. Defaults to jr.PRNGKey(0).
+
+        Note:
+            See : https://keras.io/api/layers/locally_connected_layers/
+        """
+        # type assertions
+        assert isinstance(
+            in_features, int
+        ), f"Expected int for `in_features`, got {in_features}."
+
+        assert isinstance(
+            out_features, int
+        ), f"Expected int for `out_features`, got {out_features}."
+
+        assert isinstance(
+            in_size, (tuple)
+        ), f"Expected tuple for `in_size`, got {in_size}."
+
+        assert all(
+            isinstance(i, int) and i > 0 for i in in_size
+        ), f"Expected tuple of positive ints for `in_size`, got {in_size}."
+
+        assert isinstance(
+            weight_init_func, Callable
+        ), f"Expected Callable for `weight_init_func`. Found {weight_init_func}."
+
+        assert isinstance(
+            bias_init_func, (Callable, type(None))
+        ), f"Expected Callable or None for `bias_init_func`. Found {bias_init_func}."
+
+        # assert proper values
+        assert in_features > 0, "`in_features` must be greater than 0."
+        assert out_features > 0, "`out_features` must be greater than 0."
+
+        self.in_features = in_features
+        self.out_features = out_features
+        self.in_size = _check_and_return_strides(in_size, ndim)
+        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
+        self.strides = _check_and_return_strides(strides, ndim)
+        self.rate = _check_and_return_rate(rate, ndim)
+        self.padding = _check_and_return_padding(padding, self.kernel_size)
+        self.weight_init_func = _wrap_partial(weight_init_func)
+        self.bias_init_func = _wrap_partial(bias_init_func)
+
+        self.out_size = _output_shape(
+            self.in_size, self.kernel_size, self.padding, self.strides
+        )
+
+        # OIHW
+        self.weight_shape = (
+            self.out_features,
+            self.in_features * ft.reduce(op.mul, self.kernel_size),
+            *self.out_size,
+        )
+
+        self.weight = weight_init_func(key, self.weight_shape)
+
+        bias_shape = (self.out_features, *self.out_size)
+        self.bias = bias_init_func(key, bias_shape) if bias_init_func is not None else 0
+
+        self.kernel_dilation = (1,) * ndim
+        self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        y = self.bias
+        y += jax.lax.conv_general_dilated_local(
+            lhs=x[None],
+            rhs=self.weight,
+            window_strides=self.strides,
+            padding=self.padding,
+            filter_shape=self.kernel_size,
+            lhs_dilation=self.kernel_dilation,  # image dilation
+            rhs_dilation=self.rate,  # kernel dilation
+            dimension_numbers=self.dimension_numbers,
+        )
+
+        return y[0]
+
+
+@pytc.treeclass
+class Conv1DLocal(ConvNDLocal):
+    """1D local convolutional layer."""
+
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        in_size,
+        strides=1,
+        padding="SAME",
+        rate=1,
+        weight_init_func=jax.nn.initializers.glorot_uniform(),
+        bias_init_func=jax.nn.initializers.zeros,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """1D convolutional layer.
+
+        Args:
+            in_features (int): number of input features
+            out_features (int): number of output features
+            kernel_size (int): size of the convolutional kernel
+            stride (int, optional): stride . Defaults to 1.
+            padding (str | tuple[tuple[int, int], ...], optional): padding. Defaults to "SAME".
+            rate (int, optional): dilation rate. Defaults to 1.
+            weight_init_func (Callable | None, optional): weight initialization function.
+            bias_init_func (Callable | None, optional): _description_. Defaults to jax.nn.initializers.zeros.
+            key (jr.PRNGKey, optional): key for random number generation. Defaults to jr.PRNGKey(0).
+        """
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            in_size=in_size,
+            strides=strides,
+            padding=padding,
+            rate=rate,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            ndim=1,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class Conv2DLocal(ConvNDLocal):
+    """2D local convolutional layer."""
+
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        in_size,
+        strides=1,
+        padding="SAME",
+        rate=1,
+        weight_init_func=jax.nn.initializers.glorot_uniform(),
+        bias_init_func=jax.nn.initializers.zeros,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """2D local convolutional layer.
+
+        Args:
+            in_features (int): number of input features
+            out_features (int): number of output features
+            kernel_size (int | tuple[int, ...]): size of the convolutional kernel
+            stride (int | tuple[int, ...], optional): stride . Defaults to 1.
+            padding (str | tuple[tuple[int, int], ...], optional): padding. Defaults to "SAME".
+            rate (int, optional): dilation rate. Defaults to 1.
+            weight_init_func (Callable | None, optional): weight initialization function.
+            bias_init_func (Callable | None, optional): _description_. Defaults to jax.nn.initializers.zeros.
+            key (jr.PRNGKey, optional): key for random number generation. Defaults to jr.PRNGKey(0).
+        """
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            in_size=in_size,
+            strides=strides,
+            padding=padding,
+            rate=rate,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            ndim=2,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class Conv3DLocal(ConvNDLocal):
+    """3D local convolutional layer."""
+
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        in_size,
+        strides=1,
+        padding="SAME",
+        rate=1,
+        weight_init_func=jax.nn.initializers.glorot_uniform(),
+        bias_init_func=jax.nn.initializers.zeros,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """3D local convolutional layer.
+
+        Args:
+            in_features (int): number of input features
+            out_features (int): number of output features
+            kernel_size (int | tuple[int, ...]): size of the convolutional kernel
+            stride (int | tuple[int, ...], optional): stride . Defaults to 1.
+            padding (str | tuple[tuple[int, int], ...], optional): padding. Defaults to "SAME".
+            rate (int, optional): dilation rate. Defaults to 1.
+            weight_init_func (Callable | None, optional): weight initialization function.
+            bias_init_func (Callable | None, optional): _description_. Defaults to jax.nn.initializers.zeros.
+            key (jr.PRNGKey, optional): key for random number generation. Defaults to jr.PRNGKey(0).
+        """
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            in_size=in_size,
+            strides=strides,
+            padding=padding,
+            rate=rate,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
             ndim=3,
             key=key,
         )

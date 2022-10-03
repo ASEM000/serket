@@ -2,10 +2,12 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from serket.nn.convolution import (  # DepthwiseConv3D,
+from serket.nn.convolution import (  # Conv3DLocal,
     Conv1D,
+    Conv1DLocal,
     Conv1DTranspose,
     Conv2D,
+    Conv2DLocal,
     Conv2DTranspose,
     Conv3D,
     Conv3DTranspose,
@@ -43,12 +45,18 @@ def test_check_and_return():
     assert _check_and_return_strides((3, 3), 2) == (3, 3)
     assert _check_and_return_strides((3, 3, 3), 3) == (3, 3, 3)
 
-    assert _check_and_return_padding(((1, 1), (1, 1)), 2) == ((1, 1), (1, 1))
-    assert _check_and_return_padding(((1, 1), (1, 1), (1, 1)), 3) == (
-        (1, 1),
-        (1, 1),
-        (1, 1),
-    )
+
+def test_check_and_return_padding():
+    assert _check_and_return_padding(1, (3, 3)) == ((1, 1), (1, 1))
+    assert _check_and_return_padding(0, (3, 3)) == ((0, 0), (0, 0))
+    assert _check_and_return_padding(2, (3, 3)) == ((2, 2), (2, 2))
+
+    assert _check_and_return_padding((1, 1), (3, 3)) == ((1, 1), (1, 1))
+    assert _check_and_return_padding(((1, 1), (1, 1)), (3, 3)) == ((1, 1), (1, 1))
+    assert _check_and_return_padding(("same", "same"), (3, 3)) == ((1, 1), (1, 1))
+    assert _check_and_return_padding(("valid", "valid"), (3, 3)) == ((0, 0), (0, 0))
+    with pytest.raises(ValueError):
+        _check_and_return_padding(("invalid", "valid"), (3, 3))
 
 
 def test_conv1D():
@@ -1619,3 +1627,168 @@ def test_seperable_conv2d():
     layer_jax = layer_jax.at["pointwise_conv.weight"].set(w2)
 
     npt.assert_allclose(y, layer_jax(x), atol=1e-5)
+
+
+def test_conv1d_local():
+    x = jnp.ones((2, 28))
+
+    w = jnp.array(
+        [
+            [
+                [
+                    -0.15961593,
+                    -0.24700482,
+                    -0.03241882,
+                    0.16830233,
+                    0.17315423,
+                    -0.15926096,
+                    0.11997852,
+                    0.19070503,
+                    0.2514011,
+                    0.01214904,
+                    0.12885782,
+                    -0.13484786,
+                    -0.19441944,
+                ],
+                [
+                    0.04949,
+                    -0.25033048,
+                    0.16624266,
+                    0.16315845,
+                    -0.07447895,
+                    0.24705955,
+                    -0.2545433,
+                    -0.04126936,
+                    0.11806422,
+                    0.0186832,
+                    0.05966297,
+                    0.1445893,
+                    -0.22556928,
+                ],
+                [
+                    -0.23063937,
+                    -0.03540739,
+                    -0.08050132,
+                    -0.07008512,
+                    0.00241017,
+                    0.05862182,
+                    0.02273929,
+                    -0.03910652,
+                    0.2082575,
+                    0.02895498,
+                    -0.22927788,
+                    0.17321557,
+                    0.00570095,
+                ],
+                [
+                    0.08137614,
+                    0.25040284,
+                    -0.24458233,
+                    0.12267029,
+                    -0.12790537,
+                    0.17364258,
+                    0.05551764,
+                    0.03889585,
+                    0.24334595,
+                    0.16311577,
+                    -0.05199888,
+                    0.1495251,
+                    -0.12573873,
+                ],
+                [
+                    -0.04205574,
+                    -0.05446893,
+                    0.16779593,
+                    0.15733883,
+                    -0.11077882,
+                    0.11935773,
+                    0.06591952,
+                    0.13060933,
+                    -0.19740026,
+                    -0.13954279,
+                    0.00263405,
+                    0.00692567,
+                    -0.10878837,
+                ],
+                [
+                    0.01163918,
+                    0.06446105,
+                    -0.01387599,
+                    -0.11335008,
+                    -0.18015893,
+                    0.03948161,
+                    0.2264004,
+                    0.21437737,
+                    -0.25310597,
+                    0.14172179,
+                    -0.14102633,
+                    0.18787548,
+                    -0.2130653,
+                ],
+            ]
+        ]
+    )
+
+    y = jnp.array(
+        [
+            [
+                -0.2898057,
+                -0.27234778,
+                -0.03733987,
+                0.42803472,
+                -0.31775767,
+                0.47890234,
+                0.23601207,
+                0.4942117,
+                0.37056252,
+                0.22508198,
+                -0.23114826,
+                0.52728325,
+                -0.8618802,
+            ]
+        ]
+    )
+
+    layer = Conv1DLocal(
+        in_features=2,
+        out_features=1,
+        kernel_size=3,
+        strides=2,
+        in_size=(28,),
+        padding="valid",
+    )
+
+    layer = layer.at["weight"].set(w)
+
+    npt.assert_allclose(y, layer(x), atol=1e-5)
+
+
+def test_conv2d_local():
+
+    w = jnp.array(
+        [
+            [
+                [[-0.21994266, -0.2716022]],
+                [[0.2665612, -0.15465173]],
+                [[0.08909398, -0.36371586]],
+                [[0.1832841, -0.07327542]],
+                [[0.21907657, 0.00321126]],
+                [[-0.28950286, 0.33936942]],
+                [[0.26961517, 0.28448611]],
+                [[-0.44536602, 0.2771259]],
+                [[-0.02320498, 0.08787525]],
+                [[-0.47078812, 0.39727128]],
+                [[0.00807443, 0.41162848]],
+                [[0.33439147, 0.00823227]],
+            ]
+        ]
+    )
+
+    y = jnp.array([[[-0.07870772, 0.9459547]]])
+
+    x = jnp.ones((2, 4, 4))
+
+    layer = Conv2DLocal(2, 1, (3, 2), in_size=(4, 4), padding="valid", strides=2)
+    layer = layer.at["weight"].set(w)
+
+    npt.assert_allclose(y, layer(x), atol=1e-5)

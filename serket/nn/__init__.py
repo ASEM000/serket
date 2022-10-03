@@ -11,10 +11,13 @@ from .blur import AvgBlur2D, GaussianBlur2D
 from .containers import Lambda, Sequential
 from .convolution import (
     Conv1D,
+    Conv1DLocal,
     Conv1DTranspose,
     Conv2D,
+    Conv2DLocal,
     Conv2DTranspose,
     Conv3D,
+    Conv3DLocal,
     Conv3DTranspose,
     DepthwiseConv1D,
     DepthwiseConv2D,
@@ -93,6 +96,9 @@ __all__ = (
     "SeparableConv1D",
     "SeparableConv2D",
     "SeparableConv3D",
+    "Conv1DLocal",
+    "Conv2DLocal",
+    "Conv3DLocal",
     "Flatten",
     "Unflatten",
     "Repeat1D",
