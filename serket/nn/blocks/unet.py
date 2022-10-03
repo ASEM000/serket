@@ -7,11 +7,10 @@ import pytreeclass as pytc
 import serket as sk
 
 
-def _pad_and_cat(x1: jnp.ndarray, x2: jnp.ndarray) -> jnp.ndarray:
-    """padd a tensor to the same size as another tensor and concatenate x2 to x1 along the channel axis"""
-    dR = jnp.abs(x2.shape[1] - x1.shape[1])
-    dC = jnp.abs(x2.shape[2] - x1.shape[2])
-    x1 = jnp.pad(x1, ((0, 0), (dR // 2, dR - dR // 2), (dC // 2, dC - dC // 2)))
+
+def _resize_and_cat(x1:jnp.ndarray,x2:jnp.ndarray)->jnp.ndarray:
+    """resize a tensor to the same size as another tensor and concatenate x2 to x1 along the channel axis"""
+    x1 = jax.image.resize(x1,shape=x2.shape,method="nearest")
     x1 = jnp.concatenate([x2, x1], axis=0)
     return x1
 
@@ -178,12 +177,12 @@ class UNetBlock:
 
         result[f"u{blocks-1}_1"] = getattr(self, f"u{blocks-1}_1")(result["b0_1"])
         lhs_key, rhs_key = f"u{blocks-1}_1", f"d{blocks-1}_1"
-        result[f"u{blocks-1}_2"] = _pad_and_cat(result[lhs_key], result[rhs_key])
+        result[f"u{blocks-1}_2"] = _resize_and_cat(result[lhs_key], result[rhs_key])
         result[f"u{blocks-1}_3"] = getattr(self, f"u{blocks-1}_3")(result[f"u{blocks-1}_2"])  # fmt: skip
 
         for i in range(blocks - 1, 0, -1):
             result[f"u{i-1}_1"] = getattr(self, f"u{i-1}_1")(result[f"u{i}_3"])
-            result[f"u{i-1}_2"] = _pad_and_cat(result[f"u{i-1}_1"], result[f"d{i-1}_1"])
+            result[f"u{i-1}_2"] = _resize_and_cat(result[f"u{i-1}_1"], result[f"d{i-1}_1"])
             result[f"u{i-1}_3"] = getattr(self, f"u{i-1}_3")(result[f"u{i-1}_2"])
 
         return self.f0_1(result["u0_3"])
