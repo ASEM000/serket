@@ -7,10 +7,9 @@ import pytreeclass as pytc
 import serket as sk
 
 
-
-def _resize_and_cat(x1:jnp.ndarray,x2:jnp.ndarray)->jnp.ndarray:
+def _resize_and_cat(x1: jnp.ndarray, x2: jnp.ndarray) -> jnp.ndarray:
     """resize a tensor to the same size as another tensor and concatenate x2 to x1 along the channel axis"""
-    x1 = jax.image.resize(x1,shape=x2.shape,method="nearest")
+    x1 = jax.image.resize(x1, shape=x2.shape, method="nearest")
     x1 = jnp.concatenate([x2, x1], axis=0)
     return x1
 
@@ -182,7 +181,9 @@ class UNetBlock:
 
         for i in range(blocks - 1, 0, -1):
             result[f"u{i-1}_1"] = getattr(self, f"u{i-1}_1")(result[f"u{i}_3"])
-            result[f"u{i-1}_2"] = _resize_and_cat(result[f"u{i-1}_1"], result[f"d{i-1}_1"])
+            result[f"u{i-1}_2"] = _resize_and_cat(
+                result[f"u{i-1}_1"], result[f"d{i-1}_1"]
+            )
             result[f"u{i-1}_3"] = getattr(self, f"u{i-1}_3")(result[f"u{i-1}_2"])
 
         return self.f0_1(result["u0_3"])

@@ -49,7 +49,7 @@ from .pooling import (
     MaxPool2D,
     MaxPool3D,
 )
-from .random_transform import RandomApply, RandomCrop1D, RandomCrop2D
+from .random_transform import RandomApply, RandomCrop1D, RandomCrop2D, RandomCutout1D, RandomCutout2D
 from .resize import (
     Repeat1D,
     Repeat2D,
@@ -135,4 +135,6 @@ __all__ = (
     "Crop2D",
     "RandomCrop1D",
     "RandomCrop2D",
+    "RandomCutout1D",
+    "RandomCutout2D",
 )
