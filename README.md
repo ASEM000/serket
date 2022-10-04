@@ -42,7 +42,8 @@ pip install git+https://github.com/ASEM000/serket
 
 | Group | Layers |
 | ------------- | ------------- |
-| Linear  | `Linear`, `Bilinear`, `FNN` (Fully connected network), `PFNN` (Parallel fully connected network)  |
+| Linear  | `Linear`, `Bilinear`,   |
+|Densely connected|`FNN` (Fully connected network), `PFNN` (Parallel fully connected network)|
 | Convolution | `Conv1D`, `Conv2D`, `Conv3D`, `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`, `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`, `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal`  |
 | Containers| `Sequential`, `Lambda` |
 |Activation| `AdaptiveReLU`, `AdaptiveLeakyReLU`, `AdaptiveSigmoid`, `AdaptiveTanh`, `ThresholdedReLU`|
