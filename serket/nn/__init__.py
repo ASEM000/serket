@@ -49,7 +49,15 @@ from .pooling import (
     MaxPool2D,
     MaxPool3D,
 )
-from .random_transform import RandomApply, RandomCrop1D, RandomCrop2D, RandomCutout1D, RandomCutout2D
+from .preprocessing import HistogramEqualization2D
+from .random_transform import (
+    RandomApply,
+    RandomCrop1D,
+    RandomCrop2D,
+    RandomCutout1D,
+    RandomCutout2D,
+    RandomZoom2D,
+)
 from .resize import (
     Repeat1D,
     Repeat2D,
@@ -61,8 +69,6 @@ from .resize import (
     Upsampling2D,
     Upsampling3D,
 )
-
-from .preprocessing import HistogramEqualization2D
 
 __all__ = (
     "blocks",
@@ -139,5 +145,6 @@ __all__ = (
     "RandomCrop2D",
     "RandomCutout1D",
     "RandomCutout2D",
+    "RandomZoom2D",
     "HistogramEqualization2D",
 )

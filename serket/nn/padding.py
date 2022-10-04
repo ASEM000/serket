@@ -25,17 +25,21 @@ class PaddingND:
         """
         if isinstance(self.padding, int):
             self.padding = ((self.padding, self.padding),) * self.ndim
+
         elif isinstance(self.padding, tuple):
             assert (
-                len(self.padding) == self.ndim
-            ), "padding must be a tuple of length ndim"
+                len(self.padding) == self.ndim), f"padding must be a tuple of length {self.ndim}"  # fmt: skip
 
-            for x in self.padding:
-                assert (
-                    len(x) == 2
-                ), "padding must be a tuple of length 2 for begin and end padding for each dimension"
-                assert isinstance(x[0], int), "padding must be a tuple of ints."
-                assert isinstance(x[1], int), "padding must be a tuple of ints."
+            for i, x in enumerate(self.padding):
+                if isinstance(x, int):
+                    self.padding[i] = (x, x)
+
+                elif isinstance(x, tuple):
+                    assert len(x) == 2, f"padding must be a tuple of length 2, got {x}"
+                    assert all(isinstance(y, int) for y in x), f"padding must be a tuple of ints, got {x}"  # fmt: skip
+
+                else:
+                    raise TypeError(f"padding must be an int or tuple, got {x}")
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == self.ndim + 1, f"Input must be {self.ndim + 1}."
