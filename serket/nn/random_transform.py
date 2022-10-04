@@ -11,39 +11,37 @@ from .crop import Crop1D, Crop2D
 
 @pytc.treeclass
 class RandomCrop1D:
-    length: int = pytc.nondiff_field()
+    size: int = pytc.nondiff_field()
 
     def __init__(
         self,
-        length: int,
+        size: tuple[int],
     ):
 
         """Crop a 1D tensor to a given size.
 
         Args:
-            length (int): length of the cropped image
+            size (int): size of the cropped image
             pad_if_needed (bool, optional): if True, pad the image if the crop box is outside the image.
             padding_mode (str, optional): padding mode if pad_if_needed is True. Defaults to "constant".
         """
-
-        self.length = length
+        assert len(size) == 1, f"Expected size to be a 1-tuple, got {size}."
+        self.size = size
 
     def __call__(self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0)) -> jnp.ndarray:
         assert x.ndim == 2, f"Expected 2D tensor, got {x.ndim}D image."
-        start = jr.randint(key, shape=(), minval=0, maxval=x.shape[1] - self.length)
-        return Crop1D(length=self.length, start=start)(x)
+        start = jr.randint(key, shape=(), minval=0, maxval=x.shape[1] - self.size)
+        return Crop1D(self.size, start)(x)
 
 
 @pytc.treeclass
 class RandomCrop2D:
-    height: int = pytc.nondiff_field()
-    width: int = pytc.nondiff_field()
+    size: tuple[int, int] = pytc.nondiff_field()
     pad_if_needed: bool = pytc.nondiff_field()
 
     def __init__(
         self,
-        height: int,
-        width: int,
+        size: tuple[int, int],
         *,
         pad_if_needed: bool = False,
         padding_mode: str = "constant",
@@ -51,22 +49,22 @@ class RandomCrop2D:
 
         """
         Args:
-            height (int): height of the cropped image
-            width (int): width of the cropped image
+            size (tuple[int, int]): size of the cropped image
             pad_if_needed (bool, optional): if True, pad the image if the crop box is outside the image.
             padding_mode (str, optional): padding mode if pad_if_needed is True. Defaults to "constant".
         """
-
-        self.height = height
-        self.width = width
+        assert (
+            len(size) == 2
+        ), f"Expected size to be a tuple of size 2, got {len(size)}."
+        self.size = size
 
     def __call__(self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0)) -> jnp.ndarray:
         assert x.ndim == 3, f"Expected 3D tensor, got {x.ndim}D image."
 
-        top = jr.randint(key, shape=(), minval=0, maxval=x.shape[1] - self.height)
-        left = jr.randint(key, shape=(), minval=0, maxval=x.shape[2] - self.width)
+        top = jr.randint(key, shape=(), minval=0, maxval=x.shape[1] - self.size[0])
+        left = jr.randint(key, shape=(), minval=0, maxval=x.shape[2] - self.size[1])
 
-        return Crop2D(height=self.height, width=self.width, top=top, left=left)(x)
+        return Crop2D(self.size, (top, left))(x)
 
 
 @pytc.treeclass
@@ -149,14 +147,14 @@ class RandomCutout1D:
     def __call__(
         self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ) -> jnp.ndarray:
-        length = self.shape[0]
+        size = self.shape[0]
         row_arange = jnp.arange(x.shape[1])
 
         keys = jr.split(key, self.cutout_count)
 
         def scan_step(x, key):
             start = jr.randint(key, shape=(), minval=0, maxval=x.shape[1]).astype(jnp.int32)  # fmt: skip
-            row_mask = (row_arange >= start) & (row_arange < start + length)
+            row_mask = (row_arange >= start) & (row_arange < start + size)
             x = x * ~row_mask[None, :]
             return x, None
 

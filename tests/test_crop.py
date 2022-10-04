@@ -15,19 +15,19 @@ def test_crop_1d():
 def test_crop_2d():
     x = jnp.arange(25).reshape(1, 5, 5)
     y = jnp.array([[0, 1, 2], [5, 6, 7], [10, 11, 12]])
-    assert jnp.all(Crop2D(3, 3, 0, 0)(x)[0] == y)
+    assert jnp.all(Crop2D((3, 3), (0, 0))(x)[0] == y)
 
     y = jnp.array([[2, 3, 4], [7, 8, 9], [12, 13, 14]])
-    assert jnp.all(Crop2D(3, 3, 0, 2)(x)[0] == y)
+    assert jnp.all(Crop2D((3, 3), (0, 2))(x)[0] == y)
 
     y = jnp.array([[10, 11, 12], [15, 16, 17], [20, 21, 22]])
-    assert jnp.all(Crop2D(3, 3, 2, 0)(x)[0] == y)
+    assert jnp.all(Crop2D((3, 3), (2, 0))(x)[0] == y)
 
     y = jnp.array([[12, 13, 14], [17, 18, 19], [22, 23, 24]])
-    assert jnp.all(Crop2D(3, 3, 2, 2)(x)[0] == y)
+    assert jnp.all(Crop2D((3, 3), (2, 2))(x)[0] == y)
 
     y = jnp.array([[12, 13, 14], [17, 18, 19], [22, 23, 24]])
-    assert jnp.all(Crop2D(3, 3, 2, 2)(x)[0] == y)
+    assert jnp.all(Crop2D((3, 3), (2, 2))(x)[0] == y)
 
     y = jnp.array([[12, 13, 14], [17, 18, 19], [22, 23, 24]])
-    assert jnp.all(Crop2D(3, 3, 2, 2)(x)[0] == y)
+    assert jnp.all(Crop2D((3, 3), (2, 2))(x)[0] == y)

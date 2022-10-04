@@ -54,7 +54,7 @@ class Repeat3D:
 
 @pytc.treeclass
 class ResizeND:
-    size: int | tuple[int, int]
+    size: int | tuple[int, ...]
     method: str = pytc.nondiff_field(default="nearest")
     antialias: bool = pytc.nondiff_field(default=True)
     ndim: int = pytc.nondiff_field(default=1, repr=False)

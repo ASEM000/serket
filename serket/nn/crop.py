@@ -7,60 +7,63 @@ import pytreeclass as pytc
 
 @pytc.treeclass
 class Crop1D:
-    length: int = pytc.nondiff_field()
+    size: int = pytc.nondiff_field()
     start: int = pytc.nondiff_field()
 
     def __init__(
         self,
-        length: int,
+        size: int,
         start: int = 0,
     ):
 
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 
         Args:
-            length (int): length of the cropped image
+            size (int): size of the cropped image
             start (int, optional): start coordinate of the crop box. Defaults to 0.
         """
-        self.length = length
+        assert isinstance(size, int), f"Expected size to be an int, got {type(size)}."
+        assert isinstance(
+            start, int
+        ), f"Expected start to be an int, got {type(start)}."
+        self.size = size
         self.start = start
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 2, f"Expected 2D array, got {x.ndim}D image."
-        return jax.lax.dynamic_slice_in_dim(x, self.start, self.length, axis=1)
+        return jax.lax.dynamic_slice_in_dim(x, self.start, self.size, axis=1)
 
 
 @pytc.treeclass
 class Crop2D:
-    height: int = pytc.nondiff_field()
-    width: int = pytc.nondiff_field()
-    top: int = pytc.nondiff_field()
-    left: int = pytc.nondiff_field()
+    size: tuple[int, int] = pytc.nondiff_field()
+    start: tuple[int, int] = pytc.nondiff_field()
 
     def __init__(
         self,
-        height: int,
-        width: int,
-        top: int = 0,
-        left: int = 0,
+        size: tuple[int, int],
+        start: tuple[int, int] = (0, 0),
     ):
 
         """
         Args:
-            height (int): height of the cropped image
-            width (int): width of the cropped image
-            top (int, optional): vertical coordinate of the top left corner of the crop box. Defaults to 0.
-            left (int, optional): horizontal coordinate of the top left corner of the crop box. Defaults to 0.
+            size (tuple[int, int]): size of the cropped image
+            start (tuple[int, int], optional): top left coordinate of the crop box. Defaults to (0, 0).
             pad_if_needed (bool, optional): if True, pad the image if the crop box is outside the image.
             padding_mode (str, optional): padding mode if pad_if_needed is True. Defaults to "constant".
         """
-        self.height = height
-        self.width = width
-        self.top = top
-        self.left = left
+        assert (
+            len(size) == 2
+        ), f"Expected size to be a tuple of size 2, got {len(size)}."
+        assert (
+            len(start) == 2
+        ), f"Expected start to be a tuple of size 2, got {len(start)}."
+
+        self.size = size
+        self.start = start
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert (x.ndim == 3), f"Expected 2D array of shape [channel,height,width], got {x.ndim}D array."  # fmt: skip
-        start_indices = (0, self.top, self.left)
-        slice_sizes = (x.shape[0], self.height, self.width)
+        start_indices = (0, *self.start)
+        slice_sizes = (x.shape[0], *self.size)
         return jax.lax.dynamic_slice(x, start_indices, slice_sizes)
