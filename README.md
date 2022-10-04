@@ -54,7 +54,7 @@ pip install git+https://github.com/ASEM000/serket
 |Blurring| `AvgBlur2D`, `GaussianBlur2D`|
 |Dropout|`Dropout`, `Dropout1D`, `Dropout2D`, `Dropout3D`, |
 |Physics|`Laplace2D` |
-|Random transforms|`RandomCrop1D`, `RandomCrop2D`, `RandomApply`, `RandomCutout1D`, `RandomCutout2D` |
+|Random transforms|`RandomCrop1D`, `RandomCrop2D`, `RandomApply`, `RandomCutout1D`, `RandomCutout2D`, `RandomZoom2D` |
 |Preprocessing|`HistogramEqualization2D`|
 |Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
 
