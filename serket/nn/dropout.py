@@ -7,36 +7,40 @@ import pytreeclass as pytc
 
 @pytc.treeclass
 class Dropout:
-    p: float
-    eval: bool | None
+    p: float = pytc.nondiff_field(default=0.5)
+    eval: bool = None
 
-    def __init__(self, p: float = 0.5, eval: bool | None = None):
-        """p : probability of an element to be zeroed out"""
+    def __post_init__(self):
+        """
+        Args:
+            p (float, optional): dropout probability. Defaults to 0.5.
+            eval (bool, optional): if True, dropout is disabled. Defaults to None.
 
-        # to disable dropout during testing, set eval to True
-        # using model.at[(model == "eval") & (model == Dropout)].set(True, is_leaf = lambda x:x is None)
-        # during training, set eval to any non True value
-        self.p = p
-        self.eval = eval
+        Note:
+            to disable dropout during testing, set eval to True
+            using model.at[(model == "eval") & (model == Dropout)].set(True, is_leaf = lambda x:x is None)
+        """
+        if self.eval not in (None, True, False):
+            raise ValueError("eval must be None, True or False")
+
+        if self.p < 0.0 or self.p > 1.0:
+            raise ValueError("`p` must be in [0, 1]")
 
     def __call__(self, x, *, key=jr.PRNGKey(0)):
-        return (
-            x
-            if (self.eval is True)
-            else jnp.where(
-                jr.bernoulli(key, (1 - self.p), x.shape), x / (1 - self.p), 0
-            )
-        )
+        if self.eval is True:
+            return x
+
+        return jnp.where(jr.bernoulli(key, (1 - self.p), x.shape), x / (1 - self.p), 0)
 
 
 @pytc.treeclass
 class DropoutND:
-    p: float = pytc.nondiff_field()
-    eval: bool | None
+    p: float = pytc.nondiff_field(default=0.5)
+    eval: bool = None
+    ndim: int = pytc.nondiff_field(default=1)
 
-    def __init__(self, p: float = 0.5, ndim: int = 1, eval: bool | None = None):
-        """
-        Drops full feature maps along the channel axis.
+    def __post_init__(self):
+        """Drops full feature maps along the channel axis.
 
         Args:
             p: fraction of an elements to be zeroed out
@@ -52,16 +56,11 @@ class DropoutND:
             [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
 
-        if p < 0 or p > 1:
-            raise ValueError(f"p must be between 0 and 1, got {p}")
+        if self.p < 0 or self.p > 1:
+            raise ValueError(f"p must be in [0, 1]. Found {self.p}")
 
-        if isinstance(eval, bool) or eval is None:
-            self.eval = eval
-        else:
-            raise ValueError(f"eval must be a boolean or None, got {eval}")
-
-        self.p = p
-        self.ndim = ndim
+        if self.eval not in (True, False, None):
+            raise ValueError(f"eval must be True, False, or None. Found {self.eval}")
 
     def __call__(self, x, *, key=jr.PRNGKey(0)):
         assert x.ndim == (self.ndim + 1), f"input must be {self.ndim+1}D, got {x.ndim}D"
@@ -75,17 +74,17 @@ class DropoutND:
 
 @pytc.treeclass
 class Dropout1D(DropoutND):
-    def __init__(self, p: float = 0.5):
-        super().__init__(p=p, ndim=1)
+    def __init__(self, p: float = 0.5, eval: bool = None):
+        super().__init__(p=p, ndim=1, eval=eval)
 
 
 @pytc.treeclass
 class Dropout2D(DropoutND):
-    def __init__(self, p: float = 0.5):
-        super().__init__(p=p, ndim=2)
+    def __init__(self, p: float = 0.5, eval: bool = None):
+        super().__init__(p=p, ndim=2, eval=eval)
 
 
 @pytc.treeclass
 class Dropout3D(DropoutND):
-    def __init__(self, p: float = 0.5):
-        super().__init__(p=p, ndim=3)
+    def __init__(self, p: float = 0.5, eval: bool = None):
+        super().__init__(p=p, ndim=3, eval=eval)
