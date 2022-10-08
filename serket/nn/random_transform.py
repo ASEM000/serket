@@ -4,7 +4,6 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
-from pytreeclass._src.tree_util import is_treeclass
 
 from .crop import Crop1D, Crop2D
 from .padding import Padding2D
@@ -106,7 +105,7 @@ class RandomApply:
 
         self.p = p
 
-        if not is_treeclass(layer):
+        if not pytc.is_treeclass(layer):
             raise ValueError("Layer must be a `treeclass`.")
         self.layer = layer
 

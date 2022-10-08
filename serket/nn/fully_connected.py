@@ -8,7 +8,6 @@ import jax.numpy as jnp
 import jax.random as jr
 import jax.tree_util as jtu
 import pytreeclass as pytc
-from pytreeclass._src.tree_util import is_treeclass
 
 from serket.nn.linear import Linear
 
@@ -30,7 +29,7 @@ class FNN:
 
         keys = jr.split(key, len(layers))
         self.act_func = (
-            jtu.Partial(act_func) if not is_treeclass(act_func) else act_func
+            jtu.Partial(act_func) if not pytc.is_treeclass(act_func) else act_func
         )
         self.layers = [
             Linear(
@@ -125,7 +124,7 @@ class PFNN:
     ):
 
         self.act_func = (
-            jtu.Partial(act_func) if not is_treeclass(act_func) else act_func
+            jtu.Partial(act_func) if not pytc.is_treeclass(act_func) else act_func
         )
 
         # check input/output node

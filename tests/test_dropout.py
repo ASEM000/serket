@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import numpy.testing as npt
-from pytreeclass._src.tree_util import is_treeclass_equal
+import pytreeclass as pytc
 
 from serket.nn import Dropout, Dropout1D, Dropout2D, Dropout3D, MaxPool2D, RandomApply
 
@@ -14,7 +14,7 @@ def test_dropout():
 
     layer = Dropout(0.5)
     layer = layer.at[layer == "eval"].set(True, is_leaf=lambda x: x is None)
-    assert is_treeclass_equal(layer, Dropout(0.5, eval=True))
+    assert pytc.is_treeclass_equal(layer, Dropout(0.5, eval=True))
     npt.assert_allclose(layer(x), x)
 
 

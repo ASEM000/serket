@@ -5,7 +5,6 @@ from typing import Any, Callable, Sequence
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
-from pytreeclass._src.tree_util import is_treeclass
 
 
 @pytc.treeclass
@@ -24,7 +23,8 @@ class Sequential:
     def __post_init__(self):
         # wrap non-treeclass with `Lambda`
         self.layers = tuple(
-            layer if is_treeclass(layer) else Lambda(layer) for layer in self.layers
+            layer if pytc.is_treeclass(layer) else Lambda(layer)
+            for layer in self.layers
         )
 
     def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
