@@ -44,11 +44,15 @@ class Linear:
         self.out_features = out_features
 
         self.weight = weight_init_func(key, (in_features, out_features))
-        self.bias = (
-            bias_init_func(key, (out_features,)) if (bias_init_func is not None) else 0
-        )
+
+        if bias_init_func is None:
+            self.bias = None
+        else:
+            self.bias = bias_init_func(key, (out_features,))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if self.bias is None:
+            return x @ self.weight
         return x @ self.weight + self.bias
 
 
@@ -92,13 +96,18 @@ class Bilinear:
         self.out_features = out_features
 
         self.weight = weight_init_func(key, (in1_features, in2_features, out_features))
-        self.bias = (
-            bias_init_func(key, (out_features,)) if (bias_init_func is not None) else 0
-        )
+
+        if bias_init_func is None:
+            self.bias = None
+        else:
+            self.bias = bias_init_func(key, (out_features,))
 
     def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray, **kwargs) -> jnp.ndarray:
         x = x1 @ self.weight.reshape(-1, self.in2_features * self.out_features)
         x = x2 @ x.reshape(-1, self.out_features)
+
+        if self.bias is None:
+            return x
         return x + self.bias
 
 
