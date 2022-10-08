@@ -207,14 +207,17 @@ class ConvND:
         self.weight = weight_init_func(key, weight_shape)
 
         bias_shape = (out_features, *(1,) * ndim)
-        self.bias = bias_init_func(key, bias_shape) if bias_init_func is not None else 0
+
+        if bias_init_func is None:
+            self.bias = None
+        else:
+            self.bias = bias_init_func(key, bias_shape)
 
         self.kernel_dilation = (1,) * ndim
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = self.bias
-        y += jax.lax.conv_general_dilated(
+        y = jax.lax.conv_general_dilated(
             lhs=x[None],
             rhs=self.weight,
             window_strides=self.strides,
@@ -225,7 +228,9 @@ class ConvND:
             feature_group_count=self.groups,
         )
 
-        return y[0]
+        if self.bias is None:
+            return y[0]
+        return (y + self.bias)[0]
 
 
 @pytc.treeclass
@@ -402,13 +407,16 @@ class ConvNDTranspose:
         self.weight = weight_init_func(key, weight_shape)
 
         bias_shape = (out_features, *(1,) * ndim)
-        self.bias = bias_init_func(key, bias_shape) if bias_init_func is not None else 0
+
+        if bias_init_func is None:
+            self.bias = None
+        else:
+            self.bias = bias_init_func(key, bias_shape)
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = self.bias
-        y += jax.lax.conv_transpose(
+        y = jax.lax.conv_transpose(
             lhs=x[None],
             rhs=self.weight,
             strides=self.strides,
@@ -417,7 +425,9 @@ class ConvNDTranspose:
             dimension_numbers=self.dimension_numbers,
         )
 
-        return y[0]
+        if self.bias is None:
+            return y[0]
+        return (y + self.bias)[0]
 
 
 @pytc.treeclass
@@ -591,14 +601,17 @@ class DepthwiseConvND:
         self.weight = weight_init_func(key, weight_shape)
 
         bias_shape = (depth_multiplier * in_features, *(1,) * ndim)
-        self.bias = bias_init_func(key, bias_shape) if bias_init_func is not None else 0
+
+        if bias_init_func is None:
+            self.bias = None
+        else:
+            self.bias = bias_init_func(key, bias_shape)
 
         self.kernel_dilation = (1,) * ndim
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = self.bias
-        y += jax.lax.conv_general_dilated(
+        y = jax.lax.conv_general_dilated(
             lhs=x[None],
             rhs=self.weight,
             window_strides=self.strides,
@@ -609,7 +622,9 @@ class DepthwiseConvND:
             feature_group_count=self.in_features,
         )
 
-        return y[0]
+        if self.bias is None:
+            return y[0]
+        return (y + self.bias)[0]
 
 
 @pytc.treeclass
@@ -1019,14 +1034,17 @@ class ConvNDLocal:
         self.weight = weight_init_func(key, self.weight_shape)
 
         bias_shape = (self.out_features, *self.out_size)
-        self.bias = bias_init_func(key, bias_shape) if bias_init_func is not None else 0
+
+        if bias_init_func is None:
+            self.bias = None
+        else:
+            self.bias = bias_init_func(key, bias_shape)
 
         self.kernel_dilation = (1,) * ndim
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = self.bias
-        y += jax.lax.conv_general_dilated_local(
+        y = jax.lax.conv_general_dilated_local(
             lhs=x[None],
             rhs=self.weight,
             window_strides=self.strides,
@@ -1037,7 +1055,9 @@ class ConvNDLocal:
             dimension_numbers=self.dimension_numbers,
         )
 
-        return y[0]
+        if self.bias is None:
+            return y[0]
+        return (y + self.bias)[0]
 
 
 @pytc.treeclass
