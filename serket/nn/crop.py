@@ -8,13 +8,9 @@ import pytreeclass as pytc
 @pytc.treeclass
 class Crop1D:
     size: int = pytc.nondiff_field()
-    start: int = pytc.nondiff_field()
+    start: int = pytc.nondiff_field(default=0)
 
-    def __init__(
-        self,
-        size: int,
-        start: int = 0,
-    ):
+    def __post_init__(self):
 
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 
@@ -22,12 +18,12 @@ class Crop1D:
             size (int): size of the cropped image
             start (int, optional): start coordinate of the crop box. Defaults to 0.
         """
-        assert isinstance(size, int), f"Expected size to be an int, got {type(size)}."
         assert isinstance(
-            start, int
-        ), f"Expected start to be an int, got {type(start)}."
-        self.size = size
-        self.start = start
+            self.size, int
+        ), f"Expected size to be an int, got {type(self.size)}."
+        assert isinstance(
+            self.start, int
+        ), f"Expected start to be an int, got {type(self.start)}."
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 2, f"Expected 2D array, got {x.ndim}D image."
@@ -37,13 +33,9 @@ class Crop1D:
 @pytc.treeclass
 class Crop2D:
     size: tuple[int, int] = pytc.nondiff_field()
-    start: tuple[int, int] = pytc.nondiff_field()
+    start: tuple[int, int] = pytc.nondiff_field(default=(0, 0))
 
-    def __init__(
-        self,
-        size: tuple[int, int],
-        start: tuple[int, int] = (0, 0),
-    ):
+    def __post_init__(self):
 
         """
         Args:
@@ -53,14 +45,11 @@ class Crop2D:
             padding_mode (str, optional): padding mode if pad_if_needed is True. Defaults to "constant".
         """
         assert (
-            len(size) == 2
-        ), f"Expected size to be a tuple of size 2, got {len(size)}."
+            len(self.size) == 2
+        ), f"Expected size to be a tuple of size 2, got {len(self.size)}."
         assert (
-            len(start) == 2
-        ), f"Expected start to be a tuple of size 2, got {len(start)}."
-
-        self.size = size
-        self.start = start
+            len(self.start) == 2
+        ), f"Expected start to be a tuple of size 2, got {len(self.start)}."
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert (x.ndim == 3), f"Expected 2D array of shape [channel,height,width], got {x.ndim}D array."  # fmt: skip
