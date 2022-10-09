@@ -57,6 +57,7 @@ pip install git+https://github.com/ASEM000/serket
 |Physics|`Laplace2D` |
 |Random transforms|`RandomCrop1D`, `RandomCrop2D`, `RandomApply`, `RandomCutout1D`, `RandomCutout2D`, `RandomZoom2D` |
 |Preprocessing|`HistogramEqualization2D`|
+|Activations|`AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br>`CeLU`,`ELU`,`GELU`,`GLU`,`HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br>`LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,`SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`|
 |Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
 
 

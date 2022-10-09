@@ -1,7 +1,207 @@
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
+
+
+@pytc.treeclass
+class CeLU:
+    """Celu activation function"""
+
+    alpha: float = pytc.nondiff_field(default=1.0)
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.celu(x, alpha=self.alpha)
+
+
+@pytc.treeclass
+class ELU:
+    """Exponential linear unit"""
+
+    alpha: float = pytc.nondiff_field(default=1.0)
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.elu(x, alpha=self.alpha)
+
+
+@pytc.treeclass
+class GELU:
+    approximate: bool = pytc.nondiff_field(default=True)
+    """Gaussian error linear unit"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.gelu(x, approximate=self.approximate)
+
+
+@pytc.treeclass
+class GLU:
+    """Gated linear unit"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.glu(x)
+
+
+@pytc.treeclass
+class HardSigmoid:
+    """Hard sigmoid activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.hard_sigmoid(x)
+
+
+@pytc.treeclass
+class HardSILU:
+    """Hard SILU activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.hard_silu(x)
+
+
+@pytc.treeclass
+class HardSwish:
+    """Hard swish activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.hard_swish(x)
+
+
+@pytc.treeclass
+class HardTanh:
+    """Hard tanh activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.hard_tanh(x)
+
+
+@pytc.treeclass
+class HardShrink:
+    """Hard shrink activation function"""
+
+    alpha: float = pytc.nondiff_field(default=0.5)
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jnp.where(x > self.alpha, x, jnp.where(x < -self.alpha, x, 0.0))
+
+
+@pytc.treeclass
+class LogSigmoid:
+    """Log sigmoid activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.log_sigmoid(x)
+
+
+@pytc.treeclass
+class LogSoftmax:
+    """Log softmax activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.log_softmax(x)
+
+
+@pytc.treeclass
+class LeakyReLU:
+    """Leaky ReLU activation function"""
+
+    negative_slope: float = pytc.nondiff_field(default=0.01)
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.leaky_relu(x, negative_slope=self.negative_slope)
+
+
+@pytc.treeclass
+class ReLU:
+    """ReLU activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.relu(x)
+
+
+@pytc.treeclass
+class ReLU6:
+    """ReLU activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.relu6(x)
+
+
+@pytc.treeclass
+class SeLU:
+    """Scaled Exponential Linear Unit"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.selu(x)
+
+
+@pytc.treeclass
+class SILU:
+    """SILU activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return x * jax.nn.sigmoid(x)
+
+
+@pytc.treeclass
+class Sigmoid:
+    """Sigmoid activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.sigmoid(x)
+
+
+@pytc.treeclass
+class SoftPlus:
+    """SoftPlus activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.softplus(x)
+
+
+@pytc.treeclass
+class SoftSign:
+    """SoftSign activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.softsign(x)
+
+
+@pytc.treeclass
+class SoftShrink:
+    """SoftShrink activation function"""
+
+    alpha: float = pytc.nondiff_field(default=0.5)
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jnp.where(
+            x < -self.alpha,
+            x + self.alpha,
+            jnp.where(x > self.alpha, x - self.alpha, 0.0),
+        )
+
+
+@pytc.treeclass
+class Swish:
+    """Swish activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.swish(x)
+
+
+@pytc.treeclass
+class Tanh:
+    """Tanh activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.tanh(x)
+
+
+@pytc.treeclass
+class TanhShrink:
+    """TanhShrink activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return x - jax.nn.tanh(x)
 
 
 @pytc.treeclass
@@ -9,8 +209,7 @@ class ThresholdedReLU:
     theta: float = pytc.nondiff_field()
 
     def __post_init__(self):
-        """Applies f(x) = x for x > theta and f(x) = 0 otherwise`
-
+        """
         Args:
             theta: threshold value
 
@@ -27,18 +226,33 @@ class ThresholdedReLU:
 
 
 @pytc.treeclass
+class Mish:
+    """Mish activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return x * jax.nn.tanh(jax.nn.softplus(x))
+
+
+@pytc.treeclass
+class PReLU:
+    """Parametric ReLU activation function"""
+
+    a: float = 0.25
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jnp.where(x > 0, x, x * self.a)
+
+
+@pytc.treeclass
 class AdaptiveReLU:
     a: float = 1.0
 
     def __post_init__(self):
-        """Applies f(x) = a * x for x > 0 and f(x) = 0 otherwise`
-
+        """
         Args:
             a: scaling factor
-
         See:
-            https://arxiv.org/pdf/1906.01170.pdf
-        """
+            https://arxiv.org/pdf/1906.01170.pdf"""
         if not isinstance(self.a, float) or self.a < 0:
             raise ValueError(f"`a` must be a positive float, got {self.a}")
 
@@ -52,8 +266,7 @@ class AdaptiveLeakyReLU:
     v: float = pytc.nondiff_field(default=1.0)
 
     def __post_init__(self, a: float = 1.0, v: float = 1.0):
-        """Applies f(x) = a * x for x > 0 and f(x) = v * x otherwise`
-
+        """
         Args:
             a: scaling factor for positive values
             v: scaling factor for negative values
@@ -76,8 +289,7 @@ class AdaptiveSigmoid:
     a: float = 1.0
 
     def __post_init__(self):
-        """Applies f(x) = 1 / (1 + exp(-a * x))
-
+        """
         Args:
             a: scaling factor
 
@@ -99,8 +311,7 @@ class AdaptiveTanh:
     a: float = 1.0
 
     def __post_init__(self):
-        """Applies f(x) = tanh(a * x)
-
+        """
         Args:
             a: scaling factor
 
