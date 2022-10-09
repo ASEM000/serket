@@ -1,3 +1,7 @@
+# see : https://pytorch.org/hub/mateuszbuda_brain-segmentation-pytorch_unet/
+# current implementation is based on the above link
+
+
 from __future__ import annotations
 
 import jax
@@ -17,8 +21,8 @@ def _resize_and_cat(x1: jnp.ndarray, x2: jnp.ndarray) -> jnp.ndarray:
 @pytc.treeclass
 class DoubleConvBlock:
     def __init__(self, in_features: int, out_features: int):
-        self.conv1 = sk.nn.Conv2D(in_features, out_features, kernel_size=3, padding=1)
-        self.conv2 = sk.nn.Conv2D(out_features, out_features, kernel_size=3, padding=1)
+        self.conv1 = sk.nn.Conv2D(in_features, out_features, kernel_size=3, padding=1, bias_init_func=None )
+        self.conv2 = sk.nn.Conv2D(out_features, out_features, kernel_size=3, padding=1, bias_init_func=None )
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         x = self.conv1(x)
@@ -31,13 +35,10 @@ class DoubleConvBlock:
 @pytc.treeclass
 class UpscaleBlock:
     def __init__(self, in_features: int, out_features: int):
-        self.upscale = sk.nn.Upsampling2D(scale=2, method="bilinear")
-        self.conv = sk.nn.Conv2D(
-            in_features, out_features, kernel_size=1, padding="valid"
-        )
+        self.conv = sk.nn.Conv2DTranspose(in_features, out_features, kernel_size=2, strides=2)
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        x = self.upscale(x)
+        # x = self.upscale(x)
         x = self.conv(x)
         return x
 
@@ -47,22 +48,22 @@ class UNetBlock:
     in_features: int = pytc.nondiff_field()
     out_features: int = pytc.nondiff_field()
     blocks: int = pytc.nondiff_field()
-    init_filters: int = pytc.nondiff_field()
+    init_features: int = pytc.nondiff_field()
 
     def __init__(
         self,
         in_features: int,
         out_features: int,
         blocks: int = 4,
-        init_filters: int = 64,
+        init_features: int = 64,
     ):
         """Vanilla UNet
 
         Args:
-            in_features (int): number of input features
-            out_features (int): number of output features
-            blocks (int, optional): number of blocks in a single path. Defaults to 4.
-            init_filters (int, optional): number of filters in the first block. Defaults to init_filters.
+            in_features : number of input channels. This is the number of channels in the input image.
+            out_features : number of output channels. This is the number of classes
+            blocks : number of blocks in the UNet architecture . Default is 4
+            init_features : number of features in the first block. Default is 64
 
 
         Summary:
@@ -86,79 +87,74 @@ class UNetBlock:
                 final output layer
 
         Two block example:
-            >>> print(UNet(3, 1, 2).summary(compact=True))
-            ┌────────────┬─────────────────────────┬──────────┬───────────────┐
-            │Name        │Type                     │Param #   │Size           │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │d0_1/conv1  │DoubleConvBlock/Conv2D   │1,792(0)  │7.00KB(0.00B)  │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │d0_1/conv2  │DoubleConvBlock/Conv2D   │36,928(0) │144.25KB(0.00B)│
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │d0_2        │MaxPool2D                │0(0)      │0.00B(0.00B)   │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │d1_1/conv1  │DoubleConvBlock/Conv2D   │73,856(0) │288.50KB(0.00B)│
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │d1_1/conv2  │DoubleConvBlock/Conv2D   │147,584(0)│576.50KB(0.00B)│
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │d1_2        │MaxPool2D                │0(0)      │0.00B(0.00B)   │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │b0_1/conv1  │DoubleConvBlock/Conv2D   │295,168(0)│1.13MB(0.00B)  │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │b0_1/conv2  │DoubleConvBlock/Conv2D   │590,080(0)│2.25MB(0.00B)  │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │u1_1/upscale│UpscaleBlock/Upsampling2D│0(0)      │0.00B(0.00B)   │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │u1_1/conv   │UpscaleBlock/Conv2D      │32,896(0) │128.50KB(0.00B)│
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │u1_3/conv1  │DoubleConvBlock/Conv2D   │295,040(0)│1.13MB(0.00B)  │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │u1_3/conv2  │DoubleConvBlock/Conv2D   │147,584(0)│576.50KB(0.00B)│
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │u0_1/upscale│UpscaleBlock/Upsampling2D│0(0)      │0.00B(0.00B)   │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │u0_1/conv   │UpscaleBlock/Conv2D      │8,256(0)  │32.25KB(0.00B) │
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │u0_3/conv1  │DoubleConvBlock/Conv2D   │73,792(0) │288.25KB(0.00B)│
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │u0_3/conv2  │DoubleConvBlock/Conv2D   │36,928(0) │144.25KB(0.00B)│
-            ├────────────┼─────────────────────────┼──────────┼───────────────┤
-            │f0_1        │Conv2D                   │65(0)     │260.00B(0.00B) │
-            └────────────┴─────────────────────────┴──────────┴───────────────┘
-            Total count :	1,739,969(0)
-            Dynamic count :	1,739,969(0)
+            >>> print(sk.nn.UNetBlock(3,1,blocks=2, init_features=32).summary(show_config=False))
+            ┌──────────┬────────────────────────────┬──────────┬───────────────┐
+            │Name      │Type                        │Param #   │Size           │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │d0_1/conv1│DoubleConvBlock/Conv2D      │864(0)    │3.38KB(0.00B)  │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │d0_1/conv2│DoubleConvBlock/Conv2D      │9,216(0)  │36.00KB(0.00B) │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │d0_2      │MaxPool2D                   │0(0)      │0.00B(0.00B)   │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │d1_1/conv1│DoubleConvBlock/Conv2D      │18,432(0) │72.00KB(0.00B) │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │d1_1/conv2│DoubleConvBlock/Conv2D      │36,864(0) │144.00KB(0.00B)│
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │d1_2      │MaxPool2D                   │0(0)      │0.00B(0.00B)   │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │b0_1/conv1│DoubleConvBlock/Conv2D      │73,728(0) │288.00KB(0.00B)│
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │b0_1/conv2│DoubleConvBlock/Conv2D      │147,456(0)│576.00KB(0.00B)│
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │u1_1/conv │UpscaleBlock/Conv2DTranspose│32,832(0) │128.25KB(0.00B)│
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │u1_3/conv1│DoubleConvBlock/Conv2D      │73,728(0) │288.00KB(0.00B)│
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │u1_3/conv2│DoubleConvBlock/Conv2D      │36,864(0) │144.00KB(0.00B)│
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │u0_1/conv │UpscaleBlock/Conv2DTranspose│8,224(0)  │32.12KB(0.00B) │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │u0_3/conv1│DoubleConvBlock/Conv2D      │18,432(0) │72.00KB(0.00B) │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │u0_3/conv2│DoubleConvBlock/Conv2D      │9,216(0)  │36.00KB(0.00B) │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │f0_1      │Conv2D                      │33(0)     │132.00B(0.00B) │
+            └──────────┴────────────────────────────┴──────────┴───────────────┘
+            Total count :	465,889(0)
+            Dynamic count :	465,889(0)
             Frozen count :	0(0)
-            -------------------------------------------------------------------
-            Total size :	6.64MB(0.00B)
-            Dynamic size :	6.64MB(0.00B)
+            --------------------------------------------------------------------
+            Total size :	1.78MB(0.00B)
+            Dynamic size :	1.78MB(0.00B)
             Frozen size :	0.00B(0.00B)
-            ===================================================================
-
+            ====================================================================
         """
 
         self.in_features = in_features
         self.out_features = out_features
         self.blocks = blocks
-        self.init_filters = init_filters
+        self.init_features = init_features
 
-        self.d0_1 = DoubleConvBlock(in_features, init_filters)
+        self.d0_1 = DoubleConvBlock(in_features, init_features)
         self.d0_2 = sk.nn.MaxPool2D(kernel_size=2, strides=2)
 
         for i in range(1, blocks):
             # conv->relu x2
-            layer = DoubleConvBlock(init_filters * (2 ** (i - 1)), init_filters * (2**i))  # fmt: skip
+            layer = DoubleConvBlock(init_features * (2 ** (i - 1)), init_features * (2**i))  # fmt: skip
             setattr(self, f"d{i}_1", layer)
             setattr(self, f"d{i}_2", sk.nn.MaxPool2D(kernel_size=2, strides=2))
 
-        self.b0_1 = DoubleConvBlock(init_filters * (2 ** (blocks - 1)), init_filters * (2 ** (blocks)))  # fmt: skip
+        self.b0_1 = DoubleConvBlock(init_features * (2 ** (blocks - 1)), init_features * (2 ** (blocks)))  # fmt: skip
 
         for i in range(blocks, 0, -1):
             # upscale and conv to reduce channels size and double row,col size
-            layer = UpscaleBlock(init_filters * (2 ** (i)), init_filters * (2 ** (i - 1)))  # fmt: skip
+            layer = UpscaleBlock(init_features * (2 ** (i)), init_features * (2 ** (i - 1)))  # fmt: skip
             setattr(self, f"u{i-1}_1", layer)
-            layer = DoubleConvBlock(init_filters * (2 ** (i)), init_filters * (2 ** (i - 1)))  # fmt: skip
+            layer = DoubleConvBlock(init_features * (2 ** (i)), init_features * (2 ** (i - 1)))  # fmt: skip
             setattr(self, f"u{i-1}_3", layer)
 
-        self.f0_1 = sk.nn.Conv2D(init_filters, out_features, kernel_size=1)
+        self.f0_1 = sk.nn.Conv2D(init_features, out_features, kernel_size=1)
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         result = dict()

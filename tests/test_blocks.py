@@ -22,9 +22,9 @@ def test_vgg19_block():
 
 
 def test_unet_block():
-    block = UNetBlock(3, 1, 2)
+    block = UNetBlock(3, 1, init_features=32)
     count, _ = _reduce_count_and_size(block)
-    assert count.real == 1_739_969
+    assert count.real == 7_757_153
 
     model = UNetBlock(3, 1, 2)
 
