@@ -112,6 +112,22 @@ def _check_and_return_padding(
     )
 
 
+_init_func_dict = {
+    "he_normal": jax.nn.initializers.he_normal(),
+    "he_uniform": jax.nn.initializers.he_uniform(),
+    "glorot_normal": jax.nn.initializers.glorot_normal(),
+    "glorot_uniform": jax.nn.initializers.glorot_uniform(),
+    "lecun_normal": jax.nn.initializers.lecun_normal(),
+    "lecun_uniform": jax.nn.initializers.lecun_uniform(),
+    "normal": jax.nn.initializers.normal(),
+    "uniform": jax.nn.initializers.uniform(),
+    "ones": jax.nn.initializers.ones,
+    "zeros": jax.nn.initializers.zeros,
+    "xavier_normal": jax.nn.initializers.xavier_normal(),
+    "xavier_uniform": jax.nn.initializers.xavier_uniform(),
+}
+
+
 def _transpose_padding(padding, kernel_size, input_dilation, extra_padding):
     """
     Transpose padding to get the padding for the transpose convolution.
@@ -137,25 +153,10 @@ def _check_and_return_init_func(
         return jtu.Partial(init_func)
 
     elif isinstance(init_func, str):
-        init_func_dict = {
-            "he_normal": jax.nn.initializers.he_normal(),
-            "he_uniform": jax.nn.initializers.he_uniform(),
-            "glorot_normal": jax.nn.initializers.glorot_normal(),
-            "glorot_uniform": jax.nn.initializers.glorot_uniform(),
-            "lecun_normal": jax.nn.initializers.lecun_normal(),
-            "lecun_uniform": jax.nn.initializers.lecun_uniform(),
-            "normal": jax.nn.initializers.normal(),
-            "uniform": jax.nn.initializers.uniform(),
-            "ones": jax.nn.initializers.ones,
-            "zeros": jax.nn.initializers.zeros,
-            "xavier_normal": jax.nn.initializers.xavier_normal(),
-            "xavier_uniform": jax.nn.initializers.xavier_uniform(),
-        }
+        if init_func in _init_func_dict:
+            return jtu.Partial(_init_func_dict[init_func])
 
-        if init_func in init_func_dict:
-            return jtu.Partial(init_func_dict[init_func])
-
-        raise ValueError(f"{name} must be one of {list(init_func_dict.keys())}")
+        raise ValueError(f"{name} must be one of {list(_init_func_dict.keys())}")
 
     elif init_func is None:
         return None
