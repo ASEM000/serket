@@ -163,7 +163,7 @@ class SoftSign:
     """SoftSign activation function"""
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return jax.nn.softsign(x)
+        return x / (1 + jnp.abs(x))
 
 
 @pytc.treeclass

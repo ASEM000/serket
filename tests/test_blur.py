@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 
 from serket.nn import AvgBlur2D, GaussianBlur2D
 
@@ -21,6 +22,12 @@ def test_AvgBlur2D():
     ]
 
     npt.assert_allclose(x, y, atol=1e-5)
+
+    with pytest.raises(ValueError):
+        AvgBlur2D(1, 0)
+
+    with pytest.raises(ValueError):
+        AvgBlur2D(0, 1)
 
 
 def test_GaussBlur2D():
@@ -42,3 +49,9 @@ def test_GaussBlur2D():
         layer(x),
         atol=1e-5,
     )
+
+    with pytest.raises(ValueError):
+        GaussianBlur2D(1, 0, sigma=1.0)
+
+    with pytest.raises(ValueError):
+        GaussianBlur2D(0, 1, sigma=1.0)
