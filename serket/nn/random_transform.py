@@ -5,67 +5,10 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from .crop import Crop1D, Crop2D
+from .convolution import _check_and_return
+from .crop import RandomCrop2D
 from .padding import Padding2D
 from .resize import Resize2D
-
-
-@pytc.treeclass
-class RandomCrop1D:
-    size: int = pytc.nondiff_field()
-
-    def __init__(
-        self,
-        size: tuple[int],
-    ):
-
-        """Crop a 1D tensor to a given size.
-
-        Args:
-            size (int): size of the cropped image
-            pad_if_needed (bool, optional): if True, pad the image if the crop box is outside the image.
-            padding_mode (str, optional): padding mode if pad_if_needed is True. Defaults to "constant".
-        """
-        assert len(size) == 1, f"Expected size to be a 1-tuple, got {size}."
-        self.size = size
-
-    def __call__(self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0)) -> jnp.ndarray:
-        assert x.ndim == 2, f"Expected 2D tensor, got {x.ndim}D image."
-        start = jr.randint(key, shape=(), minval=0, maxval=x.shape[1] - self.size)
-        return Crop1D(self.size, start)(x)
-
-
-@pytc.treeclass
-class RandomCrop2D:
-    size: tuple[int, int] = pytc.nondiff_field()
-    pad_if_needed: bool = pytc.nondiff_field()
-
-    def __init__(
-        self,
-        size: tuple[int, int],
-        *,
-        pad_if_needed: bool = False,
-        padding_mode: str = "constant",
-    ):
-
-        """
-        Args:
-            size (tuple[int, int]): size of the cropped image
-            pad_if_needed (bool, optional): if True, pad the image if the crop box is outside the image.
-            padding_mode (str, optional): padding mode if pad_if_needed is True. Defaults to "constant".
-        """
-        assert (
-            len(size) == 2
-        ), f"Expected size to be a tuple of size 2, got {len(size)}."
-        self.size = size
-
-    def __call__(self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0)) -> jnp.ndarray:
-        assert x.ndim == 3, f"Expected 3D tensor, got {x.ndim}D image."
-
-        top = jr.randint(key, shape=(), minval=0, maxval=x.shape[1] - self.size[0])
-        left = jr.randint(key, shape=(), minval=0, maxval=x.shape[2] - self.size[1])
-
-        return Crop2D(self.size, (top, left))(x)
 
 
 @pytc.treeclass
@@ -119,7 +62,7 @@ class RandomApply:
 
 @pytc.treeclass
 class RandomCutout1D:
-    shape: tuple[int] = pytc.nondiff_field()
+    shape: int | tuple[int] = pytc.nondiff_field()
     cutout_count: int = pytc.nondiff_field()
     fill_value: float = pytc.nondiff_field()
 
@@ -140,8 +83,7 @@ class RandomCutout1D:
             https://arxiv.org/abs/1708.04552
             https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
         """
-        assert len(shape) == 1, "shape must be 1D"
-        self.shape = shape
+        self.shape = _check_and_return(shape, 1, "shape")
         self.cutout_count = cutout_count
         self.fill_value = fill_value
 
@@ -159,7 +101,7 @@ class RandomCutout1D:
             x = x * ~row_mask[None, :]
             return x, None
 
-        res = jax.lax.scan(scan_step, x, keys)[0]
+        res, _ = jax.lax.scan(scan_step, x, keys)
 
         if self.fill_value != 0:
             return jnp.where(res == 0, self.fill_value, res)
@@ -190,8 +132,7 @@ class RandomCutout2D:
             https://arxiv.org/abs/1708.04552
             https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
         """
-        assert len(shape) == 2, "shape must be 2D"
-        self.shape = shape
+        self.shape = _check_and_return(shape, 2, "shape")
         self.cutout_count = cutout_count
         self.fill_value = fill_value
 
@@ -213,7 +154,7 @@ class RandomCutout2D:
             x = x * (~jnp.outer(row_mask, col_mask))
             return x, None
 
-        res = jax.lax.scan(scan_step, x, keys)[0]
+        res, _ = jax.lax.scan(scan_step, x, keys)
 
         if self.fill_value != 0:
             return jnp.where(res == 0, self.fill_value, res)

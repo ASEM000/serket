@@ -51,7 +51,7 @@ from .convolution import (
     SeparableConv2D,
     SeparableConv3D,
 )
-from .crop import Crop1D, Crop2D
+from .crop import Crop1D, Crop2D, Crop3D, RandomCrop1D, RandomCrop2D, RandomCrop3D
 from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
@@ -75,14 +75,7 @@ from .pooling import (
     MaxPool3D,
 )
 from .preprocessing import HistogramEqualization2D
-from .random_transform import (
-    RandomApply,
-    RandomCrop1D,
-    RandomCrop2D,
-    RandomCutout1D,
-    RandomCutout2D,
-    RandomZoom2D,
-)
+from .random_transform import RandomApply, RandomCutout1D, RandomCutout2D, RandomZoom2D
 from .resize import (
     Repeat1D,
     Repeat2D,
@@ -172,9 +165,11 @@ __all__ = (
     # Crop
     "Crop1D",
     "Crop2D",
+    "Crop3D",
     # Random Transform
     "RandomCrop1D",
     "RandomCrop2D",
+    "RandomCrop3D",
     "RandomCutout1D",
     "RandomCutout2D",
     "RandomZoom2D",

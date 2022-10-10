@@ -2,57 +2,94 @@ from __future__ import annotations
 
 import jax
 import jax.numpy as jnp
+import jax.random as jr
 import pytreeclass as pytc
+
+from .convolution import _check_and_return
 
 
 @pytc.treeclass
-class Crop1D:
-    size: int = pytc.nondiff_field()
-    start: int = pytc.nondiff_field(default=0)
+class CropND:
+    size: int | tuple[int, ...] = pytc.nondiff_field()
+    start: int | tuple[int, ...] = pytc.nondiff_field(default=0)
 
-    def __post_init__(self):
-
+    def __init__(self, size, start, ndim):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 
         Args:
-            size (int): size of the cropped image
-            start (int, optional): start coordinate of the crop box. Defaults to 0.
+            size : size of the slice
+            start : start of the slice
         """
-        assert isinstance(
-            self.size, int
-        ), f"Expected size to be an int, got {type(self.size)}."
-        assert isinstance(
-            self.start, int
-        ), f"Expected start to be an int, got {type(self.start)}."
+        self.size = _check_and_return(size, ndim, "size")
+        self.start = _check_and_return(start, ndim, "start")
+        self.ndim = ndim
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 2, f"Expected 2D array, got {x.ndim}D image."
-        return jax.lax.dynamic_slice_in_dim(x, self.start, self.size, axis=1)
+        assert x.ndim == (
+            self.ndim + 1
+        ), f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+
+        return jax.lax.dynamic_slice(x, (0, *self.start), (x.shape[0], *self.size))
 
 
 @pytc.treeclass
-class Crop2D:
-    size: tuple[int, int] = pytc.nondiff_field()
-    start: tuple[int, int] = pytc.nondiff_field(default=(0, 0))
+class Crop1D(CropND):
+    def __init__(self, size, start=0):
+        super().__init__(size, start, ndim=1)
 
-    def __post_init__(self):
 
-        """
+@pytc.treeclass
+class Crop2D(CropND):
+    def __init__(self, size, start=0):
+        super().__init__(size, start, ndim=2)
+
+
+@pytc.treeclass
+class Crop3D(CropND):
+    def __init__(self, size, start=0):
+        super().__init__(size, start, ndim=3)
+
+
+@pytc.treeclass
+class RandomCropND:
+    def __init__(self, size, ndim):
+        """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
+
         Args:
-            size (tuple[int, int]): size of the cropped image
-            start (tuple[int, int], optional): top left coordinate of the crop box. Defaults to (0, 0).
-            pad_if_needed (bool, optional): if True, pad the image if the crop box is outside the image.
-            padding_mode (str, optional): padding mode if pad_if_needed is True. Defaults to "constant".
+            size : size of the slice
+            start : start of the slice
         """
-        assert (
-            len(self.size) == 2
-        ), f"Expected size to be a tuple of size 2, got {len(self.size)}."
-        assert (
-            len(self.start) == 2
-        ), f"Expected start to be a tuple of size 2, got {len(self.start)}."
+        self.size = _check_and_return(size, ndim, "size")
+        self.ndim = ndim
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert (x.ndim == 3), f"Expected 2D array of shape [channel,height,width], got {x.ndim}D array."  # fmt: skip
-        start_indices = (0, *self.start)
-        slice_sizes = (x.shape[0], *self.size)
-        return jax.lax.dynamic_slice(x, start_indices, slice_sizes)
+    def __call__(
+        self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
+    ) -> jnp.ndarray:
+        assert x.ndim == (
+            self.ndim + 1
+        ), f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+
+        start = tuple(
+            jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)
+            for i, s in enumerate(self.size)
+        )
+
+        return jax.lax.dynamic_slice(x, (0, *start), (x.shape[0], *self.size))
+
+
+@pytc.treeclass
+class RandomCrop1D(RandomCropND):
+    def __init__(self, size):
+        super().__init__(size, ndim=1)
+
+
+@pytc.treeclass
+class RandomCrop2D(RandomCropND):
+    def __init__(self, size):
+        super().__init__(size, ndim=2)
+
+
+@pytc.treeclass
+class RandomCrop3D(RandomCropND):
+    def __init__(self, size):
+        super().__init__(size, ndim=3)
