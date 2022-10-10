@@ -7,6 +7,8 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
+from .convolution import _check_and_return_init_func
+
 
 @pytc.treeclass
 class Linear:
@@ -40,15 +42,22 @@ class Linear:
             (3, 5)
         """
 
+        self.weight_init_func = _check_and_return_init_func(
+            weight_init_func, "weight_init_func"
+        )
+        self.bias_init_func = _check_and_return_init_func(
+            bias_init_func, "bias_init_func"
+        )
+
         self.in_features = in_features
         self.out_features = out_features
 
-        self.weight = weight_init_func(key, (in_features, out_features))
+        self.weight = self.weight_init_func(key, (in_features, out_features))
 
         if bias_init_func is None:
             self.bias = None
         else:
-            self.bias = bias_init_func(key, (out_features,))
+            self.bias = self.bias_init_func(key, (out_features,))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         if self.bias is None:
@@ -95,12 +104,21 @@ class Bilinear:
         self.in2_features = in2_features
         self.out_features = out_features
 
-        self.weight = weight_init_func(key, (in1_features, in2_features, out_features))
+        self.weight_init_func = _check_and_return_init_func(
+            weight_init_func, "weight_init_func"
+        )
+        self.bias_init_func = _check_and_return_init_func(
+            bias_init_func, "bias_init_func"
+        )
 
-        if bias_init_func is None:
+        self.weight = self.weight_init_func(
+            key, (in1_features, in2_features, out_features)
+        )
+
+        if self.bias_init_func is None:
             self.bias = None
         else:
-            self.bias = bias_init_func(key, (out_features,))
+            self.bias = self.bias_init_func(key, (out_features,))
 
     def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray, **kwargs) -> jnp.ndarray:
         x = x1 @ self.weight.reshape(-1, self.in2_features * self.out_features)
