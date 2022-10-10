@@ -11,18 +11,32 @@ import pytreeclass as pytc
 import serket as sk
 
 
-def _resize_and_cat(x1: jnp.ndarray, x2: jnp.ndarray) -> jnp.ndarray:
-    """resize a tensor to the same size as another tensor and concatenate x2 to x1 along the channel axis"""
-    x1 = jax.image.resize(x1, shape=x2.shape, method="nearest")
-    x1 = jnp.concatenate([x2, x1], axis=0)
-    return x1
+@pytc.treeclass
+class ResizeAndCat:
+    def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray) -> jnp.ndarray:
+        """resize a tensor to the same size as another tensor and concatenate x2 to x1 along the channel axis"""
+        x1 = jax.image.resize(x1, shape=x2.shape, method="nearest")
+        x1 = jnp.concatenate([x2, x1], axis=0)
+        return x1
 
 
 @pytc.treeclass
 class DoubleConvBlock:
     def __init__(self, in_features: int, out_features: int):
-        self.conv1 = sk.nn.Conv2D(in_features, out_features, kernel_size=3, padding=1, bias_init_func=None )
-        self.conv2 = sk.nn.Conv2D(out_features, out_features, kernel_size=3, padding=1, bias_init_func=None )
+        self.conv1 = sk.nn.Conv2D(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=3,
+            padding=1,
+            bias_init_func=None,
+        )
+        self.conv2 = sk.nn.Conv2D(
+            in_features=out_features,
+            out_features=out_features,
+            kernel_size=3,
+            padding=1,
+            bias_init_func=None,
+        )
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         x = self.conv1(x)
@@ -35,7 +49,9 @@ class DoubleConvBlock:
 @pytc.treeclass
 class UpscaleBlock:
     def __init__(self, in_features: int, out_features: int):
-        self.conv = sk.nn.Conv2DTranspose(in_features, out_features, kernel_size=2, strides=2)
+        self.conv = sk.nn.Conv2DTranspose(
+            in_features=in_features, out_features=out_features, kernel_size=2, strides=2
+        )
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         # x = self.upscale(x)
@@ -109,11 +125,15 @@ class UNetBlock:
             ├──────────┼────────────────────────────┼──────────┼───────────────┤
             │u1_1/conv │UpscaleBlock/Conv2DTranspose│32,832(0) │128.25KB(0.00B)│
             ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │u1_2      │ResizeAndCat                │0(0)      │0.00B(0.00B)   │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
             │u1_3/conv1│DoubleConvBlock/Conv2D      │73,728(0) │288.00KB(0.00B)│
             ├──────────┼────────────────────────────┼──────────┼───────────────┤
             │u1_3/conv2│DoubleConvBlock/Conv2D      │36,864(0) │144.00KB(0.00B)│
             ├──────────┼────────────────────────────┼──────────┼───────────────┤
             │u0_1/conv │UpscaleBlock/Conv2DTranspose│8,224(0)  │32.12KB(0.00B) │
+            ├──────────┼────────────────────────────┼──────────┼───────────────┤
+            │u0_2      │ResizeAndCat                │0(0)      │0.00B(0.00B)   │
             ├──────────┼────────────────────────────┼──────────┼───────────────┤
             │u0_3/conv1│DoubleConvBlock/Conv2D      │18,432(0) │72.00KB(0.00B) │
             ├──────────┼────────────────────────────┼──────────┼───────────────┤
@@ -148,9 +168,13 @@ class UNetBlock:
         self.b0_1 = DoubleConvBlock(init_features * (2 ** (blocks - 1)), init_features * (2 ** (blocks)))  # fmt: skip
 
         for i in range(blocks, 0, -1):
-            # upscale and conv to reduce channels size and double row,col size
+            # upscale and conv to halves channels size and double row,col size
             layer = UpscaleBlock(init_features * (2 ** (i)), init_features * (2 ** (i - 1)))  # fmt: skip
             setattr(self, f"u{i-1}_1", layer)
+
+            layer = ResizeAndCat()
+            setattr(self, f"u{i-1}_2", layer)
+
             layer = DoubleConvBlock(init_features * (2 ** (i)), init_features * (2 ** (i - 1)))  # fmt: skip
             setattr(self, f"u{i-1}_3", layer)
 
@@ -172,14 +196,12 @@ class UNetBlock:
 
         result[f"u{blocks-1}_1"] = getattr(self, f"u{blocks-1}_1")(result["b0_1"])
         lhs_key, rhs_key = f"u{blocks-1}_1", f"d{blocks-1}_1"
-        result[f"u{blocks-1}_2"] = _resize_and_cat(result[lhs_key], result[rhs_key])
+        result[f"u{blocks-1}_2"] = getattr(self, f"u{blocks-1}_2")(result[lhs_key], result[rhs_key])  # fmt: skip
         result[f"u{blocks-1}_3"] = getattr(self, f"u{blocks-1}_3")(result[f"u{blocks-1}_2"])  # fmt: skip
 
         for i in range(blocks - 1, 0, -1):
             result[f"u{i-1}_1"] = getattr(self, f"u{i-1}_1")(result[f"u{i}_3"])
-            result[f"u{i-1}_2"] = _resize_and_cat(
-                result[f"u{i-1}_1"], result[f"d{i-1}_1"]
-            )
+            result[f"u{i-1}_2"] = getattr(self, f"u{blocks-1}_2")(result[f"u{i-1}_1"], result[f"d{i-1}_1"])  # fmt: skip
             result[f"u{i-1}_3"] = getattr(self, f"u{i-1}_3")(result[f"u{i-1}_2"])
 
         return self.f0_1(result["u0_3"])
