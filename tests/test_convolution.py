@@ -26,7 +26,7 @@ from serket.nn.convolution import (  # Conv3DLocal,
 )
 
 
-def _test_check_and_return_init_func():
+def test_check_and_return_init_func():
     _check_partial = lambda f: _check_and_return_init_func(f, "test")
     k = jr.PRNGKey(0)
 
