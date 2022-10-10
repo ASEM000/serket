@@ -58,7 +58,7 @@ from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, PFNN
 from .laplace import Laplace2D
 from .linear import Bilinear, Identity, Linear
-from .normalization import LayerNorm
+from .normalization import GroupNorm, InstanceNorm, LayerNorm
 from .padding import Padding1D, Padding2D, Padding3D
 from .pooling import (
     AvgPool1D,
@@ -142,6 +142,8 @@ __all__ = (
     "Repeat3D",
     # Normalization
     "LayerNorm",
+    "InstanceNorm",
+    "GroupNorm",
     # Blur
     "AvgBlur2D",
     "GaussianBlur2D",

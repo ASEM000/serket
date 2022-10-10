@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Callable
 
-import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
@@ -23,8 +22,8 @@ class Linear:
         in_features: int,
         out_features: int,
         *,
-        weight_init_func: Callable = "he_norma",
-        bias_init_func: Callable = "ones",
+        weight_init_func: str | Callable = "he_normal",
+        bias_init_func: str | Callable = "ones",
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Fully connected layer
@@ -80,8 +79,8 @@ class Bilinear:
         in2_features: int,
         out_features: int,
         *,
-        weight_init_func: Callable = jax.nn.initializers.he_normal(),
-        bias_init_func: Callable = lambda key, shape: jnp.ones(shape),
+        weight_init_func: str | Callable = "he_normal",
+        bias_init_func: str | Callable = "ones",
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Bilinear layer

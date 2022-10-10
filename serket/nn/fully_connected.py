@@ -22,8 +22,8 @@ class FNN:
         layers: Sequence[int, ...],
         *,
         act_func: Callable = jax.nn.relu,
-        weight_init_func: Callable = jax.nn.initializers.he_normal(),
-        bias_init_func: Callable = lambda key, shape: jnp.ones(shape),
+        weight_init_func: str | Callable = "he_normal",
+        bias_init_func: str | Callable = "ones",
         key=jr.PRNGKey(0),
     ):
         """Fully connected neural network
@@ -132,8 +132,8 @@ class PFNN:
         layers: Sequence[int, ...],
         *,
         act_func: Callable = jax.nn.relu,
-        weight_init_func: Callable = jax.nn.initializers.he_normal(),
-        bias_init_func: Callable = lambda key, shape: jnp.ones(shape),
+        weight_init_func: str | Callable = "he_normal",
+        bias_init_func: str | Callable = "zeros",
         key=jr.PRNGKey(0),
     ):
 

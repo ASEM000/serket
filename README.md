@@ -50,7 +50,7 @@ pip install git+https://github.com/ASEM000/serket
 |Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsampling1D`, `Upsampling2D`, `Upsampling3D`, `Padding1D`, `Padding2D`, `Padding3D` |
 |Crop|`Crop1D`, `Crop2D`, |
 |Recurrent|`RNNCell`, `LSTMCell`|
-|Normalization|`LayerNorm`|
+|Normalization|`LayerNorm`, `InstanceNorm`, `GroupNorm`|
 |Blurring| `AvgBlur2D`, `GaussianBlur2D`|
 |Dropout|`Dropout`, `Dropout1D`, `Dropout2D`, `Dropout3D`, |
 |Physics|`Laplace2D` |
