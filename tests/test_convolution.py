@@ -41,7 +41,7 @@ def test_check_and_return_init_func():
     assert _check_partial("ones")(k, (2, 2)).shape == (2, 2)
     assert _check_partial("zeros")(k, (2, 2)).shape == (2, 2)
     assert _check_partial("xavier_normal")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("xavier_uniforms")(k, (2, 2)).shape == (2, 2)
+    assert _check_partial("xavier_uniform")(k, (2, 2)).shape == (2, 2)
 
     assert isinstance(_check_partial(jax.nn.initializers.he_normal()), jtu.Partial)
     assert isinstance(_check_partial(None), type(None))
