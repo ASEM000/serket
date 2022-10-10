@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 
 from serket.nn import GroupNorm, InstanceNorm, LayerNorm
 
@@ -80,6 +81,10 @@ def test_InstanceNorm():
     )
 
     layer = InstanceNorm(in_features=3)
+
+    npt.assert_allclose(layer(x), y, atol=1e-5)
+
+    layer = InstanceNorm(in_features=3, affine=False)
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
@@ -183,3 +188,12 @@ def test_group_norm():
     layer = GroupNorm(in_features=6, groups=2)
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
+
+    with pytest.raises(ValueError):
+        layer = GroupNorm(in_features=6, groups=4)
+
+    with pytest.raises(ValueError):
+        layer = GroupNorm(in_features=0, groups=1)
+
+    with pytest.raises(ValueError):
+        layer = GroupNorm(in_features=-1, groups=0)

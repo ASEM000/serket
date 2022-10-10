@@ -907,3 +907,62 @@ def test_conv2d_local():
     layer = layer.at["weight"].set(w)
 
     npt.assert_allclose(y, layer(x), atol=1e-5)
+
+
+def test_in_feature_error():
+    with pytest.raises(ValueError):
+        Conv1D(0, 1, 2)
+
+    with pytest.raises(ValueError):
+        Conv2D(0, 1, 2)
+
+    with pytest.raises(ValueError):
+        Conv3D(0, 1, 2)
+
+    with pytest.raises(ValueError):
+        Conv1DLocal(0, 1, 2, in_size=(2,))
+
+    with pytest.raises(ValueError):
+        Conv2DLocal(0, 1, 2, in_size=(2, 2))
+
+    with pytest.raises(ValueError):
+        Conv1DTranspose(0, 1, 3)
+
+    with pytest.raises(ValueError):
+        Conv2DTranspose(0, 1, 3)
+
+    with pytest.raises(ValueError):
+        Conv3DTranspose(0, 1, 3)
+
+    with pytest.raises(ValueError):
+        DepthwiseConv1D(0, 1)
+
+    with pytest.raises(ValueError):
+        DepthwiseConv2D(0, 1)
+
+
+def test_out_feature_error():
+
+    with pytest.raises(ValueError):
+        Conv1D(1, 0, 2)
+
+    with pytest.raises(ValueError):
+        Conv2D(1, 0, 2)
+
+    with pytest.raises(ValueError):
+        Conv3D(1, 0, 2)
+
+    with pytest.raises(ValueError):
+        Conv1DLocal(1, 0, 2, in_size=(2,))
+
+    with pytest.raises(ValueError):
+        Conv2DLocal(1, 0, 2, in_size=(2, 2))
+
+    with pytest.raises(ValueError):
+        Conv1DTranspose(1, 0, 3)
+
+    with pytest.raises(ValueError):
+        Conv2DTranspose(1, 0, 3)
+
+    with pytest.raises(ValueError):
+        Conv3DTranspose(1, 0, 3)

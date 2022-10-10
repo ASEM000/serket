@@ -5,6 +5,8 @@ import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
+from .convolution import _check_and_return
+
 
 @pytc.treeclass
 class Repeat1D:
@@ -54,10 +56,9 @@ class Repeat3D:
 
 @pytc.treeclass
 class ResizeND:
-    size: int | tuple[int, ...]
-    method: str = pytc.nondiff_field(default="nearest")
-    antialias: bool = pytc.nondiff_field(default=True)
-    ndim: int = pytc.nondiff_field(default=1, repr=False)
+    size: int | tuple[int, ...] = pytc.nondiff_field()
+    method: str = pytc.nondiff_field()
+    antialias: bool = pytc.nondiff_field()
 
     """
     Resize an image to a given size using a given interpolation method.
@@ -86,52 +87,39 @@ class ResizeND:
                 Lanczos resampling, using a kernel of radius 5.
     """
 
-    def __post_init__(self):
-        if isinstance(self.size, (int)):
-            self.size = (self.size,) * self.ndim
-        elif isinstance(self.size, tuple):
-            assert (
-                len(self.size) == self.ndim
-            ), f"size must be a tuple of length {self.ndim} or an int."
+    def __init__(self, size, method="nearest", antialias=True, ndim=1):
+        self.size = _check_and_return(size, ndim, "size")
+        self.method = method
+        self.antialias = antialias
+        self.ndim = ndim
 
-        else:
-            raise ValueError("size must be a tuple or an int")
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        assert x.ndim == self.ndim + 1, f"input must be {self.ndim}D"
+
+        return jax.image.resize(
+            x,
+            shape=(x.shape[0], *self.size),
+            method=self.method,
+            antialias=self.antialias,
+        )
 
 
 @pytc.treeclass
 class Resize1D(ResizeND):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, ndim=1)
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 2, "Input must be 2D [Channel, Spatial]."
-        return jax.image.resize(
-            x, (x.shape[0], *self.size), method=self.method, antialias=self.antialias
-        )
+    def __init__(self, size, method="nearest", antialias=True):
+        super().__init__(size, method, antialias, ndim=1)
 
 
 @pytc.treeclass
 class Resize2D(ResizeND):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, ndim=2)
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 3, "Input must be 3D [Channel, Height, Width]."
-        return jax.image.resize(
-            x, (x.shape[0], *self.size), method=self.method, antialias=self.antialias
-        )
+    def __init__(self, size, method="nearest", antialias=True):
+        super().__init__(size, method, antialias, ndim=2)
 
 
 @pytc.treeclass
 class Resize3D(ResizeND):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, ndim=3)
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 4, "Input must be 4D [Channel, Depth, Height, Width]."
-        return jax.image.resize(
-            x, (x.shape[0], *self.size), method=self.method, antialias=self.antialias
-        )
+    def __init__(self, size, method="nearest", antialias=True):
+        super().__init__(size, method, antialias, ndim=3)
 
 
 @pytc.treeclass
@@ -145,66 +133,36 @@ class UpsamplingND:
         # the difference between this and ResizeND is that UpsamplingND
         # use scale instead of size
         # assert types
-        self.scale = scale
+        self.scale = _check_and_return(scale, ndim, "scale")
         self.method = method
         self.ndim = ndim
 
-        if isinstance(self.scale, (int)):
-            assert self.scale > 0, "scale must be a positive integer."
-            self.scale = (self.scale,) * self.ndim
-        elif isinstance(self.scale, tuple):
-            assert (
-                len(self.scale) == self.ndim
-            ), f"scale must be a tuple of length {self.ndim} or an int."
-            assert all(
-                isinstance(item, int) and item > 0 for item in self.scale
-            ), "scale must be a tuple of positive ints."
-        else:
-            raise ValueError(f"scale must be a tuple or an int. Found {self.scale}")
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        assert x.ndim == self.ndim + 1, f"input must be {self.ndim}D"
+
+        return jax.image.resize(
+            x,
+            shape=(
+                x.shape[0],
+                *tuple(s * x.shape[i + 1] for i, s in enumerate(self.scale)),
+            ),
+            method=self.method,
+        )
 
 
 @pytc.treeclass
 class Upsampling1D(UpsamplingND):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, ndim=1)
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 2, "Input must be 2D [Channel, Spatial]."
-        return jax.image.resize(
-            x,
-            (x.shape[0], x.shape[1] * self.scale[0]),
-            method=self.method,
-        )
+    def __init__(self, scale: int | tuple[int, ...], method: str = "nearest"):
+        super().__init__(scale, method, ndim=1)
 
 
 @pytc.treeclass
 class Upsampling2D(UpsamplingND):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, ndim=2)
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 3, "Input must be 3D [Channel, Height, Width]."
-        return jax.image.resize(
-            x,
-            (x.shape[0], x.shape[1] * self.scale[0], x.shape[2] * self.scale[1]),
-            method=self.method,
-        )
+    def __init__(self, scale: int | tuple[int, ...], method: str = "nearest"):
+        super().__init__(scale, method, ndim=2)
 
 
 @pytc.treeclass
 class Upsampling3D(UpsamplingND):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, ndim=3)
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 4, "Input must be 4D [Channel, Depth, Height, Width]."
-        return jax.image.resize(
-            x,
-            (
-                x.shape[0],
-                x.shape[1] * self.scale[0],
-                x.shape[2] * self.scale[1],
-                x.shape[3] * self.scale[2],
-            ),
-            method=self.method,
-        )
+    def __init__(self, scale: int | tuple[int, ...], method: str = "nearest"):
+        super().__init__(scale, method, ndim=3)

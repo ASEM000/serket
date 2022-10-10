@@ -7,10 +7,10 @@ import pytreeclass as pytc
 
 @pytc.treeclass
 class Dropout:
-    p: float = pytc.nondiff_field(default=0.5)
+    p: float = pytc.nondiff_field()
     eval: bool = None
 
-    def __post_init__(self):
+    def __init__(self, p=0.5, eval=None):
         """
         Args:
             p: dropout probability. Defaults to 0.5.
@@ -20,11 +20,14 @@ class Dropout:
             to disable dropout during testing, set eval to True
             using model.at[(model == "eval") & (model == Dropout)].set(True, is_leaf = lambda x:x is None)
         """
-        if self.eval not in (None, True, False):
+        if not (isinstance(eval, bool) or eval is None):
             raise ValueError("eval must be None, True or False")
 
-        if self.p < 0.0 or self.p > 1.0:
+        if p < 0.0 or p > 1.0:
             raise ValueError("`p` must be in [0, 1]")
+
+        self.p = p
+        self.eval = eval
 
     def __call__(self, x, *, key=jr.PRNGKey(0)):
         if self.eval is True:
@@ -35,11 +38,11 @@ class Dropout:
 
 @pytc.treeclass
 class DropoutND:
-    p: float = pytc.nondiff_field(default=0.5)
+    p: float = pytc.nondiff_field()
     eval: bool = None
-    ndim: int = pytc.nondiff_field(default=1)
+    ndim: int = pytc.nondiff_field()
 
-    def __post_init__(self):
+    def __init__(self, p=0.5, eval=None, ndim=1):
         """Drops full feature maps along the channel axis.
 
         Args:
@@ -56,11 +59,15 @@ class DropoutND:
             [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
 
-        if self.p < 0 or self.p > 1:
-            raise ValueError(f"p must be in [0, 1]. Found {self.p}")
+        if p < 0 or p > 1:
+            raise ValueError(f"p must be in [0, 1]. Found {p}")
 
-        if self.eval not in (True, False, None):
-            raise ValueError(f"eval must be True, False, or None. Found {self.eval}")
+        if not (isinstance(eval, bool) or eval is None):
+            raise ValueError(f"eval must be True, False, or None. Found {eval}")
+
+        self.p = p
+        self.eval = eval
+        self.ndim = ndim
 
     def __call__(self, x, *, key=jr.PRNGKey(0)):
         assert x.ndim == (self.ndim + 1), f"input must be {self.ndim+1}D, got {x.ndim}D"

@@ -30,7 +30,6 @@ class LayerNorm:
             eps: a value added to the denominator for numerical stability.
             affine: a boolean value that when set to True, this module has learnable affine parameters.
         """
-
         self.normalized_shape = (
             normalized_shape
             if isinstance(normalized_shape, tuple)

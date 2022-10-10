@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 import pytreeclass as pytc
 
 from serket.nn import Dropout, Dropout1D, Dropout2D, Dropout3D, MaxPool2D, RandomApply
@@ -17,20 +18,56 @@ def test_dropout():
     assert pytc.is_treeclass_equal(layer, Dropout(0.5, eval=True))
     npt.assert_allclose(layer(x), x)
 
+    with pytest.raises(ValueError):
+        Dropout(1.1)
+
+    with pytest.raises(ValueError):
+        Dropout(-0.1)
+
+    with pytest.raises(ValueError):
+        Dropout(0.5, eval=1)
+
 
 def test_dropout1d():
     layer = Dropout1D(0.5)
     assert layer(jnp.ones((1, 10))).shape == (1, 10)
+
+    with pytest.raises(ValueError):
+        Dropout1D(1.1)
+
+    with pytest.raises(ValueError):
+        Dropout1D(-0.1)
+
+    with pytest.raises(ValueError):
+        Dropout1D(0.5, eval=1)
 
 
 def test_dropout2d():
     layer = Dropout2D(0.5)
     assert layer(jnp.ones((1, 10, 10))).shape == (1, 10, 10)
 
+    with pytest.raises(ValueError):
+        Dropout2D(1.1)
+
+    with pytest.raises(ValueError):
+        Dropout2D(-0.1)
+
+    with pytest.raises(ValueError):
+        Dropout2D(0.5, eval=1)
+
 
 def test_dropout3d():
     layer = Dropout3D(0.5)
     assert layer(jnp.ones((1, 10, 10, 10))).shape == (1, 10, 10, 10)
+
+    with pytest.raises(ValueError):
+        Dropout3D(1.1)
+
+    with pytest.raises(ValueError):
+        Dropout3D(-0.1)
+
+    with pytest.raises(ValueError):
+        Dropout3D(0.5, eval=1)
 
 
 def test_random_apply():
