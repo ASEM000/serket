@@ -46,6 +46,12 @@ def test_check_and_return_init_func():
     assert isinstance(_check_partial(jax.nn.initializers.he_normal()), jtu.Partial)
     assert isinstance(_check_partial(None), type(None))
 
+    with pytest.raises(ValueError):
+        _check_partial("invalid")
+
+    with pytest.raises(ValueError):
+        _check_partial(1)
+
 
 def test_check_and_return():
 
@@ -82,6 +88,12 @@ def test_check_and_return_padding():
     assert _check_and_return_padding(("valid", "valid"), (3, 3)) == ((0, 0), (0, 0))
     with pytest.raises(ValueError):
         _check_and_return_padding(("invalid", "valid"), (3, 3))
+
+    with pytest.raises(ValueError):
+        _check_and_return_padding(("valid", "invalid"), (3, 3))
+
+    with pytest.raises(ValueError):
+        _check_and_return_padding(("invalid", {}), (3, 3))
 
 
 def test_conv1D():
@@ -170,6 +182,12 @@ def test_conv1D():
 
     npt.assert_allclose(layer(x), y)
 
+    layer = Conv1D(
+        1, 2, 3, padding=2, strides=1, kernel_dilation=2, bias_init_func=None
+    )
+    layer = layer.at["weight"].set(w)
+    npt.assert_allclose(layer(x), y)
+
 
 def test_conv2D():
 
@@ -231,6 +249,24 @@ def test_conv2D():
         ),
     )
 
+    layer = Conv2D(1, 2, 2, padding="SAME", strides=1, bias_init_func=None)
+    layer = layer.at["weight"].set(jnp.ones([2, 1, 2, 2], dtype=jnp.float32))
+    x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
+
+    npt.assert_allclose(
+        layer(x)[0],
+        jnp.array(
+            [[14, 18, 22, 12], [30, 34, 38, 20], [46, 50, 54, 28], [27, 29, 31, 16]]
+        ),
+    )
+
+    npt.assert_allclose(
+        layer(x)[1],
+        jnp.array(
+            [[14, 18, 22, 12], [30, 34, 38, 20], [46, 50, 54, 28], [27, 29, 31, 16]]
+        ),
+    )
+
 
 def test_conv3D():
 
@@ -269,9 +305,14 @@ def test_conv1dtranspose():
     layer = Conv1DTranspose(4, 1, 3, padding=2, strides=1, kernel_dilation=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
-
     y = jnp.array([[0.27022034, 0.24495776, -0.00368674]])
+    npt.assert_allclose(layer(x), y, atol=1e-5)
 
+    layer = Conv1DTranspose(
+        4, 1, 3, padding=2, strides=1, kernel_dilation=2, bias_init_func=None
+    )
+    layer = layer.at["weight"].set(w)
+    y = jnp.array([[0.27022034, 0.24495776, -0.00368674]])
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
 
@@ -327,6 +368,25 @@ def test_conv2dtranspose():
 
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
+
+    y = jnp.array(
+        [
+            [
+                [0.826823, 0.76963556, -0.05952819, -0.17411183],
+                [0.7428247, 0.33745894, -0.19105533, 0.14668494],
+                [0.44151804, 1.1056999, -0.05200444, 0.1634948],
+                [0.4133723, 0.87103486, 0.05985051, -0.01025786],
+            ]
+        ]
+    )
+
+    npt.assert_allclose(layer(x), y, atol=1e-5)
+
+    layer = Conv2DTranspose(
+        4, 1, 3, padding=2, strides=1, kernel_dilation=2, bias_init_func=None
+    )
+
+    layer = layer.at["weight"].set(w)
 
     y = jnp.array(
         [
@@ -497,6 +557,35 @@ def test_conv3dtranspose():
     layer = Conv3DTranspose(4, 1, 3, padding=2, strides=1, kernel_dilation=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
+
+    y = jnp.array(
+        [
+            [
+                [
+                    [-0.09683423, 0.44358936, 0.3575339],
+                    [-0.22975557, 0.11778405, 0.27501053],
+                    [-0.730394, -0.11462384, 0.11293405],
+                ],
+                [
+                    [-0.06865323, 0.26918745, 0.21076179],
+                    [-0.12277332, 0.15844066, 0.13829224],
+                    [-0.47520664, -0.20936649, -0.02070317],
+                ],
+                [
+                    [0.12662104, 0.28816995, 0.16732623],
+                    [0.2505706, 0.25785616, 0.19034886],
+                    [0.03599086, 0.14876032, 0.24214049],
+                ],
+            ]
+        ]
+    )
+
+    npt.assert_allclose(y, layer(x), atol=1e-5)
+
+    layer = Conv3DTranspose(
+        4, 1, 3, padding=2, strides=1, kernel_dilation=2, bias_init_func=None
+    )
+    layer = layer.at["weight"].set(w)
 
     y = jnp.array(
         [
@@ -966,3 +1055,24 @@ def test_out_feature_error():
 
     with pytest.raises(ValueError):
         Conv3DTranspose(1, 0, 3)
+
+
+def test_groups_error():
+
+    with pytest.raises(ValueError):
+        Conv1D(1, 1, 2, groups=0)
+
+    with pytest.raises(ValueError):
+        Conv2D(1, 1, 2, groups=0)
+
+    with pytest.raises(ValueError):
+        Conv3D(1, 1, 2, groups=0)
+
+    with pytest.raises(ValueError):
+        Conv1DTranspose(1, 1, 3, groups=0)
+
+    with pytest.raises(ValueError):
+        Conv2DTranspose(1, 1, 3, groups=0)
+
+    with pytest.raises(ValueError):
+        Conv3DTranspose(1, 1, 3, groups=0)
