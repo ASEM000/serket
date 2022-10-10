@@ -13,9 +13,9 @@ class PaddingND:
     def __post_init__(self):
         """
         Args:
-            padding (int | tuple[int, int]): padding to apply to each side of the input.
-            value (float, optional): value to pad with. Defaults to 0.0.
-            ndim (int, optional): number of spatial dimensions. Defaults to 1.
+            padding: padding to apply to each side of the input.
+            value: value to pad with. Defaults to 0.0.
+            ndim: number of spatial dimensions. Defaults to 1.
 
         see:
             https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html

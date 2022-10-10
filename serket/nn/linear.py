@@ -23,18 +23,18 @@ class Linear:
         in_features: int,
         out_features: int,
         *,
-        weight_init_func: Callable = jax.nn.initializers.he_normal(),
-        bias_init_func: Callable = lambda key, shape: jnp.ones(shape),
+        weight_init_func: Callable = "he_norma",
+        bias_init_func: Callable = "ones",
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Fully connected layer
 
         Args:
-            in_features (int): number of input features
-            out_features (int): number of output features
-            weight_init_func (Callable, optional): . Defaults to jax.nn.initializers.he_normal().
-            bias_init_func (Callable, optional): . Defaults to lambdakey.
-            key (jr.PRNGKey, optional):  . Defaults to jr.PRNGKey(0).
+            in_features: number of input features
+            out_features: number of output features
+            weight_init_func: function to initialize the weight matrix with . Defaults to "he_normal".
+            bias_init_func: bias initializer function . Defaults to ones.
+            key: Random key for weight and bias initialization. Defaults to jr.PRNGKey(0).
 
         Examples:
             >>> l1 = Linear(10, 5)

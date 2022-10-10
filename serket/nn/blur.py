@@ -10,6 +10,11 @@ from .convolution import DepthwiseConv2D
 @pytc.treeclass
 class AvgBlur2D:
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
+        """Average blur 2D layer
+        Args:
+            in_features: number of input channels
+            kernel_size: size of the convolving kernel
+        """
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected `in_features` to be a positive integer, got {in_features}"
@@ -62,11 +67,9 @@ class GaussianBlur2D:
         """Apply Gaussian blur to a channel-first image.
 
         Args:
-            in_features (int): number of input features
-            kernel_size (int): kernel size
-            sigma (int, optional): sigma. Defaults to 1.
-            separable (bool, optional): use separable convolution. Defaults to False.
-
+            in_features: number of input features
+            kernel_size: kernel size
+            sigma: sigma. Defaults to 1.
         """
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(

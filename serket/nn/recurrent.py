@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Callable
 
-import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
@@ -28,8 +27,8 @@ class RNNCell:
         in_features: int,
         hidden_features: int,
         *,
-        weight_init_func: Callable = jax.nn.initializers.he_normal(),
-        bias_init_func: Callable | None = lambda key, shape: jnp.zeros(shape),
+        weight_init_func: str | Callable = "he_norma",
+        bias_init_func: str | Callable | None = "zeros",
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Vanilla RNN cell that defines the update rule for the hidden state
@@ -37,11 +36,11 @@ class RNNCell:
             https://pytorch.org/docs/stable/generated/torch.nn.RNN.html
 
         Args:
-            in_features (int): input features
-            hidden_features (int): hidden features
-            weight_init_func (Callable, optional): . Defaults to jax.nn.initializers.he_normal().
-            bias_init_func (Callable, optional): . Defaults to lambdakey.
-            key (jr.PRNGKey, optional):  . Defaults to jr.PRNGKey(0).
+            in_features: input features
+            hidden_features: hidden features
+            weight_init_func: weight initialization function . Defaults to "he_normal".
+            bias_init_func: bias initialization function . Defaults to zeros.
+            key: Random key for weight and bias initialization. Defaults to jr.PRNGKey(0).
         """
 
         k1, k2 = jr.split(key, 2)
@@ -50,6 +49,8 @@ class RNNCell:
         self.in_and_hidden_to_hidden = Linear(
             in_features=in_features + hidden_features,
             out_features=hidden_features,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
             key=key,
         )
 
@@ -78,8 +79,8 @@ class LSTMCell:
         in_features: int,
         hidden_features: int,
         *,
-        weight_init_func: Callable = jax.nn.initializers.he_normal(),
-        bias_init_func: Callable | None = lambda key, shape: jnp.zeros(shape),
+        weight_init_func: str | Callable = "he_normal",
+        bias_init_func: str | Callable | None = "zeros",
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Defines the update rule for the hidden state and the cell state
@@ -89,11 +90,11 @@ class LSTMCell:
             https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
 
         Args:
-            in_features (int): input features
-            hidden_features (int): hidden features
-            weight_init_func (Callable, optional): . Defaults to jax.nn.initializers.he_normal().
-            bias_init_func (Callable, optional): . Defaults to lambdakey.
-            key (jr.PRNGKey, optional):  . Defaults to jr.PRNGKey(0).
+            in_features: input features
+            hidden_features: hidden features
+            weight_init_func: weight initialization function . Defaults to "he_normal".
+            bias_init_func: bias initialization function . Defaults to zeros.
+            key: Random key for weight and bias initialization. Defaults to jr.PRNGKey(0).
         """
         self.hidden_features = hidden_features
         self.in_features = in_features

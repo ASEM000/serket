@@ -26,6 +26,19 @@ class FNN:
         bias_init_func: Callable = lambda key, shape: jnp.ones(shape),
         key=jr.PRNGKey(0),
     ):
+        """Fully connected neural network
+        Args:
+            layers: Sequence of layer sizes
+            act_func: Activation function to use. Defaults to jax.nn.relu.
+            weight_init_func: Weight initializer function. Defaults to jax.nn.initializers.he_normal().
+            bias_init_func: Bias initializer function. Defaults to lambda key, shape: jnp.ones(shape).
+            key: Random key for weight and bias initialization. Defaults to jr.PRNGKey(0).
+
+        Examples:
+            >>> fnn = FNN([10, 5, 2])
+            >>> fnn(jnp.ones((3, 10))).shape
+            (3, 2)
+        """
 
         keys = jr.split(key, len(layers))
         self.act_func = (
@@ -58,20 +71,21 @@ class PFNN:
     see https://github.com/lululxvi/deepxde/blob/master/deepxde/nn/pytorch/fnn.py
 
     Args:
-        layers (tuple[int, ...]):
+        layers :
             tuple item `i` maps to the number of neurons in the layer `i`
             (1,2,2,3) -> 1 input, 2 hidden layers with 2 neurons each, 3 output
 
-        act_func (Callable, optional):
+        act_func :
             Activation function for hidden layers. Defaults to jax.nn.relu.
 
-        weight_init_func (Callable, optional):
+        weight_init_func :
             Weight initializer function . Defaults to jax.nn.initializers.he_normal().
 
-        bias_init_func (Callable, optional):
+        bias_init_func :
             Bias initializer function . Defaults to ones.
 
-        key (_type_, optional):
+        key :
+            Random key for weight and bias initialization. Defaults to jr.PRNGKey(0).
 
     Example:
         >>> print(PFNN([3,[5,4], 2]).tree_diagram())

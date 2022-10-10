@@ -13,8 +13,8 @@ class Dropout:
     def __post_init__(self):
         """
         Args:
-            p (float, optional): dropout probability. Defaults to 0.5.
-            eval (bool, optional): if True, dropout is disabled. Defaults to None.
+            p: dropout probability. Defaults to 0.5.
+            eval : if True, dropout is disabled. Defaults to None.
 
         Note:
             to disable dropout during testing, set eval to True

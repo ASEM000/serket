@@ -22,7 +22,7 @@ class HistogramEqualization2D:
     def __init__(self, bins: int = 256):
         """Apply histogram equalization to 2D spatial array channel wise
         Args:
-            bins (int, optional): number of bins. Defaults to 256.
+            bins: number of bins. Defaults to 256.
 
         Note:
             See:

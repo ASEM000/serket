@@ -628,15 +628,15 @@ class DepthwiseConvND:
         """Depthwise Convolutional layer.
 
         Args:
-            in_features : number of input features
-            kernel_size : size of the convolution kernel
+            in_features: number of input features
+            kernel_size: size of the convolution kernel
             depth_multiplier : number of output channels per input channel
-            strides : stride of the convolution
-            padding : padding of the input
-            weight_init_func : function to initialize the weights
-            bias_init_func : function to initialize the bias
-            ndim : number of spatial dimensions
-            key : random key for weight initialization
+            strides: stride of the convolution
+            padding: padding of the input
+            weight_init_func: function to initialize the weights
+            bias_init_func: function to initialize the bias
+            ndim: number of spatial dimensions
+            key: random key for weight initialization
 
         Examples:
             >>> l1 = DepthwiseConvND(3, 3, depth_multiplier=2, strides=2, padding="SAME")

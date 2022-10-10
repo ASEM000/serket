@@ -26,9 +26,9 @@ class LayerNorm:
         transform the input by scaling and shifting to have zero mean and unit variance.
 
         Args:
-            normalized_shape (int | tuple[int,...]): the shape of the input to be normalized.
-            eps (float, optional): . Defaults to 1e-5.
-            affine (bool, optional): whether to apply affine transformation. Defaults to True.
+            normalized_shape: the shape of the input to be normalized.
+            eps: a value added to the denominator for numerical stability.
+            affine: a boolean value that when set to True, this module has learnable affine parameters.
         """
 
         self.normalized_shape = (

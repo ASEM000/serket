@@ -24,7 +24,14 @@ class MaxPoolND:
         padding: tuple[tuple[int, int], ...] | str = "valid",
         ndim: int = 1,
     ):
+        """Apply max pooling to the second dimension of the input.
 
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel
+            ndim: number of dimensions
+        """
         self.kernel_size = (
             (kernel_size,) * ndim if isinstance(kernel_size, int) else kernel_size
         )
@@ -99,7 +106,14 @@ class AvgPoolND:
         padding: tuple[tuple[int, int], ...] | str = "valid",
         ndim: int = 1,
     ):
+        """Apply average pooling to the second dimension of the input.
 
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel
+            ndim: number of dimensions
+        """
         self.kernel_size = (
             (kernel_size,) * ndim if isinstance(kernel_size, int) else kernel_size
         )

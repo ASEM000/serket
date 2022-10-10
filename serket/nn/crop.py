@@ -17,8 +17,8 @@ class CropND:
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 
         Args:
-            size : size of the slice
-            start : start of the slice
+            size: size of the slice
+            start: start of the slice
         """
         self.size = _check_and_return(size, ndim, "size")
         self.start = _check_and_return(start, ndim, "start")
@@ -56,8 +56,8 @@ class RandomCropND:
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 
         Args:
-            size : size of the slice
-            start : start of the slice
+            size: size of the slice
+            start: start of the slice
         """
         self.size = _check_and_return(size, ndim, "size")
         self.ndim = ndim
