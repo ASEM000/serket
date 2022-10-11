@@ -49,7 +49,6 @@ pip install git+https://github.com/ASEM000/serket
 |Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D`|
 |Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsampling1D`, `Upsampling2D`, `Upsampling3D`, `Padding1D`, `Padding2D`, `Padding3D` |
 |Crop|`Crop1D`, `Crop2D`, |
-|Recurrent|`RNNCell`, `LSTMCell`|
 |Normalization|`LayerNorm`, `InstanceNorm`, `GroupNorm`|
 |Blurring| `AvgBlur2D`, `GaussianBlur2D`|
 |Dropout|`Dropout`, `Dropout1D`, `Dropout2D`, `Dropout3D`, |
@@ -60,518 +59,273 @@ pip install git+https://github.com/ASEM000/serket
 |Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
 
 
-## ⏩ Quick Example <a id="QuickExample">
+## ⏩ Quick Example: Train MNIST <a id="QuickExample">
+We will use `tensorflow` datasets for dataloading. for more on interface of jax/tensorflow dataset see [here](https://jax.readthedocs.io/en/latest/notebooks/neural_network_with_tfds_data.html)
 
-Simple Fully connected neural network.
-
-### 🏗️ Model definition
 ```python
-import serket as sk 
+# imports
+import tensorflow as tf
+# Ensure TF does not see GPU and grab all GPU memory.
+tf.config.set_visible_devices([], device_type="GPU")
+import tensorflow_datasets as tfds
+import tensorflow.experimental.numpy as tnp
 import jax
 import jax.numpy as jnp
-import jax.random as jr
+import jax.random as jr 
+import optax  # for gradient optimization
+import serket as sk
+import matplotlib.pyplot as plt
+import functools as ft
+```
 
-@sk.treeclass
-class NN:
-    def __init__(
-        self, 
-        in_features:int, 
-        out_features:int, 
-        hidden_features: int, key:jr.PRNGKey = jr.PRNGKey(0)):
+```python
+# Construct a tf.data.Dataset
+batch_size = 128
 
-        k1,k2,k3 = jr.split(key, 3)
+# convert the samples from integers to floating-point numbers
+# and channel first format
+def preprocess_data(x):
+    # convert to channel first format
+    image = tnp.moveaxis(x["image"], -1, 0)
+    # normalize to [0, 1]
+    image = tf.cast(image, tf.float32) / 255.0
 
-        self.l1 = sk.nn.Linear(in_features, hidden_features, key=k1)
-        self.l2 = sk.nn.Linear(hidden_features, hidden_features, key=k2)
-        self.l3 = sk.nn.Linear(hidden_features, out_features, key=k3)
+    # one-hot encode the labels
+    label = tf.one_hot(x["label"], 10) / 1.0
+    return {"image": image, "label": label}
+
+
+ds_train, ds_test = tfds.load("mnist", split=["train", "test"], shuffle_files=True)
+# (batches, batch_size, 1, 28, 28)
+ds_train = ds_train.shuffle(1024).map(preprocess_data).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+
+# (batches, 1, 28, 28)
+ds_test = ds_test.map(preprocess_data).prefetch(tf.data.AUTOTUNE)
+```
+
+### 🏗️ Model definition
+
+We will use `jax.vmap(model)` to apply `model` on batches.
     
+```python
+@sk.treeclass
+class CNN:
+    def __init__(self, key:jr.PRNGKey = jr.PRNGKey(0)):
+        self.conv1 = sk.nn.Conv2D(1, 32, (3, 3), padding="valid")
+        self.relu1 = sk.nn.ReLU()
+        self.pool1 = sk.nn.MaxPool2D((2, 2), strides=(2, 2))
+        self.conv2 = sk.nn.Conv2D(32, 64, (3, 3), padding="valid")
+        self.relu2 = sk.nn.ReLU()
+        self.pool2 = sk.nn.MaxPool2D((2, 2), strides=(2, 2))
+        self.flatten = sk.nn.Flatten(start_dim=0)
+        self.dropout = sk.nn.Dropout(0.5)
+        self.linear = sk.nn.Linear(5*5*64, 10)
+
     def __call__(self, x):
-        x = self.l1(x)
-        x = jax.nn.relu(x)
-        x = self.l2(x)
-        x = jax.nn.relu(x)
-        x = self.l3(x)
+        x = self.conv1(x)
+        x = self.relu1(x)
+        x = self.pool1(x)
+        x = self.conv2(x)
+        x = self.relu2(x)
+        x = self.pool2(x)
+        x = self.flatten(x)
+        x = self.dropout(x)
+        x = self.linear(x)
         return x
 
-model = NN(
-    in_features=1, 
-    out_features=1, 
-    hidden_features=128, 
-    key=jr.PRNGKey(0))
+model = CNN()
 ```
-### 🎨 Visualize
 
-
-<details>
-<summary> Model representation `__repr__` </summary>
-
+### 🎨 Visualize model
+    
+<details><summary>Model summary</summary>
+    
 ```python
-print(f"{model!r}")
-# `*` represents untrainable(static) nodes.
-NN(
-  l1=Linear(
-    weight=f32[1,128],
-    bias=f32[128],
-    *in_features=1,
-    *out_features=128,
-    *weight_init_func=init(key,shape,dtype),
-    *bias_init_func=Lambda(key,shape)
-  ),
-  l2=Linear(
-    weight=f32[128,128],
-    bias=f32[128],
-    *in_features=128,
-    *out_features=128,
-    *weight_init_func=init(key,shape,dtype),
-    *bias_init_func=Lambda(key,shape)
-  ),
-  l3=Linear(
-    weight=f32[128,1],
-    bias=f32[1],
-    *in_features=128,
-    *out_features=1,
-    *weight_init_func=init(key,shape,dtype),
-    *bias_init_func=Lambda(key,shape)
-  )
-)
+print(model.summary(show_config=False, array=jnp.empty((1, 28, 28))))  
+┌───────┬─────────┬─────────┬──────────────┬─────────────┬─────────────┐
+│Name   │Type     │Param #  │Size          │Input        │Output       │
+├───────┼─────────┼─────────┼──────────────┼─────────────┼─────────────┤
+│conv1  │Conv2D   │320(0)   │1.25KB(0.00B) │f32[1,28,28] │f32[32,26,26]│
+├───────┼─────────┼─────────┼──────────────┼─────────────┼─────────────┤
+│relu1  │ReLU     │0(0)     │0.00B(0.00B)  │f32[32,26,26]│f32[32,26,26]│
+├───────┼─────────┼─────────┼──────────────┼─────────────┼─────────────┤
+│pool1  │MaxPool2D│0(0)     │0.00B(0.00B)  │f32[32,26,26]│f32[32,13,13]│
+├───────┼─────────┼─────────┼──────────────┼─────────────┼─────────────┤
+│conv2  │Conv2D   │18,496(0)│72.25KB(0.00B)│f32[32,13,13]│f32[64,11,11]│
+├───────┼─────────┼─────────┼──────────────┼─────────────┼─────────────┤
+│relu2  │ReLU     │0(0)     │0.00B(0.00B)  │f32[64,11,11]│f32[64,11,11]│
+├───────┼─────────┼─────────┼──────────────┼─────────────┼─────────────┤
+│pool2  │MaxPool2D│0(0)     │0.00B(0.00B)  │f32[64,11,11]│f32[64,5,5]  │
+├───────┼─────────┼─────────┼──────────────┼─────────────┼─────────────┤
+│flatten│Flatten  │0(0)     │0.00B(0.00B)  │f32[64,5,5]  │f32[1600]    │
+├───────┼─────────┼─────────┼──────────────┼─────────────┼─────────────┤
+│dropout│Dropout  │0(0)     │0.00B(0.00B)  │f32[1600]    │f32[1600]    │
+├───────┼─────────┼─────────┼──────────────┼─────────────┼─────────────┤
+│linear │Linear   │16,010(0)│62.54KB(0.00B)│f32[1600]    │f32[10]      │
+└───────┴─────────┴─────────┴──────────────┴─────────────┴─────────────┘
+Total count :	34,826(0)
+Dynamic count :	34,826(0)
+Frozen count :	0(0)
+------------------------------------------------------------------------
+Total size :	136.04KB(0.00B)
+Dynamic size :	136.04KB(0.00B)
+Frozen size :	0.00B(0.00B)
+========================================================================
 ```
-
+        
 </details>
 
-<details>
-<summary> Model values `__str__` </summary>
-
+<details><summary>tree diagram </summary>
+    
 ```python
-print(f"{model!s}")
-# `*` represents untrainable(static) nodes.
-
-NN(
-  l1=Linear(
-    weight=
-      [[-0.556661   -0.6288703   1.28644    -2.9053314  -0.9808919   0.02763719
-        -1.5992663   0.3522784  -0.72343904  2.1087773  -1.184502    0.37314773
-         0.13440615 -1.1792887   2.646051   -0.31855923  1.2535691  -0.350722
-         0.24288356  0.8924919   1.8751624  -0.4494902  -0.6869111   2.4898252
-         1.0088646   2.3707743  -1.212474   -0.19152707  0.51991814 -0.801294
-         1.9568022  -0.05682194  0.7434735   0.24796781 -0.31967887 -0.6026076
-         0.02562018 -2.1735084  -0.7877185   1.1945596  -0.5776542  -0.08814432
-         0.01738743  0.85175467 -2.4330282   2.400132   -0.15812641 -2.2410994
-         1.8925649  -1.4573553  -1.5524752   0.2746206   0.99534875 -0.52039754
-        -1.6240916   0.57301414  1.2754964   0.39254263  1.5842631  -0.4408383
-         0.22060809 -0.11473875  1.2702179   0.14604266 -1.1393331  -0.20517357
-         2.8613555  -0.76657873 -2.7623959   1.4629859   1.7641917   1.4639573
-         0.90266997 -1.4661105   1.1719718   0.6656477  -0.6834308   1.0311401
-        -3.0281627   1.7895395  -1.248399   -0.13082643  2.1665883   2.8423917
-         0.24363454  0.20664148  1.7082529   2.129452    0.2974662  -0.8575109
-        -0.5970874   0.01702698 -0.18604587  0.7464636   0.83206064  0.6965974
-         0.7219791   0.8652629   1.3164111  -2.788336   -0.06530724 -0.7846771
-        -0.7344756   1.5899261   0.2623837  -0.01147135 -0.5437088   0.68380916
-        -1.5405492   1.1371891  -0.67851156 -0.37528485 -0.0336573  -2.0287845
-         0.3067764  -1.3464272  -0.6037441  -1.6209227  -2.3215613  -3.062661
-         0.5440992  -0.8735671   0.9094481   2.3398476   0.5821143   1.9373481
-        -0.36942863  2.5151203 ]],
-    bias=
-      [1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1.],
-    *in_features=1,
-    *out_features=128,
-    *weight_init_func=init(key,shape,dtype),
-    *bias_init_func=Lambda(key,shape)
-  ),
-  l2=Linear(
-    weight=
-      [[ 0.01565691 -0.02781865  0.15829083 ...  0.00930642  0.03536453
-         0.01890953]
-       [-0.01510135  0.1975845   0.2470963  ... -0.13168702  0.01404842
-        -0.21973991]
-       [-0.07814246 -0.18890998 -0.26707044 ... -0.15391685 -0.16248046
-        -0.11042175]
-       ...
-       [-0.01806537  0.01311939  0.00696071 ... -0.18970545  0.07411639
-        -0.04393121]
-       [ 0.07426595  0.19547018 -0.26033685 ... -0.01357261 -0.00193011
-        -0.00152987]
-       [-0.00897581 -0.0115421   0.08062097 ... -0.098473    0.1083767
-         0.12410464]],
-    bias=
-      [1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.
-       1. 1. 1. 1. 1. 1. 1. 1.],
-    *in_features=128,
-    *out_features=128,
-    *weight_init_func=init(key,shape,dtype),
-    *bias_init_func=Lambda(key,shape)
-  ),
-  l3=Linear(
-    weight=
-      [[-0.13613197]
-       [ 0.14116174]
-       [-0.06744987]
-       [-0.08091136]
-       [-0.27361065]
-       [-0.06548355]
-       [ 0.01022272]
-       [ 0.0252317 ]
-       [ 0.0237782 ]
-       [ 0.00614042]
-       [ 0.1812661 ]
-       [-0.06621032]
-       [ 0.16613998]
-       [-0.05014007]
-       [-0.21103479]
-       [-0.11941364]
-       [ 0.00036292]
-       [ 0.00039283]
-       [ 0.08278123]
-       [ 0.10028461]
-       [ 0.07373375]
-       [ 0.04089416]
-       [-0.00426106]
-       [-0.0247845 ]
-       [ 0.2804994 ]
-       [-0.11494187]
-       [ 0.26255226]
-       [-0.05349432]
-       [-0.16621305]
-       [ 0.0187737 ]
-       [ 0.11997257]
-       [ 0.24926668]
-       [ 0.12966438]
-       [ 0.02550141]
-       [ 0.18541676]
-       [-0.09129915]
-       [-0.22716352]
-       [-0.18755099]
-       [ 0.1665244 ]
-       [-0.10028487]
-       [ 0.09164064]
-       [-0.02597431]
-       [-0.15029983]
-       [-0.02553205]
-       [ 0.16129787]
-       [-0.07182706]
-       [-0.07004812]
-       [-0.03763127]
-       [-0.06973497]
-       [-0.0998554 ]
-       [ 0.00957549]
-       [ 0.0948947 ]
-       [-0.11812133]
-       [ 0.00408699]
-       [ 0.18451509]
-       [-0.2392044 ]
-       [ 0.1889591 ]
-       [ 0.20876819]
-       [ 0.16006592]
-       [ 0.11820399]
-       [ 0.13270618]
-       [-0.02642066]
-       [-0.03972287]
-       [ 0.0130475 ]
-       [ 0.12387222]
-       [-0.07360736]
-       [-0.07168346]
-       [ 0.26462224]
-       [-0.24544406]
-       [ 0.02614611]
-       [ 0.17016351]
-       [-0.10638441]
-       [-0.01891194]
-       [ 0.02476142]
-       [ 0.00474042]
-       [ 0.06326718]
-       [-0.10003307]
-       [ 0.03704525]
-       [-0.17377096]
-       [ 0.02369826]
-       [-0.09041592]
-       [ 0.06363823]
-       [-0.00131075]
-       [-0.19338304]
-       [ 0.2741859 ]
-       [-0.03178171]
-       [-0.0061704 ]
-       [ 0.01059608]
-       [ 0.17419283]
-       [ 0.08168265]
-       [ 0.08119942]
-       [ 0.07225287]
-       [-0.02761899]
-       [ 0.11468761]
-       [ 0.0180395 ]
-       [-0.04214213]
-       [-0.10949433]
-       [-0.03126818]
-       [ 0.14708327]
-       [-0.25051817]
-       [ 0.0431254 ]
-       [ 0.10890955]
-       [-0.00171187]
-       [-0.07619253]
-       [ 0.16909993]
-       [-0.11504915]
-       [ 0.02266672]
-       [ 0.22796142]
-       [ 0.05010169]
-       [-0.26961675]
-       [-0.02833704]
-       [-0.21504459]
-       [ 0.00469143]
-       [ 0.23426442]
-       [ 0.04301503]
-       [-0.13504943]
-       [-0.1914389 ]
-       [-0.1553146 ]
-       [ 0.00082878]
-       [-0.05092873]
-       [-0.13719554]
-       [-0.24856809]
-       [-0.05966872]
-       [-0.04416765]
-       [ 0.12827884]
-       [-0.06721988]
-       [ 0.05502734]
-       [ 0.03519182]],
-    bias=[1.],
-    *in_features=128,
-    *out_features=1,
-    *weight_init_func=init(key,shape,dtype),
-    *bias_init_func=Lambda(key,shape)
-  )
-)
-
-```
-
-</details>
-
-
-<details>
-<summary>Tree diagram</summary>
-
-```python
-# `*` represents untrainable(static) nodes.
 print(model.tree_diagram())
-NN
-    ├── l1=Linear
-    │   ├── weight=f32[1,128]
-    │   ├── bias=f32[128]
+CNN
+    ├── conv1=Conv2D
+    │   ├── weight=f32[32,1,3,3]
+    │   ├── bias=f32[32,1,1]
     │   ├*─ in_features=1
-    │   ├*─ out_features=128
-    │   ├*─ weight_init_func=init(key,shape,dtype)
-    │   └*─ bias_init_func=Lambda(key,shape)    
-    ├── l2=Linear
-    │   ├── weight=f32[128,128]
-    │   ├── bias=f32[128]
-    │   ├*─ in_features=128
-    │   ├*─ out_features=128
-    │   ├*─ weight_init_func=init(key,shape,dtype)
-    │   └*─ bias_init_func=Lambda(key,shape)    
-    └── l3=Linear
-        ├── weight=f32[128,1]
-        ├── bias=f32[1]
-        ├*─ in_features=128
-        ├*─ out_features=1
-        ├*─ weight_init_func=init(key,shape,dtype)
-        └*─ bias_init_func=Lambda(key,shape) 
-```
+    │   ├*─ out_features=32
+    │   ├*─ kernel_size=(3, 3)
+    │   ├*─ strides=(1, 1)
+    │   ├*─ padding=((0, 0), (0, 0))
+    │   ├*─ input_dilation=(1, 1)
+    │   ├*─ kernel_dilation=(1, 1)
+    │   ├── weight_init_func=Partial(init(key,shape,dtype))
+    │   ├── bias_init_func=Partial(zeros(key,shape,dtype))
+    │   └*─ groups=1    
+    ├── relu1=ReLU  
+    ├*─ pool1=MaxPool2D
+    │   ├*─ kernel_size=(2, 2)
+    │   ├*─ strides=(2, 2)
+    │   └*─ padding='valid' 
+    ├── conv2=Conv2D
+    │   ├── weight=f32[64,32,3,3]
+    │   ├── bias=f32[64,1,1]
+    │   ├*─ in_features=32
+    │   ├*─ out_features=64
+    │   ├*─ kernel_size=(3, 3)
+    │   ├*─ strides=(1, 1)
+    │   ├*─ padding=((0, 0), (0, 0))
+    │   ├*─ input_dilation=(1, 1)
+    │   ├*─ kernel_dilation=(1, 1)
+    │   ├── weight_init_func=Partial(init(key,shape,dtype))
+    │   ├── bias_init_func=Partial(zeros(key,shape,dtype))
+    │   └*─ groups=1    
+    ├── relu2=ReLU  
+    ├*─ pool2=MaxPool2D
+    │   ├*─ kernel_size=(2, 2)
+    │   ├*─ strides=(2, 2)
+    │   └*─ padding='valid' 
+    ├*─ flatten=Flatten
+    │   ├*─ start_dim=0
+    │   └*─ end_dim=-1  
+    ├── dropout=Dropout
+    │   ├*─ p=0.5
+    │   └── eval=None   
+    └── linear=Linear
+        ├── weight=f32[1600,10]
+        ├── bias=f32[10]
+        ├*─ in_features=1600
+        └*─ out_features=10  
+    
+ ```
+    
 </details>
+    
+<details><summary>Plot sample predictions before training</summary>
+    
+```python
+ 
+# set all dropout off
+test_model = model.at[model == "eval"].set(True, is_leaf=lambda x: x is None)
 
+def show_images_with_predictions(model, images, one_hot_labels):
+    logits = jax.vmap(model)(images)
+    predictions = jnp.argmax(logits, axis=-1)
+    fig, axes = plt.subplots(5, 5, figsize=(10, 10))
+    for i, ax in enumerate(axes.flat):
+        ax.imshow(images[i].reshape(28, 28), cmap="binary")
+        ax.set(title=f"Prediction: {predictions[i]}\nLabel: {jnp.argmax(labels[i], axis=-1)}")
+        ax.set_xticks([])
+        ax.set_yticks([])
+    plt.show()
 
+example = ds_test.take(25).as_numpy_iterator()
+example = list(example)
+sample_test_images = jnp.stack([x["image"] for x in example])
+sample_test_labels = jnp.stack([x["label"] for x in example])
 
-<details> <summary> Tree summary  </summary>
+show_images_with_predictions(test_model, sample_test_images, sample_test_labels)
+```
+![image](assets/before_training.svg)
+ 
+</details>
+    
+### 🏃 Train the model
 
 ```python
->>> print(model.summary())
-┌────┬──────┬─────────┬───────┬───────────────────┐
-│Name│Type  │Param #  │Size   │Config             │
-├────┼──────┼─────────┼───────┼───────────────────┤
-│l1  │Linear│256(0)   │1.00KB │weight=f32[1,128]  │
-│    │      │         │(0.00B)│bias=f32[128]      │
-├────┼──────┼─────────┼───────┼───────────────────┤
-│l2  │Linear│16,512(0)│64.50KB│weight=f32[128,128]│
-│    │      │         │(0.00B)│bias=f32[128]      │
-├────┼──────┼─────────┼───────┼───────────────────┤
-│l3  │Linear│129(0)   │516.00B│weight=f32[128,1]  │
-│    │      │         │(0.00B)│bias=f32[1]        │
-└────┴──────┴─────────┴───────┴───────────────────┘
-Total count :	16,897(0)
-Dynamic count :	16,897(0)
-Frozen count :	0(0)
----------------------------------------------------
-Total size :	66.00KB(0.00B)
-Dynamic size :	66.00KB(0.00B)
-Frozen size :	0.00B(0.00B)
-===================================================
-```
-
-</details>
-
-<details>
-
-<summary> Tree summary with shape inference </summary>
-**Using `model.summary(array=input_array)` `serket` can evaluate the shape propagation without evaluating the model , by using `jax` no-flop shape inference operations.**
-
-```python
-print(model.summary(array=x))
-
-┌────┬──────┬─────────┬───────┬───────────────────┬────────────┐
-│Name│Type  │Param #  │Size   │Config             │Input/Output│
-├────┼──────┼─────────┼───────┼───────────────────┼────────────┤
-│l1  │Linear│256(0)   │1.00KB │weight=f32[1,128]  │f32[100,1]  │
-│    │      │         │(0.00B)│bias=f32[128]      │f32[100,128]│
-├────┼──────┼─────────┼───────┼───────────────────┼────────────┤
-│l2  │Linear│16,512(0)│64.50KB│weight=f32[128,128]│f32[100,128]│
-│    │      │         │(0.00B)│bias=f32[128]      │f32[100,128]│
-├────┼──────┼─────────┼───────┼───────────────────┼────────────┤
-│l3  │Linear│129(0)   │516.00B│weight=f32[128,1]  │f32[100,128]│
-│    │      │         │(0.00B)│bias=f32[1]        │f32[100,1]  │
-└────┴──────┴─────────┴───────┴───────────────────┴────────────┘
-Total count :	16,897(0)
-Dynamic count :	16,897(0)
-Frozen count :	0(0)
-----------------------------------------------------------------
-Total size :	66.00KB(0.00B)
-Dynamic size :	66.00KB(0.00B)
-Frozen size :	0.00B(0.00B)
-================================================================
-
-```
-
-</details>
-
-### ‍🔧 Train
-```python
-import matplotlib.pyplot as plt
-
-x = jnp.linspace(0,1,100)[:,None]
-y = x**3 + jax.random.uniform(jax.random.PRNGKey(0),(100,1))*0.01
+@ft.partial(jax.value_and_grad, has_aux=True)
+def loss_func(model, batched_images, batched_one_hot_labels):
+    logits = jax.vmap(model)(batched_images)
+    loss = jnp.mean(optax.softmax_cross_entropy(logits=logits, labels=batched_one_hot_labels))
+    return loss, logits
 
 
-@jax.value_and_grad
-def loss_func(model,x,y):
-    return jnp.mean((model(x)-y)**2)
+# using optax for gradient updates
+optim = optax.adam(1e-3)
+optim_state = optim.init(model)
+
 
 @jax.jit
-def update(model,x,y):
-    value,grad = loss_func(model,x,y)
-    return value , model - 1e-3*grad
+def batch_step(model, batched_images, batched_one_hot_labels, optim_state):
+    (loss, logits), grads = loss_func(model, batched_images, batched_one_hot_labels)
+    updates, optim_state = optim.update(grads, optim_state)
+    model = optax.apply_updates(model, updates)
+    accuracy = jnp.mean(jnp.argmax(logits, axis=-1) == jnp.argmax(batched_one_hot_labels, axis=-1))
+    return model, optim_state, loss, accuracy
 
-plt.plot(x,y,'-k',label='True')
-plt.plot(x,model(x),'-r',label='Prediction')
-plt.title("Before training")
-plt.legend()
-plt.show()
 
-for _ in range(20_000):
-    value,model = update(model,x,y)
+epochs = 5
 
-plt.plot(x,y,'-k',label='True')
-plt.plot(x,model(x),'-r',label='Prediction')
-plt.title("After training")
-plt.legend()
-plt.show()
+for i in range(epochs):
+    epoch_accuracy = []
+    epoch_loss = []
+
+    for example in ds_train.as_numpy_iterator():
+        image, label = example["image"], example["label"]
+        model, optim_state, loss, accuracy = batch_step(model, image, label, optim_state)
+        epoch_accuracy.append(accuracy)
+        epoch_loss.append(loss)
+
+    epoch_loss = jnp.mean(jnp.array(epoch_loss))
+    epoch_accuracy = jnp.mean(jnp.array(epoch_accuracy))
+
+    print(f"epoch:{i+1:00d}\tloss:{epoch_loss:.4f}\taccuracy:{epoch_accuracy:.4f}")
+    
+# epoch:1	loss:0.2706	accuracy:0.9268
+# epoch:2	loss:0.0725	accuracy:0.9784
+# epoch:3	loss:0.0533	accuracy:0.9836
+# epoch:4	loss:0.0442	accuracy:0.9868
+# epoch:5	loss:0.0368	accuracy:0.9889
+```
+    
+    
+### 🎨 Visualize After training
+
+```python
+test_model = model.at[model == "eval"].set(True, is_leaf=lambda x: x is None)
+show_images_with_predictions(test_model, sample_test_images, sample_test_labels)
 ```
 
-<div align = "center" >
-<table><tr>
-<td><div align = "center" > <img width = "350px" src= "assets/before_training.svg" ></div></td>
-<td><div align = "center" > <img width = "350px" src= "assets/after_training.svg" ></div></td>
-</tr>
-</table>
-</div>
+<details> 
+    
+![image](assets/after_training.svg)
+
+</details>
 
 ## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
-<!-- In `serket` simply use `.at[...].freeze()`/`.at[...].unfreeze()` on `treeclass` instance to freeze/unfreeze it is parameters.
-```python
-# Freeze the entire model
-frozen_model = model.at[...].freeze()
 
-# To freeze a certain sub module
-# use model = model.at["sub_module name"].freeze()
+✨[See here for more about freezing](https://github.com/ASEM000/PyTreeClass#%EF%B8%8F-model-surgery)✨
 
-@jax.value_and_grad
-def loss_func(model,x,y):
-    return jnp.mean((model(x)-y)**2)
-
-@jax.jit
-def update(model,x,y):
-    value,grad = loss_func(model,x,y)
-    return value , model - 1e-3*grad
-
-plt.plot(x,y,'-k',label='True')
-plt.plot(x,frozen_model(x),'-r',label='Prediction')
-plt.title("Before training")
-plt.legend()
-
-plt.show()
-for _ in range(20_000):
-    value,frozen_model = update(frozen_model,x,y)
-
-plt.plot(x,y,'-k',label='True')
-plt.plot(x,frozen_model(x),'-r',label='Prediction')
-plt.title("After training")
-plt.legend()
-plt.show()
-```
-
-<div align="center">
-<table><tr>
-<td><div align = "center" > <img width = "350px" src= "assets/frozen_before_training.svg" ></div></td>
-<td><div align = "center" > <img width = "350px" src= "assets/frozen_after_training.svg" ></div></td>
-</tr>
-</table>
-</div> -->
-
-
-## 🔘 Filtering by masking<a id="Filterning" >
-
-### Filter by value
-```python
-# get model negative values
-negative_model = model.at[model<0].get()
-
-# Set negative values to 0
-zeroed_model = model.at[model<0].set(0)
-
-# Apply `jnp.cos` to negative values
-cosined_model = model.at[model<0].apply(jnp.cos)
-```
-### Filter by field name 
-```python
-# get model layer named `l1`
-l1_model = model.at[model == "l1" ].get()
-
-# Set `l1` values to 0
-zeroed_model = model.at[model == "l1" ].set(0)
-
-# Apply `jnp.cos` to `l1` 
-cosined_model = model.at[model == "l1" ].apply(jnp.cos)
-```
-
-### Filter by field type
-```python
-# get all model `Linear` layers
-l1_model = model.at[model == sk.nn.Linear ].get()
-
-# Set `Linear` layers to 0
-zeroed_model = model.at[model == sk.nn.Linear ].set(0)
-
-# Apply `jnp.cos` to all `Linear` layers 
-cosined_model = model.at[model == sk.nn.Linear ].apply(jnp.cos)
-```
-
-### Filter by mixed masks
-```
-# Set all `Linear` bias to 0
-mask = (model == sk.nn.Linear) & (model == "bias" )
-zero_bias_model = model.at[mask].set(0.)
-```
-
+## 🔘 Filtering by masking<a id="Filtering" >
 ✨[See here for more about filterning ](https://github.com/ASEM000/PyTreeClass#%EF%B8%8F-filtering-with-at-)✨
