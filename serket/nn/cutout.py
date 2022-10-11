@@ -5,12 +5,12 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from .convolution import _check_and_return
+from .utils import _check_and_return
 
 
 @pytc.treeclass
 class RandomCutout1D:
-    shape: tuple[int] = pytc.nondiff_field()
+    shape: int = pytc.nondiff_field()
     cutout_count: int = pytc.nondiff_field()
     fill_value: float = pytc.nondiff_field()
 
@@ -24,9 +24,9 @@ class RandomCutout1D:
         """Random Cutouts for spatial 1D array.
 
         Args:
-            shape (tuple[int, ...]): shape of the cutout
-            cutout_count (int, optional): number of holes. Defaults to 1.
-            fill_value (float, optional): fill_value to fill. Defaults to 0.
+            shape: shape of the cutout
+            cutout_count: number of holes. Defaults to 1.
+            fill_value: fill_value to fill. Defaults to 0.
 
         See:
             https://arxiv.org/abs/1708.04552
@@ -49,7 +49,9 @@ class RandomCutout1D:
         keys = jr.split(key, self.cutout_count)
 
         def scan_step(x, key):
-            start = jr.randint(key, shape=(), minval=0, maxval=x.shape[1]).astype(jnp.int32)  # fmt: skip
+            start = jr.randint(
+                key, shape=(), minval=0, maxval=x.shape[1] - size
+            ).astype(jnp.int32)
             row_mask = (row_arange >= start) & (row_arange < start + size)
             x = x * ~row_mask[None, :]
             return x, None
@@ -70,16 +72,16 @@ class RandomCutout2D:
 
     def __init__(
         self,
-        shape: tuple[int, ...],
+        shape: int | tuple[int, ...],
         cutout_count: int = 1,
         fill_value: int | float = 0,
     ):
         """Random Cutouts for spatial 2D array
 
         Args:
-            shape (tuple[int, ...]): shape of the cutout
-            cutout_count (int, optional): number of holes. Defaults to 1.
-            fill_value (float, optional): fill_value to fill. Defaults to 0.
+            shape: shape of the cutout
+            cutout_count: number of holes. Defaults to 1.
+            fill_value: fill_value to fill. Defaults to 0.
 
         See:
             https://arxiv.org/abs/1708.04552
@@ -100,8 +102,12 @@ class RandomCutout2D:
 
         def scan_step(x, key):
             ktop, kleft = jr.split(key, 2)
-            top = jr.randint(ktop, shape=(), minval=0, maxval=x.shape[1]).astype(jnp.int32)  # fmt: skip
-            left = jr.randint(kleft, shape=(), minval=0, maxval=x.shape[2]).astype(jnp.int32)  # fmt: skip
+            top = jr.randint(
+                ktop, shape=(), minval=0, maxval=x.shape[1] - self.shape[0]
+            ).astype(jnp.int32)
+            left = jr.randint(
+                kleft, shape=(), minval=0, maxval=x.shape[2] - self.shape[1]
+            ).astype(jnp.int32)
             row_mask = (row_arange >= top) & (row_arange < top + height)
             col_mask = (col_arange >= left) & (col_arange < left + width)
             x = x * (~jnp.outer(row_mask, col_mask))

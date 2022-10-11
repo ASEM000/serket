@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import jax
 import jax.numpy as jnp
+
+# import kernex as kex
 import pytreeclass as pytc
 
 from .convolution import DepthwiseConv2D
@@ -63,6 +65,7 @@ class GaussianBlur2D:
         kernel_size,
         *,
         sigma=1.0,
+        # implementation="jax",
     ):
         """Apply Gaussian blur to a channel-first image.
 
@@ -89,8 +92,9 @@ class GaussianBlur2D:
 
         w = w / jnp.sum(w)
         w = w[:, None]
-        w = jnp.repeat(w[None, None], in_features, axis=0)
 
+        # if implementation == "jax":
+        w = jnp.repeat(w[None, None], in_features, axis=0)
         conv1 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(kernel_size, 1),
@@ -105,9 +109,29 @@ class GaussianBlur2D:
             bias_init_func=None,
         )
 
-        self.conv1 = conv1.at["weight"].set(w)
-        self.conv2 = conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
+        conv1 = conv1.at["weight"].set(w)
+        conv2 = conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
+        self._func = lambda x: conv2(conv1(x))
+
+        # elif implementation == "kernex":
+        #     # usually faster than jax for small kernel sizes
+        #     # but slower for large kernel sizes
+
+        #     @jax.vmap  # channel
+        #     @kex.kmap(kernel_size=(kernel_size, 1), padding="same")
+        #     def conv1(x):
+        #         return jnp.sum(x * w)
+
+        #     @jax.vmap
+        #     @kex.kmap(kernel_size=(1, kernel_size), padding="same")
+        #     def conv2(x):
+        #         return jnp.sum(x * w.T)
+
+        #     self._func = lambda x: conv2(conv1(x))
+
+        # else:
+        #     raise ValueError(f"Unknown implementation {implementation}")
 
     def __call__(self, x, **kwargs) -> jnp.ndarray:
         assert x.ndim == 3, "`Input` must be 3D."
-        return self.conv2(self.conv1(x))
+        return self._func(x)

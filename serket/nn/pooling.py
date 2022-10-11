@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
+
+from .utils import _check_and_return
+
+_check_and_return_kernel = ft.partial(_check_and_return, name="kernel_size")
+
 
 # Based on colab hardware benchmarks `kernex` seems to
 # be faster on CPU and on par with JAX on GPU.
@@ -32,21 +39,20 @@ class MaxPoolND:
             padding: padding of the kernel
             ndim: number of dimensions
         """
-        self.kernel_size = (
-            (kernel_size,) * ndim if isinstance(kernel_size, int) else kernel_size
-        )
+        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = strides
         self.padding = padding
 
-    def __call__(self, x, **kwargs):
-
-        # `vmap` on channel dimension
+        @jax.jit
         @jax.vmap
         @kex.kmap(self.kernel_size, self.strides, self.padding)
         def _maxpoolnd(x):
             return jnp.max(x)
 
-        return _maxpoolnd(x)
+        self._func = _maxpoolnd
+
+    def __call__(self, x, **kwargs):
+        return self._func(x)
 
 
 @pytc.treeclass
@@ -114,21 +120,20 @@ class AvgPoolND:
             padding: padding of the kernel
             ndim: number of dimensions
         """
-        self.kernel_size = (
-            (kernel_size,) * ndim if isinstance(kernel_size, int) else kernel_size
-        )
+        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = strides
         self.padding = padding
 
-    def __call__(self, x, **kwargs):
-
-        # `vmap` on channel dimension
+        @jax.jit
         @jax.vmap
         @kex.kmap(self.kernel_size, self.strides, self.padding)
         def _avgpoolnd(x):
             return jnp.mean(x)
 
-        return _avgpoolnd(x)
+        self._func = _avgpoolnd
+
+    def __call__(self, x, **kwargs):
+        return self._func(x)
 
 
 @pytc.treeclass
