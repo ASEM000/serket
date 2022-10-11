@@ -8,7 +8,7 @@ import jax
 import jax.tree_util as jtu
 
 
-def _transpose_padding(padding, kernel_size, input_dilation, extra_padding):
+def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padding):
     """
     Transpose padding to get the padding for the transpose convolution.
 

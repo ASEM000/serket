@@ -52,6 +52,7 @@ from .convolution import (
     SeparableConv2D,
     SeparableConv3D,
 )
+from .convolution_scan import ConvScan1D, ConvScan2D, ConvScan3D
 from .crop import Crop1D, Crop2D, Crop3D, RandomCrop1D, RandomCrop2D, RandomCrop3D
 from .cutout import RandomCutout1D, RandomCutout2D
 from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D
@@ -213,4 +214,8 @@ __all__ = (
     # Contrast
     "AdjustContrast2D",
     "RandomContrast2D",
+    # Scanning
+    "ConvScan1D",
+    "ConvScan2D",
+    "ConvScan3D",
 )

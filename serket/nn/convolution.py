@@ -23,7 +23,7 @@ from .utils import (
     _check_and_return_kernel_dilation,
     _check_and_return_padding,
     _check_and_return_strides,
-    _transpose_padding,
+    _calculate_transpose_padding,
 )
 
 # ------------------------------ Convolutional Layers ------------------------------ #
@@ -326,7 +326,7 @@ class ConvNDTranspose:
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
-        self.transposed_padding = _transpose_padding(
+        self.transposed_padding = _calculate_transpose_padding(
             padding=self.padding,
             extra_padding=self.output_padding,
             kernel_size=self.kernel_size,
