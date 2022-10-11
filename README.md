@@ -110,7 +110,7 @@ We will use `jax.vmap(model)` to apply `model` on batches.
 ```python
 @sk.treeclass
 class CNN:
-    def __init__(self, key:jr.PRNGKey = jr.PRNGKey(0)):
+    def __init__(self):
         self.conv1 = sk.nn.Conv2D(1, 32, (3, 3), padding="valid")
         self.relu1 = sk.nn.ReLU()
         self.pool1 = sk.nn.MaxPool2D((2, 2), strides=(2, 2))
