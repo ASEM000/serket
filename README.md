@@ -54,8 +54,8 @@ pip install git+https://github.com/ASEM000/serket
 |Blurring| `AvgBlur2D`, `GaussianBlur2D`|
 |Dropout|`Dropout`, `Dropout1D`, `Dropout2D`, `Dropout3D`, |
 |Physics|`Laplace2D` |
-|Random transforms|`RandomCrop1D`, `RandomCrop2D`, `RandomApply`, `RandomCutout1D`, `RandomCutout2D`, `RandomZoom2D` |
-|Preprocessing|`HistogramEqualization2D`|
+|Random transforms|`RandomCrop1D`, `RandomCrop2D`, `RandomApply`, `RandomCutout1D`, `RandomCutout2D`, `RandomZoom2D`, `RandomContrast2D` |
+|Preprocessing|`HistogramEqualization2D`, `AdjustContrast2D`|
 |Activations|`AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br>`CeLU`,`ELU`,`GELU`,`GLU`<br>,`HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br>`LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,<br>`SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`|
 |Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
 

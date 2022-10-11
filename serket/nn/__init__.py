@@ -34,6 +34,7 @@ from .activation import (
 from .blocks import UNetBlock, VGG16Block, VGG19Block
 from .blur import AvgBlur2D, GaussianBlur2D
 from .containers import Lambda, Sequential
+from .contrast import AdjustContrast2D, RandomContrast2D
 from .convolution import (
     Conv1D,
     Conv1DLocal,
@@ -209,4 +210,7 @@ __all__ = (
     "Tanh",
     "TanhShrink",
     "ThresholdedReLU",
+    # Contrast
+    "AdjustContrast2D",
+    "RandomContrast2D",
 )
