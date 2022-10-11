@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 import jax.numpy as jnp
 import numpy.testing as npt
 
@@ -13,7 +12,9 @@ def test_convolution_scan_1d():
     )
     layer = layer.at["weight"].set(jnp.array([[[1, 2, 3]]]))
     x = jnp.array([[1, 2, 3, 4, 5, 6]])
-    npt.assert_allclose(jnp.array([[8.0, 21.0, 39.0, 62.0, 90.0, 102.0]]), layer(x))
+    npt.assert_allclose(
+        jnp.array([[8.0, 21.0, 39.0, 62.0, 90.0, 102.0]]), layer(x), atol=1e-5
+    )
 
 
 def test_convolution_scan_2d():
@@ -33,6 +34,7 @@ def test_convolution_scan_2d():
             ]
         ),
         layer(x),
+        atol=1e-5,
     )
 
 
