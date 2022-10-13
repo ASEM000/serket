@@ -46,8 +46,8 @@ class Sequential:
         field_mapping = {**dict(self.__undeclared_fields__), **field_mapping}
         object.__setattr__(self, "__undeclared_fields__", MappingProxyType(field_mapping))  # fmt: skip
 
-    def __getitem__(self, key: str | int):
-        if isinstance(key, str) and key in self._keys:
+    def __getitem__(self, key: str | int | slice):
+        if isinstance(key, str):
             return getattr(self, key)
         elif isinstance(key, int):
             return getattr(self, self._keys[key])

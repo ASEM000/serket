@@ -637,6 +637,7 @@ class DepthwiseConv3D(DepthwiseConvND):
 class SeparableConvND:
     depthwise_conv: DepthwiseConvND
     pointwise_conv: DepthwiseConvND
+
     def __init__(
         self,
         in_features,

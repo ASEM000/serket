@@ -5,9 +5,8 @@ import functools as ft
 from types import FunctionType
 from typing import Any, Callable, Sequence
 
-import jax
-import jax.tree_util as jtu
 import jax.nn.initializers as ji
+import jax.tree_util as jtu
 
 
 def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padding):
@@ -27,10 +26,12 @@ def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_pad
         )
     )
 
+
 def _rename_func(func: Callable, name: str) -> Callable:
     """Rename a function."""
     func.__name__ = name
     return func
+
 
 _init_func_dict = {
     "he_normal": _rename_func(ji.he_normal(), "he_normal"),
