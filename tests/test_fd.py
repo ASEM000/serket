@@ -2,14 +2,14 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from serket.fd import finite_diff, generate_finitediff_coeffs
+from serket.fd import fdiff, generate_finitediff_coeffs
 
 
 def test_generate_finitediff_coeffs():
     DF = lambda N: generate_finitediff_coeffs(N, 1)
     all_correct = lambda x, y: np.testing.assert_allclose(x, y, atol=1e-2)
 
-    # https://en.wikipedia.org/wiki/Finite_difference_coefficient
+    # https://en.wikipedia.org/wiki/fdifference_coefficient
     all_correct(DF((0, 1)), jnp.array([-1.0, 1.0]))
     all_correct(DF((0, 1, 2)), jnp.array([-3 / 2.0, 2.0, -1 / 2]))
     all_correct(DF((0, 1, 2, 3)), jnp.array([-11 / 6, 3.0, -3 / 2, 1 / 3]))
@@ -26,7 +26,7 @@ def test_generate_finitediff_coeffs():
     all_correct(DF((-2.2, 3.2, 5)), jnp.array([-205 / 972, 280 / 972, -75 / 972]))
 
 
-def test_finite_diff_args():
+def test_fdiff_args():
 
     all_correct = lambda lhs, rhs: np.testing.assert_allclose(lhs, rhs, atol=0.05)
 
@@ -38,7 +38,7 @@ def test_finite_diff_args():
         lambda x: jnp.cos(x) * jnp.sin(x),
     ]:
         f1 = jax.grad(func)
-        f2 = finite_diff(func)
+        f2 = fdiff(func)
         args = (1.5,)
         F1, F2 = f1(*args), f2(*args)
         all_correct(F1, F2)
@@ -49,7 +49,7 @@ def test_finite_diff_args():
         lambda x, y: x + 2 + y * x,
     ]:
         f1 = jax.grad(func)
-        f2 = finite_diff(func)
+        f2 = fdiff(func)
         args = (1.5, 2.5)
         F1, F2 = f1(*args), f2(*args)
         all_correct(F1, F2)
@@ -60,20 +60,20 @@ def test_finite_diff_args():
         lambda x, y, z: x + 2 + y * x + z,
     ]:
         f1 = jax.grad(func)
-        f2 = finite_diff(func)
+        f2 = fdiff(func)
         args = (1.5, 2.5, 3.5)
         F1, F2 = f1(*args), f2(*args)
         all_correct(F1, F2)
 
 
-def test_finite_diff_second_derivative():
+def test_fdiff_second_derivative():
 
     all_correct = lambda lhs, rhs: np.testing.assert_allclose(lhs, rhs, atol=0.05)
 
     for func in [lambda x: x, lambda x: x**2, lambda x: x + 2]:
         f1 = jax.grad(jax.grad(func))
-        f2 = finite_diff(func, derivative=2)
-        f3 = finite_diff(finite_diff(func))
+        f2 = fdiff(func, derivative=2)
+        f3 = fdiff(fdiff(func))
         args = (1.5,)
         F1, F2, F3 = f1(*args), f2(*args), f3(*args)
         all_correct(F1, F2)
@@ -85,8 +85,8 @@ def test_finite_diff_second_derivative():
         lambda x, y: x + 2 + y * x,
     ]:
         f1 = jax.grad(jax.grad(func))
-        f2 = finite_diff(func, derivative=2)
-        f3 = finite_diff(finite_diff(func))
+        f2 = fdiff(func, derivative=2)
+        f3 = fdiff(fdiff(func))
         args = (1.5, 2.5)
         F1, F2, F3 = f1(*args), f2(*args), f3(*args)
         all_correct(F1, F2)
@@ -98,28 +98,28 @@ def test_finite_diff_second_derivative():
         lambda x, y, z: x + 2 + y * x + z,
     ]:
         f1 = jax.grad(jax.grad(func))
-        f2 = finite_diff(func, derivative=2)
-        f3 = finite_diff(finite_diff(func))
+        f2 = fdiff(func, derivative=2)
+        f3 = fdiff(fdiff(func))
         args = (1.5, 2.5, 3.5)
         F1, F2, F3 = f1(*args), f2(*args), f3(*args)
         all_correct(F1, F2)
         all_correct(F1, F3)
 
 
-def test_finite_diff_argnum():
+def test_fdiff_argnum():
 
     all_correct = lambda lhs, rhs: np.testing.assert_allclose(lhs, rhs, atol=0.05)
 
     # test argnums
     func = lambda x, y, z: x**2 + y**3 + z**4
     f1 = jax.grad(func, argnums=(0,))(1.0, 1.0, 1.0)
-    f2 = finite_diff(func, argnum=0)(1.0, 1.0, 1.0)
+    f2 = fdiff(func, argnum=0)(1.0, 1.0, 1.0)
     all_correct(f1, f2)
 
     f1 = jax.grad(func, argnums=(1,))(1.0, 1.0, 1.0)
-    f2 = finite_diff(func, argnum=1)(1.0, 1.0, 1.0)
+    f2 = fdiff(func, argnum=1)(1.0, 1.0, 1.0)
     all_correct(f1, f2)
 
     f1 = jax.grad(func, argnums=(2,))(1.0, 1.0, 1.0)
-    f2 = finite_diff(func, argnum=2)(1.0, 1.0, 1.0)
+    f2 = fdiff(func, argnum=2)(1.0, 1.0, 1.0)
     all_correct(f1, f2)

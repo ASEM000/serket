@@ -69,7 +69,7 @@ def generate_finitediff_coeffs(
     return C.flatten()
 
 
-def finite_diff(
+def fdiff(
     func: Callable,
     *,
     argnum: int = 0,
@@ -93,7 +93,7 @@ def finite_diff(
     Example:
         >>> def f(x):
         ...     return x**2
-        >>> df = finite_diff(f)
+        >>> df = fdiff(f)
         >>> df(2.0)
         DeviceArray(4., dtype=float32)
     """

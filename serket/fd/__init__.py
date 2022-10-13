@@ -1,3 +1,3 @@
-from .finite_diff import finite_diff, generate_finitediff_coeffs
+from .finite_diff import fdiff, generate_finitediff_coeffs
 
-__all__ = ("finite_diff", "generate_finitediff_coeffs")
+__all__ = ("fdiff", "generate_finitediff_coeffs")
