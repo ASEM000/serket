@@ -59,6 +59,10 @@ pip install git+https://github.com/ASEM000/serket
 |Activations|`AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br>`CeLU`,`ELU`,`GELU`,`GLU`<br>,`HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br>`LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,<br>`SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`|
 |Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
 
+- Other functions:
+    1) Finite difference package: `serket.fd`: `serket.fd.fdiff`, `serket.fd.generate_finitediff_coeffs`
+    2) Automatic differentiation: `serket.diff`, `serket.diff_and_grad` 
+
 
 ## ⏩ Quick Example: Train MNIST <a id="QuickExample">
 We will use `tensorflow` datasets for dataloading. for more on interface of jax/tensorflow dataset see [here](https://jax.readthedocs.io/en/latest/notebooks/neural_network_with_tfds_data.html)
