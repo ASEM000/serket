@@ -7,6 +7,7 @@ from typing import Any, Callable, Sequence
 
 import jax
 import jax.tree_util as jtu
+import jax.nn.initializers as ji
 
 
 def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padding):
@@ -26,20 +27,24 @@ def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_pad
         )
     )
 
+def _rename_func(func: Callable, name: str) -> Callable:
+    """Rename a function."""
+    func.__name__ = name
+    return func
 
 _init_func_dict = {
-    "he_normal": jax.nn.initializers.he_normal(),
-    "he_uniform": jax.nn.initializers.he_uniform(),
-    "glorot_normal": jax.nn.initializers.glorot_normal(),
-    "glorot_uniform": jax.nn.initializers.glorot_uniform(),
-    "lecun_normal": jax.nn.initializers.lecun_normal(),
-    "lecun_uniform": jax.nn.initializers.lecun_uniform(),
-    "normal": jax.nn.initializers.normal(),
-    "uniform": jax.nn.initializers.uniform(),
-    "ones": jax.nn.initializers.ones,
-    "zeros": jax.nn.initializers.zeros,
-    "xavier_normal": jax.nn.initializers.xavier_normal(),
-    "xavier_uniform": jax.nn.initializers.xavier_uniform(),
+    "he_normal": _rename_func(ji.he_normal(), "he_normal"),
+    "he_uniform": _rename_func(ji.he_uniform(), "he_uniform"),
+    "glorot_normal": _rename_func(ji.glorot_normal(), "glorot_normal"),
+    "glorot_uniform": _rename_func(ji.glorot_uniform(), "glorot_uniform"),
+    "lecun_normal": _rename_func(ji.lecun_normal(), "lecun_normal"),
+    "lecun_uniform": _rename_func(ji.lecun_uniform(), "lecun_uniform"),
+    "normal": _rename_func(ji.normal(), "normal"),
+    "uniform": _rename_func(ji.uniform(), "uniform"),
+    "ones": ji.ones,
+    "zeros": ji.zeros,
+    "xavier_normal": _rename_func(ji.xavier_normal(), "xavier_normal"),
+    "xavier_uniform": _rename_func(ji.xavier_uniform(), "xavier_uniform"),
 }
 
 
@@ -52,7 +57,6 @@ def _check_and_return_init_func(
     elif isinstance(init_func, str):
         if init_func in _init_func_dict:
             return jtu.Partial(_init_func_dict[init_func])
-
         raise ValueError(f"{name} must be one of {list(_init_func_dict.keys())}")
 
     elif init_func is None:
