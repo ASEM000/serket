@@ -4,6 +4,123 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
+__all__ = (
+    "AdaptiveLeakyReLU",
+    "AdaptiveReLU",
+    "AdaptiveSigmoid",
+    "AdaptiveTanh",
+    "CeLU",
+    "ELU",
+    "GELU",
+    "GLU",
+    "HardSILU",
+    "HardShrink",
+    "HardSigmoid",
+    "HardSwish",
+    "HardTanh",
+    "LeakyReLU",
+    "LogSigmoid",
+    "LogSoftmax",
+    "Mish",
+    "PReLU",
+    "ReLU",
+    "ReLU6",
+    "SILU",
+    "SeLU",
+    "Sigmoid",
+    "SoftPlus",
+    "SoftShrink",
+    "SoftSign",
+    "Swish",
+    "Tanh",
+    "TanhShrink",
+    "ThresholdedReLU",
+)
+
+
+@pytc.treeclass
+class AdaptiveLeakyReLU:
+    a: float = 1.0
+    v: float = pytc.nondiff_field(default=1.0)
+
+    def __post_init__(self, a: float = 1.0, v: float = 1.0):
+        """
+        Args:
+            a: scaling factor for positive values
+            v: scaling factor for negative values
+
+        See:
+            https://arxiv.org/pdf/1906.01170.pdf
+        """
+        if not isinstance(self.a, float) or self.a < 0:
+            raise ValueError(f"`a` must be a positive float, got {self.a}")
+
+        if not isinstance(self.v, float) or self.v < 0:
+            raise ValueError(f"`v` must be a positive float, got {self.v}")
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jnp.maximum(0, self.a * x) - self.v * jnp.maximum(0, -self.a * x)
+
+
+@pytc.treeclass
+class AdaptiveReLU:
+    a: float = 1.0
+
+    def __post_init__(self):
+        """
+        Args:
+            a: scaling factor
+        See:
+            https://arxiv.org/pdf/1906.01170.pdf"""
+        if not isinstance(self.a, float) or self.a < 0:
+            raise ValueError(f"`a` must be a positive float, got {self.a}")
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jnp.maximum(0, self.a * x)
+
+
+@pytc.treeclass
+class AdaptiveSigmoid:
+    a: float = 1.0
+
+    def __post_init__(self):
+        """
+        Args:
+            a: scaling factor
+
+        See:
+            https://arxiv.org/pdf/1906.01170.pdf
+        """
+        if not isinstance(self.a, float):
+            raise TypeError(f"AdaptiveSigmoid: a must be a float, not {type(self.a)}")
+
+        if self.a < 0:
+            raise ValueError(f"AdaptiveSigmoid: a must be positive, not {self.a}")
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return 1 / (1 + jnp.exp(-self.a * x))
+
+
+@pytc.treeclass
+class AdaptiveTanh:
+    a: float = 1.0
+
+    def __post_init__(self):
+        """
+        Args:
+            a: scaling factor
+
+        See:
+            https://arxiv.org/pdf/1906.01170.pdf
+        """
+        if not isinstance(self.a, float) or self.a < 0:
+            raise ValueError(f"`a` must be a positive float, got {self.a}")
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return (jnp.exp(self.a * x) - jnp.exp(-self.a * x)) / (
+            jnp.exp(self.a * x) + jnp.exp(-self.a * x)
+        )
+
 
 @pytc.treeclass
 class CeLU:
@@ -43,19 +160,29 @@ class GLU:
 
 
 @pytc.treeclass
-class HardSigmoid:
-    """Hard sigmoid activation function"""
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return jax.nn.hard_sigmoid(x)
-
-
-@pytc.treeclass
 class HardSILU:
     """Hard SILU activation function"""
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return jax.nn.hard_silu(x)
+
+
+@pytc.treeclass
+class HardShrink:
+    """Hard shrink activation function"""
+
+    alpha: float = pytc.nondiff_field(default=0.5)
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jnp.where(x > self.alpha, x, jnp.where(x < -self.alpha, x, 0.0))
+
+
+@pytc.treeclass
+class HardSigmoid:
+    """Hard sigmoid activation function"""
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return jax.nn.hard_sigmoid(x)
 
 
 @pytc.treeclass
@@ -72,16 +199,6 @@ class HardTanh:
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return jax.nn.hard_tanh(x)
-
-
-@pytc.treeclass
-class HardShrink:
-    """Hard shrink activation function"""
-
-    alpha: float = pytc.nondiff_field(default=0.5)
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return jnp.where(x > self.alpha, x, jnp.where(x < -self.alpha, x, 0.0))
 
 
 @pytc.treeclass
@@ -241,87 +358,3 @@ class PReLU:
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return jnp.where(x > 0, x, x * self.a)
-
-
-@pytc.treeclass
-class AdaptiveReLU:
-    a: float = 1.0
-
-    def __post_init__(self):
-        """
-        Args:
-            a: scaling factor
-        See:
-            https://arxiv.org/pdf/1906.01170.pdf"""
-        if not isinstance(self.a, float) or self.a < 0:
-            raise ValueError(f"`a` must be a positive float, got {self.a}")
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return jnp.maximum(0, self.a * x)
-
-
-@pytc.treeclass
-class AdaptiveLeakyReLU:
-    a: float = 1.0
-    v: float = pytc.nondiff_field(default=1.0)
-
-    def __post_init__(self, a: float = 1.0, v: float = 1.0):
-        """
-        Args:
-            a: scaling factor for positive values
-            v: scaling factor for negative values
-
-        See:
-            https://arxiv.org/pdf/1906.01170.pdf
-        """
-        if not isinstance(self.a, float) or self.a < 0:
-            raise ValueError(f"`a` must be a positive float, got {self.a}")
-
-        if not isinstance(self.v, float) or self.v < 0:
-            raise ValueError(f"`v` must be a positive float, got {self.v}")
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return jnp.maximum(0, self.a * x) - self.v * jnp.maximum(0, -self.a * x)
-
-
-@pytc.treeclass
-class AdaptiveSigmoid:
-    a: float = 1.0
-
-    def __post_init__(self):
-        """
-        Args:
-            a: scaling factor
-
-        See:
-            https://arxiv.org/pdf/1906.01170.pdf
-        """
-        if not isinstance(self.a, float):
-            raise TypeError(f"AdaptiveSigmoid: a must be a float, not {type(self.a)}")
-
-        if self.a < 0:
-            raise ValueError(f"AdaptiveSigmoid: a must be positive, not {self.a}")
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return 1 / (1 + jnp.exp(-self.a * x))
-
-
-@pytc.treeclass
-class AdaptiveTanh:
-    a: float = 1.0
-
-    def __post_init__(self):
-        """
-        Args:
-            a: scaling factor
-
-        See:
-            https://arxiv.org/pdf/1906.01170.pdf
-        """
-        if not isinstance(self.a, float) or self.a < 0:
-            raise ValueError(f"`a` must be a positive float, got {self.a}")
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return (jnp.exp(self.a * x) - jnp.exp(-self.a * x)) / (
-            jnp.exp(self.a * x) + jnp.exp(-self.a * x)
-        )

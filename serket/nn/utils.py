@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import dataclasses
 import functools as ft
 from types import FunctionType
-from typing import Callable
+from typing import Any, Callable, Sequence
 
 import jax
 import jax.tree_util as jtu
@@ -160,3 +161,24 @@ _check_and_return_strides = ft.partial(_check_and_return, name="stride")
 _check_and_return_input_dilation = ft.partial(_check_and_return, name="input_dilation")
 _check_and_return_kernel_dilation = ft.partial(_check_and_return, name="kernel_dilation")  # fmt: skip
 _check_and_return_input_size = ft.partial(_check_and_return, name="input_size")  # fmt: skip
+
+
+def _create_fields_from_container(items: Sequence[Any]) -> dict:
+    return_map = {}
+    for i, item in enumerate(items):
+        field_item = dataclasses.field(repr=True)
+        field_name = f"{(item.__class__.__name__)}_{i}"
+        object.__setattr__(field_item, "name", field_name)
+        object.__setattr__(field_item, "type", type(item))
+        return_map[field_name] = field_item
+    return return_map
+
+
+def _create_fields_from_mapping(items: dict[str, Any]) -> dict:
+    return_map = {}
+    for field_name, item in items.items():
+        field_item = dataclasses.field(repr=True)
+        object.__setattr__(field_item, "name", field_name)
+        object.__setattr__(field_item, "type", type(item))
+        return_map[field_name] = field_item
+    return return_map

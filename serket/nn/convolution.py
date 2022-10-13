@@ -16,6 +16,7 @@ from jax.lax import ConvDimensionNumbers
 
 from .utils import (
     _calculate_convolution_output_shape,
+    _calculate_transpose_padding,
     _check_and_return_init_func,
     _check_and_return_input_dilation,
     _check_and_return_input_size,
@@ -23,7 +24,6 @@ from .utils import (
     _check_and_return_kernel_dilation,
     _check_and_return_padding,
     _check_and_return_strides,
-    _calculate_transpose_padding,
 )
 
 # ------------------------------ Convolutional Layers ------------------------------ #
@@ -644,10 +644,6 @@ class SeparableConvND:
     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
     strides: int | tuple[int, ...] = pytc.nondiff_field()
     padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
-
-    depthwise_weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]  # fmt: skip
-    pointwise_weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]  # fmt: skip
-    pointwise_bias_init_func: str | Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
 
     def __init__(
         self,

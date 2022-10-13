@@ -6,4 +6,4 @@ from .operators import diff, diff_and_grad
 
 __all__ = ("nn", "treeclass, nondiff_field", "kmap", "kscan", "diff", "diff_and_grad")
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"

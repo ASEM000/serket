@@ -45,12 +45,13 @@ class AvgBlur2D:
             bias_init_func=None,
         )
 
-        self.conv1 = conv1.at["weight"].set(w)
-        self.conv2 = conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
+        conv1 = conv1.at["weight"].set(w)
+        conv2 = conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
+        self._func = lambda x: conv2(conv1(x))
 
     def __call__(self, x, **kwargs) -> jnp.ndarray:
         assert x.ndim == 3, "`Input` must be 3D."
-        return self.conv2(self.conv1(x))
+        return self._func(x)
 
 
 @pytc.treeclass

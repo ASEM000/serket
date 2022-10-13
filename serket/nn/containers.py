@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import field
 from types import MappingProxyType
 from typing import Any, Callable
 
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
+
+from .utils import _create_fields_from_container, _create_fields_from_mapping
 
 
 @pytc.treeclass
@@ -24,52 +25,26 @@ class Sequential:
 
         Args:
             layers: list of layers or dict of layers
-
-        Example:
-            >>> model = Sequential([sk.nn.Linear(1,1), sk.nn.Dropout(0), sk.nn.Linear(1,1)])
-            >>> model
-            Sequential
-                ├── Linear_0=Linear
-                │   ├── weight=f32[1,1]
-                │   ├── bias=f32[1]
-                │   ├*─ in_features=1
-                │   └*─ out_features=1
-                ├── Dropout_1=Dropout
-                │   ├── p=0
-                │   └── eval=None
-                └── Linear_2=Linear
-                    ├── weight=f32[1,1]
-                    ├── bias=f32[1]
-                    ├*─ in_features=1
-                    └*─ out_features=1
         """
-        extra_fields = dict()
         if isinstance(layers, (list, tuple)):
-            for i, layer in enumerate(layers):
-                field_value = field(repr=True)
-                field_name = f"{(layer.__class__.__name__)}_{i}"
-                object.__setattr__(field_value, "name", field_name)
-                object.__setattr__(field_value, "type", type(layer))
-                extra_fields[field_name] = field_value
-                setattr(self, field_name, layer)
+            field_mapping = _create_fields_from_container(layers)
 
         elif isinstance(layers, dict):
-            for key, layer in layers.items():
-                field_value = field(repr=True)
-                object.__setattr__(field_value, "name", key)
-                object.__setattr__(field_value, "type", type(layer))
-                extra_fields[key] = field_value
-                setattr(self, key, layer)
+            field_mapping = _create_fields_from_mapping(layers)
+            layers = layers.values()
+
         else:
-            raise TypeError(f"layers must be list, tuple or dict, but got {type(layers)}")  # fmt: skip
+            raise TypeError(
+                f"layers must be list, tuple or dict, but got {type(layers)}"
+            )
 
-        self._keys = tuple(extra_fields.keys())
+        self._keys = tuple(field_mapping.keys())
 
-        object.__setattr__(
-            self,
-            "__undeclared_fields__",
-            MappingProxyType({**dict(self.__undeclared_fields__), **extra_fields}),
-        )
+        for name, layer in zip(self._keys, layers):
+            setattr(self, name, layer)
+
+        field_mapping = {**dict(self.__undeclared_fields__), **field_mapping}
+        object.__setattr__(self, "__undeclared_fields__", MappingProxyType(field_mapping))  # fmt: skip
 
     def __getitem__(self, key: str | int):
         if isinstance(key, str) and key in self._keys:
