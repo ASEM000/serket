@@ -99,9 +99,9 @@ class Gradient:
         step_size=1,
         derivative=1,
     ):
-        """Compute the gradient along a given axis
+        """Compute the gradient along a given axis as a Layer
         Similar to np.gradient, but with the option to specify accuracy, derivative and step size
-        See:
+        See: https://github.com/google/jax/blob/main/jax/_src/numpy/lax_numpy.py
 
         Args:
             axis: axis along which to compute the gradient. Default is 0

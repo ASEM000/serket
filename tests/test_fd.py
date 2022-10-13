@@ -1,8 +1,15 @@
 import jax
 import jax.numpy as jnp
 import numpy as np
+import numpy.testing as npt
 
-from serket.fd import fdiff, generate_finitediff_coeffs
+from serket.fd import (
+    FiniteDiff,
+    ParameterizedFiniteDiff,
+    fdiff,
+    generate_finitediff_coeffs,
+)
+from serket.nn import Lambda
 
 
 def test_generate_finitediff_coeffs():
@@ -123,3 +130,20 @@ def test_fdiff_argnum():
     f1 = jax.grad(func, argnums=(2,))(1.0, 1.0, 1.0)
     f2 = fdiff(func, argnum=2)(1.0, 1.0, 1.0)
     all_correct(f1, f2)
+
+
+def test_fdiff_layer():
+
+    layer = ParameterizedFiniteDiff()
+    npt.assert_allclose(
+        layer(Lambda(lambda x: x**3))(jnp.ones([10, 1])),
+        jnp.ones([10, 1]) * 3,
+        atol=0.01,
+    )
+
+    layer = FiniteDiff()
+    npt.assert_allclose(
+        layer(Lambda(lambda x: x**3))(jnp.ones([10, 1])),
+        jnp.ones([10, 1]) * 3,
+        atol=0.01,
+    )
