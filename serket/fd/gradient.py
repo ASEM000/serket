@@ -117,11 +117,15 @@ class Gradient:
         self.step_size = step_size
         self.derivative = derivative
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return gradient(
-            x,
-            axis=self.axis,
-            accuracy=self.accuracy,
-            step_size=self.step_size,
-            derivative=self.derivative,
+        self._func = jax.jit(
+            ft.partial(
+                gradient,
+                axis=self.axis,
+                accuracy=self.accuracy,
+                step_size=self.step_size,
+                derivative=self.derivative,
+            )
         )
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return self._func(x, **kwargs)

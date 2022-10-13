@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 
 from serket import diff
-from serket.fd import gradient
+from serket.fd import Gradient, gradient
 
 
 def test_gradient_first_derivative():
@@ -104,3 +104,24 @@ def test_gradient_dx_dy():
             f_ff,
             atol=1e-1,
         )
+
+
+def test_Gradient():
+    all_correct = lambda lhs, rhs: npt.assert_allclose(lhs, rhs, atol=1e-4)
+
+    for func in [
+        lambda x, y: x + y,
+        lambda x, y: x**2 + y**3,
+        lambda x, y: x + 2 + y * x,
+    ]:
+        x, y = [jnp.linspace(0, 1, 100)] * 2
+        dx, dy = x[1] - x[0], y[1] - y[0]
+        X, Y = jnp.meshgrid(x, y, indexing="ij")
+        f = func(X, Y)
+        f1 = jnp.gradient(f, axis=0) / dx
+        f2 = Gradient(step_size=dx, axis=0)(f)
+        all_correct(f1, f2)
+
+        f1 = jnp.gradient(f, axis=1) / dy
+        f2 = Gradient(step_size=dy, axis=1)(f)
+        all_correct(f1, f2)
