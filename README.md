@@ -45,7 +45,7 @@ pip install git+https://github.com/ASEM000/serket
 | Linear  | `Linear`, `Bilinear`,`Identity`   |
 |Densely connected|`FNN` (Fully connected network), `PFNN` (Parallel fully connected network)|
 | Convolution | `Conv1D`, `Conv2D`, `Conv3D`, `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`, `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`, `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal`  |
-|Convolution scan <br> (physics-related)|`ConvScan1D`, `ConvScan2D`, `ConvScan3D` (`kernex` backend)|
+|Convolution scan |`ConvScan1D`, `ConvScan2D`, `ConvScan3D` (`kernex` backend)(physics-related)|
 | Containers| `Sequential`, `Lambda` |
 |Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` (`kernex` backend)|
 |Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsampling1D`, `Upsampling2D`, `Upsampling3D`, `Padding1D`, `Padding2D`, `Padding3D` |
@@ -57,6 +57,7 @@ pip install git+https://github.com/ASEM000/serket
 |Random transforms|`RandomCrop1D`, `RandomCrop2D`, `RandomApply`, `RandomCutout1D`, `RandomCutout2D`, `RandomZoom2D`, `RandomContrast2D` |
 |Preprocessing|`HistogramEqualization2D`, `AdjustContrast2D`|
 |Activations|`AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br>`CeLU`,`ELU`,`GELU`,`GLU`<br>,`HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br>`LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,<br>`SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`|
+|Finite difference|`Gradient`|
 |Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
 
 - Other functions:

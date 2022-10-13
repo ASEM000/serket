@@ -4,6 +4,7 @@ import functools as ft
 
 import jax
 import jax.numpy as jnp
+import pytreeclass as pytc
 
 from .utils import (
     _generate_backward_offsets,
@@ -42,11 +43,9 @@ def gradient(
         >>> x, y = [jnp.linspace(0, 1, 100)] * 2
         >>> dx, dy = x[1] - x[0], y[1] - y[0]
         >>> X, Y = jnp.meshgrid(x, y, indexing="ij")
-        >>> F =  jnp.sin(X) * jnp.cos(Y) 
+        >>> F =  jnp.sin(X) * jnp.cos(Y)
         >>> dFdX = gradient(F, step_size=dx, axis=0, accuracy=3)
         >>> dFdXdY = gradient(dFdX, step_size=dy, axis=1, accuracy=3)
-    
-    
 
     """
     size = x.shape[axis]
@@ -83,3 +82,46 @@ def gradient(
     return jnp.concatenate([left_x, center_x, right_x], axis=axis) / (
         step_size**derivative
     )
+
+
+@pytc.treeclass
+class Gradient:
+    axis: int = pytc.nondiff_field()
+    accuracy: int = pytc.nondiff_field()
+    step_size: float = pytc.nondiff_field()
+    derivative: int = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        *,
+        axis=0,
+        accuracy=1,
+        step_size=1,
+        derivative=1,
+    ):
+        """Compute the gradient along a given axis
+        Similar to np.gradient, but with the option to specify accuracy, derivative and step size
+        See:
+
+        Args:
+            axis: axis along which to compute the gradient. Default is 0
+            accuracy: accuracy order of the gradient. Default is 1
+            step_size: step size. Default is 1
+            derivative: derivative order of the gradient. Default is 1
+
+        Returns:
+            gradient: gradient along the given axis
+        """
+        self.axis = axis
+        self.accuracy = accuracy
+        self.step_size = step_size
+        self.derivative = derivative
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return gradient(
+            x,
+            axis=self.axis,
+            accuracy=self.accuracy,
+            step_size=self.step_size,
+            derivative=self.derivative,
+        )
