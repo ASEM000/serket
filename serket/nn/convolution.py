@@ -637,14 +637,6 @@ class DepthwiseConv3D(DepthwiseConvND):
 class SeparableConvND:
     depthwise_conv: DepthwiseConvND
     pointwise_conv: DepthwiseConvND
-
-    in_features: int = pytc.nondiff_field()
-    out_features: int = pytc.nondiff_field()
-    depth_multiplier: int = pytc.nondiff_field()
-    kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
-    strides: int | tuple[int, ...] = pytc.nondiff_field()
-    padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
-
     def __init__(
         self,
         in_features,
