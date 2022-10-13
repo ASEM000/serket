@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import functools as ft
 from typing import Callable
 
-import jax
 import jax.numpy as jnp
 
 from .utils import _generate_central_offsets, generate_finitediff_coeffs
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy", "derivative"))
 def fdiff(
     func: Callable,
     *,
