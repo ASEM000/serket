@@ -13,7 +13,7 @@ def _generate_central_offsets(
     """Generate central difference offsets
 
     Args:
-        derivative (int): derivative order
+        derivative : derivative order
 
     Returns:
         tuple[float | int, ...]: central difference offsets
@@ -35,8 +35,8 @@ def generate_finitediff_coeffs(
     """Generate FD coeffs
 
     Args:
-        offsets (tuple[float | int, ...]): offsets of the finite difference stencil
-        derivative (int): derivative order
+        offsets: offsets of the finite difference stencil
+        derivative: derivative order
 
     Returns:
         tuple[float]: finite difference coefficients
@@ -76,16 +76,17 @@ def fdiff(
     step_size: float = None,
     offsets: tuple[float | int, ...] = None,
     derivative: int = 1,
-    **kwargs,
+    accuracy: int = 2,
 ) -> Callable:
     """Finite difference derivative of a function
 
     Args:
-        func (Callable): function to differentiate
-        argnum (int, optional): argument number to differentiate. Defaults to 0.
-        step_size (float, optional): step size for the finite difference stencil. Defaults to None.
-        offsets (tuple[float | int, ...], optional): offsets for the finite difference stencil. Defaults to None.
-        derivative (int, optional): derivative order. Defaults to 1.
+        func: function to differentiate
+        argnum: argument number to differentiate. Defaults to 0.
+        step_size: step size for the finite difference stencil. Defaults to None.
+        offsets: offsets for the finite difference stencil. Defaults to None.
+        derivative: derivative order. Defaults to 1.
+        accuracy: accuracy of the finite difference stencil. Defaults to 2. used to generate offsets if not provided.
 
     Returns:
         Callable: derivative of the function
@@ -105,7 +106,10 @@ def fdiff(
         raise ValueError(f"derivative must be a positive integer, got {derivative}")
 
     if offsets is None:
-        offsets = _generate_central_offsets(derivative, accuracy=2)
+        if accuracy < 2:
+            raise ValueError(f"accuracy must be >= 2, got {accuracy}")
+
+        offsets = _generate_central_offsets(derivative, accuracy=accuracy)
 
     if step_size is None:
         step_size = 1e-3 * (10 ** (derivative))
