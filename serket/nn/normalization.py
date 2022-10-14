@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import dataclasses
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
@@ -57,7 +60,7 @@ class LayerNorm:
 
 
 @pytc.treeclass
-class GroupNorm:
+class _GroupNorm:
     γ: jnp.ndarray = None
     β: jnp.ndarray = None
 
@@ -122,6 +125,30 @@ class GroupNorm:
             β = jnp.expand_dims(self.β, axis=(dims[:-1]))
             x̂ = x̂ * γ + β
         return x̂
+
+
+@pytc.treeclass
+class GroupNorm(_GroupNorm):
+    def __init__(self, in_features, **kwargs):
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                super().__init__,
+                **kwargs,
+            )
+        else:
+            super().__init__(
+                in_features=in_features,
+                **kwargs,
+            )
+
+    def __call__(self, x, **kwargs):
+        if hasattr(self, "_partial_init"):
+            self._partial_init(in_features=x.shape[0])
+            object.__delattr__(self, "_partial_init")
+        return super().__call__(x, **kwargs)
 
 
 @pytc.treeclass

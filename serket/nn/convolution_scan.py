@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+import functools as ft
 from typing import Callable
 
 import jax.numpy as jnp
@@ -19,7 +21,7 @@ from .utils import (
 
 
 @pytc.treeclass
-class ConvScanND:
+class _ConvScanND:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -184,6 +186,34 @@ class ConvScanND:
         if self.bias is None:
             return y
         return y + self.bias
+
+
+@pytc.treeclass
+class ConvScanND(_ConvScanND):
+    def __init__(self, in_features, out_features, kernel_size, **kwargs):
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                super().__init__,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                **kwargs,
+            )
+        else:
+            super().__init__(
+                in_features=in_features,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                **kwargs,
+            )
+
+    def __call__(self, x, **kwargs):
+        if hasattr(self, "_partial_init"):
+            self._partial_init(in_features=x.shape[0])
+            object.__delattr__(self, "_partial_init")
+        return super().__call__(x, **kwargs)
 
 
 @pytc.treeclass

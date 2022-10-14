@@ -1120,11 +1120,7 @@ def test_lazy_conv():
     assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
 
     layer = SeparableConv1D(None, 1, 3)
-    assert layer.depthwise_weight is None
-    assert layer.pointwise_weight is None
     assert layer(jnp.ones([10, 3])).shape == (1, 3)
 
     layer = SeparableConv2D(None, 1, 3)
-    assert layer.depthwise_weight is None
-    assert layer.pointwise_weight is None
     assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)

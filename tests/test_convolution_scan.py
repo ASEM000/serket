@@ -71,3 +71,17 @@ def test_convolution_scan_2d():
 #         ),
 #         atol=1e-5,
 #     )
+
+
+def test_lazy_convscan():
+    layer = ConvScan1D(None, 1, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3])).shape == (1, 3)
+
+    layer = ConvScan2D(None, 1, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
+
+    layer = ConvScan3D(None, 1, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3, 3, 3])).shape == (1, 3, 3, 3)

@@ -55,3 +55,8 @@ def test_GaussBlur2D():
 
     with pytest.raises(ValueError):
         GaussianBlur2D(0, 1, sigma=1.0)
+
+
+def test_lazy_blur():
+    layer = GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0)
+    assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)

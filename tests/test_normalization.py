@@ -197,3 +197,9 @@ def test_group_norm():
 
     with pytest.raises(ValueError):
         layer = GroupNorm(in_features=-1, groups=0)
+
+
+def test_lazy_normalization():
+    layer = GroupNorm(None, groups=1)
+    assert layer.groups is None
+    assert layer(jnp.ones([1, 2, 3, 4])).shape == (1, 2, 3, 4)
