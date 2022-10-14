@@ -11,6 +11,9 @@ from .convolution import DepthwiseConv2D
 
 @pytc.treeclass
 class AvgBlur2D:
+    conv1: DepthwiseConv2D = pytc.nondiff_field(repr=False)
+    conv2: DepthwiseConv2D = pytc.nondiff_field(repr=False)
+
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
         """Average blur 2D layer
         Args:
@@ -31,27 +34,26 @@ class AvgBlur2D:
         w = w[:, None]
         w = jnp.repeat(w[None, None], in_features, axis=0)
 
-        conv1 = DepthwiseConv2D(
+        self.conv1 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(kernel_size, 1),
             padding="same",
             bias_init_func=None,
         )
 
-        conv2 = DepthwiseConv2D(
+        self.conv2 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(1, kernel_size),
             padding="same",
             bias_init_func=None,
         )
 
-        conv1 = conv1.at["weight"].set(w)
-        conv2 = conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
-        self._func = lambda x: conv2(conv1(x))
+        self.conv1 = self.conv1.at["weight"].set(w)
+        self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
 
     def __call__(self, x, **kwargs) -> jnp.ndarray:
         assert x.ndim == 3, "`Input` must be 3D."
-        return self._func(x)
+        return self.conv2(self.conv1(x))
 
 
 @pytc.treeclass
@@ -59,6 +61,9 @@ class GaussianBlur2D:
     in_features: int = pytc.nondiff_field()
     kernel_size: int = pytc.nondiff_field()
     sigma: float = pytc.nondiff_field()
+
+    conv1: DepthwiseConv2D = pytc.nondiff_field(repr=False)
+    conv2: DepthwiseConv2D = pytc.nondiff_field(repr=False)
 
     def __init__(
         self,
@@ -96,23 +101,22 @@ class GaussianBlur2D:
 
         # if implementation == "jax":
         w = jnp.repeat(w[None, None], in_features, axis=0)
-        conv1 = DepthwiseConv2D(
+        self.conv1 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(kernel_size, 1),
             padding="same",
             bias_init_func=None,
         )
 
-        conv2 = DepthwiseConv2D(
+        self.conv2 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(1, kernel_size),
             padding="same",
             bias_init_func=None,
         )
 
-        conv1 = conv1.at["weight"].set(w)
-        conv2 = conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
-        self._func = lambda x: conv2(conv1(x))
+        self.conv1 = self.conv1.at["weight"].set(w)
+        self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
         # elif implementation == "kernex":
         #     # usually faster than jax for small kernel sizes
@@ -135,4 +139,4 @@ class GaussianBlur2D:
 
     def __call__(self, x, **kwargs) -> jnp.ndarray:
         assert x.ndim == 3, "`Input` must be 3D."
-        return self._func(x)
+        return self.conv1(self.conv2(x))

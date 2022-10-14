@@ -162,7 +162,7 @@ def _check_and_return(value, ndim, name):
 
 
 _check_and_return_kernel = ft.partial(_check_and_return, name="kernel_size")
-_check_and_return_strides = ft.partial(_check_and_return, name="stride")
+_check_and_return_strides = ft.partial(_check_and_return, name="strides")
 _check_and_return_input_dilation = ft.partial(_check_and_return, name="input_dilation")
 _check_and_return_kernel_dilation = ft.partial(_check_and_return, name="kernel_dilation")  # fmt: skip
 _check_and_return_input_size = ft.partial(_check_and_return, name="input_size")  # fmt: skip
