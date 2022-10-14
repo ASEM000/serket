@@ -26,8 +26,8 @@ class MaxPoolND:
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        *,
         strides: tuple[int, ...] | int = 1,
+        *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
         ndim: int = 1,
     ):
@@ -60,8 +60,8 @@ class MaxPool1D(MaxPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        *,
         strides: tuple[int, ...] | int = 1,
+        *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
@@ -74,8 +74,8 @@ class MaxPool2D(MaxPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        *,
         strides: tuple[int, ...] | int = 1,
+        *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
@@ -88,8 +88,8 @@ class MaxPool3D(MaxPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        *,
         strides: tuple[int, ...] | int = 1,
+        *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
@@ -107,8 +107,8 @@ class AvgPoolND:
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        *,
         strides: tuple[int, ...] | int = 1,
+        *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
         ndim: int = 1,
     ):
@@ -141,8 +141,8 @@ class AvgPool1D(AvgPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        *,
         strides: tuple[int, ...] | int = 1,
+        *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
@@ -155,8 +155,8 @@ class AvgPool2D(AvgPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        *,
         strides: tuple[int, ...] | int = 1,
+        *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
@@ -169,8 +169,8 @@ class AvgPool3D(AvgPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        *,
         strides: tuple[int, ...] | int = 1,
+        *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
