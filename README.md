@@ -64,7 +64,10 @@ pip install git+https://github.com/ASEM000/serket
     2) Automatic differentiation: `serket.diff`, `serket.diff_and_grad` 
 
 
-## ⏩ Quick Example: Train MNIST <a id="QuickExample">
+## ⏩ Quick Example: <a id="QuickExample">
+
+<details><summary>Train MNIST</summary>
+
 We will use `tensorflow` datasets for dataloading. for more on interface of jax/tensorflow dataset see [here](https://jax.readthedocs.io/en/latest/notebooks/neural_network_with_tfds_data.html)
 
 ```python
@@ -325,6 +328,8 @@ show_images_with_predictions(test_model, sample_test_images, sample_test_labels)
 <details> 
     
 ![image](assets/after_training.svg)
+
+</details>
 
 </details>
 
