@@ -1076,3 +1076,55 @@ def test_groups_error():
 
     with pytest.raises(ValueError):
         Conv3DTranspose(1, 1, 3, groups=0)
+
+
+def test_lazy_conv():
+    layer = Conv1D(None, 1, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3])).shape == (1, 3)
+
+    layer = Conv2D(None, 1, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
+
+    layer = Conv3D(None, 1, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3, 3, 3])).shape == (1, 3, 3, 3)
+
+    layer = Conv1DTranspose(None, 1, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3])).shape == (1, 3)
+
+    layer = Conv2DTranspose(None, 1, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
+
+    layer = Conv3DTranspose(None, 1, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3, 3, 3])).shape == (1, 3, 3, 3)
+
+    layer = DepthwiseConv1D(None, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3])).shape == (10, 3)
+
+    layer = DepthwiseConv2D(None, 3)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3, 3])).shape == (10, 3, 3)
+
+    layer = Conv1DLocal(None, 1, 3, in_size=(3,))
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3])).shape == (1, 3)
+
+    layer = Conv2DLocal(None, 1, 3, in_size=(3, 3))
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
+
+    layer = SeparableConv1D(None, 1, 3)
+    assert layer.depthwise_weight is None
+    assert layer.pointwise_weight is None
+    assert layer(jnp.ones([10, 3])).shape == (1, 3)
+
+    layer = SeparableConv2D(None, 1, 3)
+    assert layer.depthwise_weight is None
+    assert layer.pointwise_weight is None
+    assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)

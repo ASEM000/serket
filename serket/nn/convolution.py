@@ -141,10 +141,7 @@ class _ConvND:
 class ConvND(_ConvND):
     def __init__(self, in_features, out_features, kernel_size, **kwargs):
         if in_features is None:
-            # infer in_features from first call
             for field_item in dataclasses.fields(self):
-                # set all fields to None to avoid repr errors
-                # and make sure they are not used before the first call
                 setattr(self, field_item.name, None)
 
             self._partial_init = ft.partial(
@@ -154,7 +151,12 @@ class ConvND(_ConvND):
                 **kwargs,
             )
         else:
-            super().__init__(in_features, out_features, kernel_size, **kwargs)
+            super().__init__(
+                in_features=in_features,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                **kwargs,
+            )
 
     def __call__(self, x, **kwargs):
         if hasattr(self, "_partial_init"):
@@ -379,10 +381,7 @@ class _ConvNDTranspose:
 class ConvNDTranspose(_ConvNDTranspose):
     def __init__(self, in_features, out_features, kernel_size, **kwargs):
         if in_features is None:
-            # infer in_features from first call
             for field_item in dataclasses.fields(self):
-                # set all fields to None to avoid repr errors
-                # and make sure they are not used before the first call
                 setattr(self, field_item.name, None)
 
             self._partial_init = ft.partial(
@@ -392,7 +391,12 @@ class ConvNDTranspose(_ConvNDTranspose):
                 **kwargs,
             )
         else:
-            super().__init__(in_features, out_features, kernel_size, **kwargs)
+            super().__init__(
+                in_features=in_features,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                **kwargs,
+            )
 
     def __call__(self, x, **kwargs):
         if hasattr(self, "_partial_init"):
@@ -606,10 +610,7 @@ class _DepthwiseConvND:
 class DepthwiseConvND(_DepthwiseConvND):
     def __init__(self, in_features, kernel_size, **kwargs):
         if in_features is None:
-            # infer in_features from first call
             for field_item in dataclasses.fields(self):
-                # set all fields to None to avoid repr errors
-                # and make sure they are not used before the first call
                 setattr(self, field_item.name, None)
 
             self._partial_init = ft.partial(
@@ -618,7 +619,7 @@ class DepthwiseConvND(_DepthwiseConvND):
                 **kwargs,
             )
         else:
-            super().__init__(in_features, kernel_size, **kwargs)
+            super().__init__(in_features=in_features, kernel_size=kernel_size, **kwargs)
 
     def __call__(self, x, **kwargs):
         if hasattr(self, "_partial_init"):
@@ -821,10 +822,7 @@ class _SeparableConvND:
 class SeparableConvND(_SeparableConvND):
     def __init__(self, in_features, out_features, kernel_size, **kwargs):
         if in_features is None:
-            # infer in_features from first call
             for field_item in dataclasses.fields(self):
-                # set all fields to None to avoid repr errors
-                # and make sure they are not used before the first call
                 setattr(self, field_item.name, None)
 
             self._partial_init = ft.partial(
@@ -834,7 +832,12 @@ class SeparableConvND(_SeparableConvND):
                 **kwargs,
             )
         else:
-            super().__init__(in_features, out_features, kernel_size, **kwargs)
+            super().__init__(
+                in_features=in_features,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                **kwargs,
+            )
 
     def __call__(self, x, **kwargs):
         if hasattr(self, "_partial_init"):
@@ -946,7 +949,7 @@ class SeparableConv3D(SeparableConvND):
 
 
 @pytc.treeclass
-class ConvNDLocal:
+class _ConvNDLocal:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -1063,6 +1066,35 @@ class ConvNDLocal:
 
 
 @pytc.treeclass
+class ConvNDLocal(_ConvNDLocal):
+    def __init__(self, in_features, out_features, kernel_size, *, in_size, **kwargs):
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                super().__init__,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                **kwargs,
+            )
+        else:
+            super().__init__(
+                in_features=in_features,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                in_size=in_size,
+                **kwargs,
+            )
+
+    def __call__(self, x, **kwargs):
+        if hasattr(self, "_partial_init"):
+            self._partial_init(in_features=x.shape[0], in_size=x.shape[1:])
+            object.__delattr__(self, "_partial_init")
+        return super().__call__(x, **kwargs)
+
+
+@pytc.treeclass
 class Conv1DLocal(ConvNDLocal):
     def __init__(
         self,
@@ -1070,7 +1102,7 @@ class Conv1DLocal(ConvNDLocal):
         out_features,
         kernel_size,
         *,
-        in_size,
+        in_size=None,
         strides=1,
         padding="SAME",
         input_dilation=1,
@@ -1103,7 +1135,7 @@ class Conv2DLocal(ConvNDLocal):
         out_features,
         kernel_size,
         *,
-        in_size,
+        in_size=None,
         strides=1,
         padding="SAME",
         input_dilation=1,
@@ -1136,7 +1168,7 @@ class Conv3DLocal(ConvNDLocal):
         out_features,
         kernel_size,
         *,
-        in_size,
+        in_size=None,
         strides=1,
         padding="SAME",
         input_dilation=1,

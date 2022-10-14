@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import dataclasses
+import functools as ft
 from typing import Callable
 
 import jax.numpy as jnp
@@ -10,7 +12,7 @@ from .utils import _check_and_return_init_func
 
 
 @pytc.treeclass
-class Linear:
+class _Linear:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -65,7 +67,33 @@ class Linear:
 
 
 @pytc.treeclass
-class Bilinear:
+class Linear(_Linear):
+    def __init__(self, in_features, out_features, **kwargs):
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                super().__init__,
+                out_features=out_features,
+                **kwargs,
+            )
+        else:
+            super().__init__(
+                in_features=in_features,
+                out_features=out_features,
+                **kwargs,
+            )
+
+    def __call__(self, x, **kwargs):
+        if hasattr(self, "_partial_init"):
+            self._partial_init(in_features=x.shape[-1])
+            object.__delattr__(self, "_partial_init")
+        return super().__call__(x, **kwargs)
+
+
+@pytc.treeclass
+class _Bilinear:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -120,8 +148,7 @@ class Bilinear:
             self.bias = self.bias_init_func(key, (out_features,))
 
     def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        x = x1 @ self.weight.reshape(-1, self.in2_features * self.out_features)
-        x = x2 @ x.reshape(-1, self.out_features)
+        x = jnp.einsum("ij,ik,jkl->il", x1, x2, self.weight)
 
         if self.bias is None:
             return x
@@ -134,3 +161,31 @@ class Identity:
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return x
+
+
+@pytc.treeclass
+class Bilinear(_Bilinear):
+    def __init__(self, in1_features, in2_features, out_features, **kwargs):
+        if in1_features is None or in2_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                super().__init__,
+                out_features=out_features,
+                **kwargs,
+            )
+
+        else:
+            super().__init__(
+                in1_features=in1_features,
+                in2_features=in2_features,
+                out_features=out_features,
+                **kwargs,
+            )
+
+    def __call__(self, x1, x2, **kwargs):
+        if hasattr(self, "_partial_init"):
+            self._partial_init(in1_features=x1.shape[-1], in2_features=x2.shape[-1])
+            object.__delattr__(self, "_partial_init")
+        return super().__call__(x1, x2, **kwargs)

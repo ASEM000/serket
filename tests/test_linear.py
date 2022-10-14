@@ -67,3 +67,14 @@ def test_identity():
     x = jnp.array([[1, 2, 3], [4, 5, 6]])
     layer = Identity()
     npt.assert_allclose(x, layer(x))
+
+
+def test_lazy():
+
+    layer = Linear(None, 1)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 2])).shape == (10, 1)
+
+    layer = Bilinear(None, None, 1)
+    assert layer.weight is None
+    assert layer(jnp.ones([10, 2]), jnp.ones([10, 3])).shape == (10, 1)
