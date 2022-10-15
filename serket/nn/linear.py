@@ -4,15 +4,16 @@ import dataclasses
 import functools as ft
 from typing import Callable
 
+import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from .utils import _check_and_return_init_func
+from .utils import _TRACER_ERROR_MSG, _check_and_return_init_func
 
 
 @pytc.treeclass
-class _Linear:
+class Linear:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -42,6 +43,18 @@ class _Linear:
             >>> l1(jnp.ones((3, 10))).shape
             (3, 5)
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+            self._partial_init = ft.partial(
+                Linear.__init__,
+                self,
+                out_features=out_features,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                key=key,
+            )
+            return
 
         self.weight_init_func = _check_and_return_init_func(
             weight_init_func, "weight_init_func"
@@ -61,39 +74,19 @@ class _Linear:
             self.bias = self.bias_init_func(key, (out_features,))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG)
+            self._partial_init(in_features=x.shape[-1])
+            object.__delattr__(self, "_partial_init")
+
         if self.bias is None:
             return x @ self.weight
         return x @ self.weight + self.bias
 
 
 @pytc.treeclass
-class Linear(_Linear):
-    def __init__(self, in_features, out_features, **kwargs):
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._partial_init = ft.partial(
-                super().__init__,
-                out_features=out_features,
-                **kwargs,
-            )
-        else:
-            super().__init__(
-                in_features=in_features,
-                out_features=out_features,
-                **kwargs,
-            )
-
-    def __call__(self, x, **kwargs):
-        if hasattr(self, "_partial_init"):
-            self._partial_init(in_features=x.shape[-1])
-            object.__delattr__(self, "_partial_init")
-        return super().__call__(x, **kwargs)
-
-
-@pytc.treeclass
-class _Bilinear:
+class Bilinear:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -126,6 +119,18 @@ class _Bilinear:
             >>> b1(jnp.ones((3, 10)), jnp.ones((3, 5))).shape
             (3, 3)
         """
+        if in1_features is None or in2_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+            self._partial_init = ft.partial(
+                Bilinear.__init__,
+                self,
+                out_features=out_features,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                key=key,
+            )
+            return
 
         self.in1_features = in1_features
         self.in2_features = in2_features
@@ -148,7 +153,13 @@ class _Bilinear:
             self.bias = self.bias_init_func(key, (out_features,))
 
     def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        x = jnp.einsum("ij,ik,jkl->il", x1, x2, self.weight)
+        if hasattr(self, "_partial_init"):
+            if isinstance(x1, jax.core.Tracer) or isinstance(x2, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG)
+            self._partial_init(in1_features=x1.shape[-1], in2_features=x2.shape[-1])
+            object.__delattr__(self, "_partial_init")
+
+        x = jnp.einsum("...j,...k,jkl->...l", x1, x2, self.weight)
 
         if self.bias is None:
             return x
@@ -161,31 +172,3 @@ class Identity:
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return x
-
-
-@pytc.treeclass
-class Bilinear(_Bilinear):
-    def __init__(self, in1_features, in2_features, out_features, **kwargs):
-        if in1_features is None or in2_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._partial_init = ft.partial(
-                super().__init__,
-                out_features=out_features,
-                **kwargs,
-            )
-
-        else:
-            super().__init__(
-                in1_features=in1_features,
-                in2_features=in2_features,
-                out_features=out_features,
-                **kwargs,
-            )
-
-    def __call__(self, x1, x2, **kwargs):
-        if hasattr(self, "_partial_init"):
-            self._partial_init(in1_features=x1.shape[-1], in2_features=x2.shape[-1])
-            object.__delattr__(self, "_partial_init")
-        return super().__call__(x1, x2, **kwargs)

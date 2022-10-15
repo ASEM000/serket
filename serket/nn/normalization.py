@@ -7,6 +7,8 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
+from .utils import _TRACER_ERROR_MSG
+
 
 @pytc.treeclass
 class LayerNorm:
@@ -60,7 +62,7 @@ class LayerNorm:
 
 
 @pytc.treeclass
-class _GroupNorm:
+class GroupNorm:
     γ: jnp.ndarray = None
     β: jnp.ndarray = None
 
@@ -87,6 +89,18 @@ class _GroupNorm:
             eps : a value added to the denominator for numerical stability.
             affine : a boolean value that when set to True, this module has learnable affine parameters.
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+            self._partial_init = ft.partial(
+                GroupNorm.__init__,
+                self,
+                groups=groups,
+                eps=eps,
+                affine=affine,
+            )
+            return
+
         if in_features <= 0 or not isinstance(in_features, int):
             raise ValueError("in_features must be a positive integer")
 
@@ -109,8 +123,13 @@ class _GroupNorm:
             self.β = jnp.zeros(self.in_features)
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert len(x.shape) > 1, "Input must have at least 2 dimensions"
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG)
+            self._partial_init(in_features=x.shape[0])
+            object.__delattr__(self, "_partial_init")
 
+        assert len(x.shape) > 1, "Input must have at least 2 dimensions"
         # split channels into groups
         xx = x.reshape(self.groups, self.in_features // self.groups, *x.shape[1:])
         dims = tuple(range(1, x.ndim + 1))
@@ -125,30 +144,6 @@ class _GroupNorm:
             β = jnp.expand_dims(self.β, axis=(dims[:-1]))
             x̂ = x̂ * γ + β
         return x̂
-
-
-@pytc.treeclass
-class GroupNorm(_GroupNorm):
-    def __init__(self, in_features, **kwargs):
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._partial_init = ft.partial(
-                super().__init__,
-                **kwargs,
-            )
-        else:
-            super().__init__(
-                in_features=in_features,
-                **kwargs,
-            )
-
-    def __call__(self, x, **kwargs):
-        if hasattr(self, "_partial_init"):
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-        return super().__call__(x, **kwargs)
 
 
 @pytc.treeclass

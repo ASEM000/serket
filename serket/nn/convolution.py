@@ -1061,7 +1061,7 @@ class ConvNDLocal:
         if hasattr(self, "_partial_init"):
             if isinstance(x, jax.core.Tracer):
                 raise ValueError(_TRACER_ERROR_MSG)
-            self._partial_init(in_features=x.shape[0])
+            self._partial_init(in_features=x.shape[0], in_size=x.shape[1:])
             object.__delattr__(self, "_partial_init")
 
         y = jax.lax.conv_general_dilated_local(

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 
 from serket.nn import ConvScan1D, ConvScan2D, ConvScan3D
 
@@ -85,3 +87,12 @@ def test_lazy_convscan():
     layer = ConvScan3D(None, 1, 3)
     assert layer.weight is None
     assert layer(jnp.ones([10, 3, 3, 3])).shape == (1, 3, 3, 3)
+
+    with pytest.raises(ValueError):
+        jax.jit(ConvScan1D(None, 1, 3))(jnp.ones([10, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(ConvScan2D(None, 1, 3))(jnp.ones([10, 3, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(ConvScan3D(None, 1, 3))(jnp.ones([10, 3, 3, 3]))

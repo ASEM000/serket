@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
@@ -60,3 +61,11 @@ def test_GaussBlur2D():
 def test_lazy_blur():
     layer = GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0)
     assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
+
+    with pytest.raises(ValueError):
+        jax.jit(GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0))(
+            jnp.ones([10, 5, 5])
+        )
+
+    with pytest.raises(ValueError):
+        jax.jit(AvgBlur2D(in_features=None, kernel_size=3))(jnp.ones([10, 5, 5]))

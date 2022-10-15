@@ -1,3 +1,4 @@
+import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
@@ -203,3 +204,7 @@ def test_lazy_normalization():
     layer = GroupNorm(None, groups=1)
     assert layer.groups is None
     assert layer(jnp.ones([1, 2, 3, 4])).shape == (1, 2, 3, 4)
+
+    with pytest.raises(ValueError):
+        layer = jax.jit(GroupNorm(None, groups=1))
+        layer(jnp.ones([1, 2, 3, 4]))

@@ -1124,3 +1124,39 @@ def test_lazy_conv():
 
     layer = SeparableConv2D(None, 1, 3)
     assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
+
+    with pytest.raises(ValueError):
+        jax.jit(Conv1D(None, 1, 3))(jnp.ones([10, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(Conv2D(None, 1, 3))(jnp.ones([10, 3, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(Conv3D(None, 1, 3))(jnp.ones([10, 3, 3, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(Conv1DTranspose(None, 1, 3))(jnp.ones([10, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(Conv2DTranspose(None, 1, 3))(jnp.ones([10, 3, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(Conv3DTranspose(None, 1, 3))(jnp.ones([10, 3, 3, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(DepthwiseConv1D(None, 3))(jnp.ones([10, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(DepthwiseConv2D(None, 3))(jnp.ones([10, 3, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(Conv1DLocal(None, 1, 3, in_size=(3,)))(jnp.ones([10, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(Conv2DLocal(None, 1, 3, in_size=(3, 3)))(jnp.ones([10, 3, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(SeparableConv1D(None, 1, 3))(jnp.ones([10, 3]))
+
+    with pytest.raises(ValueError):
+        jax.jit(SeparableConv2D(None, 1, 3))(jnp.ones([10, 3, 3]))

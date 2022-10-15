@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 import pytreeclass as pytc
 
 from serket.nn import FNN, Bilinear, Identity, Linear
@@ -78,3 +79,11 @@ def test_lazy():
     layer = Bilinear(None, None, 1)
     assert layer.weight is None
     assert layer(jnp.ones([10, 2]), jnp.ones([10, 3])).shape == (10, 1)
+
+    with pytest.raises(ValueError):
+        layer = jax.jit(Linear(None, 1))
+        layer(jnp.ones([10, 2]))
+
+    with pytest.raises(ValueError):
+        layer = jax.jit(Bilinear(None, None, 1))
+        layer(jnp.ones([10, 2]), jnp.ones([10, 3]))
