@@ -1,0 +1,4 @@
+
+jax>=0.3.5
+pytreeclass >= 0.1.10
+kernex >=0.0.7
