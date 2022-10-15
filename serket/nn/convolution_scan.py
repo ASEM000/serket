@@ -7,12 +7,14 @@ import dataclasses
 import functools as ft
 from typing import Callable
 
+import jax
 import jax.numpy as jnp
 import jax.random as jr
 import kernex as kex
 import pytreeclass as pytc
 
 from .utils import (
+    _TRACER_ERROR_MSG,
     _check_and_return_init_func,
     _check_and_return_kernel,
     _check_and_return_padding,
@@ -21,7 +23,7 @@ from .utils import (
 
 
 @pytc.treeclass
-class _ConvScanND:
+class ConvScanND:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -140,6 +142,23 @@ class _ConvScanND:
             https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
             https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.scan.html
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+            self._partial_init = ft.partial(
+                ConvScanND.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                strides=strides,
+                padding=padding,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                ndim=ndim,
+                key=key,
+            )
+            return
+
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected `in_features` to be a positive integer, got {in_features}"
@@ -181,39 +200,17 @@ class _ConvScanND:
         self._func = convolved_scan
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG)
+            self._partial_init(in_features=x.shape[0])
+            object.__delattr__(self, "_partial_init")
+
         y = self._func(x, self.weight)
 
         if self.bias is None:
             return y
         return y + self.bias
-
-
-@pytc.treeclass
-class ConvScanND(_ConvScanND):
-    def __init__(self, in_features, out_features, kernel_size, **kwargs):
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._partial_init = ft.partial(
-                super().__init__,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-        else:
-            super().__init__(
-                in_features=in_features,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-
-    def __call__(self, x, **kwargs):
-        if hasattr(self, "_partial_init"):
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-        return super().__call__(x, **kwargs)
 
 
 @pytc.treeclass
