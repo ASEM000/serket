@@ -16,6 +16,7 @@ import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
 from .utils import (
+    _TRACER_ERROR_MSG,
     _calculate_convolution_output_shape,
     _calculate_transpose_padding,
     _check_and_return_init_func,
@@ -31,7 +32,7 @@ from .utils import (
 
 
 @pytc.treeclass
-class _ConvND:
+class ConvND:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -80,6 +81,26 @@ class _ConvND:
 
         See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+            self._partial_init = ft.partial(
+                ConvND.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                strides=strides,
+                padding=padding,
+                input_dilation=input_dilation,
+                kernel_dilation=kernel_dilation,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                groups=groups,
+                ndim=ndim,
+                key=key,
+            )
+            return
+
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected `in_features` to be a positive integer, got {in_features}"
@@ -109,7 +130,7 @@ class _ConvND:
         self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
         self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
 
-        weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
+        weight_shape = (out_features, in_features // groups, *self.kernel_size)
         self.weight = self.weight_init_func(key, weight_shape)
 
         if bias_init_func is None:
@@ -121,6 +142,12 @@ class _ConvND:
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG)
+            self._partial_init(in_features=x.shape[0])
+            object.__delattr__(self, "_partial_init")
+
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -135,34 +162,6 @@ class _ConvND:
         if self.bias is None:
             return y[0]
         return (y + self.bias)[0]
-
-
-@pytc.treeclass
-class ConvND(_ConvND):
-    def __init__(self, in_features, out_features, kernel_size, **kwargs):
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._partial_init = ft.partial(
-                super().__init__,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-        else:
-            super().__init__(
-                in_features=in_features,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-
-    def __call__(self, x, **kwargs):
-        if hasattr(self, "_partial_init"):
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-        return super().__call__(x, **kwargs)
 
 
 @pytc.treeclass
@@ -268,7 +267,7 @@ class Conv3D(ConvND):
 
 
 @pytc.treeclass
-class _ConvNDTranspose:
+class ConvNDTranspose:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -315,6 +314,26 @@ class _ConvNDTranspose:
             ndim : Number of dimensions
             key : PRNG key
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+            self._partial_init = ft.partial(
+                ConvNDTranspose.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                strides=strides,
+                padding=padding,
+                output_padding=output_padding,
+                kernel_dilation=kernel_dilation,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                groups=groups,
+                ndim=ndim,
+                key=key,
+            )
+            return
+
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected in_features to be a positive integer, got {in_features}"
@@ -363,6 +382,12 @@ class _ConvNDTranspose:
         )
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG)
+            self._partial_init(in_features=x.shape[0])
+            object.__delattr__(self, "_partial_init")
+
         y = jax.lax.conv_transpose(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -375,34 +400,6 @@ class _ConvNDTranspose:
         if self.bias is None:
             return y[0]
         return (y + self.bias)[0]
-
-
-@pytc.treeclass
-class ConvNDTranspose(_ConvNDTranspose):
-    def __init__(self, in_features, out_features, kernel_size, **kwargs):
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._partial_init = ft.partial(
-                super().__init__,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-        else:
-            super().__init__(
-                in_features=in_features,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-
-    def __call__(self, x, **kwargs):
-        if hasattr(self, "_partial_init"):
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-        return super().__call__(x, **kwargs)
 
 
 @pytc.treeclass
@@ -508,7 +505,7 @@ class Conv3DTranspose(ConvNDTranspose):
 
 
 @pytc.treeclass
-class _DepthwiseConvND:
+class DepthwiseConvND:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -557,6 +554,24 @@ class _DepthwiseConvND:
                 https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
                 https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                DepthwiseConvND.__init__,
+                self=self,
+                kernel_size=kernel_size,
+                depth_multiplier=depth_multiplier,
+                strides=strides,
+                padding=padding,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                ndim=ndim,
+                key=key,
+            )
+            return
+
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected in_features to be a positive integer, got {in_features}"
@@ -590,6 +605,12 @@ class _DepthwiseConvND:
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG)
+            self._partial_init(in_features=x.shape[0])
+            object.__delattr__(self, "_partial_init")
+
         y = jax.lax.conv_general_dilated(
             lhs=x[None],
             rhs=self.weight,
@@ -604,28 +625,6 @@ class _DepthwiseConvND:
         if self.bias is None:
             return y[0]
         return (y + self.bias)[0]
-
-
-@pytc.treeclass
-class DepthwiseConvND(_DepthwiseConvND):
-    def __init__(self, in_features, kernel_size, **kwargs):
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._partial_init = ft.partial(
-                super().__init__,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-        else:
-            super().__init__(in_features=in_features, kernel_size=kernel_size, **kwargs)
-
-    def __call__(self, x, **kwargs):
-        if hasattr(self, "_partial_init"):
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-        return super().__call__(x, **kwargs)
 
 
 @pytc.treeclass
@@ -713,7 +712,7 @@ class DepthwiseConv3D(DepthwiseConvND):
 
 
 @pytc.treeclass
-class _SeparableConvND:
+class SeparableConvND:
     depthwise_conv: DepthwiseConvND
     pointwise_conv: DepthwiseConvND
 
@@ -753,6 +752,24 @@ class _SeparableConvND:
             ndim : Number of spatial dimensions.
 
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+            self._partial_init = ft.partial(
+                SeparableConvND.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                depth_multiplier=depth_multiplier,
+                strides=strides,
+                padding=padding,
+                depthwise_weight_init_func=depthwise_weight_init_func,
+                pointwise_weight_init_func=pointwise_weight_init_func,
+                pointwise_bias_init_func=pointwise_bias_init_func,
+                ndim=ndim,
+                key=key,
+            )
+            return
 
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
@@ -813,37 +830,15 @@ class _SeparableConvND:
         )
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG)
+            self._partial_init(in_features=x.shape[0])
+            object.__delattr__(self, "_partial_init")
+
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
-
-
-@pytc.treeclass
-class SeparableConvND(_SeparableConvND):
-    def __init__(self, in_features, out_features, kernel_size, **kwargs):
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._partial_init = ft.partial(
-                super().__init__,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-        else:
-            super().__init__(
-                in_features=in_features,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-
-    def __call__(self, x, **kwargs):
-        if hasattr(self, "_partial_init"):
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-        return super().__call__(x, **kwargs)
 
 
 @pytc.treeclass
@@ -949,7 +944,7 @@ class SeparableConv3D(SeparableConvND):
 
 
 @pytc.treeclass
-class _ConvNDLocal:
+class ConvNDLocal:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
@@ -998,6 +993,24 @@ class _ConvNDLocal:
         Note:
             See : https://keras.io/api/layers/locally_connected_layers/
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+            self._partial_init = ft.partial(
+                ConvNDLocal.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                strides=strides,
+                padding=padding,
+                input_dilation=input_dilation,
+                kernel_dilation=kernel_dilation,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                ndim=ndim,
+                key=key,
+            )
+            return
 
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
@@ -1018,12 +1031,8 @@ class _ConvNDLocal:
         self.input_dilation = _check_and_return_input_dilation(input_dilation, ndim)
         self.kernel_dilation = _check_and_return_kernel_dilation(1, ndim)
         self.padding = _check_and_return_padding(padding, self.kernel_size)
-        self.weight_init_func = _check_and_return_init_func(
-            weight_init_func, "weight_init_func"
-        )
-        self.bias_init_func = _check_and_return_init_func(
-            bias_init_func, "bias_init_func"
-        )
+        self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
+        self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
         self.out_size = _calculate_convolution_output_shape(
             shape=self.in_size,
@@ -1049,6 +1058,12 @@ class _ConvNDLocal:
             self.bias = self.bias_init_func(key, bias_shape)
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG)
+            self._partial_init(in_features=x.shape[0])
+            object.__delattr__(self, "_partial_init")
+
         y = jax.lax.conv_general_dilated_local(
             lhs=x[None],
             rhs=self.weight,
@@ -1063,35 +1078,6 @@ class _ConvNDLocal:
         if self.bias is None:
             return y[0]
         return (y + self.bias)[0]
-
-
-@pytc.treeclass
-class ConvNDLocal(_ConvNDLocal):
-    def __init__(self, in_features, out_features, kernel_size, *, in_size, **kwargs):
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._partial_init = ft.partial(
-                super().__init__,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                **kwargs,
-            )
-        else:
-            super().__init__(
-                in_features=in_features,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                in_size=in_size,
-                **kwargs,
-            )
-
-    def __call__(self, x, **kwargs):
-        if hasattr(self, "_partial_init"):
-            self._partial_init(in_features=x.shape[0], in_size=x.shape[1:])
-            object.__delattr__(self, "_partial_init")
-        return super().__call__(x, **kwargs)
 
 
 @pytc.treeclass

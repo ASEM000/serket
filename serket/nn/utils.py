@@ -187,3 +187,11 @@ def _create_fields_from_mapping(items: dict[str, Any]) -> dict:
         object.__setattr__(field_item, "type", type(item))
         return_map[field_name] = field_item
     return return_map
+
+
+_TRACER_ERROR_MSG = (
+    "Using Tracers as input to an unintialized layer is not supported. "
+    "Call the layer with a non Tracer input first.\n"
+    "This error can occur if a layer is jitted before being initialized. "
+    "or a Tracer is passed to a layer that is not jitted."
+)
