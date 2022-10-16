@@ -52,7 +52,6 @@ from .convolution import (
     SeparableConv2D,
     SeparableConv3D,
 )
-
 from .crop import Crop1D, Crop2D, Crop3D, RandomCrop1D, RandomCrop2D, RandomCrop3D
 from .cutout import RandomCutout1D, RandomCutout2D
 from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D
@@ -62,7 +61,7 @@ from .fully_connected import FNN, PFNN
 from .laplace import Laplace2D
 from .linear import Bilinear, Identity, Linear
 from .normalization import GroupNorm, InstanceNorm, LayerNorm
-from .padding import Padding1D, Padding2D, Padding3D
+from .padding import Pad1D, Pad2D, Pad3D
 from .pooling import (
     AvgPool1D,
     AvgPool2D,
@@ -160,9 +159,9 @@ __all__ = (
     "Upsampling1D",
     "Upsampling2D",
     "Upsampling3D",
-    "Padding1D",
-    "Padding2D",
-    "Padding3D",
+    "Pad1D",
+    "Pad2D",
+    "Pad3D",
     # blocks
     "VGG16Block",
     "VGG19Block",
