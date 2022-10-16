@@ -5,7 +5,7 @@ import pytreeclass as pytc
 
 
 @pytc.treeclass
-class PaddingND:
+class PadND:
     padding: int | tuple[int, int] = pytc.nondiff_field(default=0)
     value: float = pytc.nondiff_field(default=0.0)
     ndim: int = pytc.nondiff_field(default=1, repr=False)
@@ -47,18 +47,18 @@ class PaddingND:
 
 
 @pytc.treeclass
-class Padding1D(PaddingND):
+class Pad1D(PadND):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, ndim=1)
 
 
 @pytc.treeclass
-class Padding2D(PaddingND):
+class Pad2D(PadND):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, ndim=2)
 
 
 @pytc.treeclass
-class Padding3D(PaddingND):
+class Pad3D(PadND):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, ndim=3)

@@ -5,7 +5,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn.crop import RandomCrop2D
-from serket.nn.padding import Padding2D
+from serket.nn.padding import Pad2D
 from serket.nn.resize import Resize2D
 
 
@@ -114,7 +114,7 @@ class RandomZoom2D:
             # zoom out rows and cols
             resize_transform = Resize2D((resized_rows, resized_cols))
             padding = (x.shape[1] - resized_rows, 0), (x.shape[2] - resized_cols, 0)
-            padding_transform = Padding2D(padding)
+            padding_transform = Pad2D(padding)
             x = resize_transform(x)
             x = padding_transform(x)
             return x
@@ -123,7 +123,7 @@ class RandomZoom2D:
             # zoom out rows and zoom in cols
             resize_transform = Resize2D((x.shape[1], resized_cols))
             padding = ((x.shape[1] - resized_rows, 0), (0, 0))
-            padding_transform = Padding2D(padding)
+            padding_transform = Pad2D(padding)
             crop_transform = RandomCrop2D(x.shape[1:])
             x = resize_transform(x)
             x = crop_transform(x, key=keys[2])
@@ -134,7 +134,7 @@ class RandomZoom2D:
             # zoom in rows and zoom out cols
             resize_transform = Resize2D((resized_rows, x.shape[2]))
             padding = ((0, 0), (x.shape[2] - resized_cols, 0))
-            padding_transform = Padding2D(padding)
+            padding_transform = Pad2D(padding)
             crop_transform = RandomCrop2D(x.shape[1:])
             x = resize_transform(x)
             x = crop_transform(x, key=keys[2])
