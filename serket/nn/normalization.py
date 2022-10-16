@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from .utils import _TRACER_ERROR_MSG
+from serket.nn.utils import _TRACER_ERROR_MSG
 
 
 @pytc.treeclass

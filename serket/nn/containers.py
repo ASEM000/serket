@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from .utils import _create_fields_from_container, _create_fields_from_mapping
+from serket.nn.utils import _create_fields_from_container, _create_fields_from_mapping
 
 
 @pytc.treeclass

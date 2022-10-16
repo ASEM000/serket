@@ -4,9 +4,9 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from .crop import RandomCrop2D
-from .padding import Padding2D
-from .resize import Resize2D
+from serket.nn.crop import RandomCrop2D
+from serket.nn.padding import Padding2D
+from serket.nn.resize import Resize2D
 
 
 @pytc.treeclass

@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
-from .utils import _check_and_return
+from serket.nn.utils import _check_and_return
 
 _check_and_return_kernel = ft.partial(_check_and_return, name="kernel_size")
 

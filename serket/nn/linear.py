@@ -9,7 +9,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from .utils import _TRACER_ERROR_MSG, _check_and_return_init_func
+from serket.nn.utils import _TRACER_ERROR_MSG, _check_and_return_init_func
 
 
 @pytc.treeclass

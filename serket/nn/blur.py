@@ -9,8 +9,8 @@ import jax.numpy as jnp
 # import kernex as kex
 import pytreeclass as pytc
 
-from .convolution import DepthwiseConv2D
-from .utils import _TRACER_ERROR_MSG
+from serket.nn.convolution import DepthwiseConv2D
+from serket.nn.utils import _TRACER_ERROR_MSG
 
 
 @pytc.treeclass

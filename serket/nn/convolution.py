@@ -15,7 +15,7 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
-from .utils import (
+from serket.nn.utils import (
     _TRACER_ERROR_MSG,
     _calculate_convolution_output_shape,
     _calculate_transpose_padding,
@@ -513,6 +513,7 @@ class DepthwiseConvND:
     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
     strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
     padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
+    depth_multiplier: int = pytc.nondiff_field()
 
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: str | Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
