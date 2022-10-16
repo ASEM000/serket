@@ -7,9 +7,9 @@ from serket.nn import (
     Resize1D,
     Resize2D,
     Resize3D,
-    Upsampling1D,
-    Upsampling2D,
-    Upsampling3D,
+    Upsample1D,
+    Upsample2D,
+    Upsample3D,
 )
 
 
@@ -37,15 +37,15 @@ def test_resize3d():
     assert Resize3D(4)(jnp.ones([1, 2, 2, 2])).shape == (1, 4, 4, 4)
 
 
-def test_upsampling1d():
-    assert Upsampling1D(2)(jnp.ones([1, 2])).shape == (1, 4)
+def test_upsample1d():
+    assert Upsample1D(2)(jnp.ones([1, 2])).shape == (1, 4)
 
 
-def test_upsampling2d():
-    assert Upsampling2D(2)(jnp.ones([1, 2, 2])).shape == (1, 4, 4)
-    assert Upsampling2D((2, 3))(jnp.ones([1, 2, 2])).shape == (1, 4, 6)
+def test_upsample2d():
+    assert Upsample2D(2)(jnp.ones([1, 2, 2])).shape == (1, 4, 4)
+    assert Upsample2D((2, 3))(jnp.ones([1, 2, 2])).shape == (1, 4, 6)
 
 
-def test_upsampling3d():
-    assert Upsampling3D(2)(jnp.ones([1, 2, 2, 2])).shape == (1, 4, 4, 4)
-    assert Upsampling3D((2, 3, 4))(jnp.ones([1, 2, 2, 2])).shape == (1, 4, 6, 8)
+def test_upsample3d():
+    assert Upsample3D(2)(jnp.ones([1, 2, 2, 2])).shape == (1, 4, 4, 4)
+    assert Upsample3D((2, 3, 4))(jnp.ones([1, 2, 2, 2])).shape == (1, 4, 6, 8)

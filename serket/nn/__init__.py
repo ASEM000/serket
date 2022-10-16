@@ -85,9 +85,9 @@ from .resize import (
     Resize1D,
     Resize2D,
     Resize3D,
-    Upsampling1D,
-    Upsampling2D,
-    Upsampling3D,
+    Upsample1D,
+    Upsample2D,
+    Upsample3D,
 )
 
 __all__ = (
@@ -156,9 +156,9 @@ __all__ = (
     "Resize1D",
     "Resize2D",
     "Resize3D",
-    "Upsampling1D",
-    "Upsampling2D",
-    "Upsampling3D",
+    "Upsample1D",
+    "Upsample2D",
+    "Upsample3D",
     "Pad1D",
     "Pad2D",
     "Pad3D",
