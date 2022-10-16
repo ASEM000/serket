@@ -65,6 +65,80 @@ pip install git+https://github.com/ASEM000/serket
 
 ## ⏩ Quick Example: <a id="QuickExample">
 
+<details>
+
+<summary>Lazy initialization</summary>
+
+In cases where `in_features` needs to be inferred from input, use `None` instead of `in_features` to infer the value at runtime. 
+However, since the lazy module initialize it's state after the first call (i.e. mutate it's state)  `jax` transformation ex: `vmap, grad ...` is not allowed before initialization. Using any `jax` transformation before initialization will throw a `ValueError`.
+
+
+```python
+import serket as sk 
+import jax
+import jax.numpy as jnp 
+
+model = sk.nn.Sequential(
+    [
+        sk.nn.Conv2D(None, 128, 3),
+        sk.nn.ReLU(),
+        sk.nn.MaxPool2D(2, 2),
+        sk.nn.Conv2D(128, 64, 3),
+        sk.nn.ReLU(),
+        sk.nn.MaxPool2D(2, 2),
+        sk.nn.Flatten(),
+        sk.nn.Linear(None, 128),
+        sk.nn.ReLU(),
+        sk.nn.Linear(128, 1),
+    ]
+)
+
+# print the first `Conv2D` layer before initialization
+print(model[0].__repr__())
+# Conv2D(
+#   weight=None,
+#   bias=None,
+#   *in_features=None,
+#   *out_features=None,
+#   *kernel_size=None,
+#   *strides=None,
+#   *padding=None,
+#   *input_dilation=None,
+#   *kernel_dilation=None,
+#   weight_init_func=None,
+#   bias_init_func=None,
+#   *groups=None
+# )
+
+try :
+    jax.vmap(model)(jnp.ones((10, 1,28, 28)))
+except ValueError:
+    print("***** Not initialized *****")
+# ***** Not initialized *****
+
+# dry run to initialize the model
+model(jnp.empty([3,128,128]))
+
+print(model[0].__repr__())
+# Conv2D(
+#   weight=f32[128,3,3,3],
+#   bias=f32[128,1,1],
+#   *in_features=3,
+#   *out_features=128,
+#   *kernel_size=(3,3),
+#   *strides=(1,1),
+#   *padding=((1,1),(1,1)),
+#   *input_dilation=(1,1),
+#   *kernel_dilation=(1,1),
+#   weight_init_func=Partial(glorot_uniform(key,shape,dtype)),
+#   bias_init_func=Partial(zeros(key,shape,dtype)),
+#   *groups=1
+# )
+```
+
+</details>
+
+
 <details><summary>Train MNIST</summary>
 
 We will use `tensorflow` datasets for dataloading. for more on interface of jax/tensorflow dataset see [here](https://jax.readthedocs.io/en/latest/notebooks/neural_network_with_tfds_data.html)
