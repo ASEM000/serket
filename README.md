@@ -35,11 +35,14 @@ pip install git+https://github.com/ASEM000/serket
 
 
 ## 📖 Description<a id="Description"></a>
-- `serket` aims to be the most intuitive and easy-to-use Neural network library in JAX.
+- `serket` aims to be the most intuitive and easy-to-use physics-based Neural network library in JAX.
 - `serket` is built on top of [`pytreeclass`](https://github.com/ASEM000/pytreeclass)
 
 - `serket` currently implements 
 
+<div align="center">
+
+### 🧠 Neural network package: `serket.nn` 🧠
 | Group | Layers |
 | ------------- | ------------- |
 | Linear  | `Linear`, `Bilinear`,`Identity`   |
@@ -55,13 +58,20 @@ pip install git+https://github.com/ASEM000/serket
 |Random transforms|`RandomCrop1D`, `RandomCrop2D`, `RandomApply`, `RandomCutout1D`, `RandomCutout2D`, `RandomZoom2D`, `RandomContrast2D` |
 |Preprocessing|`HistogramEqualization2D`, `AdjustContrast2D`|
 |Activations|`AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br>`CeLU`,`ELU`,`GELU`,`GLU`<br>,`HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br>`LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,<br>`SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`|
-|Finite difference|`Gradient`, `Laplace2D`, `FiniteDiff`, `ParameterizedFiniteDiff` |
 |Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
 
-- Other functions:
-    1) Finite difference package: `serket.fd`: `serket.fd.fdiff`, `serket.fd.generate_finitediff_coeffs`
-    2) Automatic differentiation: `serket.diff`, `serket.diff_and_grad` 
+### ➖➕Finite difference package: `serket.fd`➕➖
 
+| Group| Function/Layer|
+| ------------- | ------------- |
+|Finite difference layer|`Difference`: apply finite difference to input array to any derivative order and accuracy|
+|Finite difference functions| - `difference`: finite difference of array with any accuracy and derivative order  <br> -`generate_finitediff_coeffs` : generate coeffs using sample points and derivative order <br> - `fgrad`: differentiate _functions_ (similar to `jax.grad`) with custom accuracy and derivative order|
+|Vector operator layers|`Curl`, `Divergence`, `Gradient`, `Laplacian`|
+|Vector operator function| `curl`, `divergence`, `gradient`, `laplacian`|
+
+
+
+</div>
 
 ## ⏩ Quick Example: <a id="QuickExample">
 
