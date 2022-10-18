@@ -16,7 +16,6 @@ import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
 from serket.nn.utils import (
-    _TRACER_ERROR_MSG,
     _calculate_convolution_output_shape,
     _calculate_transpose_padding,
     _check_and_return_init_func,
@@ -26,6 +25,7 @@ from serket.nn.utils import (
     _check_and_return_kernel_dilation,
     _check_and_return_padding,
     _check_and_return_strides,
+    _lazy_call,
 )
 
 # ------------------------------ Convolutional Layers ------------------------------ #
@@ -141,13 +141,8 @@ class ConvND:
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
+    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -381,13 +376,8 @@ class ConvNDTranspose:
             input_dilation=self.kernel_dilation,
         )
 
+    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG)
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-
         y = jax.lax.conv_transpose(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -605,13 +595,8 @@ class DepthwiseConvND:
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
+    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG)
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-
         y = jax.lax.conv_general_dilated(
             lhs=x[None],
             rhs=self.weight,
@@ -830,13 +815,8 @@ class SeparableConvND:
             ndim=ndim,
         )
 
+    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG)
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
@@ -1058,13 +1038,8 @@ class ConvNDLocal:
         else:
             self.bias = self.bias_init_func(key, bias_shape)
 
+    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0], "in_size": a[0].shape[1:]})  # fmt: skip
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG)
-            self._partial_init(in_features=x.shape[0], in_size=x.shape[1:])
-            object.__delattr__(self, "_partial_init")
-
         y = jax.lax.conv_general_dilated_local(
             lhs=x[None],
             rhs=self.weight,

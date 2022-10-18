@@ -5,6 +5,7 @@ import functools as ft
 from types import FunctionType
 from typing import Any, Callable, Sequence
 
+import jax
 import jax.nn.initializers as ji
 import jax.tree_util as jtu
 
@@ -202,3 +203,21 @@ _TRACER_ERROR_MSG = lambda cls_name: (
     f">>> layer = {cls_name}(None, ...)\n"
     ">>> layer(x)  # This will work"
 )
+
+
+def _lazy_call(lazy_func: Callable[[Any], dict[str, Any]]):
+    # lazy_func returns a dict of field_name -> field_value
+    # where field_name is the name of the lazy field and field_value
+    # is the value of the lazy field
+    def func_wrapper(func):
+        def wrapper(self, *args, **kwargs):
+            if hasattr(self, "_partial_init"):
+                if any(isinstance(a, jax.core.Tracer) for a in args):
+                    raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+                self._partial_init(**lazy_func(*args, **kwargs))
+                object.__delattr__(self, "_partial_init")
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
+    return func_wrapper

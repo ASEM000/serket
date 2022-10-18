@@ -4,12 +4,11 @@ import dataclasses
 import functools as ft
 from typing import Callable
 
-import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _TRACER_ERROR_MSG, _check_and_return_init_func
+from serket.nn.utils import _check_and_return_init_func, _lazy_call
 
 
 @pytc.treeclass
@@ -73,13 +72,8 @@ class Linear:
         else:
             self.bias = self.bias_init_func(key, (out_features,))
 
+    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[-1]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[-1])
-            object.__delattr__(self, "_partial_init")
-
         if self.bias is None:
             return x @ self.weight
         return x @ self.weight + self.bias
@@ -152,13 +146,8 @@ class Bilinear:
         else:
             self.bias = self.bias_init_func(key, (out_features,))
 
+    @_lazy_call(lambda *a, **k: {"in1_features": a[0].shape[-1], "in2_features": a[1].shape[-1]})  # fmt: skip
     def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x1, jax.core.Tracer) or isinstance(x2, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in1_features=x1.shape[-1], in2_features=x2.shape[-1])
-            object.__delattr__(self, "_partial_init")
-
         x = jnp.einsum("...j,...k,jkl->...l", x1, x2, self.weight)
 
         if self.bias is None:
