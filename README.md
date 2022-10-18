@@ -50,7 +50,7 @@ pip install git+https://github.com/ASEM000/serket
 | Convolution | `Conv1D`, `Conv2D`, `Conv3D`, `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`, `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`, `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal`  |
 | Containers| `Sequential`, `Lambda` |
 |Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` (`kernex` backend)|
-|Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsample1D`, `Upsample2D`, `Upsample3D`, `Padding1D`, `Padding2D`, `Padding3D` |
+|Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsample1D`, `Upsample2D`, `Upsample3D`, `Pad1D`, `Pad2D`, `Pad3D` |
 |Crop|`Crop1D`, `Crop2D`, |
 |Normalization|`LayerNorm`, `InstanceNorm`, `GroupNorm`|
 |Blurring| `AvgBlur2D`, `GaussianBlur2D`|
