@@ -2,10 +2,10 @@ import jax.numpy as jnp
 import numpy.testing as npt
 
 from serket import diff
-from serket.fd import Gradient, gradient
+from serket.fd import difference
 
 
-def test_gradient_first_derivative():
+def test_difference_first_derivative():
     # test against analytical solution
     all_correct = lambda lhs, rhs: npt.assert_allclose(lhs, rhs, atol=1e-4)
     for func in [
@@ -19,7 +19,7 @@ def test_gradient_first_derivative():
         dx = x[1] - x[0]
         y = func(x)
         f1 = jnp.gradient(y) / dx
-        f2 = gradient(y, step_size=dx)
+        f2 = difference(y, step_size=dx)
 
         all_correct(f1, f2)
 
@@ -33,15 +33,15 @@ def test_gradient_first_derivative():
         X, Y = jnp.meshgrid(x, y, indexing="ij")
         f = func(X, Y)
         f1 = jnp.gradient(f, axis=0) / dx
-        f2 = gradient(f, step_size=dx, axis=0)
+        f2 = difference(f, step_size=dx, axis=0)
         all_correct(f1, f2)
 
         f1 = jnp.gradient(f, axis=1) / dy
-        f2 = gradient(f, step_size=dy, axis=1)
+        f2 = difference(f, step_size=dy, axis=1)
         all_correct(f1, f2)
 
 
-def test_gradient_second_derivative():
+def test_difference_second_derivative():
 
     x = jnp.linspace(0, 2 * jnp.pi, 100)
 
@@ -55,12 +55,14 @@ def test_gradient_second_derivative():
 
         y = func(x)
 
-        y_xx_fd = gradient(y, axis=0, accuracy=4, derivative=2, step_size=(x[1] - x[0]))
+        y_xx_fd = difference(
+            y, axis=0, accuracy=4, derivative=2, step_size=(x[1] - x[0])
+        )
         y_xx_an = (diff(diff(func)))(x)
         npt.assert_allclose(y_xx_fd, y_xx_an, atol=1e-1)
 
 
-def test_gradient_argnum():
+def test_difference_argnum():
     all_correct = lambda lhs, rhs: npt.assert_allclose(lhs, rhs, atol=1e-4)
 
     for func in [
@@ -73,15 +75,15 @@ def test_gradient_argnum():
         X, Y = jnp.meshgrid(x, y, indexing="ij")
         f = func(X, Y)
         f1 = jnp.gradient(f, axis=0) / dx
-        f2 = gradient(f, step_size=dx, axis=0)
+        f2 = difference(f, step_size=dx, axis=0)
         all_correct(f1, f2)
 
         f1 = jnp.gradient(f, axis=1) / dy
-        f2 = gradient(f, step_size=dy, axis=1)
+        f2 = difference(f, step_size=dy, axis=1)
         all_correct(f1, f2)
 
 
-def test_gradient_dx_dy():
+def test_difference_dx_dy():
 
     x, y = [jnp.linspace(0, 1, 100)] * 2
     dx, dy = x[1] - x[0], y[1] - y[0]
@@ -96,8 +98,8 @@ def test_gradient_dx_dy():
 
         f = func(X, Y)
         f_an = diff(diff(func), argnums=1)(X, Y)  # df/dxdy
-        f_ff = gradient(f, step_size=dx, axis=0, accuracy=3)
-        f_ff = gradient(f_ff, step_size=dy, axis=1, accuracy=3)
+        f_ff = difference(f, step_size=dx, axis=0, accuracy=3)
+        f_ff = difference(f_ff, step_size=dy, axis=1, accuracy=3)
 
         npt.assert_allclose(
             f_an,
@@ -106,22 +108,22 @@ def test_gradient_dx_dy():
         )
 
 
-def test_Gradient():
-    all_correct = lambda lhs, rhs: npt.assert_allclose(lhs, rhs, atol=1e-4)
+# def test_Gradient():
+#     all_correct = lambda lhs, rhs: npt.assert_allclose(lhs, rhs, atol=1e-4)
 
-    for func in [
-        lambda x, y: x + y,
-        lambda x, y: x**2 + y**3,
-        lambda x, y: x + 2 + y * x,
-    ]:
-        x, y = [jnp.linspace(0, 1, 100)] * 2
-        dx, dy = x[1] - x[0], y[1] - y[0]
-        X, Y = jnp.meshgrid(x, y, indexing="ij")
-        f = func(X, Y)
-        f1 = jnp.gradient(f, axis=0) / dx
-        f2 = Gradient(step_size=dx, axis=0)(f)
-        all_correct(f1, f2)
+#     for func in [
+#         lambda x, y: x + y,
+#         lambda x, y: x**2 + y**3,
+#         lambda x, y: x + 2 + y * x,
+#     ]:
+#         x, y = [jnp.linspace(0, 1, 100)] * 2
+#         dx, dy = x[1] - x[0], y[1] - y[0]
+#         X, Y = jnp.meshgrid(x, y, indexing="ij")
+#         f = func(X, Y)
+#         f1 = jnp.gradient(f, axis=0) / dx
+#         f2 = Gradient(step_size=dx, axis=0)(f)
+#         all_correct(f1, f2)
 
-        f1 = jnp.gradient(f, axis=1) / dy
-        f2 = Gradient(step_size=dy, axis=1)(f)
-        all_correct(f1, f2)
+#         f1 = jnp.gradient(f, axis=1) / dy
+#         f2 = Gradient(step_size=dy, axis=1)(f)
+#         all_correct(f1, f2)

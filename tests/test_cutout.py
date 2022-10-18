@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import numpy.testing as npt
 
 from serket.nn import RandomCutout1D, RandomCutout2D
 
@@ -31,6 +32,8 @@ def test_random_cutout_2d():
         ]
     )
 
-    assert jnp.all(RandomCutout2D((5, 5))(x, key=jax.random.PRNGKey(0)) == y)
+    npt.assert_allclose(
+        RandomCutout2D((5, 5))(x, key=jax.random.PRNGKey(0)), y, atol=1e-5
+    )
 
-    assert jnp.all(RandomCutout2D(5)(x, key=jax.random.PRNGKey(0)) == y)
+    npt.assert_allclose(RandomCutout2D(5)(x, key=jax.random.PRNGKey(0)), y, atol=1e-5)

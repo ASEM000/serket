@@ -1,188 +1,404 @@
 # credits to Mahmoud Asem 2022 @KAIST
+# functions that operate on arrays
+# higher accuracy finite difference gradient might require
+# setting jax.config.update("jax_enable_x64", True)
+
 from __future__ import annotations
 
 import functools as ft
-from typing import Callable
 
+import jax
 import jax.numpy as jnp
-import jax.random as jr
 import pytreeclass as pytc
 
-from .utils import _generate_central_offsets, generate_finitediff_coeffs
+from serket.fd.utils import (
+    _generate_backward_offsets,
+    _generate_central_offsets,
+    _generate_forward_offsets,
+    generate_finitediff_coeffs,
+)
+from serket.nn.utils import _check_and_return
 
 
-def fdiff(
-    func: Callable,
+@ft.partial(jax.jit, static_argnames=("accuracy", "axis", "derivative"))
+def difference(
+    x: jnp.ndarray,
     *,
-    argnum: int = 0,
-    step_size: float = None,
-    offsets: tuple[float | int, ...] = None,
+    axis: int = 0,
+    accuracy: int = 1,
+    step_size: float = 1,
     derivative: int = 1,
-    accuracy: int = 2,
-) -> Callable:
-    """Finite difference derivative of a function
+) -> jnp.ndarray:
+    """Compute the finite difference derivative along a given axis with a given accuracy
+    using central difference for interior points and forward/backward difference for boundary points
+    Similar to np.gradient, but with the option to specify accuracy, derivative and step size
+    See: https://github.com/google/jax/blob/main/jax/_src/numpy/lax_numpy.py
 
     Args:
-        func: function to differentiate
-        argnum: argument number to differentiate. Defaults to 0.
-        step_size: step size for the finite difference stencil. Defaults to None.
-        offsets: offsets for the finite difference stencil. Defaults to None.
-        derivative: derivative order. Defaults to 1.
-        accuracy: accuracy of the finite difference stencil. Defaults to 2. used to generate offsets if not provided.
-
+        x: input array
+        axis: axis along which to compute the gradient. Default is 0
+        accuracy: accuracy order of the gradient. Default is 1
+        step_size: step size. Default is 1
+        derivative: derivative order of the gradient. Default is 1
     Returns:
-        Callable: derivative of the function
+        Finite difference derivative along the given axis
 
     Example:
-        >>> def f(x):
-        ...     return x**2
-        >>> df = fdiff(f)
-        >>> df(2.0)
-        DeviceArray(4., dtype=float32)
+        # dydx of a 2D array
+        >>> x, y = [jnp.linspace(0, 1, 100)] * 2
+        >>> dx, dy = x[1] - x[0], y[1] - y[0]
+        >>> X, Y = jnp.meshgrid(x, y, indexing="ij")
+        >>> F =  jnp.sin(X) * jnp.cos(Y)
+        >>> dFdX = difference(F, step_size=dx, axis=0, accuracy=3)
+        >>> dFdXdY = difference(dFdX, step_size=dy, axis=1, accuracy=3)
+
+    """
+    size = x.shape[axis]
+    sliced = ft.partial(jax.lax.slice_in_dim, x, axis=axis)
+
+    left_offsets = _generate_forward_offsets(derivative, accuracy)
+    left_coeffs = generate_finitediff_coeffs(left_offsets, derivative)
+
+    right_offsets = _generate_backward_offsets(derivative, accuracy)
+    right_coeffs = generate_finitediff_coeffs(right_offsets, derivative)
+
+    center_offsets = _generate_central_offsets(derivative, accuracy + 1)
+    center_coeffs = generate_finitediff_coeffs(center_offsets, derivative)
+
+    if accuracy > (size // 2 - 1):
+        raise ValueError(f"accuracy must be <= {(size//2-1)}, got {accuracy}")
+
+    left_x = sum(
+        coeff * sliced(offset, offset - center_offsets[0])
+        for offset, coeff in zip(left_offsets, left_coeffs)
+    )
+
+    right_x = sum(
+        coeff * sliced(size + (offset - center_offsets[-1]), size + (offset))
+        for offset, coeff in zip(right_offsets, right_coeffs)
+    )
+
+    center_x = sum(
+        coeff * sliced(offset - center_offsets[0], size + (offset - center_offsets[-1]))
+        for offset, coeff in zip(center_offsets, center_coeffs)
+    )
+
+    return jnp.concatenate([left_x, center_x, right_x], axis=axis) / (
+        step_size**derivative
+    )
+
+
+@ft.partial(jax.jit, static_argnames=("accuracy"))
+def gradient(
+    x: jnp.ndarray,
+    *,
+    accuracy: int | tuple[int, ...] = 1,
+    step_size: float | tuple[float, ...] = 1,
+) -> jnp.ndarray:
+    """Compute the ∇F of input array where F is a scalar function of x and
+    returns vectors of the same shape as x stacked along the first axis.
+
+    Args:
+        x: input array
+        accuracy: accuracy order of the gradient. Default is 1, can be a tuple for each axis
+        step_size: step size. Default is 1, can be a tuple for each axis
+
+    Index notation : dF/dxi
+
+    Example:
+        # ∇F of a 2D array
+        >>> x, y = [jnp.linspace(0, 1, 100)] * 2
+        >>> dx, dy = x[1] - x[0], y[1] - y[0]
+        >>> X, Y = jnp.meshgrid(x, y, indexing="ij")
+        >>> Z = X**2 + Y**3
+        >>> dZdX , dZdY = gradient(Z, step_size=(dx,dy))
+        >>> dZdx_true, dZdy_true= 2*X , 3*Y**2
+        >>> numpy.testing.assert_allclose(dZdx, dZdx_true, atol=1e-4)
+        >>> numpy.testing.assert_allclose(dZdy, dZdy_true, atol=1e-4)
+    """
+    accuracy = _check_and_return(accuracy, x.ndim, "accuracy")
+    step_size = _check_and_return(step_size, x.ndim, "step_size")
+
+    return jnp.stack(
+        [
+            difference(x, accuracy=acc, step_size=step, derivative=1, axis=axis)
+            for axis, (acc, step) in enumerate(zip(accuracy, step_size))
+        ],
+        axis=0,
+    )
+
+
+@ft.partial(jax.jit, static_argnames=("accuracy", "keepdims"))
+def divergence(
+    x: jnp.ndarray,
+    *,
+    accuracy: int | tuple[int, ...] = 1,
+    step_size: float | tuple[float, ...] = 1,
+    keepdims: bool = True,
+) -> jnp.ndarray:
+    """Compute the ∇.F of input array where F is a vector field whose components are the first axis of x
+    and returns a scalar field
+
+    Args:
+        x: input array where the leading axis is the dimension of the vector field
+        accuracy: accuracy order of the gradient. Default is 1, can be a tuple for each axis
+        step_size: step size. Default is 1, can be a tuple for each axis
+        keepdims: whether to keep the leading dimension. Default is True.
+
+    Index notation: dFi/dxi
+
+    Example:
+        # ∇.F of a 2D array
+        >>> x, y = [jnp.linspace(0, 1, 100)] * 2
+        >>> dx, dy = x[1] - x[0], y[1] - y[0]
+        >>> X, Y = jnp.meshgrid(x, y, indexing="ij")
+        >>> F1 = X**2 + Y**3
+        >>> F2 = X**4 + Y**3
+        >>> F = jnp.stack([F1, F2], axis=0) # 2D vector field F = (F1, F2)
+        >>> divZ = divergence(F,step_size=(dx,dy), accuracy=7, keepdims=False)
+        >>> divZ_true = 2*X + 3*Y**2  # (dF1/dx) + (dF2/dy)
+        >>> numpy.testing.assert_allclose(divZ, divZ_true, atol=5e-4)
+    """
+    accuracy = _check_and_return(accuracy, x.ndim - 1, "accuracy")
+    step_size = _check_and_return(step_size, x.ndim - 1, "step_size")
+
+    result = sum(
+        difference(x[axis], accuracy=acc, step_size=step, derivative=1, axis=axis)
+        for axis, (acc, step) in enumerate(zip(accuracy, step_size))
+    )
+
+    if keepdims:
+        return jnp.expand_dims(result, axis=0)
+    return result
+
+
+@ft.partial(jax.jit, static_argnames=("accuracy"))
+def laplacian(
+    x: jnp.ndarray,
+    *,
+    accuracy: int | tuple[int, ...] = 1,
+    step_size: float | tuple[float, ...] = 1,
+) -> jnp.ndarray:
+    """Compute the ΔF of input array.
+    Args:
+        x: input array
+        accuracy: accuracy order of the gradient. Default is 1, can be a tuple for each axis
+        step_size: step size. Default is 1, can be a tuple for each axis
+
+    Index notation: d2F/dxi2
+    Example:
+        # ΔF array
+        >>> x, y = [jnp.linspace(0, 1, 100)] * 2
+        >>> dx, dy = x[1] - x[0], y[1] - y[0]
+        >>> X, Y = jnp.meshgrid(x, y, indexing="ij")
+        >>> Z = X**4 + Y**3
+        >>> laplacianZ = laplacian(Z, step_size=(dx,dy))
+        >>> laplacianZ_true = 12*X**2 + 6*Y
+        >>> numpy.testing.assert_allclose(laplacianZ, laplacianZ_true, atol=1e-4)
+    """
+    accuracy = _check_and_return(accuracy, x.ndim, "accuracy")
+    step_size = _check_and_return(step_size, x.ndim, "step_size")
+
+    return sum(
+        difference(x, accuracy=acc, step_size=step, derivative=2, axis=axis)
+        for axis, (acc, step) in enumerate(zip(accuracy, step_size))
+    )
+
+
+@ft.partial(jax.jit, static_argnames=("accuracy"))
+def curl(
+    x: jnp.ndarray,
+    *,
+    accuracy: int | tuple[int, ...] = 1,
+    step_size: float | tuple[float, ...] = 1,
+) -> jnp.ndarray:
+    """Compute the ∇×F of input array where F is a vector field whose components are the first axis of x
+    and returns a vector field
+
+    Index notation: εijk dFk/dxj
+
+    Args:
+        x: input array where the leading axis is the dimension of the vector field
+        accuracy: accuracy order of the gradient. Default is 1, can be a tuple for each axis
+        step_size: step size. Default is 1, can be a tuple for each axis
+
+    Example:
+        # ∇×F of a 2D array
+        >>> x, y = [jnp.linspace(0, 1, 100)] * 2
+        >>> dx, dy = x[1] - x[0], y[1] - y[0]
+        >>> X, Y = jnp.meshgrid(x, y, indexing="ij")
+        >>> F1 = X**2 + Y**3
+        >>> F2 = X**4 + Y**3
+        >>> F = jnp.stack([F1, F2], axis=0) # 2D vector field F = (F1, F2)
+
+        >>> numpy.testing.assert_allclose(curlZ, curlZ_true, atol=5e-4)
+
+
+    Curl for a 3D vector field is defined as
+    F = (F1, F2, F3)
+    ∇×F = (dF3/dy - dF2/dz, dF1/dz - dF3/dx, dF2/dx - dF1/dy)
+    where the result is stacked along the leading axis
     """
 
-    if not isinstance(argnum, int) or argnum < 0:
-        raise ValueError(f"argnum must be a non-negative integer, got {argnum}")
+    accuracy = _check_and_return(accuracy, x.ndim - 1, "accuracy")
+    step_size = _check_and_return(step_size, x.ndim - 1, "step_size")
 
-    if derivative < 1 or not isinstance(derivative, int):
-        raise ValueError(f"derivative must be a positive integer, got {derivative}")
+    if not (x.ndim == 4 and x.shape[0] == 3):
+        raise ValueError(
+            "Input array must be composed of 3 vector fields of 3D shape (3, nx, ny, nz)"
+        )
 
-    if offsets is None:
-        if accuracy < 2:
-            raise ValueError(f"accuracy must be >= 2, got {accuracy}")
+    dF1dY = difference(x[0], accuracy=accuracy[1], step_size=step_size[1], axis=1)
+    dF1dZ = difference(x[0], accuracy=accuracy[2], step_size=step_size[2], axis=2)
 
-        offsets = _generate_central_offsets(derivative, accuracy=accuracy)
+    dF2dX = difference(x[1], accuracy=accuracy[0], step_size=step_size[0], axis=0)
+    dF2dZ = difference(x[1], accuracy=accuracy[2], step_size=step_size[2], axis=2)
 
-    if step_size is None:
-        step_size = 1e-3 * (10 ** (derivative))
+    dF3dX = difference(x[2], accuracy=accuracy[0], step_size=step_size[0], axis=0)
+    dF3dY = difference(x[2], accuracy=accuracy[1], step_size=step_size[1], axis=1)
 
-    # finite difference coefficients
-    coeffs = generate_finitediff_coeffs(offsets, derivative)
-
-    # infinitisimal step size along the axis
-    DX = jnp.array(offsets) * step_size
-
-    def diff_func(*args, **kwargs):
-        # evaluate function at shifted points
-        for coeff, dx in zip(coeffs, DX):
-            shifted_args = list(args)
-            shifted_args[argnum] += dx
-            yield coeff * func(*shifted_args, **kwargs) / (step_size**derivative)
-
-    return lambda *args, **kwargs: sum(diff_func(*args, **kwargs))
+    return jnp.stack(
+        [
+            dF3dY - dF2dZ,
+            dF1dZ - dF3dX,
+            dF2dX - dF1dY,
+        ],
+        axis=0,
+    )
 
 
 @pytc.treeclass
-class FiniteDiff:
-    argnum: int = pytc.nondiff_field()
+class Difference:
+    axis: int = pytc.nondiff_field()
+    accuracy: int = pytc.nondiff_field()
     step_size: float = pytc.nondiff_field()
     derivative: int = pytc.nondiff_field()
-    accuracy: int = pytc.nondiff_field()
-    offsets: tuple[int | float] | None = pytc.nondiff_field()
 
     def __init__(
         self,
         *,
-        argnum=0,
-        step_size=None,
-        offsets=None,
+        axis=0,
+        accuracy=1,
+        step_size=1,
         derivative=1,
-        accuracy=2,
     ):
-        """Finite difference a model
-
-        Args:
-            argnum: argument number to differentiate. Defaults to 0.
-            step_size: step size for the finite difference stencil. Defaults to None.
-            offsets: offsets for the finite difference stencil. Defaults to None.
-            derivative: derivative order. Defaults to 1.
-            accuracy: accuracy of the finite difference stencil. Defaults to 2. used to generate offsets if None.
-
-        Example:
-            >>> layer = FiniteDiff()
-            >>> layer(sk.nn.Lambda(lambda x:x**3))(jnp.ones([10,1]))
-            [[3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954]]
-        """
-
-        self.argnum = argnum
-        self.step_size = step_size
-        self.offsets = offsets
-        self.derivative = derivative
+        """wrap difference as a layer"""
+        self.axis = axis
         self.accuracy = accuracy
+        self.step_size = step_size
+        self.derivative = derivative
 
         self._func = ft.partial(
-            fdiff,
-            argnum=self.argnum,
-            step_size=self.step_size,
-            offsets=self.offsets,
-            derivative=self.derivative,
+            difference,
+            axis=self.axis,
             accuracy=self.accuracy,
+            step_size=self.step_size,
+            derivative=self.derivative,
         )
 
-    def __call__(self, *args, **kwargs):
-        return self._func(*args, **kwargs)
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return self._func(x)
 
 
 @pytc.treeclass
-class ParameterizedFiniteDiff:
-    argnum: int = pytc.nondiff_field()
-    step_size: float
-    derivative: int = pytc.nondiff_field()
-    offsets: tuple[int | float] | None
+class Gradient:
+    accuracy: int | tuple[int, ...] = pytc.nondiff_field()
+    step_size: float | tuple[float, ...] = pytc.nondiff_field()
 
     def __init__(
         self,
         *,
-        argnum=0,
-        step_size=None,
-        offsets_size=3,
-        derivative=1,
-        key=jr.PRNGKey(0),
+        accuracy=1,
+        step_size=1,
     ):
-        """Finite difference a model with paramerized offsets/step_size
-
-        Args:
-            argnum: argument number to differentiate. Defaults to 0.
-            step_size: step size for the finite difference stencil. Defaults to None.
-            offsets_size: number of offsets for the finite difference stencil. Defaults to 3.
-            derivative: derivative order. Defaults to 1.
-
-        Example:
-            >>> layer = ParameterizedFiniteDiff()
-            >>> layer(sk.nn.Lambda(lambda x:x**3))(jnp.ones([10,1]))
-            [[3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954],
-            [3.0000954]]
-        """
-
-        self.argnum = argnum
+        """wrap gradient as a layer"""
+        self.accuracy = accuracy
         self.step_size = step_size
-        self.offsets = jr.uniform(key, shape=(offsets_size,), minval=-1, maxval=1)
-        self.derivative = derivative
 
         self._func = ft.partial(
-            fdiff,
-            argnum=self.argnum,
+            gradient,
+            accuracy=self.accuracy,
             step_size=self.step_size,
-            offsets=self.offsets,
-            derivative=self.derivative,
         )
 
-    def __call__(self, *args, **kwargs):
-        return self._func(*args, **kwargs)
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return self._func(x)
+
+
+@pytc.treeclass
+class Divergence:
+    accuracy: int | tuple[int, ...] = pytc.nondiff_field()
+    step_size: float | tuple[float, ...] = pytc.nondiff_field()
+    keepdims: bool = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        *,
+        accuracy=1,
+        step_size=1,
+        keepdims=True,
+    ):
+        """wrap divergence as a layer"""
+        self.accuracy = accuracy
+        self.step_size = step_size
+        self.keepdims = keepdims
+
+        self._func = ft.partial(
+            divergence,
+            accuracy=self.accuracy,
+            step_size=self.step_size,
+            keepdims=self.keepdims,
+        )
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return self._func(x)
+
+
+@pytc.treeclass
+class Laplacian:
+    accuracy: int | tuple[int, ...] = pytc.nondiff_field()
+    step_size: float | tuple[float, ...] = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        *,
+        accuracy=1,
+        step_size=1,
+    ):
+        """wrap laplacian as a layer"""
+        self.accuracy = accuracy
+        self.step_size = step_size
+
+        self._func = ft.partial(
+            laplacian,
+            accuracy=self.accuracy,
+            step_size=self.step_size,
+        )
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return self._func(x)
+
+
+@pytc.treeclass
+class Curl:
+    accuracy: int | tuple[int, ...] = pytc.nondiff_field()
+    step_size: float | tuple[float, ...] = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        *,
+        accuracy=1,
+        step_size=1,
+    ):
+        """wrap curl as a layer"""
+        self.accuracy = accuracy
+        self.step_size = step_size
+
+        self._func = ft.partial(
+            curl,
+            accuracy=self.accuracy,
+            step_size=self.step_size,
+        )
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return self._func(x)

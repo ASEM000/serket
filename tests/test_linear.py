@@ -56,12 +56,12 @@ def test_bilinear():
     layer = Bilinear(3, 4, 2, bias_init_func=None)
     layer = layer.at["weight"].set(W)
 
-    npt.assert_allclose(y, layer(x1, x2))
+    npt.assert_allclose(y, layer(x1, x2), atol=1e-4)
 
     layer = Bilinear(3, 4, 2, bias_init_func="zeros")
     layer = layer.at["weight"].set(W)
 
-    npt.assert_allclose(y, layer(x1, x2))
+    npt.assert_allclose(y, layer(x1, x2), atol=1e-4)
 
 
 def test_identity():
