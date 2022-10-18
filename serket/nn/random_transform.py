@@ -62,8 +62,8 @@ class RandomApply:
 class RandomZoom2D:
     def __init__(
         self,
-        height_factor: tuple[float, float] = (0, 1),
-        width_factor: tuple[float, float] = (0, 1),
+        height_factor: tuple[float, float] = (0.0, 1.0),
+        width_factor: tuple[float, float] = (0.0, 1.0),
     ):
         """
         Args:
@@ -87,7 +87,7 @@ class RandomZoom2D:
 
     def __call__(self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0)) -> jnp.ndarray:
 
-        keys = jr.split(key, 3)
+        keys = jr.split(key, 4)
 
         height_factor = jr.uniform(
             keys[0],
@@ -99,44 +99,28 @@ class RandomZoom2D:
             keys[1], shape=(), minval=self.width_factor[0], maxval=self.width_factor[1]
         )
 
-        resized_rows = int(x.shape[1] * (1 + height_factor))
-        resized_cols = int(x.shape[2] * (1 + width_factor))
+        R, C = x.shape[1:3]  # R = rows, C = cols
+        RR, CC = int(R * (1 + height_factor))  # RR = resized rows,
+        CC = int(C * (1 + width_factor))  # CC = resized cols
 
-        if height_factor >= 0 and width_factor >= 0:
-            # zoom in rows and cols
-            crop_transform = RandomCrop2D(x.shape[1:])
-            resize_transform = Resize2D((resized_rows, resized_cols))
-            x = resize_transform(x)
-            x = crop_transform(x, key=keys[2])
-            return x
+        if height_factor > 0:
+            # zoom in rows
+            x = Resize2D((RR, C))(x)
+            x = RandomCrop2D((R, C))(x, key=keys[2])
 
-        elif height_factor <= 0 and width_factor <= 0:
-            # zoom out rows and cols
-            resize_transform = Resize2D((resized_rows, resized_cols))
-            padding = (x.shape[1] - resized_rows, 0), (x.shape[2] - resized_cols, 0)
-            padding_transform = Pad2D(padding)
-            x = resize_transform(x)
-            x = padding_transform(x)
-            return x
+        if width_factor > 0:
+            # zoom in cols
+            x = Resize2D((R, CC))(x)
+            x = RandomCrop2D((R, C))(x, key=keys[3])
 
-        elif height_factor <= 0 and width_factor >= 0:
-            # zoom out rows and zoom in cols
-            resize_transform = Resize2D((x.shape[1], resized_cols))
-            padding = ((x.shape[1] - resized_rows, 0), (0, 0))
-            padding_transform = Pad2D(padding)
-            crop_transform = RandomCrop2D(x.shape[1:])
-            x = resize_transform(x)
-            x = crop_transform(x, key=keys[2])
-            x = padding_transform(x)
-            return x
+        if height_factor < 0:
+            # zoom out rows
+            x = Resize2D((RR, C))(x)
+            x = Pad2D((((R - RR) // 2, (R - RR) - ((R - RR) // 2)), (0, 0)))(x)
 
-        elif height_factor >= 0 and width_factor <= 0:
-            # zoom in rows and zoom out cols
-            resize_transform = Resize2D((resized_rows, x.shape[2]))
-            padding = ((0, 0), (x.shape[2] - resized_cols, 0))
-            padding_transform = Pad2D(padding)
-            crop_transform = RandomCrop2D(x.shape[1:])
-            x = resize_transform(x)
-            x = crop_transform(x, key=keys[2])
-            x = padding_transform(x)
-            return x
+        if width_factor < 0:
+            # zoom out cols
+            x = Resize2D((R, CC))(x)
+            x = Pad2D(((0, 0), ((C - CC) // 2, (C - CC) - (C - CC) // 2)))(x)
+
+        return x

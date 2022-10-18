@@ -3,6 +3,8 @@ from __future__ import annotations
 import jax.numpy as jnp
 import pytreeclass as pytc
 
+from serket.nn.utils import _check_and_return_padding
+
 
 @pytc.treeclass
 class PadND:
@@ -23,23 +25,7 @@ class PadND:
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
-        if isinstance(self.padding, int):
-            self.padding = ((self.padding, self.padding),) * self.ndim
-
-        elif isinstance(self.padding, tuple):
-            assert (
-                len(self.padding) == self.ndim), f"padding must be a tuple of length {self.ndim}"  # fmt: skip
-
-            for i, x in enumerate(self.padding):
-                if isinstance(x, int):
-                    self.padding[i] = (x, x)
-
-                elif isinstance(x, tuple):
-                    assert len(x) == 2, f"padding must be a tuple of length 2, got {x}"
-                    assert all(isinstance(y, int) for y in x), f"padding must be a tuple of ints, got {x}"  # fmt: skip
-
-                else:
-                    raise TypeError(f"padding must be an int or tuple, got {x}")
+        self.padding = _check_and_return_padding(self.padding, ((1,),) * self.ndim)
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == self.ndim + 1, f"Input must be {self.ndim + 1}."
