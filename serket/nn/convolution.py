@@ -15,6 +15,7 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
+from serket.nn.containers import Sequential
 from serket.nn.utils import (
     _calculate_convolution_output_shape,
     _calculate_transpose_padding,
@@ -1133,3 +1134,232 @@ class Conv3DLocal(ConvNDLocal):
             ndim=3,
             key=key,
         )
+
+
+# ------------------------------------------------ ConvNDSemiLocal --------------------------------------------------- #
+
+
+@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
+@pytc.treeclass
+class ConvNDSemiLocal:
+    spatial_groups: int = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        strides=1,
+        padding="SAME",
+        input_dilation=1,
+        kernel_dilation=1,
+        weight_init_func="glorot_uniform",
+        bias_init_func="zeros",
+        spatial_groups=1,
+        ndim=2,
+        key=jr.PRNGKey(0),
+    ):
+        """Split the input into spatial_groups and apply a different kernel to each group
+
+        Args:
+            in_features: number of input features
+            out_features: number of output features
+            kernel_size: size of the convolutional kernel
+            strides: stride of the convolution
+            padding: padding of the input
+            input_dilation: dilation of the input
+            kernel_dilation: dilation of the convolutional kernel
+            weight_init_func: function to use for initializing the weights
+            bias_init_func: function to use for initializing the bias
+            spatial_groups: number of groups to split the spatial dimensions into
+            ndim: number of dimensions of the convolution
+            key: key to use for initializing the weights
+
+        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        """
+        keys = jr.split(key, spatial_groups)
+        self.spatial_groups = spatial_groups
+        self.convs = Sequential(
+            [
+                ConvND(
+                    in_features=in_features,
+                    out_features=out_features,
+                    kernel_size=kernel_size,
+                    strides=strides,
+                    padding=padding,
+                    input_dilation=input_dilation,
+                    kernel_dilation=kernel_dilation,
+                    weight_init_func=weight_init_func,
+                    bias_init_func=bias_init_func,
+                    ndim=ndim,
+                    key=key,
+                )
+                for key in keys
+            ]
+        )
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        xs = jnp.array_split(x, self.spatial_groups, axis=-1)
+        return jnp.concatenate([f(xi) for f, xi in zip(self.convs, xs)], axis=-1)
+
+
+@pytc.treeclass
+class Conv1DSemiLocal(ConvNDSemiLocal):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        strides=1,
+        padding="SAME",
+        input_dilation=1,
+        kernel_dilation=1,
+        weight_init_func="glorot_uniform",
+        bias_init_func="zeros",
+        spatial_groups=1,
+        key=jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            spatial_groups=spatial_groups,
+            ndim=1,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class Conv2DSemiLocal(ConvNDSemiLocal):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        strides=1,
+        padding="SAME",
+        input_dilation=1,
+        kernel_dilation=1,
+        weight_init_func="glorot_uniform",
+        bias_init_func="zeros",
+        spatial_groups=1,
+        key=jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            spatial_groups=spatial_groups,
+            ndim=2,
+            key=key,
+        )
+
+
+@pytc.treeclass
+class Conv3DSemiLocal(ConvNDSemiLocal):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        kernel_size,
+        *,
+        strides=1,
+        padding="SAME",
+        input_dilation=1,
+        kernel_dilation=1,
+        weight_init_func="glorot_uniform",
+        bias_init_func="zeros",
+        spatial_groups=1,
+        key=jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            spatial_groups=spatial_groups,
+            ndim=3,
+            key=key,
+        )
+
+
+# --------------------------------------- DepthwiseConvNDSemiLocal --------------------------------------------------- #
+
+
+@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
+@pytc.treeclass
+class DepthwiseConvNDSemiLocal:
+    spatial_groups: int = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        in_features,
+        kernel_size,
+        *,
+        strides=1,
+        padding="SAME",
+        kernel_dilation=1,
+        weight_init_func="glorot_uniform",
+        bias_init_func="zeros",
+        spatial_groups=1,
+        ndim=2,
+        key=jr.PRNGKey(0),
+    ):
+        """Split the input into spatial_groups and apply a different DepthwiseConvND kernel to each group
+
+        Args:
+            in_features: number of input features
+            kernel_size: size of the convolutional kernel
+            strides: stride of the convolution
+            padding: padding of the input
+            kernel_dilation: dilation of the convolutional kernel
+            weight_init_func: function to use for initializing the weights
+            bias_init_func: function to use for initializing the bias
+            spatial_groups: number of groups to split the spatial dimensions into
+            ndim: number of dimensions of the convolution
+            key: key to use for initializing the weights
+
+        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        """
+        keys = jr.split(key, spatial_groups)
+        self.spatial_groups = spatial_groups
+        self.convs = Sequential(
+            [
+                DepthwiseConvND(
+                    in_features=in_features,
+                    kernel_size=kernel_size,
+                    strides=strides,
+                    padding=padding,
+                    kernel_dilation=kernel_dilation,
+                    weight_init_func=weight_init_func,
+                    bias_init_func=bias_init_func,
+                    ndim=ndim,
+                    key=key,
+                )
+                for key in keys
+            ]
+        )
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        xs = jnp.array_split(x, self.spatial_groups, axis=-1)
+        return jnp.concatenate([f(xi) for f, xi in zip(self.convs, xs)], axis=-1)
