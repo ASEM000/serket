@@ -25,12 +25,13 @@ from serket.nn.utils import (
     _check_and_return_kernel_dilation,
     _check_and_return_padding,
     _check_and_return_strides,
-    _lazy_call,
+    _lazy_class,
 )
 
 # ------------------------------ Convolutional Layers ------------------------------ #
 
 
+@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class ConvND:
     weight: jnp.ndarray
@@ -81,26 +82,6 @@ class ConvND:
 
         See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-            self._partial_init = ft.partial(
-                ConvND.__init__,
-                self=self,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                strides=strides,
-                padding=padding,
-                input_dilation=input_dilation,
-                kernel_dilation=kernel_dilation,
-                weight_init_func=weight_init_func,
-                bias_init_func=bias_init_func,
-                groups=groups,
-                ndim=ndim,
-                key=key,
-            )
-            return
-
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected `in_features` to be a positive integer, got {in_features}"
@@ -141,7 +122,6 @@ class ConvND:
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
-    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, 0),
@@ -261,6 +241,7 @@ class Conv3D(ConvND):
 # ------------------------------ Transposed Convolutional Layers ------------------------------ #
 
 
+@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class ConvNDTranspose:
     weight: jnp.ndarray
@@ -376,7 +357,6 @@ class ConvNDTranspose:
             input_dilation=self.kernel_dilation,
         )
 
-    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         y = jax.lax.conv_transpose(
             lhs=jnp.expand_dims(x, 0),
@@ -494,6 +474,7 @@ class Conv3DTranspose(ConvNDTranspose):
 # ------------------------------ Depthwise Convolutional Layers ------------------------------ #
 
 
+@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class DepthwiseConvND:
     weight: jnp.ndarray
@@ -595,7 +576,6 @@ class DepthwiseConvND:
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
-    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         y = jax.lax.conv_general_dilated(
             lhs=x[None],
@@ -697,6 +677,7 @@ class DepthwiseConv3D(DepthwiseConvND):
 # ------------------------------ SeparableConvND Depthwise Convolutional Layers ------------------------------ #
 
 
+@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class SeparableConvND:
     depthwise_conv: DepthwiseConvND
@@ -815,7 +796,6 @@ class SeparableConvND:
             ndim=ndim,
         )
 
-    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
@@ -924,6 +904,7 @@ class SeparableConv3D(SeparableConvND):
 # ------------------------------ ConvNDLocal Convolutional Layers ------------------------------ #
 
 
+@_lazy_class({"in_features": lambda x, **k: x.shape[0], "in_size": lambda x, **k: x.shape[1:]})  # fmt: skip
 @pytc.treeclass
 class ConvNDLocal:
     weight: jnp.ndarray
@@ -1038,7 +1019,6 @@ class ConvNDLocal:
         else:
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[0], "in_size": a[0].shape[1:]})  # fmt: skip
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         y = jax.lax.conv_general_dilated_local(
             lhs=x[None],

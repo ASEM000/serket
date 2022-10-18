@@ -8,9 +8,10 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return_init_func, _lazy_call
+from serket.nn.utils import _check_and_return_init_func, _lazy_class
 
 
+@_lazy_class({"in_features": lambda x, **k: x.shape[-1]})
 @pytc.treeclass
 class Linear:
     weight: jnp.ndarray
@@ -72,13 +73,18 @@ class Linear:
         else:
             self.bias = self.bias_init_func(key, (out_features,))
 
-    @_lazy_call(lambda *a, **k: {"in_features": a[0].shape[-1]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         if self.bias is None:
             return x @ self.weight
         return x @ self.weight + self.bias
 
 
+@_lazy_class(
+    {
+        "in1_features": lambda x1, x2, **k: x1.shape[-1],
+        "in2_features": lambda x1, x2, **k: x2.shape[-1],
+    }
+)
 @pytc.treeclass
 class Bilinear:
     weight: jnp.ndarray
@@ -146,7 +152,6 @@ class Bilinear:
         else:
             self.bias = self.bias_init_func(key, (out_features,))
 
-    @_lazy_call(lambda *a, **k: {"in1_features": a[0].shape[-1], "in2_features": a[1].shape[-1]})  # fmt: skip
     def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray, **kwargs) -> jnp.ndarray:
         x = jnp.einsum("...j,...k,jkl->...l", x1, x2, self.weight)
 

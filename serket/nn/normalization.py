@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import dataclasses
-import functools as ft
-
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _lazy_call
+from serket.nn.utils import _lazy_class
 
 
 @pytc.treeclass
@@ -61,6 +58,7 @@ class LayerNorm:
         return x̂
 
 
+@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class GroupNorm:
     γ: jnp.ndarray = None
@@ -89,18 +87,6 @@ class GroupNorm:
             eps : a value added to the denominator for numerical stability.
             affine : a boolean value that when set to True, this module has learnable affine parameters.
         """
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-            self._partial_init = ft.partial(
-                GroupNorm.__init__,
-                self,
-                groups=groups,
-                eps=eps,
-                affine=affine,
-            )
-            return
-
         if in_features <= 0 or not isinstance(in_features, int):
             raise ValueError("in_features must be a positive integer")
 
@@ -122,7 +108,6 @@ class GroupNorm:
             self.γ = jnp.ones(self.in_features)
             self.β = jnp.zeros(self.in_features)
 
-    @_lazy_call(lambda *a, **kw: {"in_features": a[0].shape[0]})
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert len(x.shape) > 1, "Input must have at least 2 dimensions"
         # split channels into groups

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import functools as ft
+import inspect
 from types import FunctionType
 from typing import Any, Callable, Sequence
 
@@ -205,19 +206,68 @@ _TRACER_ERROR_MSG = lambda cls_name: (
 )
 
 
-def _lazy_call(lazy_func: Callable[[Any], dict[str, Any]]):
-    # lazy_func returns a dict of field_name -> field_value
-    # where field_name is the name of the lazy field and field_value
-    # is the value of the lazy field
-    def func_wrapper(func):
-        def wrapper(self, *args, **kwargs):
-            if hasattr(self, "_partial_init"):
-                if any(isinstance(a, jax.core.Tracer) for a in args):
-                    raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-                self._partial_init(**lazy_func(*args, **kwargs))
-                object.__delattr__(self, "_partial_init")
-            return func(self, *args, **kwargs)
+def _lazy_class(lazy_map: dict[str, Callable]):
+    """transform a class into a lazy class that initializes its attributes lazily after the first call
+    Args:
+        lazy_map:
+            a mapping from field name to a callable that returns the field value from the input at call time
+        Example:
+            >>> class Foo:
+            ....    def __init__(self, in_features):
+            ....        self.in_features = in_features
+            ....    def __call__(self, x):
+            ....        return self.in_features + x
 
-        return wrapper
+            # infer `in_features` from call input
+            # lets say in_featues is last dimension of input
+            lazy_foo = _lazy_class({"in_features": lambda x: x.shape[-1]})
+    """
 
-    return func_wrapper
+    def cls_wrapper(cls):
+        def _init_wrapper(func):
+            @ft.wraps(func)
+            def wrapper(self, *args, **kwargs):
+                # get all parameters from the input
+                params = inspect.signature(func).parameters
+                params = {k: v.default for k, v in params.items() if k != "self"}
+                params.update(kwargs)  # merge user kwargs
+                params.update(dict(zip(params.keys(), args)))  # merge user args
+
+                # check if any of the params is marked as lazy (i.e. = None)
+                if any(params[lazy_argname] is None for lazy_argname in lazy_map):
+                    for field_item in dataclasses.fields(self):
+                        setattr(self, field_item.name, None)
+
+                    # remove lazy arg so that it is not part of the partial function
+                    for lazy_argname in lazy_map:
+                        del params[lazy_argname]
+
+                    setattr(self, "_partial_init", ft.partial(func, self, **params))
+                    return
+                # execute original init
+                return func(self, *args, **kwargs)
+
+            return wrapper
+
+        def _call_wrapper(func):
+            @ft.wraps(func)
+            def wrapper(self, *args, **kwargs):
+                if hasattr(self, "_partial_init"):
+                    # check if jax transformations are applied to the layer
+                    # by checking if any of the input is a Tracer
+                    if any(isinstance(a, jax.core.Tracer) for a in args):
+                        raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+                    inferred = {k: v(*args, **kwargs) for k, v in lazy_map.items()}
+                    # initialize the layer with the inferred values
+                    getattr(self, "_partial_init")(**inferred)
+                    # remove the partial function so that it is not called again
+                    object.__delattr__(self, "_partial_init")
+                return func(self, *args, **kwargs)
+
+            return wrapper
+
+        cls.__init__ = _init_wrapper(cls.__init__)
+        cls.__call__ = _call_wrapper(cls.__call__)
+        return cls
+
+    return cls_wrapper

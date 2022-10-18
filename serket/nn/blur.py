@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
-import functools as ft
-
 import jax
 import jax.numpy as jnp
 
@@ -10,9 +7,10 @@ import jax.numpy as jnp
 import pytreeclass as pytc
 
 from serket.nn.convolution import DepthwiseConv2D
-from serket.nn.utils import _TRACER_ERROR_MSG
+from serket.nn.utils import _lazy_class
 
 
+@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class AvgBlur2D:
     conv1: DepthwiseConv2D = pytc.nondiff_field(repr=False)
@@ -24,16 +22,6 @@ class AvgBlur2D:
             in_features: number of input channels
             kernel_size: size of the convolving kernel
         """
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-            self._partial_init = ft.partial(
-                AvgBlur2D.__init__,
-                self=self,
-                kernel_size=kernel_size,
-            )
-            return
-
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected `in_features` to be a positive integer, got {in_features}"
@@ -66,16 +54,11 @@ class AvgBlur2D:
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
 
     def __call__(self, x, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-
         assert x.ndim == 3, "`Input` must be 3D."
         return self.conv2(self.conv1(x))
 
 
+@_lazy_class({"in_features": lambda *a, **k: a[0].shape[0]})
 @pytc.treeclass
 class GaussianBlur2D:
     in_features: int = pytc.nondiff_field()
@@ -100,17 +83,6 @@ class GaussianBlur2D:
             kernel_size: kernel size
             sigma: sigma. Defaults to 1.
         """
-        if in_features is None:
-            for field_item in dataclasses.fields(self):
-                setattr(self, field_item.name, None)
-            self._partial_init = ft.partial(
-                GaussianBlur2D.__init__,
-                self=self,
-                kernel_size=kernel_size,
-                sigma=sigma,
-            )
-            return
-
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected `in_features` to be a positive integer, got {in_features}"
@@ -169,11 +141,5 @@ class GaussianBlur2D:
         #     raise ValueError(f"Unknown implementation {implementation}")
 
     def __call__(self, x, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-            object.__delattr__(self, "_partial_init")
-
         assert x.ndim == 3, "`Input` must be 3D."
         return self.conv1(self.conv2(x))
