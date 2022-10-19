@@ -20,13 +20,13 @@ from serket.fd.utils import (
 from serket.nn.utils import _check_and_return
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy", "axis", "derivative", "step_size"))
+@ft.partial(jax.jit, static_argnames=("accuracy", "axis", "derivative"))
 def difference(
     x: jnp.ndarray,
     *,
     axis: int = 0,
     accuracy: int = 1,
-    step_size: float = 1,
+    step_size: float | jnp.ndarray = 1,
     derivative: int = 1,
 ) -> jnp.ndarray:
     """Compute the finite difference derivative along a given axis with a given accuracy
@@ -88,12 +88,12 @@ def difference(
     )
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy", "step_size"))
+@ft.partial(jax.jit, static_argnames=("accuracy"))
 def gradient(
     x: jnp.ndarray,
     *,
     accuracy: int | tuple[int, ...] = 1,
-    step_size: float | tuple[float, ...] = 1,
+    step_size: float | tuple[float, ...] | jnp.ndarry = 1,
 ) -> jnp.ndarray:
     """Compute the ∇F of input array where F is a scalar function of x and
     returns vectors of the same shape as x stacked along the first axis.
@@ -128,7 +128,7 @@ def gradient(
     )
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy", "keepdims", "step_size"))
+@ft.partial(jax.jit, static_argnames=("accuracy", "keepdims"))
 def divergence(
     x: jnp.ndarray,
     *,
@@ -174,12 +174,12 @@ def divergence(
     return result
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy", "step_size"))
+@ft.partial(jax.jit, static_argnames=("accuracy"))
 def laplacian(
     x: jnp.ndarray,
     *,
     accuracy: int | tuple[int, ...] = 1,
-    step_size: float | tuple[float, ...] = 1,
+    step_size: float | tuple[float, ...] | jnp.ndarry = 1,
 ) -> jnp.ndarray:
     """Compute the ΔF of input array.
     Args:
@@ -207,12 +207,12 @@ def laplacian(
     )
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy", "step_size"))
+@ft.partial(jax.jit, static_argnames=("accuracy"))
 def curl(
     x: jnp.ndarray,
     *,
     accuracy: int | tuple[int, ...] = 1,
-    step_size: float | tuple[float, ...] = 1,
+    step_size: float | tuple[float, ...] | jnp.ndarry = 1,
 ) -> jnp.ndarray:
     """Compute the ∇×F of input array where F is a vector field whose components are the first axis of x
     and returns a vector field

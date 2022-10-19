@@ -8,6 +8,7 @@ from typing import Any, Callable, Sequence
 
 import jax
 import jax.nn.initializers as ji
+import jax.numpy as jnp
 import jax.tree_util as jtu
 
 
@@ -157,6 +158,8 @@ def _check_and_return_padding(
 def _check_and_return(value, ndim, name):
     if isinstance(value, int):
         return (value,) * ndim
+    elif isinstance(value, jnp.ndarray):
+        return jnp.repeat(value, ndim)
     elif isinstance(value, tuple):
         assert len(value) == ndim, f"{name} must be a tuple of length {ndim}"
         return tuple(value)
