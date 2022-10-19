@@ -4,14 +4,14 @@ import dataclasses
 import functools as ft
 from typing import Callable
 
+import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return_init_func, _lazy_class
+from serket.nn.utils import _TRACER_ERROR_MSG, _check_and_return_init_func
 
 
-@_lazy_class({"in_features": lambda x, **k: x.shape[-1]})
 @pytc.treeclass
 class Linear:
     weight: jnp.ndarray
@@ -46,6 +46,7 @@ class Linear:
         if in_features is None:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
+
             self._partial_init = ft.partial(
                 Linear.__init__,
                 self,
@@ -55,6 +56,9 @@ class Linear:
                 key=key,
             )
             return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
 
         self.weight_init_func = _check_and_return_init_func(
             weight_init_func, "weight_init_func"
@@ -74,17 +78,16 @@ class Linear:
             self.bias = self.bias_init_func(key, (out_features,))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[-1])
+
         if self.bias is None:
             return x @ self.weight
         return x @ self.weight + self.bias
 
 
-@_lazy_class(
-    {
-        "in1_features": lambda x1, x2, **k: x1.shape[-1],
-        "in2_features": lambda x1, x2, **k: x2.shape[-1],
-    }
-)
 @pytc.treeclass
 class Bilinear:
     weight: jnp.ndarray
@@ -122,6 +125,7 @@ class Bilinear:
         if in1_features is None or in2_features is None:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
+
             self._partial_init = ft.partial(
                 Bilinear.__init__,
                 self,
@@ -131,6 +135,9 @@ class Bilinear:
                 key=key,
             )
             return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
 
         self.in1_features = in1_features
         self.in2_features = in2_features
@@ -153,6 +160,11 @@ class Bilinear:
             self.bias = self.bias_init_func(key, (out_features,))
 
     def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x1, jax.core.Tracer) or isinstance(x2, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in1_features=x1.shape[-1], in2_features=x2.shape[-1])
+
         x = jnp.einsum("...j,...k,jkl->...l", x1, x2, self.weight)
 
         if self.bias is None:

@@ -10,6 +10,7 @@ import jax
 import jax.nn.initializers as ji
 import jax.numpy as jnp
 import jax.tree_util as jtu
+from pytreeclass._src.tree_util import _tree_immutate, _tree_mutate
 
 
 def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padding):
@@ -213,73 +214,77 @@ _TRACER_ERROR_MSG = lambda cls_name: (
 )
 
 
-def _lazy_class(lazy_map: dict[str, Callable]):
-    """transform a class into a lazy class that initializes its attributes lazily after the first call
-    Args:
-        lazy_map:
-            a mapping from field name to a callable that returns the field value from the input at call time
-        Example:
-            >>> class Foo:
-            ....    def __init__(self, in_features):
-            ....        self.in_features = in_features
-            ....    def __call__(self, x):
-            ....        return self.in_features + x
+# def _lazy_class(lazy_map: dict[str, Callable]):
+#     """transform a class into a lazy class that initializes its attributes lazily after the first call
+#     Args:
+#         lazy_map:
+#             a mapping from field name to a callable that returns the field value from the input at call time
+#         Example:
+#             >>> class Foo:
+#             ....    def __init__(self, in_features):
+#             ....        self.in_features = in_features
+#             ....    def __call__(self, x):
+#             ....        return self.in_features + x
 
-            # infer `in_features` from call input
-            # lets say in_featues is last dimension of input
-            lazy_foo = _lazy_class({"in_features": lambda x: x.shape[-1]})
-    """
+#             # infer `in_features` from call input
+#             # lets say in_featues is last dimension of input
+#             lazy_foo = _lazy_class({"in_features": lambda x: x.shape[-1]})(Foo)
+#     """
 
-    def cls_wrapper(cls):
-        def _init_wrapper(func):
-            @ft.wraps(func)
-            def wrapper(self, *args, **kwargs):
-                # get all parameters from the input
-                params = inspect.signature(func).parameters
-                params = {k: v.default for k, v in params.items()}
-                del params["self"]  # remove self
-                params.update(kwargs)  # merge user kwargs
-                params.update(dict(zip(params.keys(), args)))  # merge user args
+#     def cls_wrapper(cls):
+#         def _init_wrapper(func):
+#             @ft.wraps(func)
+#             def _lazy_init(self, *args, **kwargs):
+#                 self = _tree_mutate(tree=self)
+#                 # here the treeclass is mutable so we can use setattr/delattr
+#                 # get all parameters from the input
+#                 params = inspect.signature(func).parameters
+#                 params = {k: v.default for k, v in params.items()}
+#                 del params["self"]  # remove self
+#                 params.update(kwargs)  # merge user kwargs
+#                 params.update(dict(zip(params.keys(), args)))  # merge user args
+#                 # check if any of the params is marked as lazy (i.e. = None)
+#                 if any(params[lazy_argname] is None for lazy_argname in lazy_map):
+#                     # set all fields to None to give the user a hint that they are lazy
+#                     # and to avoid errors when calling the layer before initializing it
+#                     for field_item in dataclasses.fields(self):
+#                         setattr(self, field_item.name, None)
+#                     # remove lazy arg so that it is not part of the partial function
+#                     for lazy_argname in lazy_map:
+#                         del params[lazy_argname]
+#                     captured_self = ft.partial(func, self, **params)
+#                     setattr(self, "_partial_init", captured_self)
+#                     return
 
-                # check if any of the params is marked as lazy (i.e. = None)
-                if any(params[lazy_argname] is None for lazy_argname in lazy_map):
-                    # set all fields to None to give the user a hint that they are lazy
-                    # and to avoid errors when calling the layer before initializing it
-                    for field_item in dataclasses.fields(self):
-                        setattr(self, field_item.name, None)
+#                 # execute original init
 
-                    # remove lazy arg so that it is not part of the partial function
-                    for lazy_argname in lazy_map:
-                        del params[lazy_argname]
+#                 # remove the partial function so that it is not called again
+#                 if hasattr(self, "_partial_init"):
+#                     delattr(self, "_partial_init")
 
-                    setattr(self, "_partial_init", ft.partial(func, self, **params))
-                    return
-                # execute original init
-                return func(self, *args, **kwargs)
+#                 func(self, *args, **kwargs)
+#                 self = _tree_immutate(tree=self)
 
-            return wrapper
+#             return _lazy_init
 
-        def _call_wrapper(func):
-            @ft.wraps(func)
-            def wrapper(self, *args, **kwargs):
-                if hasattr(self, "_partial_init"):
-                    # check if jax transformations are applied to the layer
-                    # by checking if any of the input is a Tracer
-                    if any(isinstance(a, jax.core.Tracer) for a in args):
-                        raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-                    inferred = {k: v(*args, **kwargs) for k, v in lazy_map.items()}
-                    # initialize the layer with the inferred values
-                    getattr(self, "_partial_init")(**inferred)
-                    # remove the partial function so that it is not called again
-                    object.__delattr__(self, "_partial_init")
+#         def _call_wrapper(func):
+#             @ft.wraps(func)
+#             def _lazy_call(self, *args, **kwargs):
+#                 if hasattr(self, "_partial_init"):
+#                     # check if jax transformations are applied to the layer
+#                     # by checking if any of the input is a Tracer
+#                     if any(isinstance(a, jax.core.Tracer) for a in args):
+#                         raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+#                     inferred = {k: v(*args, **kwargs) for k, v in lazy_map.items()}
+#                     # initialize the layer with the inferred values
+#                     getattr(self, "_partial_init")(**inferred)
+#                 # execute original call
+#                 return func(self, *args, **kwargs)
 
-                # execute original call
-                return func(self, *args, **kwargs)
+#             return _lazy_call
 
-            return wrapper
+#         cls.__init__ = _init_wrapper(cls.__init__)
+#         cls.__call__ = _call_wrapper(cls.__call__)
+#         return cls
 
-        cls.__init__ = _init_wrapper(cls.__init__)
-        cls.__call__ = _call_wrapper(cls.__call__)
-        return cls
-
-    return cls_wrapper
+#     return cls_wrapper

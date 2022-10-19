@@ -15,8 +15,8 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
-from serket.nn.containers import Sequential
 from serket.nn.utils import (
+    _TRACER_ERROR_MSG,
     _calculate_convolution_output_shape,
     _calculate_transpose_padding,
     _check_and_return_init_func,
@@ -26,13 +26,11 @@ from serket.nn.utils import (
     _check_and_return_kernel_dilation,
     _check_and_return_padding,
     _check_and_return_strides,
-    _lazy_class,
 )
 
 # ------------------------------ Convolutional Layers ------------------------------ #
 
 
-@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class ConvND:
     weight: jnp.ndarray
@@ -83,6 +81,33 @@ class ConvND:
 
         See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                # set all fields to None to mark the class as uninitialized
+                # to the user and to avoid errors
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                ConvND.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                strides=strides,
+                padding=padding,
+                input_dilation=input_dilation,
+                kernel_dilation=kernel_dilation,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                groups=groups,
+                ndim=ndim,
+                key=key,
+            )
+
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected `in_features` to be a positive integer, got {in_features}"
@@ -124,6 +149,11 @@ class ConvND:
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0])
+
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -242,7 +272,6 @@ class Conv3D(ConvND):
 # ------------------------------ Transposed Convolutional Layers ------------------------------ #
 
 
-@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class ConvNDTranspose:
     weight: jnp.ndarray
@@ -293,6 +322,8 @@ class ConvNDTranspose:
         """
         if in_features is None:
             for field_item in dataclasses.fields(self):
+                # set all fields to None to mark the class as uninitialized
+                # to the user and to avoid errors
                 setattr(self, field_item.name, None)
             self._partial_init = ft.partial(
                 ConvNDTranspose.__init__,
@@ -310,6 +341,9 @@ class ConvNDTranspose:
                 key=key,
             )
             return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
 
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
@@ -359,6 +393,11 @@ class ConvNDTranspose:
         )
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0])
+
         y = jax.lax.conv_transpose(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -475,7 +514,6 @@ class Conv3DTranspose(ConvNDTranspose):
 # ------------------------------ Depthwise Convolutional Layers ------------------------------ #
 
 
-@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class DepthwiseConvND:
     weight: jnp.ndarray
@@ -545,6 +583,9 @@ class DepthwiseConvND:
             )
             return
 
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected in_features to be a positive integer, got {in_features}"
@@ -578,6 +619,11 @@ class DepthwiseConvND:
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0])
+
         y = jax.lax.conv_general_dilated(
             lhs=x[None],
             rhs=self.weight,
@@ -678,7 +724,6 @@ class DepthwiseConv3D(DepthwiseConvND):
 # ------------------------------ SeparableConvND Depthwise Convolutional Layers ------------------------------ #
 
 
-@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
 @pytc.treeclass
 class SeparableConvND:
     depthwise_conv: DepthwiseConvND
@@ -739,6 +784,9 @@ class SeparableConvND:
             )
             return
 
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected in_features to be a positive integer, got {in_features}"
@@ -798,6 +846,11 @@ class SeparableConvND:
         )
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0])
+
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
@@ -905,7 +958,6 @@ class SeparableConv3D(SeparableConvND):
 # ------------------------------ ConvNDLocal Convolutional Layers ------------------------------ #
 
 
-@_lazy_class({"in_features": lambda x, **k: x.shape[0], "in_size": lambda x, **k: x.shape[1:]})  # fmt: skip
 @pytc.treeclass
 class ConvNDLocal:
     weight: jnp.ndarray
@@ -975,6 +1027,9 @@ class ConvNDLocal:
             )
             return
 
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
         if not isinstance(in_features, int) or in_features <= 0:
             raise ValueError(
                 f"Expected in_features to be a positive integer, got {in_features}"
@@ -1021,6 +1076,11 @@ class ConvNDLocal:
             self.bias = self.bias_init_func(key, bias_shape)
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0], in_size=x.shape[1:])
+
         y = jax.lax.conv_general_dilated_local(
             lhs=x[None],
             rhs=self.weight,
@@ -1139,227 +1199,167 @@ class Conv3DLocal(ConvNDLocal):
 # ------------------------------------------------ ConvNDSemiLocal --------------------------------------------------- #
 
 
-@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
-@pytc.treeclass
-class ConvNDSemiLocal:
-    spatial_groups: int = pytc.nondiff_field()
+# @pytc.treeclass
+# class ConvNDSemiLocal:
+#     spatial_groups: int = pytc.nondiff_field()
 
-    def __init__(
-        self,
-        in_features,
-        out_features,
-        kernel_size,
-        *,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        spatial_groups=1,
-        ndim=2,
-        key=jr.PRNGKey(0),
-    ):
-        """Split the input into spatial_groups and apply a different kernel to each group
+#     def __init__(
+#         self,
+#         in_features,
+#         out_features,
+#         kernel_size,
+#         *,
+#         strides=1,
+#         padding="SAME",
+#         input_dilation=1,
+#         kernel_dilation=1,
+#         weight_init_func="glorot_uniform",
+#         bias_init_func="zeros",
+#         spatial_groups=1,
+#         ndim=2,
+#         key=jr.PRNGKey(0),
+#     ):
+#         """Split the input into spatial_groups and apply a different kernel to each group
 
-        Args:
-            in_features: number of input features
-            out_features: number of output features
-            kernel_size: size of the convolutional kernel
-            strides: stride of the convolution
-            padding: padding of the input
-            input_dilation: dilation of the input
-            kernel_dilation: dilation of the convolutional kernel
-            weight_init_func: function to use for initializing the weights
-            bias_init_func: function to use for initializing the bias
-            spatial_groups: number of groups to split the spatial dimensions into
-            ndim: number of dimensions of the convolution
-            key: key to use for initializing the weights
+#         Args:
+#             in_features: number of input features
+#             out_features: number of output features
+#             kernel_size: size of the convolutional kernel
+#             strides: stride of the convolution
+#             padding: padding of the input
+#             input_dilation: dilation of the input
+#             kernel_dilation: dilation of the convolutional kernel
+#             weight_init_func: function to use for initializing the weights
+#             bias_init_func: function to use for initializing the bias
+#             spatial_groups: number of groups to split the spatial dimensions into
+#             ndim: number of dimensions of the convolution
+#             key: key to use for initializing the weights
 
-        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
-        """
-        keys = jr.split(key, spatial_groups)
-        self.spatial_groups = spatial_groups
-        self.convs = Sequential(
-            [
-                ConvND(
-                    in_features=in_features,
-                    out_features=out_features,
-                    kernel_size=kernel_size,
-                    strides=strides,
-                    padding=padding,
-                    input_dilation=input_dilation,
-                    kernel_dilation=kernel_dilation,
-                    weight_init_func=weight_init_func,
-                    bias_init_func=bias_init_func,
-                    ndim=ndim,
-                    key=key,
-                )
-                for key in keys
-            ]
-        )
+#         See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+#         """
+#         keys = jr.split(key, spatial_groups)
+#         self.spatial_groups = spatial_groups
+#         self.convs = Sequential(
+#             [
+#                 ConvND(
+#                     in_features=in_features,
+#                     out_features=out_features,
+#                     kernel_size=kernel_size,
+#                     strides=strides,
+#                     padding=padding,
+#                     input_dilation=input_dilation,
+#                     kernel_dilation=kernel_dilation,
+#                     weight_init_func=weight_init_func,
+#                     bias_init_func=bias_init_func,
+#                     ndim=ndim,
+#                     key=key,
+#                 )
+#                 for key in keys
+#             ]
+#         )
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        xs = jnp.array_split(x, self.spatial_groups, axis=-1)
-        return jnp.concatenate([f(xi) for f, xi in zip(self.convs, xs)], axis=-1)
-
-
-@pytc.treeclass
-class Conv1DSemiLocal(ConvNDSemiLocal):
-    def __init__(
-        self,
-        in_features,
-        out_features,
-        kernel_size,
-        *,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        spatial_groups=1,
-        key=jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            spatial_groups=spatial_groups,
-            ndim=1,
-            key=key,
-        )
+#     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+#         xs = jnp.array_split(x, self.spatial_groups, axis=-1)
+#         return jnp.concatenate([f(xi) for f, xi in zip(self.convs, xs)], axis=-1)
 
 
-@pytc.treeclass
-class Conv2DSemiLocal(ConvNDSemiLocal):
-    def __init__(
-        self,
-        in_features,
-        out_features,
-        kernel_size,
-        *,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        spatial_groups=1,
-        key=jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            spatial_groups=spatial_groups,
-            ndim=2,
-            key=key,
-        )
+# @_lazy_class({"in_features": lambda x, **k: x.shape[0]})
+# @pytc.treeclass
+# class Conv1DSemiLocal(ConvNDSemiLocal):
+#     def __init__(
+#         self,
+#         in_features,
+#         out_features,
+#         kernel_size,
+#         *,
+#         strides=1,
+#         padding="SAME",
+#         input_dilation=1,
+#         kernel_dilation=1,
+#         weight_init_func="glorot_uniform",
+#         bias_init_func="zeros",
+#         spatial_groups=1,
+#         key=jr.PRNGKey(0),
+#     ):
+#         super().__init__(
+#             in_features,
+#             out_features,
+#             kernel_size,
+#             strides=strides,
+#             padding=padding,
+#             input_dilation=input_dilation,
+#             kernel_dilation=kernel_dilation,
+#             weight_init_func=weight_init_func,
+#             bias_init_func=bias_init_func,
+#             spatial_groups=spatial_groups,
+#             ndim=1,
+#             key=key,
+#         )
 
 
-@pytc.treeclass
-class Conv3DSemiLocal(ConvNDSemiLocal):
-    def __init__(
-        self,
-        in_features,
-        out_features,
-        kernel_size,
-        *,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        spatial_groups=1,
-        key=jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            spatial_groups=spatial_groups,
-            ndim=3,
-            key=key,
-        )
+# @_lazy_class({"in_features": lambda x, **k: x.shape[0]})
+# @pytc.treeclass
+# class Conv2DSemiLocal(ConvNDSemiLocal):
+#     def __init__(
+#         self,
+#         in_features,
+#         out_features,
+#         kernel_size,
+#         *,
+#         strides=1,
+#         padding="SAME",
+#         input_dilation=1,
+#         kernel_dilation=1,
+#         weight_init_func="glorot_uniform",
+#         bias_init_func="zeros",
+#         spatial_groups=1,
+#         key=jr.PRNGKey(0),
+#     ):
+#         super().__init__(
+#             in_features,
+#             out_features,
+#             kernel_size,
+#             strides=strides,
+#             padding=padding,
+#             input_dilation=input_dilation,
+#             kernel_dilation=kernel_dilation,
+#             weight_init_func=weight_init_func,
+#             bias_init_func=bias_init_func,
+#             spatial_groups=spatial_groups,
+#             ndim=2,
+#             key=key,
+#         )
 
 
-# --------------------------------------- DepthwiseConvNDSemiLocal --------------------------------------------------- #
-
-
-@_lazy_class({"in_features": lambda x, **k: x.shape[0]})
-@pytc.treeclass
-class DepthwiseConvNDSemiLocal:
-    spatial_groups: int = pytc.nondiff_field()
-
-    def __init__(
-        self,
-        in_features,
-        kernel_size,
-        *,
-        strides=1,
-        padding="SAME",
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        spatial_groups=1,
-        ndim=2,
-        key=jr.PRNGKey(0),
-    ):
-        """Split the input into spatial_groups and apply a different DepthwiseConvND kernel to each group
-
-        Args:
-            in_features: number of input features
-            kernel_size: size of the convolutional kernel
-            strides: stride of the convolution
-            padding: padding of the input
-            kernel_dilation: dilation of the convolutional kernel
-            weight_init_func: function to use for initializing the weights
-            bias_init_func: function to use for initializing the bias
-            spatial_groups: number of groups to split the spatial dimensions into
-            ndim: number of dimensions of the convolution
-            key: key to use for initializing the weights
-
-        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
-        """
-        keys = jr.split(key, spatial_groups)
-        self.spatial_groups = spatial_groups
-        self.convs = Sequential(
-            [
-                DepthwiseConvND(
-                    in_features=in_features,
-                    kernel_size=kernel_size,
-                    strides=strides,
-                    padding=padding,
-                    kernel_dilation=kernel_dilation,
-                    weight_init_func=weight_init_func,
-                    bias_init_func=bias_init_func,
-                    ndim=ndim,
-                    key=key,
-                )
-                for key in keys
-            ]
-        )
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        xs = jnp.array_split(x, self.spatial_groups, axis=-1)
-        return jnp.concatenate([f(xi) for f, xi in zip(self.convs, xs)], axis=-1)
+# @_lazy_class({"in_features": lambda x, **k: x.shape[0]})
+# @pytc.treeclass
+# class Conv3DSemiLocal(ConvNDSemiLocal):
+#     def __init__(
+#         self,
+#         in_features,
+#         out_features,
+#         kernel_size,
+#         *,
+#         strides=1,
+#         padding="SAME",
+#         input_dilation=1,
+#         kernel_dilation=1,
+#         weight_init_func="glorot_uniform",
+#         bias_init_func="zeros",
+#         spatial_groups=1,
+#         key=jr.PRNGKey(0),
+#     ):
+#         super().__init__(
+#             in_features,
+#             out_features,
+#             kernel_size,
+#             strides=strides,
+#             padding=padding,
+#             input_dilation=input_dilation,
+#             kernel_dilation=kernel_dilation,
+#             weight_init_func=weight_init_func,
+#             bias_init_func=bias_init_func,
+#             spatial_groups=spatial_groups,
+#             ndim=3,
+#             key=key,
+#         )
