@@ -35,15 +35,18 @@ from .blocks import UNetBlock, VGG16Block, VGG19Block
 from .blur import AvgBlur2D, GaussianBlur2D
 from .containers import Lambda, Sequential
 from .contrast import AdjustContrast2D, RandomContrast2D
-from .convolution import (  # Conv1DSemiLocal,; Conv2DSemiLocal,; Conv3DSemiLocal,
+from .convolution import (
     Conv1D,
     Conv1DLocal,
+    Conv1DSemiLocal,
     Conv1DTranspose,
     Conv2D,
     Conv2DLocal,
+    Conv2DSemiLocal,
     Conv2DTranspose,
     Conv3D,
     Conv3DLocal,
+    Conv3DSemiLocal,
     Conv3DTranspose,
     DepthwiseConv1D,
     DepthwiseConv2D,
@@ -136,9 +139,9 @@ __all__ = (
     "Conv1DLocal",
     "Conv2DLocal",
     "Conv3DLocal",
-    # "Conv1DSemiLocal",
-    # "Conv2DSemiLocal",
-    # "Conv3DSemiLocal",
+    "Conv1DSemiLocal",
+    "Conv2DSemiLocal",
+    "Conv3DSemiLocal",
     # Flattening
     "Flatten",
     "Unflatten",
