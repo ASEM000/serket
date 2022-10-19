@@ -43,8 +43,8 @@ class Sequential:
         for name, layer in zip(self._keys, layers):
             setattr(self, name, layer)
 
-        field_mapping = {**dict(self.__undeclared_fields__), **field_mapping}
-        object.__setattr__(self, "__undeclared_fields__", MappingProxyType(field_mapping))  # fmt: skip
+        field_mapping = {**dict(self.__treeclass_fields__), **field_mapping}
+        object.__setattr__(self, "__treeclass_fields__", MappingProxyType(field_mapping))  # fmt: skip
 
     def __getitem__(self, key: str | int | slice):
         if isinstance(key, str):
