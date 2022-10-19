@@ -20,7 +20,7 @@ from serket.fd.utils import (
 from serket.nn.utils import _check_and_return
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy", "axis", "derivative"))
+@ft.partial(jax.jit, static_argnames=("accuracy", "axis", "derivative", "step_size"))
 def difference(
     x: jnp.ndarray,
     *,
@@ -88,7 +88,7 @@ def difference(
     )
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy"))
+@ft.partial(jax.jit, static_argnames=("accuracy", "step_size"))
 def gradient(
     x: jnp.ndarray,
     *,
@@ -128,7 +128,7 @@ def gradient(
     )
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy", "keepdims"))
+@ft.partial(jax.jit, static_argnames=("accuracy", "keepdims", "step_size"))
 def divergence(
     x: jnp.ndarray,
     *,
@@ -163,7 +163,9 @@ def divergence(
     step_size = _check_and_return(step_size, x.ndim - 1, "step_size")
 
     result = sum(
-        difference(x[axis], accuracy=acc, step_size=step, derivative=1, axis=axis)
+        difference(
+            x.at[axis].get(), accuracy=acc, step_size=step, derivative=1, axis=axis
+        )
         for axis, (acc, step) in enumerate(zip(accuracy, step_size))
     )
 
@@ -172,7 +174,7 @@ def divergence(
     return result
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy"))
+@ft.partial(jax.jit, static_argnames=("accuracy", "step_size"))
 def laplacian(
     x: jnp.ndarray,
     *,
@@ -205,7 +207,7 @@ def laplacian(
     )
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy"))
+@ft.partial(jax.jit, static_argnames=("accuracy", "step_size"))
 def curl(
     x: jnp.ndarray,
     *,

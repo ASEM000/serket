@@ -193,16 +193,20 @@ def _create_fields_from_mapping(items: dict[str, Any]) -> dict:
 
 _TRACER_ERROR_MSG = lambda cls_name: (
     "Using Tracers as input to a lazy layer is not supported. "
-    "Use non Tracer input to initialize the layer.\n"
+    "Use non-Tracer input to initialize the layer.\n"
     "This error can occur if jax transformations are applied to a layer before "
     "calling it with a non Tracer input.\n"
     "Example: \n"
+    "# This will fail\n"
     ">>> x = jax.numpy.ones(...)\n"
     f">>> layer = {cls_name}(None, ...)\n"
     ">>> layer = jax.jit(layer)\n"
-    ">>> layer(x)  # This will raise an error\n"
+    ">>> layer(x) \n"
+    "# Instead, first initialize the layer with a non Tracer input\n"
+    "# and then apply jax transformations\n"
     f">>> layer = {cls_name}(None, ...)\n"
-    ">>> layer(x)  # This will work"
+    ">>> layer(x) # dry run to initialize the layer\n"
+    ">>> layer = jax.jit(layer)\n"
 )
 
 
@@ -229,12 +233,15 @@ def _lazy_class(lazy_map: dict[str, Callable]):
             def wrapper(self, *args, **kwargs):
                 # get all parameters from the input
                 params = inspect.signature(func).parameters
-                params = {k: v.default for k, v in params.items() if k != "self"}
+                params = {k: v.default for k, v in params.items()}
+                del params["self"]  # remove self
                 params.update(kwargs)  # merge user kwargs
                 params.update(dict(zip(params.keys(), args)))  # merge user args
 
                 # check if any of the params is marked as lazy (i.e. = None)
                 if any(params[lazy_argname] is None for lazy_argname in lazy_map):
+                    # set all fields to None to give the user a hint that they are lazy
+                    # and to avoid errors when calling the layer before initializing it
                     for field_item in dataclasses.fields(self):
                         setattr(self, field_item.name, None)
 
@@ -262,6 +269,8 @@ def _lazy_class(lazy_map: dict[str, Callable]):
                     getattr(self, "_partial_init")(**inferred)
                     # remove the partial function so that it is not called again
                     object.__delattr__(self, "_partial_init")
+
+                # execute original call
                 return func(self, *args, **kwargs)
 
             return wrapper

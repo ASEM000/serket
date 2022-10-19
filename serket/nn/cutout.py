@@ -56,7 +56,11 @@ class RandomCutout1D:
             x = x * ~row_mask[None, :]
             return x, None
 
-        x, _ = jax.lax.scan(scan_step, x, keys)
+        if self.cutout_count > 1:
+            x, _ = jax.lax.scan(scan_step, x, keys)
+        else:
+            # let's avoid scan if we can
+            x, _ = scan_step(x, keys[0])
 
         if self.fill_value != 0:
             return jnp.where(x == 0, self.fill_value, x)
@@ -113,7 +117,11 @@ class RandomCutout2D:
             x = x * (~jnp.outer(row_mask, col_mask))
             return x, None
 
-        x, _ = jax.lax.scan(scan_step, x, keys)
+        if self.cutout_count > 1:
+            x, _ = jax.lax.scan(scan_step, x, keys)
+        else:
+            # let's avoid scan if we can
+            x, _ = scan_step(x, keys[0])
 
         if self.fill_value != 0:
             return jnp.where(x == 0, self.fill_value, x)
