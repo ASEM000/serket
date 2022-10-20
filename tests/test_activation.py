@@ -26,6 +26,7 @@ from serket.nn import (
     ReLU6,
     SeLU,
     Sigmoid,
+    Snake,
     SoftPlus,
     SoftShrink,
     SoftSign,
@@ -277,4 +278,11 @@ def test_mish():
     x = jnp.array([-1.0, 0, 1])
     expected = jnp.array([-0.3034, 0.0000, 0.8651])
     actual = Mish()(x)
+    npt.assert_allclose(actual, expected, atol=1e-4)
+
+
+def test_snake():
+    x = jnp.array([-1.0, 0, 1])
+    expected = jnp.array([-0.29192656, 0.0, 1.7080734])
+    actual = Snake()(x)
     npt.assert_allclose(actual, expected, atol=1e-4)

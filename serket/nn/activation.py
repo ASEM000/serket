@@ -31,6 +31,7 @@ __all__ = (
     "SoftPlus",
     "SoftShrink",
     "SoftSign",
+    "Snake",
     "Swish",
     "Tanh",
     "TanhShrink",
@@ -358,3 +359,15 @@ class PReLU:
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return jnp.where(x > 0, x, x * self.a)
+
+
+@pytc.treeclass
+class Snake:
+    """Snake activation function
+    See: https://arxiv.org/pdf/2006.08195.pdf
+    """
+
+    frequency: float = 1.0
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return x + (1 - jnp.cos(2 * self.frequency * x)) / (2 * self.frequency)
