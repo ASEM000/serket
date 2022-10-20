@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Callable
+
 import jax
 import jax.numpy as jnp
 import kernex as kex
@@ -12,7 +14,7 @@ from serket.nn.utils import _check_and_return_kernel
 
 
 @pytc.treeclass
-class MaxPoolND:
+class GeneralPoolND:
 
     kernel_size: tuple[int, ...] | int = pytc.nondiff_field()
     strides: tuple[int, ...] | int = pytc.nondiff_field()
@@ -25,14 +27,16 @@ class MaxPoolND:
         *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
         ndim: int = 1,
+        func: Callable = None,
     ):
-        """Apply max pooling to the second dimension of the input.
+        """Apply pooling to the input with function `func` applied to the kernel.
 
         Args:
             kernel_size: size of the kernel
             strides: strides of the kernel
             padding: padding of the kernel
             ndim: number of dimensions
+            func: function to apply to the kernel
         """
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = strides
@@ -42,7 +46,7 @@ class MaxPoolND:
         @jax.vmap
         @kex.kmap(self.kernel_size, self.strides, self.padding)
         def _maxpoolnd(x):
-            return jnp.max(x)
+            return func(x)
 
         self._func = _maxpoolnd
 
@@ -51,125 +55,168 @@ class MaxPoolND:
 
 
 @pytc.treeclass
-class MaxPool1D(MaxPoolND):
+class MaxPool1D(GeneralPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
+        strides: tuple[int, ...] | int = None,
         *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
-            kernel_size=kernel_size, strides=strides, padding=padding, ndim=1
+            kernel_size=kernel_size,
+            strides=strides or kernel_size,
+            padding=padding,
+            ndim=1,
+            func=jnp.max,
         )
 
 
 @pytc.treeclass
-class MaxPool2D(MaxPoolND):
+class MaxPool2D(GeneralPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
+        strides: tuple[int, ...] | int = None,
         *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
-            kernel_size=kernel_size, strides=strides, padding=padding, ndim=2
+            kernel_size=kernel_size,
+            strides=strides or kernel_size,
+            padding=padding,
+            ndim=2,
+            func=jnp.max,
         )
 
 
 @pytc.treeclass
-class MaxPool3D(MaxPoolND):
+class MaxPool3D(GeneralPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
+        strides: tuple[int, ...] | int = None,
         *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
-            kernel_size=kernel_size, strides=strides, padding=padding, ndim=3
+            kernel_size=kernel_size,
+            strides=strides or kernel_size,
+            padding=padding,
+            ndim=3,
+            func=jnp.max,
         )
 
 
 @pytc.treeclass
-class AvgPoolND:
-
-    kernel_size: tuple[int, ...] | int = pytc.nondiff_field()
-    strides: tuple[int, ...] | int = pytc.nondiff_field()
-    padding: tuple[tuple[int, int], ...] | int | str = pytc.nondiff_field()
-
+class AvgPool1D(GeneralPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-        ndim: int = 1,
-    ):
-        """Apply average pooling to the second dimension of the input.
-
-        Args:
-            kernel_size: size of the kernel
-            strides: strides of the kernel
-            padding: padding of the kernel
-            ndim: number of dimensions
-        """
-        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = strides
-        self.padding = padding
-
-        @jax.jit
-        @jax.vmap
-        @kex.kmap(self.kernel_size, self.strides, self.padding)
-        def _avgpoolnd(x):
-            return jnp.mean(x)
-
-        self._func = _avgpoolnd
-
-    def __call__(self, x, **kwargs):
-        return self._func(x)
-
-
-@pytc.treeclass
-class AvgPool1D(AvgPoolND):
-    def __init__(
-        self,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
+        strides: tuple[int, ...] | int = None,
         *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
-            kernel_size=kernel_size, strides=strides, padding=padding, ndim=1
+            kernel_size=kernel_size,
+            strides=strides or kernel_size,
+            padding=padding,
+            ndim=1,
+            func=jnp.mean,
         )
 
 
 @pytc.treeclass
-class AvgPool2D(AvgPoolND):
+class AvgPool2D(GeneralPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
+        strides: tuple[int, ...] | int = None,
         *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
-            kernel_size=kernel_size, strides=strides, padding=padding, ndim=2
+            kernel_size=kernel_size,
+            strides=strides or kernel_size,
+            padding=padding,
+            ndim=2,
+            func=jnp.mean,
         )
 
 
 @pytc.treeclass
-class AvgPool3D(AvgPoolND):
+class AvgPool3D(GeneralPoolND):
     def __init__(
         self,
         kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
+        strides: tuple[int, ...] | int = None,
         *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
         super().__init__(
-            kernel_size=kernel_size, strides=strides, padding=padding, ndim=3
+            kernel_size=kernel_size,
+            strides=strides or kernel_size,
+            padding=padding,
+            ndim=3,
+            func=jnp.mean,
+        )
+
+
+@pytc.treeclass
+class LPPool1D(GeneralPoolND):
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = None,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+    ):
+        super().__init__(
+            kernel_size=kernel_size,
+            strides=strides or kernel_size,
+            padding=padding,
+            ndim=1,
+            func=lambda x: jnp.sum(x**norm_type) ** (1 / norm_type),
+        )
+
+
+@pytc.treeclass
+class LPPool2D(GeneralPoolND):
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = None,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+    ):
+        super().__init__(
+            kernel_size=kernel_size,
+            strides=strides or kernel_size,
+            padding=padding,
+            ndim=2,
+            func=lambda x: jnp.sum(x**norm_type) ** (1 / norm_type),
+        )
+
+
+@pytc.treeclass
+class LPPool3D(GeneralPoolND):
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = None,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+    ):
+        super().__init__(
+            norm_type=norm_type,
+            kernel_size=kernel_size,
+            strides=strides or kernel_size,
+            padding=padding,
+            ndim=3,
+            func=lambda x: jnp.sum(x**norm_type) ** (1 / norm_type),
         )
 
 
@@ -231,104 +278,3 @@ class GlobalMaxPool3D:
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 4, "Input must be 4D."
         return jnp.max(x, axis=(1, 2, 3), keepdims=self.keepdims)
-
-
-@pytc.treeclass
-class LPPoolND:
-    norm_type: float = pytc.nondiff_field()
-    kernel_size: tuple[int, ...] | int = pytc.nondiff_field()
-    padding: tuple[tuple[int, int], ...] | int | str = pytc.nondiff_field()
-
-    def __init__(
-        self,
-        norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-        ndim: int = 1,
-    ):
-        """Apply  Lp pooling
-
-        See: https://pytorch.org/docs/stable/generated/torch.nn.LPPool1d.html#torch.nn.LPPool1d
-
-        Args:
-            kernel_size: size of the kernel
-            strides: strides of the kernel
-            padding: padding of the kernel
-            ndim: number of dimensions
-        """
-        if not isinstance(norm_type, float):
-            raise TypeError("norm_type must be a float")
-
-        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = self.kernel_size
-        self.padding = padding
-
-        @jax.jit
-        @jax.vmap
-        @kex.kmap(self.kernel_size, self.strides, self.padding)
-        def _lppolnd(x):
-            return jnp.sum(x**norm_type) ** (1 / norm_type)
-
-        self._func = _lppolnd
-
-    def __call__(self, x, **kwargs):
-        return self._func(x)
-
-
-@pytc.treeclass
-class LPPool1D(LPPoolND):
-    def __init__(
-        self,
-        norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            norm_type=norm_type,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            ndim=1,
-        )
-
-
-@pytc.treeclass
-class LPPool2D(LPPoolND):
-    def __init__(
-        self,
-        norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            norm_type=norm_type,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            ndim=2,
-        )
-
-
-@pytc.treeclass
-class LPPool3D(LPPoolND):
-    def __init__(
-        self,
-        norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            norm_type=norm_type,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            ndim=3,
-        )
