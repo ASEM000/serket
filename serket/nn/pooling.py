@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-import functools as ft
-
 import jax
 import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return
-
-_check_and_return_kernel = ft.partial(_check_and_return, name="kernel_size")
-
+from serket.nn.utils import _check_and_return_kernel
 
 # Based on colab hardware benchmarks `kernex` seems to
 # be faster on CPU and on par with JAX on GPU.
@@ -236,3 +231,104 @@ class GlobalMaxPool3D:
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 4, "Input must be 4D."
         return jnp.max(x, axis=(1, 2, 3), keepdims=self.keepdims)
+
+
+@pytc.treeclass
+class LPPoolND:
+    norm_type: float = pytc.nondiff_field()
+    kernel_size: tuple[int, ...] | int = pytc.nondiff_field()
+    padding: tuple[tuple[int, int], ...] | int | str = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = 1,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+        ndim: int = 1,
+    ):
+        """Apply  Lp pooling
+
+        See: https://pytorch.org/docs/stable/generated/torch.nn.LPPool1d.html#torch.nn.LPPool1d
+
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel
+            ndim: number of dimensions
+        """
+        if not isinstance(norm_type, float):
+            raise TypeError("norm_type must be a float")
+
+        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
+        self.strides = self.kernel_size
+        self.padding = padding
+
+        @jax.jit
+        @jax.vmap
+        @kex.kmap(self.kernel_size, self.strides, self.padding)
+        def _lppolnd(x):
+            return jnp.sum(x**norm_type) ** (1 / norm_type)
+
+        self._func = _lppolnd
+
+    def __call__(self, x, **kwargs):
+        return self._func(x)
+
+
+@pytc.treeclass
+class LPPool1D(LPPoolND):
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = 1,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+    ):
+        super().__init__(
+            norm_type=norm_type,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            ndim=1,
+        )
+
+
+@pytc.treeclass
+class LPPool2D(LPPoolND):
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = 1,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+    ):
+        super().__init__(
+            norm_type=norm_type,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            ndim=2,
+        )
+
+
+@pytc.treeclass
+class LPPool3D(LPPoolND):
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = 1,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+    ):
+        super().__init__(
+            norm_type=norm_type,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            ndim=3,
+        )
