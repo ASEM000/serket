@@ -186,3 +186,58 @@ class GaussianBlur2D:
 
         assert x.ndim == 3, "`Input` must be 3D."
         return self.conv1(self.conv2(x))
+
+
+@pytc.treeclass
+class Filter2D:
+    in_features: int = pytc.nondiff_field()
+    conv: DepthwiseConv2D = pytc.nondiff_field(repr=False)
+    kernel: jnp.ndarray = pytc.nondiff_field()
+
+    def __init__(self, in_features: int, kernel: jnp.ndarray):
+        """Apply 2D filter for each channel
+        Args:
+            in_features: number of input channels
+            kernel: kernel array
+        """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                Filter2D.__init__,
+                self,
+                kernel=kernel,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
+        if not isinstance(in_features, int) or in_features <= 0:
+            raise ValueError(
+                f"Expected `in_features` to be a positive integer, got {in_features}"
+            )
+
+        if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
+            raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
+
+        self.in_features = in_features
+        self.kernel = kernel[None, None]
+
+        self.conv = DepthwiseConv2D(
+            in_features=in_features,
+            kernel_size=kernel.shape,
+            padding="same",
+            bias_init_func=None,
+        )
+        self.conv = self.conv.at["weight"].set(self.kernel)
+
+    def __call__(self, x, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0])
+
+        assert x.ndim == 3, "`Input` must be 3D."
+        return self.conv(x)

@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from serket.nn import AvgBlur2D, GaussianBlur2D
+from serket.nn import AvgBlur2D, Filter2D, GaussianBlur2D
 
 
 def test_AvgBlur2D():
@@ -69,3 +69,15 @@ def test_lazy_blur():
 
     with pytest.raises(ValueError):
         jax.jit(AvgBlur2D(in_features=None, kernel_size=3))(jnp.ones([10, 5, 5]))
+
+    with pytest.raises(ValueError):
+        jax.jit(Filter2D(in_features=None, kernel=jnp.ones([4, 4])))(
+            jnp.ones([10, 5, 5])
+        )
+
+
+def test_filter2d():
+    layer = Filter2D(in_features=1, kernel=jnp.ones([3, 3]) / 9.0)
+    x = jnp.ones([1, 5, 5])
+
+    npt.assert_allclose(AvgBlur2D(1, 3)(x), layer(x), atol=1e-4)

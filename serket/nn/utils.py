@@ -2,15 +2,12 @@ from __future__ import annotations
 
 import dataclasses
 import functools as ft
-import inspect
 from types import FunctionType
 from typing import Any, Callable, Sequence
 
-import jax
 import jax.nn.initializers as ji
 import jax.numpy as jnp
 import jax.tree_util as jtu
-from pytreeclass._src.tree_util import _tree_immutate, _tree_mutate
 
 
 def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padding):

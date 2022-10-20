@@ -25,6 +25,15 @@ def test_generate_finitediff_coeffs():
     # https://web.media.mit.edu/~crtaylor/calculator.html
     all_correct(DF((-2.2, 3.2, 5)), jnp.array([-205 / 972, 280 / 972, -75 / 972]))
 
+    # https://web.njit.edu/~jiang/math712/fornberg.pdf  Table 4.
+    DF = lambda N: generate_finitediff_coeffs(N, 0)
+    all_correct(DF((-0.5,)), jnp.array([1]))
+    all_correct(DF((-0.5, 0.5)), jnp.array([0.5, 0.5]))
+    all_correct(DF((-0.5, 0.5, 1.5)), jnp.array([3 / 8, 3 / 4, -1 / 8]))
+    all_correct(
+        DF((-0.5, 0.5, 1.5, 2.5)), jnp.array([5 / 16, 15 / 16, -5 / 16, 1 / 16])
+    )
+
 
 def test_fgrad_args():
 

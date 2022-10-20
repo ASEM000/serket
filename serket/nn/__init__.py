@@ -32,7 +32,7 @@ from .activation import (
     ThresholdedReLU,
 )
 from .blocks import UNetBlock, VGG16Block, VGG19Block
-from .blur import AvgBlur2D, GaussianBlur2D
+from .blur import AvgBlur2D, Filter2D, GaussianBlur2D
 from .containers import Lambda, Sequential
 from .contrast import AdjustContrast2D, RandomContrast2D
 from .convolution import (
@@ -155,6 +155,7 @@ __all__ = (
     # Blur
     "AvgBlur2D",
     "GaussianBlur2D",
+    "Filter2D",
     # Resize
     "Laplace2D",
     "FlipLeftRight2D",
