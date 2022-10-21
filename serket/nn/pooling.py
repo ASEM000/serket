@@ -367,3 +367,36 @@ class AdaptiveMaxPool2D(AdaptivePoolND):
 class AdaptiveMaxPool3D(AdaptivePoolND):
     def __init__(self, output_size: tuple[int, ...]):
         super().__init__(output_size=output_size, ndim=3, func=jnp.max)
+
+
+@pytc.treeclass
+class AdaptiveConcatPool1D:
+    def __init__(self, output_size: tuple[int, ...]):
+        """Concatenate AdaptiveAvgPool1D and AdaptiveMaxPool1D
+        See: https://github.com/fastai/fastai/blob/master/fastai/layers.py#L110
+        """
+        self.avg_pool = AdaptiveAvgPool1D(output_size)
+        self.max_pool = AdaptiveMaxPool1D(output_size)
+
+    def __call__(self, x, **kwargs):
+        return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
+
+
+@pytc.treeclass
+class AdaptiveConcatPool2D:
+    def __init__(self, output_size: tuple[int, ...]):
+        self.avg_pool = AdaptiveAvgPool2D(output_size)
+        self.max_pool = AdaptiveMaxPool2D(output_size)
+
+    def __call__(self, x, **kwargs):
+        return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
+
+
+@pytc.treeclass
+class AdaptiveConcatPool3D:
+    def __init__(self, output_size: tuple[int, ...]):
+        self.avg_pool = AdaptiveAvgPool3D(output_size)
+        self.max_pool = AdaptiveMaxPool3D(output_size)
+
+    def __call__(self, x, **kwargs):
+        return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
