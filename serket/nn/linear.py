@@ -12,6 +12,7 @@ import pytreeclass as pytc
 from serket.nn.utils import (
     _TRACER_ERROR_MSG,
     _check_and_return_init_func,
+    _general_linear_einsum_string,
     _multilinear_einsum_string,
 )
 
@@ -231,6 +232,109 @@ class Bilinear(Multilinear):
             bias_init_func=bias_init_func,
             key=key,
         )
+
+
+@pytc.treeclass
+class GeneralLinear:
+    weight: jnp.ndarray
+    bias: jnp.ndarray
+
+    in_features: tuple[int, ...] | None = pytc.nondiff_field()
+    out_features: tuple[int, ...] | None = pytc.nondiff_field()
+    in_axes: tuple[int, ...] | None = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        in_features: tuple[int, ...] | None,
+        out_features: int,
+        *,
+        in_axes: tuple[int, ...],
+        weight_init_func: str | Callable = "he_normal",
+        bias_init_func: str | Callable = "ones",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """Apply a Linear Layer to input at in_axes
+
+        Args:
+            in_features: number of input features corresponding to in_axes
+            out_features: number of output features
+            in_axes: axes to apply the linear layer to
+            weight_init_func: weight initialization function
+            bias_init_func: bias initialization function
+            key: random key
+
+        Example:
+            >>> x = jnp.ones([1, 2, 3, 4])
+            >>> layer = GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
+            >>> assert layer(x).shape == (3, 4, 5)
+
+        Note:
+            This layer is similar to to flax linen's DenseGeneral, the difference is that
+            this layer uses einsum to apply the linear layer to the specified axes.
+        """
+
+        if (
+            any([i is None for i in in_features])
+            if isinstance(in_features, Sequence)
+            else (in_features is None)
+        ) or in_axes is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                GeneralLinear.__init__,
+                self,
+                out_features=out_features,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                key=key,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
+        if not isinstance(in_features, tuple):
+            raise ValueError(
+                f"Expected in_features to be tuple, got {type(in_features)}"
+            )
+
+        if not isinstance(in_axes, tuple):
+            raise ValueError(f"Expected in_axes to be tuple, got {type(in_axes)}")
+
+        if len(in_axes) != len(in_features):
+            raise ValueError(
+                f"Expected in_axes and in_features to have the same length, got {len(in_axes)} and {len(in_features)}"
+            )
+
+        self.in_features = in_features
+        self.out_features = out_features
+        self.in_axes = in_axes
+        self.weight_init_func = _check_and_return_init_func(
+            weight_init_func, "weight_init_func"
+        )
+        self.bias_init_func = _check_and_return_init_func(
+            bias_init_func, "bias_init_func"
+        )
+
+        self.weight = self.weight_init_func(key, (*self.in_features, self.out_features))
+
+        if self.bias_init_func is None:
+            self.bias = None
+        else:
+            self.bias = self.bias_init_func(key, (self.out_features,))
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[-1], in_axes=-1)
+
+        # ensure negative axes
+        axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)
+        einsum_string = _general_linear_einsum_string(*axes)
+        x = jnp.einsum(einsum_string, x, self.weight)
+        return x
 
 
 @pytc.treeclass

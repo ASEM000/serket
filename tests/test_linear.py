@@ -4,7 +4,7 @@ import numpy.testing as npt
 import pytest
 import pytreeclass as pytc
 
-from serket.nn import FNN, Bilinear, Identity, Linear, Multilinear
+from serket.nn import FNN, Bilinear, GeneralLinear, Identity, Linear, Multilinear
 
 
 def test_linear():
@@ -97,3 +97,26 @@ def test_multi_linear():
 
     lhs = Multilinear(None, 10)
     assert lhs(x, x, x).shape == (100, 10)
+
+
+def test_general_linear():
+    x = jnp.ones([1, 2, 3, 4])
+    layer = GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
+    assert layer(x).shape == (3, 4, 5)
+
+    x = jnp.ones([1, 2, 3, 4])
+    layer = GeneralLinear(in_features=(1, 2), in_axes=(0, -3), out_features=5)
+    assert layer(x).shape == (3, 4, 5)
+
+    x = jnp.ones([1, 2, 3, 4])
+    layer = GeneralLinear(in_features=(2, 3), in_axes=(1, -2), out_features=5)
+    assert layer(x).shape == (1, 4, 5)
+
+    with pytest.raises(ValueError):
+        GeneralLinear(in_features=2, in_axes=(1, -2), out_features=5)
+
+    with pytest.raises(ValueError):
+        GeneralLinear(in_features=(2, 3), in_axes=2, out_features=5)
+
+    with pytest.raises(ValueError):
+        GeneralLinear(in_features=(1,), in_axes=(0, -3), out_features=5)
