@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return_kernel
+from serket.nn.utils import _check_and_return, _check_and_return_kernel
 
 # Based on colab hardware benchmarks `kernex` seems to
 # be faster on CPU and on par with JAX on GPU.
@@ -278,3 +278,92 @@ class GlobalMaxPool3D:
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == 4, "Input must be 4D."
         return jnp.max(x, axis=(1, 2, 3), keepdims=self.keepdims)
+
+
+@pytc.treeclass
+class AdaptivePoolND:
+
+    output_size: tuple[int, ...] = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        output_size: tuple[int, ...],
+        *,
+        ndim: int = 1,
+        func: Callable = None,
+    ):
+        """Apply pooling to the input with function `func` applied to the kernel.
+
+
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel
+            ndim: number of dimensions
+            func: function to apply to the kernel
+
+        Note:
+            this is different from the PyTorch implementation
+            the strides and kernel_size are calculated from the output_size as follows:
+            * stride_i = (input_size_i//output_size_i)
+            * kernel_size_i = input_size_i - (output_size_i-1)*stride_i
+            * padding_i = "valid"
+        """
+        self.output_size = _check_and_return(output_size, ndim, "output_size")
+        self.ndim = ndim
+        self.func = func
+
+    def __call__(self, x, **kwargs):
+        assert (
+            x.ndim == self.ndim + 1
+        ), f"Expected {self.ndim+1}D input, got {x.ndim}D input"
+
+        input_size = x.shape[1:]
+        output_size = self.output_size
+        strides = tuple(i // o for i, o in zip(input_size, output_size))
+        kernel_size = tuple(
+            i - (o - 1) * s for i, o, s in zip(input_size, output_size, strides)
+        )
+
+        @jax.vmap
+        @kex.kmap(kernel_size=kernel_size, strides=strides)
+        def _adaptive_pool(x):
+            return self.func(x)
+
+        return _adaptive_pool(x)
+
+
+@pytc.treeclass
+class AdaptiveAvgPool1D(AdaptivePoolND):
+    def __init__(self, output_size: tuple[int, ...]):
+        super().__init__(output_size=output_size, ndim=1, func=jnp.mean)
+
+
+@pytc.treeclass
+class AdaptiveAvgPool2D(AdaptivePoolND):
+    def __init__(self, output_size: tuple[int, ...]):
+        super().__init__(output_size=output_size, ndim=2, func=jnp.mean)
+
+
+@pytc.treeclass
+class AdaptiveAvgPool3D(AdaptivePoolND):
+    def __init__(self, output_size: tuple[int, ...]):
+        super().__init__(output_size=output_size, ndim=3, func=jnp.mean)
+
+
+@pytc.treeclass
+class AdaptiveMaxPool1D(AdaptivePoolND):
+    def __init__(self, output_size: tuple[int, ...]):
+        super().__init__(output_size=output_size, ndim=1, func=jnp.max)
+
+
+@pytc.treeclass
+class AdaptiveMaxPool2D(AdaptivePoolND):
+    def __init__(self, output_size: tuple[int, ...]):
+        super().__init__(output_size=output_size, ndim=2, func=jnp.max)
+
+
+@pytc.treeclass
+class AdaptiveMaxPool3D(AdaptivePoolND):
+    def __init__(self, output_size: tuple[int, ...]):
+        super().__init__(output_size=output_size, ndim=3, func=jnp.max)

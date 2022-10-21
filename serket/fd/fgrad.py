@@ -12,7 +12,13 @@ from serket.fd.utils import _generate_central_offsets, generate_finitediff_coeff
 
 
 def _evaluate_func_at_shifted_steps_along_argnum(
-    func, *, coeffs, DX, argnum, step_size, derivative
+    func: Callable,
+    *,
+    coeffs: jnp.ndarray,
+    DX: jnp.ndarray,
+    argnum: int,
+    step_size: float,
+    derivative: int,
 ):
     if not isinstance(argnum, int) or argnum < 0:
         raise ValueError(f"argnum must be a non-negative integer, got {argnum}")

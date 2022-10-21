@@ -6,7 +6,8 @@ from .operators import diff, diff_and_grad
 
 __all__ = (
     "nn",
-    "treeclass, nondiff_field",
+    "treeclass",
+    "nondiff_field",
     "kmap",
     "kscan",
     "diff",

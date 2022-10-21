@@ -67,6 +67,12 @@ from .linear import Bilinear, Identity, Linear
 from .normalization import GroupNorm, InstanceNorm, LayerNorm
 from .padding import Pad1D, Pad2D, Pad3D
 from .pooling import (
+    AdaptiveAvgPool1D,
+    AdaptiveAvgPool2D,
+    AdaptiveAvgPool3D,
+    AdaptiveMaxPool1D,
+    AdaptiveMaxPool2D,
+    AdaptiveMaxPool3D,
     AvgPool1D,
     AvgPool2D,
     AvgPool3D,
@@ -130,6 +136,12 @@ __all__ = (
     "LPPool1D",
     "LPPool2D",
     "LPPool3D",
+    "AdaptiveAvgPool1D",
+    "AdaptiveAvgPool2D",
+    "AdaptiveAvgPool3D",
+    "AdaptiveMaxPool1D",
+    "AdaptiveMaxPool2D",
+    "AdaptiveMaxPool3D",
     # Convolution
     "Conv1D",
     "Conv2D",
