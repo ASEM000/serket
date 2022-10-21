@@ -285,3 +285,20 @@ _TRACER_ERROR_MSG = lambda cls_name: (
 #         return cls
 
 #     return cls_wrapper
+
+
+def _multilinear_einsum_string(degree: int) -> str:
+    """Generate einsum string for a linear layer of degree n
+    Example:
+        >>> _multilinear_einsum_string(1)
+        '...a,ab->....b'
+        >>> _multilinear_einsum_string(2)
+        '...a,...b,abc->....c'
+    """
+    alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    assert 1 <= degree <= len(alpha) - 1, f"degree must be between 1 and {len(alpha)-1}"
+
+    xs_string = [f"...{i}" for i in alpha[:degree]]
+    output_string = ",".join(xs_string)
+    output_string += f",{alpha[:degree+1]}->...{alpha[degree]}"
+    return output_string

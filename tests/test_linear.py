@@ -4,7 +4,7 @@ import numpy.testing as npt
 import pytest
 import pytreeclass as pytc
 
-from serket.nn import FNN, Bilinear, Identity, Linear
+from serket.nn import FNN, Bilinear, Identity, Linear, Multilinear
 
 
 def test_linear():
@@ -87,3 +87,13 @@ def test_lazy():
     with pytest.raises(ValueError):
         layer = jax.jit(Bilinear(None, None, 1))
         layer(jnp.ones([10, 2]), jnp.ones([10, 3]))
+
+
+def test_multi_linear():
+    x = jnp.linspace(0, 1, 100)[:, None]
+    lhs = Linear(1, 10)
+    rhs = Multilinear(1, 10)
+    npt.assert_allclose(lhs(x), rhs(x), atol=1e-4)
+
+    lhs = Multilinear(None, 10)
+    assert lhs(x, x, x).shape == (100, 10)
