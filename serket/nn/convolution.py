@@ -49,19 +49,19 @@ class ConvND:
 
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        groups=1,
-        ndim=2,
-        key=jr.PRNGKey(0),
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        groups: int = 1,
+        ndim: int = 2,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Convolutional layer.
 
@@ -174,18 +174,18 @@ class ConvND:
 class Conv1D(ConvND):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func=jax.nn.initializers.glorot_uniform(),
-        bias_init_func=jax.nn.initializers.zeros,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        key=jr.PRNGKey(0),
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features=in_features,
@@ -207,18 +207,18 @@ class Conv1D(ConvND):
 class Conv2D(ConvND):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        key=jr.PRNGKey(0),
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features=in_features,
@@ -240,18 +240,18 @@ class Conv2D(ConvND):
 class Conv3D(ConvND):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        key=jr.PRNGKey(0),
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features=in_features,
@@ -290,19 +290,19 @@ class ConvNDTranspose:
 
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        strides=1,
-        padding="SAME",
-        output_padding=0,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        groups=1,
-        ndim=2,
-        key=jr.PRNGKey(0),
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        output_padding: int = 0,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        groups: int = 1,
+        ndim: int = 2,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Convolutional Transpose Layer
 
@@ -416,18 +416,18 @@ class ConvNDTranspose:
 class Conv1DTranspose(ConvNDTranspose):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        strides=1,
-        padding="SAME",
-        output_padding=0,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        groups=1,
-        key=jr.PRNGKey(0),
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        output_padding: int = 0,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -449,18 +449,18 @@ class Conv1DTranspose(ConvNDTranspose):
 class Conv2DTranspose(ConvNDTranspose):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        strides=1,
-        padding="SAME",
-        output_padding=0,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        groups=1,
-        key=jr.PRNGKey(0),
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        output_padding: int = 0,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -482,18 +482,18 @@ class Conv2DTranspose(ConvNDTranspose):
 class Conv3DTranspose(ConvNDTranspose):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        strides=1,
-        padding="SAME",
-        output_padding=0,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        groups=1,
-        key=jr.PRNGKey(0),
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        output_padding: int = 0,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -522,7 +522,7 @@ class DepthwiseConvND:
     in_features: int = pytc.nondiff_field()  # number of input features
     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
     strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
-    padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
+    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.nondiff_field()  # fmt: skip
     depth_multiplier: int = pytc.nondiff_field()
 
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
@@ -531,14 +531,14 @@ class DepthwiseConvND:
 
     def __init__(
         self,
-        in_features,
-        kernel_size,
+        in_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        depth_multiplier=1,
-        strides=1,
-        padding="SAME",
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
+        depth_multiplier: int = 1,
+        strides: int = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
         ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
@@ -644,15 +644,15 @@ class DepthwiseConvND:
 class DepthwiseConv1D(DepthwiseConvND):
     def __init__(
         self,
-        in_features,
-        kernel_size,
+        in_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        depth_multiplier=1,
-        strides=1,
-        padding="SAME",
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        key=jr.PRNGKey(0),
+        depth_multiplier: int = 1,
+        strides: int = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -671,15 +671,15 @@ class DepthwiseConv1D(DepthwiseConvND):
 class DepthwiseConv2D(DepthwiseConvND):
     def __init__(
         self,
-        in_features,
-        kernel_size,
+        in_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        depth_multiplier=1,
-        strides=1,
-        padding="SAME",
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        key=jr.PRNGKey(0),
+        depth_multiplier: int = 1,
+        strides: int = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -698,15 +698,15 @@ class DepthwiseConv2D(DepthwiseConvND):
 class DepthwiseConv3D(DepthwiseConvND):
     def __init__(
         self,
-        in_features,
-        kernel_size,
+        in_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        depth_multiplier=1,
-        strides=1,
-        padding="SAME",
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        key=jr.PRNGKey(0),
+        depth_multiplier: int = 1,
+        strides: int = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -731,18 +731,18 @@ class SeparableConvND:
 
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        depth_multiplier=1,
-        strides=1,
-        padding="SAME",
-        depthwise_weight_init_func="glorot_uniform",
-        pointwise_weight_init_func="glorot_uniform",
-        pointwise_bias_init_func="zeros",
-        ndim=2,
-        key=jr.PRNGKey(0),
+        depth_multiplier: int = 1,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        depthwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_bias_init_func: str | Callable = "zeros",
+        ndim: int = 2,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Separable convolutional layer.
 
@@ -862,17 +862,17 @@ class SeparableConv1D(SeparableConvND):
 
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        depth_multiplier=1,
-        strides=1,
-        padding="SAME",
-        depthwise_weight_init_func="glorot_uniform",
-        pointwise_weight_init_func="glorot_uniform",
-        pointwise_bias_init_func="zeros",
-        key=jr.PRNGKey(0),
+        depth_multiplier: int = 1,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        depthwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_bias_init_func: str | Callable = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -895,17 +895,17 @@ class SeparableConv2D(SeparableConvND):
 
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        depth_multiplier=1,
-        strides=1,
-        padding="SAME",
-        depthwise_weight_init_func="glorot_uniform",
-        pointwise_weight_init_func="glorot_uniform",
-        pointwise_bias_init_func="zeros",
-        key=jr.PRNGKey(0),
+        depth_multiplier: int = 1,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        depthwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_bias_init_func: str | Callable = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -928,17 +928,17 @@ class SeparableConv3D(SeparableConvND):
 
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        depth_multiplier=1,
-        strides=1,
-        padding="SAME",
-        depthwise_weight_init_func="glorot_uniform",
-        pointwise_weight_init_func="glorot_uniform",
-        pointwise_bias_init_func="zeros",
-        key=jr.PRNGKey(0),
+        depth_multiplier: int = 1,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        depthwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_bias_init_func: str | Callable = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -968,27 +968,27 @@ class ConvNDLocal:
     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
     in_size: tuple[int, ...] = pytc.nondiff_field()  # size of input
     strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
-    padding: str | int | tuple[tuple[int, int], ...] = pytc.nondiff_field()
+    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.nondiff_field()  # fmt: skip
     input_dilation: int | tuple[int, ...] = pytc.nondiff_field()
     kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
-    weight_init_func: Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
+    weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
 
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        in_size,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        ndim=2,
-        key=jr.PRNGKey(0),
+        in_size: tuple[int, ...],
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        ndim: int = 2,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Local convolutional layer.
 
@@ -1101,18 +1101,18 @@ class ConvNDLocal:
 class Conv1DLocal(ConvNDLocal):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        in_size=None,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        key=jr.PRNGKey(0),
+        in_size: tuple[int, ...],
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -1134,18 +1134,18 @@ class Conv1DLocal(ConvNDLocal):
 class Conv2DLocal(ConvNDLocal):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        in_size=None,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        key=jr.PRNGKey(0),
+        in_size: tuple[int, ...],
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -1167,18 +1167,18 @@ class Conv2DLocal(ConvNDLocal):
 class Conv3DLocal(ConvNDLocal):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        in_size=None,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        key=jr.PRNGKey(0),
+        in_size: tuple[int, ...],
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -1206,19 +1206,19 @@ class ConvNDSemiLocal:
 
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        spatial_groups=1,
-        ndim=2,
-        key=jr.PRNGKey(0),
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        spatial_groups: int = 1,
+        ndim: int = 2,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Split the last dimension into `spatial_groups` and apply different kernel to each group
 
@@ -1296,19 +1296,18 @@ class ConvNDSemiLocal:
 class Conv1DSemiLocal(ConvNDSemiLocal):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        in_size=None,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        spatial_groups=1,
-        key=jr.PRNGKey(0),
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        spatial_groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -1330,19 +1329,18 @@ class Conv1DSemiLocal(ConvNDSemiLocal):
 class Conv2DSemiLocal(ConvNDSemiLocal):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        in_size=None,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        spatial_groups=1,
-        key=jr.PRNGKey(0),
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        spatial_groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
@@ -1364,19 +1362,18 @@ class Conv2DSemiLocal(ConvNDSemiLocal):
 class Conv3DSemiLocal(ConvNDSemiLocal):
     def __init__(
         self,
-        in_features,
-        out_features,
-        kernel_size,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
         *,
-        in_size=None,
-        strides=1,
-        padding="SAME",
-        input_dilation=1,
-        kernel_dilation=1,
-        weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
-        spatial_groups=1,
-        key=jr.PRNGKey(0),
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        spatial_groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features,
