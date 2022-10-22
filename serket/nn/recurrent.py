@@ -10,7 +10,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn import Linear
-from serket.nn.convolution import ConvND
+from serket.nn.convolution import ConvND, SeparableConvND
 
 # from serket.nn.utils import _TRACER_ERROR_MSG
 
@@ -506,6 +506,208 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         )
 
 
+@pytc.treeclass
+class SeparableConvLSTMNDCell(SpatialRNNCell):
+    in_to_hidden: SeparableConvND
+    hidden_to_hidden: SeparableConvND
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "hard_sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+        ndim: int = 2,
+    ):
+        """Separable Convolution LSTM cell that defines the update rule for the hidden state and cell state
+        Args:
+            in_features: Number of input features
+            out_features: Number of output features
+            kernel_size: Size of the convolutional kernel
+            strides: Stride of the convolution
+            padding: Padding of the convolution
+            weight_init_func: Weight initialization function
+            bias_init_func: Bias initialization function
+            recurrent_weight_init_func: Recurrent weight initialization function
+            act_func: Activation function
+            recurrent_act_func: Recurrent activation function
+            key: PRNG key
+            ndim: Number of spatial dimensions
+
+        See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+        """
+        k1, k2 = jr.split(key, 2)
+
+        if not isinstance(in_features, int) or in_features < 1:
+            raise ValueError(
+                f"Expected in_features to be a positive integer, got {in_features}"
+            )
+
+        if not isinstance(out_features, int) or out_features < 1:
+            raise ValueError(
+                f"Expected out_features to be a positive integer, got {out_features}"
+            )
+
+        self.act_func = _act_func_map[act_func]
+        self.recurrent_act_func = _act_func_map[recurrent_act_func]
+        self.in_features = in_features
+        self.out_features = out_features
+        self.hidden_features = out_features
+        self.ndim = ndim
+
+        self.in_to_hidden = SeparableConvND(
+            in_features,
+            out_features * 4,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            depth_multiplier=1,
+            depthwise_weight_init_func=weight_init_func,
+            pointwise_weight_init_func=weight_init_func,
+            pointwise_bias_init_func=bias_init_func,
+            key=k1,
+            ndim=ndim,
+        )
+
+        self.hidden_to_hidden = SeparableConvND(
+            out_features,
+            out_features * 4,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            depth_multiplier=1,
+            depthwise_weight_init_func=recurrent_weight_init_func,
+            pointwise_weight_init_func=recurrent_weight_init_func,
+            pointwise_bias_init_func=None,  # no bias
+            key=k2,
+            ndim=ndim,
+        )
+
+    def __call__(self, x: jnp.ndarray, state: RNNState, **kwargs) -> RNNState:
+        h, c = state.hidden_state, state.cell_state
+
+        h = self.in_to_hidden(x) + self.hidden_to_hidden(h)
+        i, f, g, o = jnp.split(h, 4, axis=0)
+        i = self.recurrent_act_func(i)
+        f = self.recurrent_act_func(f)
+        g = self.act_func(g)
+        o = self.recurrent_act_func(o)
+        c = f * c + i * g
+        h = o * self.act_func(c)
+        return RNNState(hidden_state=h, cell_state=c)
+
+
+@pytc.treeclass
+class SeparableConvLSTM1DCell(SeparableConvLSTMNDCell):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int,
+        *,
+        strides: int = 1,
+        padding: str = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "hard_sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            recurrent_weight_init_func=recurrent_weight_init_func,
+            act_func=act_func,
+            recurrent_act_func=recurrent_act_func,
+            key=key,
+            ndim=1,
+        )
+
+
+@pytc.treeclass
+class SeparableConvLSTM2DCell(SeparableConvLSTMNDCell):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, int],
+        *,
+        strides: int | tuple[int, int] = 1,
+        padding: str
+        | tuple[int, int]
+        | tuple[tuple[int, int], tuple[int, int]] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "hard_sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            recurrent_weight_init_func=recurrent_weight_init_func,
+            act_func=act_func,
+            recurrent_act_func=recurrent_act_func,
+            key=key,
+            ndim=2,
+        )
+
+
+@pytc.treeclass
+class SeparableConvLSTM3DCell(SeparableConvLSTMNDCell):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, int, int],
+        *,
+        strides: int | tuple[int, int, int] = 1,
+        padding: str
+        | tuple[int, int, int]
+        | tuple[tuple[int, int, int], tuple[int, int, int]] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "hard_sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            recurrent_weight_init_func=recurrent_weight_init_func,
+            act_func=act_func,
+            recurrent_act_func=recurrent_act_func,
+            key=key,
+            ndim=3,
+        )
+
+
 # ------------------------------------------------- Scan layer ------------------------------------------------------ #
 
 
@@ -531,7 +733,7 @@ class ScanRNNCell:
             >>> cell = SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
             >>> rnn = ScanRNNCell(cell)
             >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
-            >>> result = rnn(x, state)
+            >>> result = rnn(x)  # 1 timestep, 20 features
         """
         if not isinstance(cell, RNNCell):
             raise ValueError("cell must be instance of RNNCell")
