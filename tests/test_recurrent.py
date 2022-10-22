@@ -1,9 +1,35 @@
 # testing against keras
+# import tensorflow.keras as tfk
+# import tensorflow as tf
+# import numpy as np
+# from serket.nn.recurrent import  LSTMCell, ScanRNN
+
+# batch_size = 1
+# time_steps = 2
+# in_features = 3
+# hidden_features=2
+
+# inputs = np.ones([batch_size,time_steps, in_features]).astype(np.float32)
+# inp = tf.keras.Input(shape=(time_steps, in_features))
+# rnn = (tf.keras.layers.LSTM(hidden_features, return_sequences=True, return_state=False))(inp)
+# rnn = tf.keras.Model(inputs=inp, outputs=rnn)
+# # rnn(inputs)
+# w_in_to_hidden = jnp.array(rnn.weights[0].numpy())
+# w_hidden_to_hidden = jnp.array(rnn.weights[1].numpy())
+# b_hidden_to_hidden = jnp.array(rnn.weights[2].numpy())
+# x = jnp.ones([time_steps, in_features])
+# cell = LSTMCell(in_features, hidden_features, recurrent_weight_init_func="glorot_uniform", bias_init_func="zeros",
+#  weight_init_func="glorot_uniform")
+# cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
+# cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
+# cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
+# ScanRNN(cell, return_sequences=True)(x) ,rnn(inputs)
+
 
 import jax.numpy as jnp
 import numpy.testing as npt
 
-from serket.nn.recurrent import ConvLSTM1DCell, LSTMCell, ScanRNNCell, SimpleRNNCell
+from serket.nn.recurrent import ConvLSTM1DCell, LSTMCell, ScanRNN, SimpleRNNCell
 
 # import pytest
 
@@ -45,7 +71,7 @@ def test_vanilla_rnn():
     cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
     cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
 
-    sk_layer = ScanRNNCell(cell)
+    sk_layer = ScanRNN(cell)
     y = jnp.array([[0.9637042, -0.8282256, 0.7314449]])
     npt.assert_allclose(sk_layer(x), y)
 
@@ -162,7 +188,7 @@ def test_lstm():
     cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
     cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
 
-    sk_layer = ScanRNNCell(cell, return_sequences=False)
+    sk_layer = ScanRNN(cell, return_sequences=False)
     y = jnp.array([[0.18658024, -0.6338659, 0.3445018]])
     npt.assert_allclose(y, sk_layer(x), atol=1e-5)
 
@@ -259,7 +285,7 @@ def test_lstm():
     cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
     cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
 
-    sk_layer = ScanRNNCell(cell, return_sequences=True)
+    sk_layer = ScanRNN(cell, return_sequences=True)
 
     y = jnp.array(
         [
@@ -276,7 +302,7 @@ def test_lstm():
         ]
     )
 
-    npt.assert_allclose(y, sk_layer(x)[1].hidden_state, atol=1e-5)
+    npt.assert_allclose(y, sk_layer(x), atol=1e-5)
 
 
 def test_conv_lstm1d():
@@ -443,7 +469,7 @@ def test_conv_lstm1d():
 
     x = jnp.ones([time_steps, in_features, *spatial_dim])
 
-    res_sk = ScanRNNCell(cell, return_sequences=False)(x)
+    res_sk = ScanRNN(cell, return_sequences=False)(x)
 
     y = jnp.array(
         [

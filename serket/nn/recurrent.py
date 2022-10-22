@@ -29,7 +29,6 @@ _act_func_map = {
 @pytc.treeclass
 class RNNState:
     hidden_state: jnp.ndarray
-    cell_state: jnp.ndarray
 
 
 @pytc.treeclass
@@ -37,15 +36,14 @@ class RNNCell:
     pass
 
 
-def _init_rnn_state(hidden_features: int) -> RNNState:
-    return RNNState(jnp.zeros([1, hidden_features]), jnp.zeros([1, hidden_features]))
+@pytc.treeclass
+class SpatialRNNCell:
+    pass
 
 
-def _init_spatial_rnn_state(
-    hidden_features: int, spatial_dim: tuple[int, ...]
-) -> RNNState:
-    shape = (hidden_features, *spatial_dim)
-    return RNNState(jnp.zeros(shape), jnp.zeros(shape))
+@pytc.treeclass
+class SimpleRNNState(RNNState):
+    pass
 
 
 @pytc.treeclass
@@ -81,28 +79,6 @@ class SimpleRNNCell(RNNCell):
             >>> cell = SimpleRNNCell(10, 20)
             >>> cell(jnp.ones([10]), RNNState(jnp.zeros([20]), jnp.zeros([20])))
         """
-        # if in_features is None:
-        #     for field_item in dataclasses.fields(self):
-        #         # set all fields to None to mark the class as uninitialized
-        #         # to the user and to avoid errors
-        #         setattr(self, field_item.name, None)
-
-        #     self._partial_init = ft.partial(
-        #         SimpleRNNCell.__init__,
-        #         self=self,
-        #         hidden_features=hidden_features,
-        #         weight_init_func=weight_init_func,
-        #         bias_init_func=bias_init_func,
-        #         recurrent_weight_init_func=recurrent_weight_init_func,
-        #         act_func=act_func,
-        #         key=key,
-        #     )
-
-        #     return
-
-        # if hasattr(self, "_partial_init"):
-        #     delattr(self, "_partial_init")
-
         k1, k2 = jr.split(key, 2)
 
         if not isinstance(in_features, int) or in_features < 1:
@@ -136,15 +112,23 @@ class SimpleRNNCell(RNNCell):
             key=k2,
         )
 
-    def __call__(self, x: jnp.ndarray, state: RNNState, **kwargs) -> RNNState:
-        # if hasattr(self, "_partial_init"):
-        #     if isinstance(x, jax.core.Tracer):
-        #         raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-        #     self._partial_init(in_features=x.shape[0])
-
+    def __call__(
+        self, x: jnp.ndarray, state: SimpleRNNState, **kwargs
+    ) -> SimpleRNNState:
+        msg = f"Expected state to be an instance of SimpleRNNState, got {type(state)}"
+        assert isinstance(state, SimpleRNNState), msg
         h = state.hidden_state
         h = self.act_func(self.in_to_hidden(x) + self.hidden_to_hidden(h))
-        return RNNState(h, h * 0.0)
+        return SimpleRNNState(h)
+
+    def init_state(self) -> SimpleRNNState:
+        shape = (1, self.hidden_features)
+        return SimpleRNNState(jnp.zeros(shape))
+
+
+@pytc.treeclass
+class LSTMState(RNNState):
+    cell_state: jnp.ndarray
 
 
 @pytc.treeclass
@@ -179,29 +163,6 @@ class LSTMCell(RNNCell):
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTMCell
             https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
         """
-        # if in_features is None:
-        #     for field_item in dataclasses.fields(self):
-        #         # set all fields to None to mark the class as uninitialized
-        #         # to the user and to avoid errors
-        #         setattr(self, field_item.name, None)
-
-        #     self._partial_init = ft.partial(
-        #         LSTMCell.__init__,
-        #         self=self,
-        #         hidden_features=hidden_features,
-        #         weight_init_func=weight_init_func,
-        #         bias_init_func=bias_init_func,
-        #         recurrent_weight_init_func=recurrent_weight_init_func,
-        #         act_func=act_func,
-        #         recurrent_act_func=recurrent_act_func,
-        #         key=key,
-        #     )
-
-        #     return
-
-        # if hasattr(self, "_partial_init"):
-        #     delattr(self, "_partial_init")
-
         k1, k2 = jr.split(key, 2)
 
         if not isinstance(in_features, int) or in_features < 1:
@@ -236,12 +197,9 @@ class LSTMCell(RNNCell):
             key=k2,
         )
 
-    def __call__(self, x: jnp.ndarray, state: RNNState, **kwargs) -> RNNState:
-        # if hasattr(self, "_partial_init"):
-        #     if isinstance(x, jax.core.Tracer):
-        #         raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-        #     self._partial_init(in_features=x.shape[0])
-
+    def __call__(self, x: jnp.ndarray, state: LSTMState, **kwargs) -> LSTMState:
+        msg = f"Expected state to be an instance of LSTMState, got {type(state)}"
+        assert isinstance(state, LSTMState), msg
         h, c = state.hidden_state, state.cell_state
 
         h = self.in_to_hidden(x) + self.hidden_to_hidden(h)
@@ -252,13 +210,17 @@ class LSTMCell(RNNCell):
         o = self.recurrent_act_func(o)
         c = f * c + i * g
         h = o * self.act_func(c)
-        return RNNState(hidden_state=h, cell_state=c)
+        return LSTMState(h, c)
+
+    def init_state(self) -> LSTMState:
+        shape = (1, self.hidden_features)
+        return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
 # ------------------------------------------------- Spatial RNN ------------------------------------------------------ #
 @pytc.treeclass
-class SpatialRNNCell(RNNCell):
-    pass
+class ConvLSTMNDState(RNNState):
+    cell_state: jnp.ndarray
 
 
 @pytc.treeclass
@@ -303,35 +265,6 @@ class ConvLSTMNDCell(SpatialRNNCell):
 
         See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
-        # if in_features is None:
-        #     for field_item in dataclasses.fields(self):
-        #         # set all fields to None to mark the class as uninitialized
-        #         # to the user and to avoid errors
-        #         setattr(self, field_item.name, None)
-
-        #     self._partial_init = ft.partial(
-        #         ConvLSTMNDCell.__init__,
-        #         self=self,
-        #         out_features=out_features,
-        #         kernel_size=kernel_size,
-        #         strides=strides,
-        #         padding=padding,
-        #         input_dilation=input_dilation,
-        #         kernel_dilation=kernel_dilation,
-        #         weight_init_func=weight_init_func,
-        #         bias_init_func=bias_init_func,
-        #         recurrent_weight_init_func=recurrent_weight_init_func,
-        #         act_func=act_func,
-        #         recurrent_act_func=recurrent_act_func,
-        #         key=key,
-        #         ndim=ndim,
-        #     )
-
-        #     return
-
-        # if hasattr(self, "_partial_init"):
-        #     delattr(self, "_partial_init")
-
         k1, k2 = jr.split(key, 2)
 
         if not isinstance(in_features, int) or in_features < 1:
@@ -379,12 +312,11 @@ class ConvLSTMNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
-    def __call__(self, x: jnp.ndarray, state: RNNState, **kwargs) -> RNNState:
-        # if hasattr(self, "_partial_init"):
-        #     if isinstance(x, jax.core.Tracer):
-        #         raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-        #     self._partial_init(in_features=x.shape[0])
-
+    def __call__(
+        self, x: jnp.ndarray, state: ConvLSTMNDState, **kwargs
+    ) -> ConvLSTMNDState:
+        msg = f"Expected state to be an instance of ConvLSTMNDState, got {type(state)}"
+        assert isinstance(state, ConvLSTMNDState), msg
         h, c = state.hidden_state, state.cell_state
 
         h = self.in_to_hidden(x) + self.hidden_to_hidden(h)
@@ -395,7 +327,13 @@ class ConvLSTMNDCell(SpatialRNNCell):
         o = self.recurrent_act_func(o)
         c = f * c + i * g
         h = o * self.act_func(c)
-        return RNNState(hidden_state=h, cell_state=c)
+        return ConvLSTMNDState(h, c)
+
+    def init_state(self, spatial_dim: tuple[int, ...]) -> ConvLSTMNDState:
+        msg = f"Expected spatial_dim to be a tuple of length {self.ndim}, got {spatial_dim}"
+        assert len(spatial_dim) == self.ndim, msg
+        shape = (self.hidden_features, *spatial_dim)
+        return ConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
 
 
 @pytc.treeclass
@@ -507,6 +445,11 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
 
 
 @pytc.treeclass
+class SeparableConvLSTMNDState(RNNState):
+    cell_state: jnp.ndarray
+
+
+@pytc.treeclass
 class SeparableConvLSTMNDCell(SpatialRNNCell):
     in_to_hidden: SeparableConvND
     hidden_to_hidden: SeparableConvND
@@ -591,7 +534,11 @@ class SeparableConvLSTMNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
-    def __call__(self, x: jnp.ndarray, state: RNNState, **kwargs) -> RNNState:
+    def __call__(
+        self, x: jnp.ndarray, state: SeparableConvLSTMNDState, **kwargs
+    ) -> SeparableConvLSTMNDState:
+        msg = f"Expected input to have shape (batch_size, in_features, *spatial_dims), got {x.shape}"
+        assert isinstance(state, SeparableConvLSTMNDState), msg
         h, c = state.hidden_state, state.cell_state
 
         h = self.in_to_hidden(x) + self.hidden_to_hidden(h)
@@ -602,7 +549,13 @@ class SeparableConvLSTMNDCell(SpatialRNNCell):
         o = self.recurrent_act_func(o)
         c = f * c + i * g
         h = o * self.act_func(c)
-        return RNNState(hidden_state=h, cell_state=c)
+        return SeparableConvLSTMNDState(hidden_state=h, cell_state=c)
+
+    def init_state(self, spatial_dim: tuple[int, ...]) -> SeparableConvLSTMNDState:
+        msg = f"Expected spatial_dim to be a tuple of length {self.ndim}, got {spatial_dim}"
+        assert len(spatial_dim) == self.ndim, msg
+        shape = (self.hidden_features, *spatial_dim)
+        return SeparableConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
 
 
 @pytc.treeclass
@@ -712,14 +665,13 @@ class SeparableConvLSTM3DCell(SeparableConvLSTMNDCell):
 
 
 @pytc.treeclass
-class ScanRNNCell:
-    cell: RNNCell | SpatialRNNCell
+class ScanRNN:
+    cell: RNNCell
 
     def __init__(
         self,
-        cell: RNNCell | SpatialRNNCell,
+        cell: RNNCell,
         *,
-        reverse: bool = False,
         return_sequences: bool = False,
     ):
         """Scans a RNN cell over a sequence.
@@ -731,40 +683,38 @@ class ScanRNNCell:
 
         Example:
             >>> cell = SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
-            >>> rnn = ScanRNNCell(cell)
+            >>> rnn = ScanRNN(cell)
             >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
             >>> result = rnn(x)  # 1 timestep, 20 features
         """
-        if not isinstance(cell, RNNCell):
-            raise ValueError("cell must be instance of RNNCell")
+        if not isinstance(cell, (RNNCell, SpatialRNNCell)):
+            msg = f"Expected cell to be an instance of RNNCell or SpatialRNNCell, got {type(cell)}"
+            raise TypeError(msg)
 
         self.cell = cell
-        self.reverse = reverse
         self.return_sequences = return_sequences
 
-    def __call__(
-        self, x: jnp.ndarray, state: RNNState = None, **kwargs
-    ) -> jnp.ndarray | tuple[jnp.ndarray, RNNState]:
+    def __call__(self, x: jnp.ndarray, state: RNNState = None, **kwargs) -> jnp.ndarray:
+        if not isinstance(state, (type(None), RNNState)):
+            msg = f"Expected state to be an instance of RNNState, got {type(state)}"
+            raise TypeError(msg)
 
         if isinstance(self.cell, SpatialRNNCell):
             # (time steps, in_features, *spatial_dims)
-            msg = f"Expected x to have {self.cell.ndim + 2}"
+            msg = f"Expected x to have {self.cell.ndim + 2}"  # account for time and in_features
             msg += f"dimensions corresponds to (timesteps, in_features, *spatial_dims), got {x.ndim}"
             assert x.ndim == (self.cell.ndim + 2), msg
+            msg = f"Expected x to have shape (timesteps, {self.cell.in_features}, *spatial_dims)"
+            assert self.cell.in_features == x.shape[1], msg
+            state = state or self.cell.init_state(spatial_dim=x.shape[2:])
+
         else:
             # (time steps, in_features)
             msg = f"Expected x to have 2 dimensions corresponds to (timesteps, in_features), got {x.ndim}"
             assert x.ndim == 2, msg
-
-        if state is None:
-            # initialize the hidden state
-            if isinstance(self.cell, SpatialRNNCell):
-                state = _init_spatial_rnn_state(self.cell.out_features, x.shape[2:])
-            else:
-                state = _init_rnn_state(self.cell.hidden_features)
-
-        if not isinstance(state, RNNState):
-            raise ValueError("state must be an RNNState")
+            msg = f"Expected x to have shape (timesteps, {self.cell.in_features})"
+            assert self.cell.in_features == x.shape[1], msg
+            state = state or self.cell.init_state()
 
         if self.return_sequences:
             # accumulate the hidden state for each timestep
@@ -772,9 +722,9 @@ class ScanRNNCell:
                 state = self.cell(x, state=carry)
                 return state, state
 
-            return jax.lax.scan(scan_func, state, x, reverse=self.reverse)
+            return jax.lax.scan(scan_func, state, x)[1].hidden_state
 
         # do not accumulate the hidden state for each timestep
         scan_func = lambda carry, x: (self.cell(x, state=carry), None)
-        output, _ = jax.lax.scan(scan_func, state, x, reverse=self.reverse)
+        output, _ = jax.lax.scan(scan_func, state, x)
         return output.hidden_state
