@@ -47,6 +47,7 @@ _init_func_dict = {
     "zeros": _rename_func(ji.zeros, "zeros_init"),
     "xavier_normal": _rename_func(ji.xavier_normal(), "xavier_normal_init"),
     "xavier_uniform": _rename_func(ji.xavier_uniform(), "xavier_uniform_init"),
+    "orthogonal": _rename_func(ji.orthogonal(), "orthogonal_init"),
 }
 
 
