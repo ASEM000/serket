@@ -5,6 +5,7 @@ import functools as ft
 from types import FunctionType
 from typing import Any, Callable, Sequence
 
+import jax
 import jax.nn.initializers as ji
 import jax.numpy as jnp
 import jax.tree_util as jtu
@@ -33,6 +34,14 @@ def _rename_func(func: Callable, name: str) -> Callable:
     func.__name__ = name
     return func
 
+
+_act_func_map = {
+    "tanh": jax.nn.tanh,
+    "relu": jax.nn.relu,
+    "sigmoid": jax.nn.sigmoid,
+    "hard_sigmoid": jax.nn.hard_sigmoid,
+    None: lambda x: x,
+}
 
 _init_func_dict = {
     "he_normal": _rename_func(ji.he_normal(), "he_normal_init"),
