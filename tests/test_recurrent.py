@@ -25,6 +25,30 @@
 # cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
 # ScanRNN(cell, return_sequences=True)(x) ,rnn(inputs)
 
+# testing with keras
+# inputs = np.ones([batch_size,time_steps, in_features]).astype(np.float32)
+# inp = tf.keras.Input(shape=(time_steps, in_features))
+# rnn = tfk.layers.Bidirectional(tf.keras.layers.LSTM(hidden_features, return_sequences=False))(inp)
+# rnn = tf.keras.Model(inputs=inp, outputs=rnn)
+# # rnn(inputs)
+# w_in_to_hidden = jnp.array(rnn.weights[0].numpy())
+# w_hidden_to_hidden = jnp.array(rnn.weights[1].numpy())
+# b_hidden_to_hidden = jnp.array(rnn.weights[2].numpy())
+# x = jnp.ones([time_steps, in_features])
+# cell = LSTMCell(in_features, hidden_features)
+# cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
+# cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
+# cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
+
+# w_in_to_hidden_reverse = jnp.array(rnn.weights[3].numpy())
+# w_hidden_to_hidden_reverse = jnp.array(rnn.weights[4].numpy())
+# b_hidden_to_hidden_reverse = jnp.array(rnn.weights[5].numpy())
+# reverse_cell = LSTMCell(in_features, hidden_features)
+
+# reverse_cell = reverse_cell.at["in_to_hidden.weight"].set(w_in_to_hidden_reverse)
+# reverse_cell = reverse_cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden_reverse)
+# reverse_cell = reverse_cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden_reverse)
+
 
 import jax.numpy as jnp
 import numpy.testing as npt
@@ -72,7 +96,7 @@ def test_vanilla_rnn():
     cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell)
-    y = jnp.array([[0.9637042, -0.8282256, 0.7314449]])
+    y = jnp.array([0.9637042, -0.8282256, 0.7314449])
     npt.assert_allclose(sk_layer(x), y)
 
 
@@ -189,7 +213,7 @@ def test_lstm():
     cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell, return_sequences=False)
-    y = jnp.array([[0.18658024, -0.6338659, 0.3445018]])
+    y = jnp.array([0.18658024, -0.6338659, 0.3445018])
     npt.assert_allclose(y, sk_layer(x), atol=1e-5)
 
     w_in_to_hidden = jnp.array(
@@ -289,16 +313,16 @@ def test_lstm():
 
     y = jnp.array(
         [
-            [[-0.07431775, 0.05081949, 0.07480226]],
-            [[-0.12263095, 0.07622699, 0.1146026]],
-            [[-0.15380122, 0.0886446, 0.13589925]],
-            [[-0.17376699, 0.0944333, 0.14736715]],
-            [[-0.18647897, 0.09689739, 0.1535385]],
-            [[-0.19453025, 0.09775667, 0.15683244]],
-            [[-0.19960524, 0.09789205, 0.1585632]],
-            [[-0.20278986, 0.0977404, 0.15945096]],
-            [[-0.20477988, 0.09750732, 0.15989034]],
-            [[-0.20601842, 0.09728104, 0.16009602]],
+            [-0.07431775, 0.05081949, 0.07480226],
+            [-0.12263095, 0.07622699, 0.1146026],
+            [-0.15380122, 0.0886446, 0.13589925],
+            [-0.17376699, 0.0944333, 0.14736715],
+            [-0.18647897, 0.09689739, 0.1535385],
+            [-0.19453025, 0.09775667, 0.15683244],
+            [-0.19960524, 0.09789205, 0.1585632],
+            [-0.20278986, 0.0977404, 0.15945096],
+            [-0.20477988, 0.09750732, 0.15989034],
+            [-0.20601842, 0.09728104, 0.16009602],
         ]
     )
 
@@ -482,8 +506,173 @@ def test_conv_lstm1d():
     assert jnp.allclose(res_sk, y, atol=1e-5)
 
 
-# def test_lazy_rnn():
+def test_bilstm():
+    # batch_size = 1
+    time_steps = 2
+    in_features = 3
+    hidden_features = 2
 
-#     x = jnp.ones([10, 1])
-#     l = SimpleRNNCell(None, 10)
-#     assert l()
+    x = jnp.ones([time_steps, in_features])
+    cell = LSTMCell(in_features, hidden_features)
+    reverse_cell = LSTMCell(in_features, hidden_features)
+
+    w_in_to_hidden = jnp.array(
+        [
+            [
+                -0.6061297,
+                0.6038931,
+                0.0219295,
+                -0.53232527,
+                0.63680524,
+                -0.1877076,
+                0.5494583,
+                0.5319734,
+            ],
+            [
+                -0.11174804,
+                0.1967476,
+                -0.01281184,
+                0.6291546,
+                -0.10848027,
+                -0.32045278,
+                0.07772851,
+                -0.07741755,
+            ],
+            [
+                0.69948727,
+                -0.48679155,
+                0.39291233,
+                -0.0054667,
+                0.5324392,
+                0.62987834,
+                -0.2530458,
+                -0.5623743,
+            ],
+        ]
+    )
+
+    w_hidden_to_hidden = jnp.array(
+        [
+            [
+                -0.07784259,
+                0.5912869,
+                -0.08792564,
+                -0.07326522,
+                -0.07806911,
+                -0.75162244,
+                0.01986005,
+                0.24453232,
+            ],
+            [
+                0.23444527,
+                -0.5768899,
+                0.24225983,
+                -0.23526284,
+                -0.2299888,
+                -0.444415,
+                0.4977502,
+                0.00633401,
+            ],
+        ]
+    )
+
+    b_hidden_to_hidden = jnp.array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+
+    w_in_to_hidden_reverse = jnp.array(
+        [
+            [
+                0.28273338,
+                -0.1472258,
+                0.3937468,
+                0.34040576,
+                -0.299861,
+                -0.38785607,
+                0.00533426,
+                0.06143087,
+            ],
+            [
+                -0.40093276,
+                0.39314228,
+                -0.43308863,
+                0.532469,
+                -0.71949875,
+                0.16529655,
+                -0.07926816,
+                -0.5383911,
+            ],
+            [
+                -0.0023067,
+                -0.5820745,
+                0.31508905,
+                0.29104167,
+                -0.35113502,
+                -0.6884494,
+                0.14833266,
+                -0.46562153,
+            ],
+        ]
+    )
+
+    w_hidden_to_hidden_reverse = jnp.array(
+        [
+            [
+                3.12127233e-01,
+                7.36315727e-01,
+                -1.91057637e-01,
+                1.89247921e-01,
+                4.54114564e-02,
+                6.95739524e-04,
+                5.34631252e-01,
+                1.43038025e-02,
+            ],
+            [
+                3.68674904e-01,
+                -1.35606900e-01,
+                -3.05835426e-01,
+                -1.86572984e-01,
+                -7.80997992e-01,
+                2.84251571e-02,
+                -1.41527206e-02,
+                3.26157391e-01,
+            ],
+        ]
+    )
+
+    b_hidden_to_hidden_reverse = jnp.array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+
+    cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
+    cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
+    cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
+
+    reverse_cell = reverse_cell.at["in_to_hidden.weight"].set(w_in_to_hidden_reverse)
+    reverse_cell = reverse_cell.at["hidden_to_hidden.weight"].set(
+        w_hidden_to_hidden_reverse
+    )
+    reverse_cell = reverse_cell.at["hidden_to_hidden.bias"].set(
+        b_hidden_to_hidden_reverse
+    )
+
+    res = ScanRNN(cell, backward_cell=reverse_cell, return_sequences=False)(x)
+
+    y = jnp.array([0.35901642, 0.00826644, -0.3015435, -0.13661332])
+
+    npt.assert_allclose(res, y, atol=1e-5)
+
+
+def test_lazy_rnn():
+
+    x = jnp.ones([10, 1])  # time_steps, in_features
+    left = SimpleRNNCell(None, 15)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (15,)
+    assert ScanRNN(left, return_sequences=True)(x).shape == (10, 15)
+
+    right = SimpleRNNCell(None, 15)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (30,)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 30)
+
+    x = jnp.ones([10, 3, 5])  # time_steps, in_features, spatial_features
+    left = ConvLSTM1DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5)  # hidden_features, spatial_features
+    right = ConvLSTM1DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5)

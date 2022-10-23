@@ -64,10 +64,6 @@ class SimpleRNNCell(RNNCell):
             recurrent_weight_init_func: the function to use to initialize the recurrent weights
             act_func: the activation function to use for the hidden state update
             key: the key to use to initialize the weights
-
-        Example:
-            >>> cell = SimpleRNNCell(10, 20)
-            >>> cell(jnp.ones([10]), RNNState(jnp.zeros([20]), jnp.zeros([20])))
         """
         if in_features is None:
             for field_item in dataclasses.fields(self):
@@ -138,7 +134,7 @@ class SimpleRNNCell(RNNCell):
         return SimpleRNNState(h)
 
     def init_state(self) -> SimpleRNNState:
-        shape = (1, self.hidden_features)
+        shape = (self.hidden_features,)
         return SimpleRNNState(jnp.zeros(shape))
 
 
@@ -255,7 +251,7 @@ class LSTMCell(RNNCell):
         return LSTMState(h, c)
 
     def init_state(self) -> LSTMState:
-        shape = (1, self.hidden_features)
+        shape = (self.hidden_features,)
         return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
@@ -772,42 +768,73 @@ class SeparableConvLSTM3DCell(SeparableConvLSTMNDCell):
 
 @pytc.treeclass
 class ScanRNN:
-    cell: RNNCell
+    cell: RNNCell | SpatialRNNCell
+    backward_cell: RNNCell | SpatialRNNCell | None
 
     def __init__(
         self,
         cell: RNNCell | SpatialRNNCell,
+        backward_cell: RNNCell | SpatialRNNCell | None = None,
         *,
         return_sequences: bool = False,
     ):
-        """Scans a RNN cell over a sequence.
+        """Scans RNN cell over a sequence.
 
         Args:
             cell: the RNN cell to use
-            reverse: whether to scan the sequence in reverse
+            backward_cell: the RNN cell to use for bidirectional scanning.
             return_sequences: whether to return the hidden state for each timestep
 
         Example:
             >>> cell = SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
             >>> rnn = ScanRNN(cell)
             >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
-            >>> result = rnn(x)  # 1 timestep, 20 features
+            >>> result = rnn(x)  # 20 features
+
+            # bidirectional convolution lstm
+            >>> cell = ConvLSTM1DCell(10, 20, kernel_size=3) # 10-features input, 20-features hidden state
+            >>> reverse_cell = ConvLSTM1DCell(10, 20, kernel_size=3) # 10-features input, 20-features hidden state
+            >>> rnn = ScanRNN(cell, reverse_cell, return_sequences=True)
+            >>> x = jnp.ones((5, 10,12)) # 5 timesteps, 10 features, width 12
+            >>> result = rnn(x)  # 5 timestep, 20*2 features, width 12
         """
         if not isinstance(cell, (RNNCell, SpatialRNNCell)):
             msg = f"Expected cell to be an instance of RNNCell or SpatialRNNCell, got {type(cell)}"
             raise TypeError(msg)
 
+        if not isinstance(backward_cell, (RNNCell, SpatialRNNCell, type(None))):
+            msg = "Expected backward_cell to be an instance of RNNCell, SpatialRNNCell or None"
+            msg += f", got {type(backward_cell)}"
+            raise TypeError(msg)
+
         self.cell = cell
+        self.backward_cell = backward_cell
         self.return_sequences = return_sequences
 
-    def __call__(self, x: jnp.ndarray, state: RNNState = None, **kwargs) -> jnp.ndarray:
+    def __call__(
+        self,
+        x: jnp.ndarray,
+        state: RNNState = None,
+        backward_state: RNNState = None,
+        **kwargs,
+    ) -> jnp.ndarray:
         if hasattr(self.cell, "_partial_init"):
             if isinstance(x, jax.core.Tracer):
                 raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
             self.cell._partial_init(in_features=x.shape[1])
 
+        if hasattr(self.backward_cell, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self.backward_cell._partial_init(in_features=x.shape[1])
+
         if not isinstance(state, (type(None), RNNState)):
             msg = f"Expected state to be an instance of RNNState, got {type(state)}"
+            raise TypeError(msg)
+
+        # backward cell
+        if not isinstance(backward_state, (type(None), RNNState)):
+            msg = f"Expected backward_state to be an instance of RNNState, got {type(backward_state)}"
             raise TypeError(msg)
 
         if isinstance(self.cell, SpatialRNNCell):
@@ -819,6 +846,13 @@ class ScanRNN:
             assert self.cell.in_features == x.shape[1], msg
             state = state or self.cell.init_state(spatial_dim=x.shape[2:])
 
+            if self.backward_cell is not None:
+                msg = f"Expected backward cell to be an instance of SpatialRNNCell, got {type(self.backward_cell)}"
+                assert isinstance(self.backward_cell, SpatialRNNCell), msg
+                backward_state = backward_state or self.backward_cell.init_state(
+                    spatial_dim=x.shape[2:]
+                )
+
         else:
             # (time steps, in_features)
             msg = f"Expected x to have 2 dimensions corresponds to (timesteps, in_features), got {x.ndim}"
@@ -827,15 +861,45 @@ class ScanRNN:
             assert self.cell.in_features == x.shape[1], msg
             state = state or self.cell.init_state()
 
+            if self.backward_cell is not None:
+                msg = f"Expected backward cell to be an instance of RNNCell, got {type(self.backward_cell)}"
+                assert isinstance(self.backward_cell, RNNCell), msg
+                backward_state = backward_state or self.backward_cell.init_state()
+
         if self.return_sequences:
             # accumulate the hidden state for each timestep
-            def scan_func(carry, x):
-                state = self.cell(x, state=carry)
+            def general_scan_func(cell, carry, x):
+                state = cell(x, state=carry)
                 return state, state
 
-            return jax.lax.scan(scan_func, state, x)[1].hidden_state
+            scan_func = ft.partial(general_scan_func, self.cell)
+            result = jax.lax.scan(scan_func, state, x)[1].hidden_state
 
-        # do not accumulate the hidden state for each timestep
-        scan_func = lambda carry, x: (self.cell(x, state=carry), None)
-        output, _ = jax.lax.scan(scan_func, state, x)
-        return output.hidden_state
+            # backward cell
+            if self.backward_cell is not None:
+                scan_func = ft.partial(general_scan_func, self.backward_cell)
+                x = jnp.flip(x, axis=0)  # reverse the time axis
+                back_result = jax.lax.scan(scan_func, backward_state, x)[1].hidden_state
+                # reverse once again over the accumulated time axis
+                back_result = jnp.flip(back_result, axis=-1)
+                result = jnp.concatenate([result, back_result], axis=1)
+
+            return result
+
+        else:
+            # only return the hidden state for the last timestep
+            def general_scan_func(cell, carry, x):
+                state = cell(x, state=carry)
+                return state, None
+
+            scan_func = ft.partial(general_scan_func, self.cell)
+            result = jax.lax.scan(scan_func, state, x)[0].hidden_state
+
+            # backward cell
+            if self.backward_cell is not None:
+                scan_func = ft.partial(general_scan_func, self.backward_cell)
+                x = jnp.flip(x, axis=0)
+                back_result = jax.lax.scan(scan_func, backward_state, x)[0].hidden_state
+                result = jnp.concatenate([result, back_result], axis=0)
+
+            return result

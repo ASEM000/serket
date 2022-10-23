@@ -92,7 +92,7 @@ def test_lazy():
 def test_multi_linear():
     x = jnp.linspace(0, 1, 100)[:, None]
     lhs = Linear(1, 10)
-    rhs = Multilinear(1, 10)
+    rhs = Multilinear((1,), 10)
     npt.assert_allclose(lhs(x), rhs(x), atol=1e-4)
 
     lhs = Multilinear(None, 10)

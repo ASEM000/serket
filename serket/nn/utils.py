@@ -297,6 +297,7 @@ _TRACER_ERROR_MSG = lambda cls_name: (
 #     return cls_wrapper
 
 
+@ft.lru_cache(maxsize=128)
 def _multilinear_einsum_string(degree: int) -> str:
     """Generate einsum string for a linear layer of degree n
     Example:
@@ -314,6 +315,7 @@ def _multilinear_einsum_string(degree: int) -> str:
     return output_string
 
 
+@ft.lru_cache(maxsize=128)
 def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     """Return the einsum string for a general linear layer.
     Example:
