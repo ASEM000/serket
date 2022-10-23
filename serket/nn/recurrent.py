@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-# import dataclasses
-# import functools as ft
+import dataclasses
+import functools as ft
 from typing import Callable
 
 import jax
@@ -11,17 +11,7 @@ import pytreeclass as pytc
 
 from serket.nn import Linear
 from serket.nn.convolution import ConvND, SeparableConvND
-
-# from serket.nn.utils import _TRACER_ERROR_MSG
-
-_act_func_map = {
-    "tanh": jax.nn.tanh,
-    "relu": jax.nn.relu,
-    "sigmoid": jax.nn.sigmoid,
-    "hard_sigmoid": jax.nn.hard_sigmoid,
-    None: lambda x: x,
-}
-
+from serket.nn.utils import _TRACER_ERROR_MSG, _act_func_map
 
 # --------------------------------------------------- RNN ------------------------------------------------------------ #
 
@@ -79,6 +69,27 @@ class SimpleRNNCell(RNNCell):
             >>> cell = SimpleRNNCell(10, 20)
             >>> cell(jnp.ones([10]), RNNState(jnp.zeros([20]), jnp.zeros([20])))
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                # set all fields to None to mark the class as uninitialized
+                # to the user and to avoid errors
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                SimpleRNNCell.__init__,
+                self=self,
+                hidden_features=hidden_features,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                recurrent_weight_init_func=recurrent_weight_init_func,
+                act_func=act_func,
+                key=key,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
         k1, k2 = jr.split(key, 2)
 
         if not isinstance(in_features, int) or in_features < 1:
@@ -115,6 +126,11 @@ class SimpleRNNCell(RNNCell):
     def __call__(
         self, x: jnp.ndarray, state: SimpleRNNState, **kwargs
     ) -> SimpleRNNState:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0])
+
         msg = f"Expected state to be an instance of SimpleRNNState, got {type(state)}"
         assert isinstance(state, SimpleRNNState), msg
         h = state.hidden_state
@@ -163,6 +179,27 @@ class LSTMCell(RNNCell):
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTMCell
             https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                # set all fields to None to mark the class as uninitialized
+                # to the user and to avoid errors
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                LSTMCell.__init__,
+                self=self,
+                hidden_features=hidden_features,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                recurrent_weight_init_func=recurrent_weight_init_func,
+                act_func=act_func,
+                key=key,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
         k1, k2 = jr.split(key, 2)
 
         if not isinstance(in_features, int) or in_features < 1:
@@ -198,6 +235,11 @@ class LSTMCell(RNNCell):
         )
 
     def __call__(self, x: jnp.ndarray, state: LSTMState, **kwargs) -> LSTMState:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0])
+
         msg = f"Expected state to be an instance of LSTMState, got {type(state)}"
         assert isinstance(state, LSTMState), msg
         h, c = state.hidden_state, state.cell_state
@@ -265,6 +307,34 @@ class ConvLSTMNDCell(SpatialRNNCell):
 
         See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                # set all fields to None to mark the class as uninitialized
+                # to the user and to avoid errors
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                ConvLSTMNDCell.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                strides=strides,
+                padding=padding,
+                input_dilation=input_dilation,
+                kernel_dilation=kernel_dilation,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                recurrent_weight_init_func=recurrent_weight_init_func,
+                act_func=act_func,
+                recurrent_act_func=recurrent_act_func,
+                ndim=ndim,
+                key=key,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
         k1, k2 = jr.split(key, 2)
 
         if not isinstance(in_features, int) or in_features < 1:
@@ -315,6 +385,11 @@ class ConvLSTMNDCell(SpatialRNNCell):
     def __call__(
         self, x: jnp.ndarray, state: ConvLSTMNDState, **kwargs
     ) -> ConvLSTMNDState:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0])
+
         msg = f"Expected state to be an instance of ConvLSTMNDState, got {type(state)}"
         assert isinstance(state, ConvLSTMNDState), msg
         h, c = state.hidden_state, state.cell_state
@@ -487,6 +562,32 @@ class SeparableConvLSTMNDCell(SpatialRNNCell):
 
         See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                # set all fields to None to mark the class as uninitialized
+                # to the user and to avoid errors
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                SeparableConvLSTMNDCell.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                strides=strides,
+                padding=padding,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                recurrent_weight_init_func=recurrent_weight_init_func,
+                act_func=act_func,
+                recurrent_act_func=recurrent_act_func,
+                key=key,
+                ndim=ndim,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
         k1, k2 = jr.split(key, 2)
 
         if not isinstance(in_features, int) or in_features < 1:
@@ -537,6 +638,11 @@ class SeparableConvLSTMNDCell(SpatialRNNCell):
     def __call__(
         self, x: jnp.ndarray, state: SeparableConvLSTMNDState, **kwargs
     ) -> SeparableConvLSTMNDState:
+        if hasattr(self, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self._partial_init(in_features=x.shape[0])
+
         msg = f"Expected input to have shape (batch_size, in_features, *spatial_dims), got {x.shape}"
         assert isinstance(state, SeparableConvLSTMNDState), msg
         h, c = state.hidden_state, state.cell_state
@@ -670,7 +776,7 @@ class ScanRNN:
 
     def __init__(
         self,
-        cell: RNNCell,
+        cell: RNNCell | SpatialRNNCell,
         *,
         return_sequences: bool = False,
     ):
@@ -695,6 +801,11 @@ class ScanRNN:
         self.return_sequences = return_sequences
 
     def __call__(self, x: jnp.ndarray, state: RNNState = None, **kwargs) -> jnp.ndarray:
+        if hasattr(self.cell, "_partial_init"):
+            if isinstance(x, jax.core.Tracer):
+                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+            self.cell._partial_init(in_features=x.shape[1])
+
         if not isinstance(state, (type(None), RNNState)):
             msg = f"Expected state to be an instance of RNNState, got {type(state)}"
             raise TypeError(msg)
