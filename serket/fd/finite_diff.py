@@ -52,6 +52,27 @@ def difference(
         >>> dFdX = difference(F, step_size=dx, axis=0, accuracy=3)
         >>> dFdXdY = difference(dFdX, step_size=dy, axis=1, accuracy=3)
 
+        # 1d finite difference derivative
+        >>> x = jnp.array([1.2, 1.3, 2.2, 3., 4.5, 5.5, 6., 7., 8., 20.])
+        >>> difference(x, accuracy=1)
+        [ 0.0999999  0.5        0.85       1.15       1.25       0.75 0.75       1.         6.5       12.       ]
+
+
+        # apply forward difference to the first element with accuracy 1
+        x_1 = 1.3-1.2 = 0.1
+
+        # apply central difference to interior elements with accuracy 2
+        x_2 = (2.2-1.2)/2 = 0.5
+        x_3 = (3.-1.3)/2 = 0.85
+        x_4 = (4.5-2.2)/2 = 1.15
+        x_5 = (5.5-3.)/2 = 1.25
+        x_6 = (6.-4.5)/2 = 0.75
+        x_7 = (7.-5.5)/2 = 0.75
+        x_8 = (8.-6.)/2 = 1.
+        x_9 = (20.-7.)/2 = 6.5
+
+        # apply backward difference to the last element with accuracy 1
+        x_10 = 20.-8. = 12.
     """
     size = x.shape[axis]
     sliced = ft.partial(jax.lax.slice_in_dim, x, axis=axis)
@@ -225,21 +246,20 @@ def curl(
         step_size: step size. Default is 1, can be a tuple for each axis
 
     Example:
-        # ∇×F of a 2D array
-        >>> x, y = [jnp.linspace(0, 1, 100)] * 2
-        >>> dx, dy = x[1] - x[0], y[1] - y[0]
-        >>> X, Y = jnp.meshgrid(x, y, indexing="ij")
+        Curl for a 3D vector field is defined as
+        F = (F1, F2, F3)
+        ∇×F = (dF3/dy - dF2/dz, dF1/dz - dF3/dx, dF2/dx - dF1/dy)
+        >>> jax.config.update("jax_enable_x64", True)
+        >>> x,y,z = [jnp.linspace(0, 1, 100)] * 3
+        >>> dx,dy,dz = x[1]-x[0], y[1]-y[0], z[1]-z[0]
+        >>> X,Y,Z = jnp.meshgrid(x,y,z, indexing="ij")
         >>> F1 = X**2 + Y**3
         >>> F2 = X**4 + Y**3
-        >>> F = jnp.stack([F1, F2], axis=0) # 2D vector field F = (F1, F2)
-
-        >>> numpy.testing.assert_allclose(curlZ, curlZ_true, atol=5e-4)
-
-
-    Curl for a 3D vector field is defined as
-    F = (F1, F2, F3)
-    ∇×F = (dF3/dy - dF2/dz, dF1/dz - dF3/dx, dF2/dx - dF1/dy)
-    where the result is stacked along the leading axis
+        >>> F3 = jnp.zeros_like(F1)
+        >>> F = jnp.stack([F1,F2,F3], axis=0)
+        >>> curlF = sk.fd.curl(F, step_size=(dx,dy,dz),  accuracy=6)
+        >>> curlF_exact = jnp.stack([F1*0,F1*0, 4*X**3 - 3*Y**2], axis=0)
+        >>> npt.assert_allclose(curlF, curlF_exact, atol=1e-7)
     """
 
     accuracy = _check_and_return(accuracy, x.ndim - 1, "accuracy")

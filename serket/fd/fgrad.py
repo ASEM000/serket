@@ -15,13 +15,15 @@ def _evaluate_func_at_shifted_steps_along_argnum(
     func: Callable,
     *,
     coeffs: jnp.ndarray,
-    DX: jnp.ndarray,
+    offsets: tuple[float | int, ...],
     argnum: int,
     step_size: float,
     derivative: int,
 ):
     if not isinstance(argnum, int) or argnum < 0:
         raise ValueError(f"argnum must be a non-negative integer, got {argnum}")
+
+    DX = jnp.array(offsets) * step_size
 
     def wrapper(*args, **kwargs):
         # yield function output at shifted points
@@ -87,13 +89,11 @@ def fgrad(
         offsets = _generate_central_offsets(derivative, accuracy=accuracy)
 
     if step_size is None:
-        step_size = 1e-3 * (10 ** (derivative))
+        # the best default step size for arbitrary derivative order and accuracy
+        step_size = (2) ** (-23 / (2 * derivative))
 
     # finite difference coefficients
     coeffs = generate_finitediff_coeffs(offsets, derivative)
-
-    # infinitisimal step size along the axis
-    DX = jnp.array(offsets) * step_size
 
     # TODO: edit docstring of the differentiated function
 
@@ -101,7 +101,7 @@ def fgrad(
         dfunc = _evaluate_func_at_shifted_steps_along_argnum(
             func,
             coeffs=coeffs,
-            DX=DX,
+            offsets=offsets,
             argnum=argnums,
             step_size=step_size,
             derivative=derivative,
@@ -114,7 +114,7 @@ def fgrad(
             _evaluate_func_at_shifted_steps_along_argnum(
                 func,
                 coeffs=coeffs,
-                DX=DX,
+                offsets=offsets,
                 argnum=argnum,
                 step_size=step_size,
                 derivative=derivative,
