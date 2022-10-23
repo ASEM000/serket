@@ -42,7 +42,7 @@ def fgrad(
     step_size: float = None,
     offsets: tuple[float | int, ...] = None,
     derivative: int = 1,
-    accuracy: int = 2,
+    accuracy: int = 3,
 ) -> Callable:
     """Finite difference derivative of a function with respect to one of its arguments.
     similar to jax.grad but with finite difference approximation
