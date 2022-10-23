@@ -5,17 +5,14 @@ import jax.tree_util as jtu
 import numpy.testing as npt
 import pytest
 
-from serket.nn.convolution import (  # Conv3DLocal,
+from serket.nn.convolution import (  # Conv3DLocal,; Conv1DSemiLocal,; Conv2DSemiLocal,; Conv3DSemiLocal,
     Conv1D,
     Conv1DLocal,
-    Conv1DSemiLocal,
     Conv1DTranspose,
     Conv2D,
     Conv2DLocal,
-    Conv2DSemiLocal,
     Conv2DTranspose,
     Conv3D,
-    Conv3DSemiLocal,
     Conv3DTranspose,
     DepthwiseConv1D,
     DepthwiseConv2D,
@@ -1165,16 +1162,16 @@ def test_lazy_conv():
         jax.jit(SeparableConv2D(None, 1, 3))(jnp.ones([10, 3, 3]))
 
 
-def test_conv1d_semilocal():
-    layer = Conv1DSemiLocal(1, 3, 3)
-    assert layer(jnp.ones([1, 3])).shape == (3, 3)
+# def test_conv1d_semilocal():
+#     layer = Conv1DSemiLocal(1, 3, 3)
+#     assert layer(jnp.ones([1, 3])).shape == (3, 3)
 
 
-def test_conv2d_semilocal():
-    layer = Conv2DSemiLocal(1, 3, 3)
-    assert layer(jnp.ones([1, 3, 3])).shape == (3, 3, 3)
+# def test_conv2d_semilocal():
+#     layer = Conv2DSemiLocal(1, 3, 3)
+#     assert layer(jnp.ones([1, 3, 3])).shape == (3, 3, 3)
 
 
-def test_conv3d_semilocal():
-    layer = Conv3DSemiLocal(1, 3, 3)
-    assert layer(jnp.ones([1, 3, 3, 3])).shape == (3, 3, 3, 3)
+# def test_conv3d_semilocal():
+#     layer = Conv3DSemiLocal(1, 3, 3)
+#     assert layer(jnp.ones([1, 3, 3, 3])).shape == (3, 3, 3, 3)
