@@ -586,6 +586,110 @@ show_images_with_predictions(test_model, sample_test_images, sample_test_labels)
 
 </details>
 
+
+<details> 
+<summary> 
+Finite difference with PINN
+</summary>
+
+```python
+import copy
+
+import jax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import optax
+
+import serket as sk
+
+x = jnp.linspace(-jnp.pi, jnp.pi, 1000)[:, None]
+y = jnp.sin(x)
+dx = x[1] - x[0]
+dydx = jnp.cos(x)
+
+NN_fd = sk.nn.Sequential(
+    [
+        sk.nn.Linear(1, 128),
+        sk.nn.ReLU(),
+        sk.nn.Linear(128, 128),
+        sk.nn.ReLU(),
+        sk.nn.Linear(128, 1),
+    ]
+)
+
+NN_ad = copy.copy(NN_fd)
+optim = optax.adam(1e-3)
+
+
+@jax.value_and_grad
+def loss_func_fd(NN, x):
+    y = NN(x)
+    dydx = sk.fd.difference(y, axis=0, accuracy=5, step_size=dx)
+    loss = jnp.mean((dydx - jnp.cos(x)) ** 2)
+    loss += jnp.mean((NN(jnp.zeros_like(x))) ** 2)  # initial condition
+    return loss
+
+
+@jax.value_and_grad
+def loss_func_ad(NN, x):
+    loss = jnp.mean((sk.diff(NN)(x) - jnp.cos(x)) ** 2)
+    loss += jnp.mean(NN(jnp.zeros_like(x)) ** 2)  # initial condition
+    return loss
+
+
+@jax.jit
+def step_fd(NN, x, optim_state):
+    loss, grads = loss_func_fd(NN, x)
+    updates, optim_state = optim.update(grads, optim_state)
+    NN = optax.apply_updates(NN, updates)
+    return NN, optim_state, loss
+
+
+def train_fd(NN_fd, optim_state_fd, epochs):
+    for i in range(1, epochs + 1):
+        NN_fd, optim_state_fd, loss_fd = step_fd(NN_fd, x, optim_state_fd)
+    return NN_fd, optim_state_fd, loss_fd
+
+
+@jax.jit
+def step_ad(NN, x, optim_state):
+    loss, grads = loss_func_ad(NN, x)
+    updates, optim_state = optim.update(grads, optim_state)
+    NN = optax.apply_updates(NN, updates)
+    return NN, optim_state, loss
+
+
+def train_ad(NN_ad, optim_state_ad, epochs):
+    for i in range(1, epochs + 1):
+        NN_ad, optim_state_ad, loss_ad = step_ad(NN_ad, x, optim_state_ad)
+    return NN_ad, optim_state_ad, loss_ad
+
+
+epochs = 1000
+
+
+optim_state_fd = optim.init(NN_fd)
+optim_state_ad = optim.init(NN_ad)
+
+
+NN_fd, optim_state_fd, loss_fd = train_fd(NN_fd, optim_state_fd, epochs)
+NN_ad, optim_state_ad, loss_ad = train_ad(NN_ad, optim_state_ad, epochs)
+print(f"Loss_fd {loss_fd:.4f} \nLoss_ad {loss_ad:.4f}")
+y_fd = NN_fd(x)
+y_ad = NN_ad(x)
+plt.plot(x, y, "--k", label="true")
+plt.plot(x, y_fd, label="fd pred")
+plt.plot(x, y_ad, label="ad pred")
+plt.legend()
+
+# Loss_fd 0.0012 
+# Loss_ad 0.0235
+```
+![image](assets/fd_vs_ad.png)
+
+
+</details>
+
 ## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
 
 ✨[See here for more about freezing](https://github.com/ASEM000/PyTreeClass#%EF%B8%8F-model-surgery)✨
