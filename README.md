@@ -589,8 +589,10 @@ show_images_with_predictions(test_model, sample_test_images, sample_test_labels)
 
 <details> 
 <summary> 
-Finite difference with PINN
+PINN with Finite difference
 </summary>
+
+We will try to estimate NN(x)~f(x), where df(x)/dx = cos(x) and df(x)/dx will be represented with finite difference scheme
 
 ```python
 import copy
@@ -689,6 +691,85 @@ plt.legend()
 
 
 </details>
+
+
+<details>
+<summary> 
+Reconstructing a vector field F using `∇.F = 0` condition
+</summary>
+
+```python
+import jax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import optax
+
+import serket as sk
+
+x, y = [jnp.linspace(-1, 1)] * 2
+dx, dy = [x[1] - x[0]] * 2
+X, Y = jnp.meshgrid(x, y, indexing="ij")
+
+# we will try to estimate F=(Y,-X) by training a NN 
+# With collocation points X,Y as input
+# With the following conditions 1) Divergence free 2) F(0,0)=0 
+F1 = Y
+F2 = -X
+F = jnp.stack([F1, F2], axis=0)
+
+NN = sk.nn.Sequential(
+    [
+        sk.nn.Conv2D(2, 32, kernel_size=3, padding="same"),
+        sk.nn.ReLU(),
+        sk.nn.Conv2D(32, 32, kernel_size=3, padding="same"),
+        sk.nn.ReLU(),
+        sk.nn.Conv2D(32, 2, kernel_size=3, padding="same"),
+    ]
+)
+
+optim = optax.adam(1e-3)
+
+
+@jax.value_and_grad
+def loss_func(NN, F):
+    F_pred = NN(F)
+    div = sk.fd.divergence(F_pred, accuracy=5, step_size=(dx, dy))
+    loss = jnp.mean(div**2)  # divergence free condition
+    loss += jnp.mean(NN(jnp.zeros_like(F)) ** 2)  # 0 at origin
+    return loss
+
+
+@jax.jit
+def step(NN, F, optim_state):
+    loss, grads = loss_func(NN, F)
+    updates, optim_state = optim.update(grads, optim_state)
+    NN = optax.apply_updates(NN, updates)
+    return NN, optim_state, loss
+
+
+def train(NN, Z, optim_state, epochs):
+    for i in range(1, epochs + 1):
+        NN, optim_state, loss = step(NN, Z, optim_state)
+    return NN, optim_state, loss
+
+
+Z = jnp.stack([X, Y], axis=0)  # collocation points
+optim_state = optim.init(NN)  # initialise optimiser
+epochs = 1000
+NN, _, loss = train(NN, Z, optim_state, epochs)
+
+Fpred = NN(Z)  # predicted field
+
+plt.figure(figsize=(7, 7))
+plt.quiver(X, Y, Fpred[0], Fpred[1], color="r", label="pred")
+plt.quiver(X, Y, F1, F2, color="k", alpha=0.5, label="true")
+plt.legend()
+```
+
+![image](assets/nn_div_free.svg)
+
+
+<details>
 
 ## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
 
