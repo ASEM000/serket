@@ -3,7 +3,15 @@ import jax.numpy as jnp
 import numpy.testing as npt
 from jax.experimental import enable_x64
 
-from serket.fd import curl, difference, divergence, gradient, laplacian
+from serket.fd import (
+    curl,
+    difference,
+    divergence,
+    gradient,
+    hessian,
+    jacobian,
+    laplacian,
+)
 
 
 def test_difference():
@@ -61,15 +69,16 @@ def test_gradient():
         npt.assert_allclose(gradF, gradF_true, atol=5e-7)
 
 
-# def test_laplacian():
-#     # needs float64 for higher accuracy
-#     x, y = [jnp.linspace(0, 1, 100)] * 2
-#     dx, dy = x[1] - x[0], y[1] - y[0]
-#     X, Y = jnp.meshgrid(x, y, indexing="ij")
-#     Z = X**4 + Y**3
-#     laplacianZ = laplacian(Z, step_size=(dx, dy), accuracy=10)
-#     laplacianZ_true = 12 * X**2 + 6 * Y
-#     npt.assert_allclose(laplacianZ, laplacianZ_true, atol=1e-4)
+def test_laplacian():
+    with enable_x64():
+        # needs float64 for higher accuracy
+        x, y = [jnp.linspace(0, 1, 100)] * 2
+        dx, dy = x[1] - x[0], y[1] - y[0]
+        X, Y = jnp.meshgrid(x, y, indexing="ij")
+        Z = X**4 + Y**3
+        laplacianZ = laplacian(Z, step_size=(dx, dy), accuracy=10)
+        laplacianZ_true = 12 * X**2 + 6 * Y
+        npt.assert_allclose(laplacianZ, laplacianZ_true, atol=1e-4)
 
 
 def test_curl():
@@ -89,3 +98,61 @@ def test_curl():
         curl_Z_true = jnp.stack([F1, F2, F3], axis=0)
 
         npt.assert_allclose(curl_Z, curl_Z_true, atol=1e-7)
+
+
+def test_jacobian():
+    with enable_x64():
+        x, y = [jnp.linspace(-1, 1, 100)] * 2
+        dx, dy = x[1] - x[0], y[1] - y[0]
+        X, Y = jnp.meshgrid(x, y, indexing="ij")
+        F1 = X**2 * Y
+        F2 = 5 * X + jnp.sin(Y)
+        F = jnp.stack([F1, F2], axis=0)
+        JF = jacobian(F, accuracy=4, step_size=(dx, dy))
+        JF_true = jnp.array([[2 * X * Y, X**2], [5 * jnp.ones_like(X), jnp.cos(Y)]])
+        npt.assert_allclose(JF, JF_true, atol=1e-7)
+
+        x1, x2, x3 = [jnp.linspace(-1, 1, 100)] * 3
+        dx1, dx2, dx3 = x1[1] - x1[0], x2[1] - x2[0], x3[1] - x3[0]
+        X1, X2, X3 = jnp.meshgrid(x1, x2, x3, indexing="ij")
+        Y1 = X1
+        Y2 = 5 * X3
+        Y3 = 4 * X2**2 - 2 * X3
+        Y4 = X3 * jnp.sin(X1)
+        Y = jnp.stack([Y1, Y2, Y3, Y4], axis=0)
+        JY = jacobian(Y, accuracy=5, step_size=(dx1, dx2, dx3))
+
+        JY_true = jnp.array(
+            [
+                [jnp.ones_like(X1), jnp.zeros_like(X1), jnp.zeros_like(X1)],
+                [jnp.zeros_like(X1), jnp.zeros_like(X1), 5 * jnp.ones_like(X1)],
+                [jnp.zeros_like(X1), 8 * X2, -2 * jnp.ones_like(X1)],
+                [X3 * jnp.cos(X1), jnp.zeros_like(X1), jnp.sin(X1)],
+            ]
+        )
+
+        npt.assert_allclose(JY, JY_true, rtol=1e-3, atol=1e-5)
+
+
+def test_hessian():
+    with enable_x64():
+        x, y = [jnp.linspace(-1, 1, 100)] * 2
+        dx, dy = x[1] - x[0], y[1] - y[0]
+        X, Y = jnp.meshgrid(x, y, indexing="ij")
+
+        F = X**2 * Y
+        H = hessian(F, accuracy=4, step_size=(dx, dy))
+        H_true = jnp.array([[2 * Y, 2 * X], [2 * X, jnp.zeros_like(X)]])
+        npt.assert_allclose(H, H_true, atol=1e-7)
+
+        F = X**3 + Y**3
+        H = hessian(F, accuracy=4, step_size=(dx, dy))
+        H_true = jnp.array([[6 * X, jnp.zeros_like(X)], [jnp.zeros_like(X), 6 * Y]])
+        npt.assert_allclose(H, H_true, atol=1e-7)
+
+        F = jnp.sin(X) + jnp.cos(Y)
+        H = hessian(F, accuracy=4, step_size=(dx, dy))
+        H_true = jnp.array(
+            [[-jnp.sin(X), jnp.zeros_like(X)], [jnp.zeros_like(X), -jnp.cos(Y)]]
+        )
+        npt.assert_allclose(H, H_true, atol=1e-7)

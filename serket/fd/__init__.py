@@ -9,6 +9,8 @@ from .finite_diff import (
     difference,
     divergence,
     gradient,
+    hessian,
+    jacobian,
     laplacian,
 )
 from .utils import generate_finitediff_coeffs
@@ -23,7 +25,9 @@ __all__ = (
     "divergence",
     "difference",
     "gradient",
+    "jacobian",
     "laplacian",
+    "hessian",
     "fgrad",
     "generate_finitediff_coeffs",
 )

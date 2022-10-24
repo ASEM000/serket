@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import functools as ft
+from itertools import combinations
 
 import jax
 import jax.numpy as jnp
@@ -18,6 +19,23 @@ from serket.fd.utils import (
     generate_finitediff_coeffs,
 )
 from serket.nn.utils import _check_and_return
+
+__all__ = (
+    "hessian",
+    "difference",
+    "gradient",
+    "jacobian",
+    "laplacian",
+    "curl",
+    "divergence",
+    "Hessian",
+    "Difference",
+    "Gradient",
+    "Jacobian",
+    "Laplacian",
+    "Curl",
+    "Divergence",
+)
 
 
 @ft.partial(jax.jit, static_argnames=("accuracy", "axis", "derivative"))
@@ -114,7 +132,7 @@ def gradient(
     x: jnp.ndarray,
     *,
     accuracy: int | tuple[int, ...] = 1,
-    step_size: float | tuple[float, ...] | jnp.ndarry = 1,
+    step_size: float | tuple[float, ...] | jnp.ndarray = 1,
 ) -> jnp.ndarray:
     """Compute the ∇F of input array where F is a scalar function of x and
     returns vectors of the same shape as x stacked along the first axis.
@@ -146,6 +164,46 @@ def gradient(
             for axis, (acc, step) in enumerate(zip(accuracy, step_size))
         ],
         axis=0,
+    )
+
+
+@ft.partial(jax.jit, static_argnames=("accuracy"))
+def jacobian(
+    x: jnp.ndarray,
+    *,
+    accuracy: int | tuple[int, ...] = 1,
+    step_size: float | tuple[float, ...] | jnp.ndarray = 1,
+) -> jnp.ndarray:
+    """Compute the ∂Fi/∂xj of input array where F is a vector function of x and
+    returns vectors of the same shape as x stacked along the first axis.
+
+    Args:
+        x: input array
+        accuracy: accuracy order of the gradient. Default is 1, can be a tuple for each axis
+        step_size: step size. Default is 1, can be a tuple for each axis
+
+    Index notation: ∂Fi/∂xj
+
+    Example:
+        # F: R^2 -> R^2
+        # F = [ x^2*y, 5x+siny ]
+        # JF = [ [2xy, x^2], [5, cos(y)] ]
+        >>> with jax.experimental.enable_x64():
+        ...    x, y = [jnp.linspace(-1, 1, 100)] * 2
+        ...    dx, dy = x[1] - x[0], y[1] - y[0]
+        ...    X, Y = jnp.meshgrid(x, y, indexing="ij")
+        ...    F1 = X**2 * Y
+        ...    F2 = 5 * X + jnp.sin(Y)
+        ...    F = jnp.stack([F1, F2], axis=0)
+        ...    JF = jacobian(F, accuracy=4, step_size=(dx, dy))
+        ...    JF_true = jnp.array([[2 * X * Y, X**2], [5*jnp.ones_like(X), jnp.cos(Y)]])
+        ...    npt.assert_allclose(JF, JF_true, atol=1e-7)
+    """
+    accuracy = _check_and_return(accuracy, x.ndim - 1, "accuracy")
+    step_size = _check_and_return(step_size, x.ndim - 1, "step_size")
+
+    return jnp.stack(
+        [gradient(xi, accuracy=accuracy, step_size=step_size) for xi in x], axis=0
     )
 
 
@@ -193,6 +251,60 @@ def divergence(
     if keepdims:
         return jnp.expand_dims(result, axis=0)
     return result
+
+
+def hessian(
+    x: jnp.ndarray,
+    *,
+    accuracy: int | tuple[int, ...] = 2,
+    step_size: float | tuple[float, ...] | jnp.ndarray = 1,
+) -> jnp.ndarray:
+    """Compute hessian of F: R^m -> R
+
+    Args:
+        x: input array
+        accuracy: accuracy order of the gradient. Default is 2, can be a tuple for each axis
+        step_size: step size. Default is 1, can be a tuple for each axis
+
+    Index notation: d2F/dxij
+
+    Example:
+        >>> x, y = [jnp.linspace(-1, 1, 100)] * 2
+        >>> dx, dy = x[1] - x[0], y[1] - y[0]
+        >>> X, Y = jnp.meshgrid(x, y, indexing="ij")
+
+        >>> F = X**2 * Y
+        >>> H = hessian(F, accuracy=4, step_size=(dx, dy))
+        >>> H_true = jnp.array([[2 * Y, 2 * X], [2 * X, jnp.zeros_like(X)]])
+        >>> npt.assert_allclose(H, H_true, atol=1e-7)
+    """
+    accuracy = _check_and_return(accuracy, x.ndim, "accuracy")
+    step_size = _check_and_return(step_size, x.ndim, "step_size")
+    axes = tuple(range(x.ndim))
+    F = dict()
+
+    # diag
+    for axis in range(x.ndim):
+        F[2 * axis] = difference(
+            x,
+            accuracy=accuracy[axis],
+            step_size=step_size[axis],
+            axis=axis,
+            derivative=2,
+        )
+
+    # off-diag
+    for ax1, ax2 in combinations(axes, 2):
+        F[ax1 + ax2] = difference(
+            difference(x, accuracy=accuracy[ax1], step_size=step_size[ax1], axis=ax1),
+            accuracy=accuracy[ax2],
+            step_size=step_size[ax2],
+            axis=ax2,
+        )
+
+    return jnp.stack(
+        [jnp.stack([F[ax1 + ax2] for ax2 in range(x.ndim)]) for ax1 in range(x.ndim)]
+    )
 
 
 @ft.partial(jax.jit, static_argnames=("accuracy"))
@@ -418,6 +530,56 @@ class Curl:
 
         self._func = ft.partial(
             curl,
+            accuracy=self.accuracy,
+            step_size=self.step_size,
+        )
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return self._func(x)
+
+
+@pytc.treeclass
+class Jacobian:
+    accuracy: int | tuple[int, ...] = pytc.nondiff_field()
+    step_size: float | tuple[float, ...] = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        *,
+        accuracy=1,
+        step_size=1,
+    ):
+        """wrap jacobian as a layer"""
+        self.accuracy = accuracy
+        self.step_size = step_size
+
+        self._func = ft.partial(
+            jacobian,
+            accuracy=self.accuracy,
+            step_size=self.step_size,
+        )
+
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        return self._func(x)
+
+
+@pytc.treeclass
+class Hessian:
+    accuracy: int | tuple[int, ...] = pytc.nondiff_field()
+    step_size: float | tuple[float, ...] = pytc.nondiff_field()
+
+    def __init__(
+        self,
+        *,
+        accuracy=1,
+        step_size=1,
+    ):
+        """wrap hessian as a layer"""
+        self.accuracy = accuracy
+        self.step_size = step_size
+
+        self._func = ft.partial(
+            hessian,
             accuracy=self.accuracy,
             step_size=self.step_size,
         )
