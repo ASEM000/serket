@@ -769,7 +769,7 @@ plt.legend()
 ![image](assets/nn_div_free.svg)
 
 
-<details>
+</details>
 
 ## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
 
