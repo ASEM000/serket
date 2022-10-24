@@ -337,7 +337,7 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     """
     assert all([i < 0 for i in axes]), "axes should be negative"
     axes = sorted(axes)
-    total_axis = abs(min(axes))  # get the total number of axis
+    total_axis = abs(min(axes))  # get the total number of axes
     alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     input_string = "..." + alpha[:total_axis]
     weight_string = "".join([input_string[axis] for axis in axes]) + alpha[total_axis]

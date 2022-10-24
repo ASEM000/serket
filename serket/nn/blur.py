@@ -42,13 +42,12 @@ class AvgBlur2D:
             delattr(self, "_partial_init")
 
         if not isinstance(in_features, int) or in_features <= 0:
-            raise ValueError(
-                f"Expected `in_features` to be a positive integer, got {in_features}"
-            )
+            msg = f"`in_features` must be a positive integer, got {in_features}"
+            raise ValueError(msg)
+
         if not isinstance(kernel_size, int) or kernel_size <= 0:
-            raise ValueError(
-                f"Expected `kernel_size` to be a positive integer, got {kernel_size}"
-            )
+            msg = f"`kernel_size` must be a positive integer, got {kernel_size}"
+            raise ValueError(msg)
 
         w = jnp.ones(kernel_size)
         w = w / jnp.sum(w)
@@ -112,7 +111,7 @@ class GaussianBlur2D:
 
             self._partial_init = ft.partial(
                 GaussianBlur2D.__init__,
-                self,
+                self=self,
                 kernel_size=kernel_size,
                 sigma=sigma,
             )
@@ -122,13 +121,11 @@ class GaussianBlur2D:
             delattr(self, "_partial_init")
 
         if not isinstance(in_features, int) or in_features <= 0:
-            raise ValueError(
-                f"Expected `in_features` to be a positive integer, got {in_features}"
-            )
+            msg = f"Expected `in_features` to be a positive integer, got {in_features}"
+            raise ValueError(msg)
         if not isinstance(kernel_size, int) or kernel_size <= 0:
-            raise ValueError(
-                f"Expected `kernel_size` to be a positive integer, got {kernel_size}"
-            )
+            msg = f"Expected `kernel_size` to be a positive integer, got {kernel_size}"
+            raise ValueError(msg)
 
         self.in_features = in_features
         self.kernel_size = kernel_size
@@ -204,20 +201,15 @@ class Filter2D:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
-                Filter2D.__init__,
-                self,
-                kernel=kernel,
-            )
+            self._partial_init = ft.partial(Filter2D.__init__, self=self, kernel=kernel)
             return
 
         if hasattr(self, "_partial_init"):
             delattr(self, "_partial_init")
 
         if not isinstance(in_features, int) or in_features <= 0:
-            raise ValueError(
-                f"Expected `in_features` to be a positive integer, got {in_features}"
-            )
+            msg = f"Expected `in_features` to be a positive integer, got {in_features}"
+            raise ValueError(msg)
 
         if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")

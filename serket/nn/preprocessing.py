@@ -34,5 +34,6 @@ class HistogramEqualization2D:
         self.bins = bins
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 3, "x must be 3D"
+        msg = f"Input must have 3 dimensions, got {x.ndim}."
+        assert x.ndim == 3, msg
         return _histeq(x, self.bins)

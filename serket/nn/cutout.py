@@ -43,6 +43,9 @@ class RandomCutout1D:
     def __call__(
         self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ) -> jnp.ndarray:
+        msg = f"Input must have 2 dimensions, got {x.ndim}."
+        assert x.ndim == 2, msg
+
         size = self.shape[0]
         row_arange = jnp.arange(x.shape[1])
 
@@ -94,6 +97,8 @@ class RandomCutout2D:
     def __call__(
         self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ) -> jnp.ndarray:
+        msg = f"Input must have 3 dimensions, got {x.ndim}."
+        assert x.ndim == 3, msg
         height, width = self.shape
         row_arange = jnp.arange(x.shape[1])
         col_arange = jnp.arange(x.shape[2])

@@ -843,6 +843,7 @@ class ScanRNN:
             msg += f"dimensions corresponds to (timesteps, in_features, *spatial_dims), got {x.ndim}"
             assert x.ndim == (self.cell.ndim + 2), msg
             msg = f"Expected x to have shape (timesteps, {self.cell.in_features}, *spatial_dims)"
+            msg += f", got {x.shape}"
             assert self.cell.in_features == x.shape[1], msg
             state = state or self.cell.init_state(spatial_dim=x.shape[2:])
 
@@ -858,6 +859,7 @@ class ScanRNN:
             msg = f"Expected x to have 2 dimensions corresponds to (timesteps, in_features), got {x.ndim}"
             assert x.ndim == 2, msg
             msg = f"Expected x to have shape (timesteps, {self.cell.in_features})"
+            msg += f", got {x.shape}"
             assert self.cell.in_features == x.shape[1], msg
             state = state or self.cell.init_state()
 

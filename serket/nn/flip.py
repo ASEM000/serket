@@ -24,7 +24,8 @@ class FlipLeftRight2D:
     """
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 3, "x must be 3D"
+        msg = f"Input must have 3 dimensions, got {x.ndim}."
+        assert x.ndim == 3, msg
         flip = lambda x: jnp.flip(x, axis=1)
         return jax.vmap(flip)(x)
 
@@ -50,6 +51,7 @@ class FlipUpDown2D:
     """
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 3, "x must be 3D"
+        msg = f"Input must have 3 dimensions, got {x.ndim}."
+        assert x.ndim == 3, msg
         flip = lambda x: jnp.flip(x, axis=0)
         return jax.vmap(flip)(x)

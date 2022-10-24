@@ -85,7 +85,7 @@ def fgrad(
     if offsets is None:
         if accuracy < 2:
             raise ValueError(f"accuracy must be >= 2, got {accuracy}")
-        # generate central offsets
+        # generate central offsets based on accuracy
         offsets = _generate_central_offsets(derivative, accuracy=accuracy)
 
     if step_size is None:

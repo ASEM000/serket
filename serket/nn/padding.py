@@ -28,7 +28,9 @@ class PadND:
         self.padding = _check_and_return_padding(self.padding, ((1,),) * self.ndim)
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == self.ndim + 1, f"Input must be {self.ndim + 1}."
+        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        assert x.ndim == self.ndim + 1, msg
+        # do not pad the channel axis
         return jnp.pad(x, ((0, 0), *self.padding), constant_values=self.value)
 
 

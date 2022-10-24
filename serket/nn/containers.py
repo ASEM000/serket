@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from types import MappingProxyType
 from typing import Any, Callable
 
 import jax.numpy as jnp
@@ -44,7 +43,7 @@ class Sequential:
             setattr(self, name, layer)
 
         field_mapping = {**dict(self.__treeclass_fields__), **field_mapping}
-        object.__setattr__(self, "__treeclass_fields__", MappingProxyType(field_mapping))  # fmt: skip
+        object.__setattr__(self, "__treeclass_fields__", field_mapping)
 
     def __getitem__(self, key: str | int | slice):
         if isinstance(key, str):

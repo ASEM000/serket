@@ -138,14 +138,13 @@ class UpsampleND:
         self.ndim = ndim
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == self.ndim + 1, f"input must be {self.ndim}D"
+        msg = f"Input must have {self.ndim+1} dimensions, got {x.ndim}."
+        assert x.ndim == self.ndim + 1, msg
 
+        resized_shape = tuple(s * x.shape[i + 1] for i, s in enumerate(self.scale))
         return jax.image.resize(
             x,
-            shape=(
-                x.shape[0],
-                *tuple(s * x.shape[i + 1] for i, s in enumerate(self.scale)),
-            ),
+            shape=(x.shape[0], *resized_shape),
             method=self.method,
         )
 

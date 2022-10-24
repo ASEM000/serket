@@ -70,7 +70,8 @@ class DropoutND:
         self.ndim = ndim
 
     def __call__(self, x, *, key=jr.PRNGKey(0)):
-        assert x.ndim == (self.ndim + 1), f"input must be {self.ndim+1}D, got {x.ndim}D"
+        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        assert x.ndim == (self.ndim + 1), msg
 
         if self.eval is True:
             return x

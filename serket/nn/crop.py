@@ -25,9 +25,8 @@ class CropND:
         self.ndim = ndim
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == (
-            self.ndim + 1
-        ), f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        assert x.ndim == (self.ndim + 1), msg
 
         return jax.lax.dynamic_slice(x, (0, *self.start), (x.shape[0], *self.size))
 
@@ -65,9 +64,8 @@ class RandomCropND:
     def __call__(
         self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ) -> jnp.ndarray:
-        assert x.ndim == (
-            self.ndim + 1
-        ), f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        assert x.ndim == (self.ndim + 1), msg
 
         start = tuple(
             jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)

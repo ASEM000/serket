@@ -23,9 +23,8 @@ class AdjustContrastND:
         self.contrast_factor = contrast_factor
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert (
-            x.ndim == self.ndim + 1
-        ), f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        assert x.ndim == self.ndim + 1, msg
         μ = jnp.mean(x, axis=tuple(range(1, x.ndim)), keepdims=True)
         return (self.contrast_factor * (x - μ) + μ).astype(x.dtype)
 
@@ -41,19 +40,17 @@ class RandomContrastND:
     contrast_range: tuple = pytc.nondiff_field()
 
     def __init__(self, contrast_range=(0.5, 1), ndim=1):
-        """
+        """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.
         Args:
-
-
+            contrast_range: range of contrast factors to randomly sample from.
         """
         if not (
             isinstance(contrast_range, tuple)
             and len(contrast_range) == 2
             and contrast_range[0] <= contrast_range[1]
         ):
-            raise ValueError(
-                "contrast_range must be a tuple of two floats, with the first one smaller than the second one."
-            )
+            msg = "contrast_range must be a tuple of two floats, with the first one smaller than the second one."
+            raise ValueError(msg)
 
         self.contrast_range = contrast_range
         self.ndim = ndim
@@ -61,9 +58,8 @@ class RandomContrastND:
     def __call__(
         self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0), **kwargs
     ) -> jnp.ndarray:
-        assert (
-            x.ndim == self.ndim + 1
-        ), f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
+        assert x.ndim == self.ndim + 1, msg
         contrast_factor = jr.uniform(
             key=key,
             shape=(),
