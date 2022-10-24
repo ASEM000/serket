@@ -1,7 +1,30 @@
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 
-from serket.nn import HistogramEqualization2D
+from serket.nn import HistogramEqualization2D, PixelShuffle
+
+
+def test_pixel_shuffle():
+    x = jnp.array(
+        [
+            [[0.08482574, 1.9097648], [0.29561743, 1.120948]],
+            [[0.33432344, -0.82606775], [0.6481277, 1.0434873]],
+            [[-0.7824839, -0.4539462], [0.6297971, 0.81524646]],
+            [[-0.32787678, -1.1234448], [-1.6607416, 0.27290547]],
+        ]
+    )
+
+    ps = PixelShuffle(2)
+    y = jnp.array([0.08482574, 0.33432344, 1.9097648, -0.82606775])
+
+    npt.assert_allclose(ps(x)[0, 0], y, atol=1e-5)
+
+    with pytest.raises(AssertionError):
+        PixelShuffle(3)(jnp.ones([6, 4, 4]))
+
+    with pytest.raises(ValueError):
+        PixelShuffle(-3)(jnp.ones([9, 6, 4]))
 
 
 def test_histogram():

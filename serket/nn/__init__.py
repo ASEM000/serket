@@ -89,7 +89,7 @@ from .pooling import (
     MaxPool2D,
     MaxPool3D,
 )
-from .preprocessing import HistogramEqualization2D
+from .preprocessing import HistogramEqualization2D, PixelShuffle
 from .random_transform import RandomApply, RandomZoom2D
 from .recurrent import (
     ConvLSTM1DCell,
@@ -220,7 +220,9 @@ __all__ = (
     "RandomCutout2D",
     "RandomZoom2D",
     "RandomApply",
+    # Preprocessing
     "HistogramEqualization2D",
+    "PixelShuffle",
     # Activations
     "AdaptiveLeakyReLU",
     "AdaptiveReLU",

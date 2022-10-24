@@ -37,3 +37,41 @@ class HistogramEqualization2D:
         msg = f"Input must have 3 dimensions, got {x.ndim}."
         assert x.ndim == 3, msg
         return _histeq(x, self.bins)
+
+
+@pytc.treeclass
+class PixelShuffle:
+    def __init__(self, upscale_factor: int | tuple[int, int] = 1):
+
+        if isinstance(upscale_factor, int):
+            if upscale_factor < 1:
+                raise ValueError("upscale_factor must be >= 1")
+
+            self.upscale_factor = (upscale_factor, upscale_factor)
+
+        elif isinstance(upscale_factor, tuple):
+            if len(upscale_factor) != 2:
+                raise ValueError("upscale_factor must be a tuple of length 2")
+            if upscale_factor[0] < 1 or upscale_factor[1] < 1:
+                raise ValueError("upscale_factor must be >= 1")
+            self.upscale_factor = upscale_factor
+
+        else:
+            raise ValueError("upscale_factor must be an integer or tuple of length 2")
+
+    def __call__(self, x: jnp.ndarray, **kwargs):
+        msg = f"Input must have 3 dimensions, got {x.ndim}."
+        assert x.ndim == 3, msg
+        channels = x.shape[0]
+
+        sr, sw = self.upscale_factor
+        oc = channels // (sr * sw)
+
+        msg = f"Input channels must be divisible by {sr*sw}, got {channels}."
+        assert channels % (sr * sw) == 0, msg
+
+        ih, iw = x.shape[1], x.shape[2]
+        x = jnp.reshape(x, (sr, sw, oc, ih, iw))
+        x = jnp.transpose(x, (2, 3, 0, 4, 1))
+        x = jnp.reshape(x, (oc, ih * sr, iw * sw))
+        return x
