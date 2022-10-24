@@ -45,19 +45,20 @@ pip install git+https://github.com/ASEM000/serket
 ### 🧠 Neural network package: `serket.nn` 🧠
 | Group | Layers |
 | ------------- | ------------- |
-| Linear  | `Linear`, `Bilinear`,`Identity`   |
+| Linear  | `Linear`, `Bilinear`, `Multilinear`, `GeneralLinear`, `Identity`   |
 |Densely connected|`FNN` (Fully connected network), `PFNN` (Parallel fully connected network)|
 | Convolution | `Conv1D`, `Conv2D`, `Conv3D`, `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`, `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`, `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal` |
 | Containers| `Sequential`, `Lambda` |
-|Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` (`kernex` backend)|
+|Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` `LPPool1D`, `LPPool2D`,`LPPool3D` , `AdaptivePool1D`, `AdaptivePool2D`, `AdaptivePool3D` (`kernex` backend)|
 |Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsample1D`, `Upsample2D`, `Upsample3D`, `Pad1D`, `Pad2D`, `Pad3D` |
 |Crop|`Crop1D`, `Crop2D`, |
 |Normalization|`LayerNorm`, `InstanceNorm`, `GroupNorm`|
 |Blurring| `AvgBlur2D`, `GaussianBlur2D`|
 |Dropout|`Dropout`, `Dropout1D`, `Dropout2D`, `Dropout3D`, |
 |Random transforms|`RandomCrop1D`, `RandomCrop2D`, `RandomApply`, `RandomCutout1D`, `RandomCutout2D`, `RandomZoom2D`, `RandomContrast2D` |
-|Preprocessing|`HistogramEqualization2D`, `AdjustContrast2D`|
-|Activations|`AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br>`CeLU`,`ELU`,`GELU`,`GLU`<br>,`HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br>`LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,<br>`SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`|
+|Misc|`HistogramEqualization2D`, `AdjustContrast2D`, `Filter2D`, `PixelShuffle`|
+|Activations|`AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br>`CeLU`,`ELU`,`GELU`,`GLU`<br>,`HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br>`LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,<br>`SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake`|
+|Recurrent|`SimpleRNNCell`, `LSTMCell`, `ConvLSTM1D`, `ConvLSTM2D`, `ConvLSTM3D`, `SeparableConvLSTM1DCell`, `SeparableConvLSTM2DCell`, `SeparableConvLSTM3DCell`|
 |Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
 
 
@@ -139,6 +140,110 @@ npt.assert_allclose(curlF, curlF_exact, atol=1e-7)
 ```
 
 </details>
+
+
+<details>
+<summary>
+Train Bidirectional-LSTM
+</summary>
+
+```python
+import jax
+import jax.numpy as jnp
+import jax.random as jr
+import matplotlib.pyplot as plt
+import optax  # for gradient optimization
+
+import serket as sk
+
+x = jnp.linspace(0, 1, 101).reshape(-1, 1)  # 101 samples of 1D data
+y = jnp.sin(2 * jnp.pi * x)
+y += 0.1 * jr.normal(jr.PRNGKey(0), y.shape)
+
+# we will use 2 time steps to predict the next time step
+x_batched = jnp.stack([x[:-1], x[1:]], axis=1)
+x_batched = jnp.reshape(x_batched, (100, 1, 2, 1))  # 100 minibatches x 1 sample x 2 time steps x 1D data
+y_batched = jnp.reshape(y[1:], (100, 1, 1))  # 100 minibatches x 1 samples x 1D data
+
+model = sk.nn.Sequential(
+    [
+        # first cell is the forward cell, second cell is the backward cell for bidirectional RNN
+        # we return the full sequence of outputs for each cell by setting return_sequences=True
+        # we use None in place of `in_features` to infer the input shape from the input
+        sk.nn.ScanRNN(
+            sk.nn.LSTMCell(None, 64),
+            backward_cell=sk.nn.LSTMCell(None, 64),
+            return_sequences=True,
+        ),
+        # here the in_features is inferred from the previous layer by setting it to None
+        # or simply we can set it to 64*2 (64 for each cell from previous layer)
+        # we set return_sequences=False to return only the last output of the sequence
+        sk.nn.ScanRNN(sk.nn.LSTMCell(None, 1), return_sequences=False),
+    ]
+)
+
+
+@jax.value_and_grad
+def loss_func(NN, batched_x, batched_y):
+    # use jax.vmap to apply the model to each minibatch
+    # in our case single x minibatch has shape (1, 2, 1)
+    # and single y minibatch has shape (1, 1)
+    # then vmap will be applied to the leading axis
+    batched_preds = jax.vmap(NN)(batched_x)
+    return jnp.mean((batched_preds - batched_y) ** 2)
+
+
+@jax.jit
+def batch_step(NN, batched_x, batched_y, opt_state):
+    loss, grads = loss_func(NN, batched_x, batched_y)
+    updates, optim_state = optim.update(grads, opt_state)
+    NN = optax.apply_updates(NN, updates)
+    return NN, optim_state, loss
+
+
+# dry run to infer the in_features (i.e. replace None with in_features)
+# if you want restrict the model to a specific input shape or to avoid
+# confusion you can manually specify the in_features as a consequence
+# dry run is not necessary in this case
+model(x_batched[0, 0])
+
+optim = optax.adam(1e-3)
+opt_state = optim.init(model)
+
+epochs = 100
+
+for i in range(1, epochs + 1):
+    epoch_loss = []
+    for x_b, y_b in zip(x_batched, y_batched):
+        model, opt_state, loss = batch_step(model, x_b, y_b, opt_state)
+        epoch_loss.append(loss)
+
+    epoch_loss = jnp.mean(jnp.array(epoch_loss))
+
+    if i % 10 == 0:
+        print(f"Epoch {i:3d} Loss {epoch_loss:.4f}")
+
+# Epoch  10 Loss 0.0880
+# Epoch  20 Loss 0.0796
+# Epoch  30 Loss 0.0620
+# Epoch  40 Loss 0.0285
+# Epoch  50 Loss 0.0205
+# Epoch  60 Loss 0.0187
+# Epoch  70 Loss 0.0182
+# Epoch  80 Loss 0.0176
+# Epoch  90 Loss 0.0171
+# Epoch 100 Loss 0.0166
+
+y_pred = jax.vmap(model)(x_batched.reshape(-1, 2, 1))
+plt.plot(x[1:], y[1:], "--k", label="data")
+plt.plot(x[1:], y_pred, label="prediction")
+plt.legend()
+```
+
+![image](assets/rnn.svg)
+
+</details>
+
 
 <details>
 
