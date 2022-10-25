@@ -44,6 +44,12 @@ def test_difference():
             jnp.array([3.5, 2.5, -0.5, -2.0, 0.5, 3.5]),
         )
 
+        # no central difference possible
+        x = jnp.array([1.2, 1.4])
+        npt.assert_allclose(
+            difference(x, accuracy=1, axis=0, derivative=1), jnp.array([0.2, 0.2])
+        )
+
 
 def test_divergence():
     with enable_x64():
@@ -98,6 +104,15 @@ def test_curl():
         curl_Z_true = jnp.stack([F1, F2, F3], axis=0)
 
         npt.assert_allclose(curl_Z, curl_Z_true, atol=1e-7)
+
+        x, y = [jnp.linspace(-1, 1, 50)] * 2
+        dx, dy = x[1] - x[0], y[1] - y[0]
+        X, Y = jnp.meshgrid(x, y, indexing="ij")
+        F1 = jnp.sin(Y)
+        F2 = jnp.cos(X)
+        F = jnp.stack([F1, F2], axis=0)
+        res = curl(F, accuracy=4, step_size=dx, keepdims=False)
+        npt.assert_allclose(res, -jnp.sin(X) - jnp.cos(Y), atol=1e-4)
 
 
 def test_jacobian():
@@ -156,3 +171,30 @@ def test_hessian():
             [[-jnp.sin(X), jnp.zeros_like(X)], [jnp.zeros_like(X), -jnp.cos(Y)]]
         )
         npt.assert_allclose(H, H_true, atol=1e-7)
+
+        # x, y, z = [jnp.linspace(0, 0.5, 100)] * 3
+        # dx, dy, dz = x[1] - x[0], y[1] - y[0], z[1] - z[0]
+        # X, Y, Z = jnp.meshgrid(x, y, z, indexing="ij")
+        # F = jnp.sin(X * Y * Z)
+        # H = hessian(F, accuracy=5, step_size=(dx, dy, dz))
+        # H_true = jnp.array(
+        #     [
+        #         [
+        #             -jnp.sin(X * Y * Z) * Y**2 * Z**2,
+        #             -jnp.sin(X * Y * Z) * X * Y * Z**2 + Z * jnp.cos(X * Y * Z),
+        #             -jnp.sin(X * Y * Z) * X * Y**2 * Z + Y * jnp.cos(X * Y * Z),
+        #         ],
+        #         [
+        #             -jnp.sin(X * Y * Z) * X * Y * Z**2 + Z * jnp.cos(X * Y * Z),
+        #             -jnp.sin(X * Y * Z) * X**2 * Z**2,
+        #             -jnp.sin(X * Y * Z) * X**2 * Y * Z + X * jnp.cos(X * Y * Z),
+        #         ],
+        #         [
+        #             -jnp.sin(X * Y * Z) * X * Y**2 * Z + Y * jnp.cos(X * Y * Z),
+        #             -jnp.sin(X * Y * Z) * X**2 * Y * Z + X * jnp.cos(X * Y * Z),
+        #             -jnp.sin(X * Y * Z) * X**2 * Y**2,
+        #         ],
+        #     ]
+        # )
+
+        # npt.assert_allclose(H, H_true, atol=1e-7)

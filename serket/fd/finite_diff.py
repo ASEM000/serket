@@ -38,6 +38,66 @@ __all__ = (
 )
 
 
+def _central_difference(
+    x,
+    *,
+    axis,
+    left_coeffs,
+    center_coeffs,
+    right_coeffs,
+    left_offsets,
+    center_offsets,
+    right_offsets,
+):
+
+    size = x.shape[axis]
+    sliced = ft.partial(jax.lax.slice_in_dim, x, axis=axis)
+
+    # use central difference for interior points
+    left_x = sum(
+        coeff * sliced(offset, offset - center_offsets[0])
+        for offset, coeff in zip(left_offsets, left_coeffs)
+    )
+
+    right_x = sum(
+        coeff * sliced(size + (offset - center_offsets[-1]), size + (offset))
+        for offset, coeff in zip(right_offsets, right_coeffs)
+    )
+
+    center_x = sum(
+        coeff * sliced(offset - center_offsets[0], size + (offset - center_offsets[-1]))
+        for offset, coeff in zip(center_offsets, center_coeffs)
+    )
+
+    return jnp.concatenate([left_x, center_x, right_x], axis=axis)
+
+
+def _forward_difference(
+    x,
+    *,
+    axis,
+    left_coeffs,
+    right_coeffs,
+    left_offsets,
+    right_offsets,
+):
+
+    size = x.shape[axis]
+    sliced = ft.partial(jax.lax.slice_in_dim, x, axis=axis)
+
+    left_x = sum(
+        coeff * sliced(offset, offset + left_offsets[-1] + size % 2)
+        for offset, coeff in zip(left_offsets, left_coeffs)
+    )
+
+    right_x = sum(
+        coeff * sliced(size + (offset - left_offsets[-1]), size + (offset))
+        for offset, coeff in zip(right_offsets, right_coeffs)
+    )
+
+    return jnp.concatenate([left_x, right_x], axis=axis)
+
+
 @ft.partial(jax.jit, static_argnames=("accuracy", "axis", "derivative"))
 def difference(
     x: jnp.ndarray,
@@ -93,7 +153,9 @@ def difference(
         x_10 = 20.-8. = 12.
     """
     size = x.shape[axis]
-    sliced = ft.partial(jax.lax.slice_in_dim, x, axis=axis)
+
+    center_offsets = _generate_central_offsets(derivative, accuracy + 1)
+    center_coeffs = generate_finitediff_coeffs(center_offsets, derivative)
 
     left_offsets = _generate_forward_offsets(derivative, accuracy)
     left_coeffs = generate_finitediff_coeffs(left_offsets, derivative)
@@ -101,30 +163,36 @@ def difference(
     right_offsets = _generate_backward_offsets(derivative, accuracy)
     right_coeffs = generate_finitediff_coeffs(right_offsets, derivative)
 
-    center_offsets = _generate_central_offsets(derivative, accuracy + 1)
-    center_coeffs = generate_finitediff_coeffs(center_offsets, derivative)
+    # use central difference for interior points and
+    # forward/backward difference for boundary points
+    if size >= len(center_offsets):
+        return _central_difference(
+            x,
+            axis=axis,
+            left_coeffs=left_coeffs,
+            center_coeffs=center_coeffs,
+            right_coeffs=right_coeffs,
+            left_offsets=left_offsets,
+            center_offsets=center_offsets,
+            right_offsets=right_offsets,
+        ) / (step_size**derivative)
 
-    if accuracy > (size // 2 - 1):
-        raise ValueError(f"accuracy must be <= {(size//2-1)}, got {accuracy}")
+    # if size < len(center_offsets), use forward/backward
+    # difference for interior points
+    if size >= len(left_offsets):
+        return _forward_difference(
+            x,
+            axis=axis,
+            left_coeffs=left_coeffs,
+            right_coeffs=right_coeffs,
+            left_offsets=left_offsets,
+            right_offsets=right_offsets,
+        ) / (step_size**derivative)
 
-    left_x = sum(
-        coeff * sliced(offset, offset - center_offsets[0])
-        for offset, coeff in zip(left_offsets, left_coeffs)
-    )
-
-    right_x = sum(
-        coeff * sliced(size + (offset - center_offsets[-1]), size + (offset))
-        for offset, coeff in zip(right_offsets, right_coeffs)
-    )
-
-    center_x = sum(
-        coeff * sliced(offset - center_offsets[0], size + (offset - center_offsets[-1]))
-        for offset, coeff in zip(center_offsets, center_coeffs)
-    )
-
-    return jnp.concatenate([left_x, center_x, right_x], axis=axis) / (
-        step_size**derivative
-    )
+    msg = f"Size of the array along axis {axis} is smaller than the number of points required"
+    msg += f" for the accuracy {accuracy} and derivative {derivative} requested"
+    msg += f".\nSize must be larger than {len(left_offsets)}, but got {size}"
+    raise ValueError(msg)
 
 
 @ft.partial(jax.jit, static_argnames=("accuracy"))
@@ -340,12 +408,12 @@ def laplacian(
     )
 
 
-@ft.partial(jax.jit, static_argnames=("accuracy"))
-def curl(
+def _curl_2d(
     x: jnp.ndarray,
     *,
     accuracy: int | tuple[int, ...] = 1,
-    step_size: float | tuple[float, ...] | jnp.ndarry = 1,
+    step_size: float | tuple[float, ...] | jnp.ndarray = 1,
+    keepdims: bool = True,
 ) -> jnp.ndarray:
     """Compute the ∇×F of input array where F is a vector field whose components are the first axis of x
     and returns a vector field
@@ -356,32 +424,34 @@ def curl(
         x: input array where the leading axis is the dimension of the vector field
         accuracy: accuracy order of the gradient. Default is 1, can be a tuple for each axis
         step_size: step size. Default is 1, can be a tuple for each axis
+        keepdims: whether to keep the leading dimension of the vector field
 
     Example:
-        Curl for a 3D vector field is defined as
-        F = (F1, F2, F3)
-        ∇×F = (dF3/dy - dF2/dz, dF1/dz - dF3/dx, dF2/dx - dF1/dy)
-        >>> jax.config.update("jax_enable_x64", True)
-        >>> x,y,z = [jnp.linspace(0, 1, 100)] * 3
-        >>> dx,dy,dz = x[1]-x[0], y[1]-y[0], z[1]-z[0]
-        >>> X,Y,Z = jnp.meshgrid(x,y,z, indexing="ij")
-        >>> F1 = X**2 + Y**3
-        >>> F2 = X**4 + Y**3
-        >>> F3 = jnp.zeros_like(F1)
-        >>> F = jnp.stack([F1,F2,F3], axis=0)
-        >>> curlF = sk.fd.curl(F, step_size=(dx,dy,dz),  accuracy=6)
-        >>> curlF_exact = jnp.stack([F1*0,F1*0, 4*X**3 - 3*Y**2], axis=0)
-        >>> npt.assert_allclose(curlF, curlF_exact, atol=1e-7)
+        >>> x,y = [jnp.linspace(-1,1,50)]*2
+        >>> dx,dy = x[1]-x[0],y[1]-y[0]
+        >>> X,Y = jnp.meshgrid(x,y, indexing="ij")
+        >>> F1 = jnp.sin(Y)
+        >>> F2 = jnp.cos(X)
+        >>> F = jnp.stack([F1,F2], axis=0)
+        >>> curl = curl_2d(F, accuracy=4, step_size=dx)
     """
+    dF1dY = difference(x[0], accuracy=accuracy[1], step_size=step_size[1], axis=1)
+    dF2dX = difference(x[1], accuracy=accuracy[0], step_size=step_size[0], axis=0)
 
-    accuracy = _check_and_return(accuracy, x.ndim - 1, "accuracy")
-    step_size = _check_and_return(step_size, x.ndim - 1, "step_size")
+    result = dF2dX - dF1dY
 
-    if not (x.ndim == 4 and x.shape[0] == 3):
-        raise ValueError(
-            "Input array must be composed of 3 vector fields of 3D shape (3, nx, ny, nz)"
-        )
+    if keepdims:
+        return jnp.expand_dims(result, axis=0)
 
+    return result
+
+
+def _curl_3d(
+    x: jnp.ndarray,
+    *,
+    accuracy: int | tuple[int, ...] = 1,
+    step_size: float | tuple[float, ...] | jnp.ndarry = 1,
+) -> jnp.ndarray:
     dF1dY = difference(x[0], accuracy=accuracy[1], step_size=step_size[1], axis=1)
     dF1dZ = difference(x[0], accuracy=accuracy[2], step_size=step_size[2], axis=2)
 
@@ -399,6 +469,65 @@ def curl(
         ],
         axis=0,
     )
+
+
+@ft.partial(jax.jit, static_argnames=("accuracy", "keepdims"))
+def curl(
+    x: jnp.ndarray,
+    *,
+    accuracy: int | tuple[int, ...] = 1,
+    step_size: float | tuple[float, ...] | jnp.ndarry = 1,
+    keepdims: bool = True,
+) -> jnp.ndarray:
+    """Compute the ∇×F of input array where F is a vector field whose components are the first axis of x
+    and returns a vector field
+
+    Index notation: εijk dFk/dxj
+
+    Args:
+        x: input array where the leading axis is the dimension of the vector field
+        accuracy: accuracy order of the gradient. Default is 1, can be a tuple for each axis
+        step_size: step size. Default is 1, can be a tuple for each axis
+        keepdims: whether to keep the leading dimension of the vector field (only for 2D)
+
+    Example:
+        Curl for a 3D vector field is defined as
+        F = (F1, F2, F3)
+        ∇×F = (dF3/dy - dF2/dz, dF1/dz - dF3/dx, dF2/dx - dF1/dy)
+        >>> jax.config.update("jax_enable_x64", True)
+        >>> x,y,z = [jnp.linspace(0, 1, 100)] * 3
+        >>> dx,dy,dz = x[1]-x[0], y[1]-y[0], z[1]-z[0]
+        >>> X,Y,Z = jnp.meshgrid(x,y,z, indexing="ij")
+        >>> F1 = X**2 + Y**3
+        >>> F2 = X**4 + Y**3
+        >>> F3 = jnp.zeros_like(F1)
+        >>> F = jnp.stack([F1,F2,F3], axis=0)
+        >>> curlF = sk.fd.curl(F, step_size=(dx,dy,dz),  accuracy=6)
+        >>> curlF_exact = jnp.stack([F1*0,F1*0, 4*X**3 - 3*Y**2], axis=0)
+        >>> npt.assert_allclose(curlF, curlF_exact, atol=1e-7)
+
+        Curl of 2D vector field is defined as
+        >>> x,y = [jnp.linspace(-1,1,50)]*2
+        >>> dx,dy = x[1]-x[0],y[1]-y[0]
+        >>> X,Y = jnp.meshgrid(x,y, indexing="ij")
+        >>> F1 = jnp.sin(Y)
+        >>> F2 = jnp.cos(X)
+        >>> F = jnp.stack([F1,F2], axis=0)
+        >>> curl = curl_2d(F, accuracy=4, step_size=dx)
+    """
+
+    accuracy = _check_and_return(accuracy, x.ndim - 1, "accuracy")
+    step_size = _check_and_return(step_size, x.ndim - 1, "step_size")
+
+    if x.ndim == 4 and x.shape[0] == 3:
+        return _curl_3d(x, accuracy=accuracy, step_size=step_size)
+
+    if x.ndim == 3 and x.shape[0] == 2:
+        return _curl_2d(x, accuracy=accuracy, step_size=step_size, keepdims=keepdims)
+
+    msg = f"`curl` is only implemented for 2D and 3D vector fields, got {x.ndim}D"
+    msg += "for 2D vector fields, the leading axis must be 2, for 3D vector fields, the leading axis must be 3"
+    raise ValueError(msg)
 
 
 @pytc.treeclass
