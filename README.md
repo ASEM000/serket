@@ -13,7 +13,7 @@
 
 
 ![Tests](https://github.com/ASEM000/serket/actions/workflows/tests.yml/badge.svg)
-![pyver](https://img.shields.io/badge/python-3.7%203.8%203.9%203.10%203.11-blue)
+![pyver](https://img.shields.io/badge/python-3.7%203.8%203.9%203.10-red)
 ![codestyle](https://img.shields.io/badge/codestyle-black-lightgrey)
 [![Downloads](https://pepy.tech/badge/serket)](https://pepy.tech/project/serket)
 [![codecov](https://codecov.io/gh/ASEM000/serket/branch/main/graph/badge.svg?token=C6NXOK9EVS)](https://codecov.io/gh/ASEM000/serket)
