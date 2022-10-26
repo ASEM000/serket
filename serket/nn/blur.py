@@ -215,7 +215,8 @@ class Filter2D:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
         self.in_features = in_features
-        self.kernel = kernel[None, None]
+        self.kernel = jnp.stack([kernel] * in_features, axis=0)
+        self.kernel = self.kernel[:, None]
 
         self.conv = DepthwiseConv2D(
             in_features=in_features,

@@ -310,9 +310,7 @@ def divergence(
     step_size = _check_and_return(step_size, x.ndim - 1, "step_size")
 
     result = sum(
-        difference(
-            x.at[axis].get(), accuracy=acc, step_size=step, derivative=1, axis=axis
-        )
+        difference(x[axis], accuracy=acc, step_size=step, derivative=1, axis=axis)
         for axis, (acc, step) in enumerate(zip(accuracy, step_size))
     )
 

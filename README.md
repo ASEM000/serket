@@ -37,10 +37,18 @@ pip install git+https://github.com/ASEM000/serket
 ## 📖 Description<a id="Description"></a>
 - `serket` aims to be the most intuitive and easy-to-use physics-based Neural network library in JAX.
 - `serket` is built on top of [`pytreeclass`](https://github.com/ASEM000/pytreeclass)
-
 - `serket` currently implements 
 
 <div align="center">
+
+### ➖➕Finite difference package: `serket.fd`➕➖
+
+| Group| Function/Layer|
+| ------------- | ------------- |
+|Finite difference layer|`Difference`: apply finite difference to input array to any derivative order and accuracy|
+|Finite difference functions| - `difference`: finite difference of array with any accuracy and derivative order  <br> -`generate_finitediff_coeffs` : generate coeffs using sample points and derivative order <br> - `fgrad`: differentiate _functions_ (similar to `jax.grad`) with custom accuracy and derivative order|
+|Vector operator layers|`Curl`, `Divergence`, `Gradient`, `Laplacian`, `Jacobian`, `Hessian`|
+|Vector operator function| `curl`, `divergence`, `gradient`, `laplacian`, `jacobian`, `hessian`|
 
 ### 🧠 Neural network package: `serket.nn` 🧠
 | Group | Layers |
@@ -49,7 +57,7 @@ pip install git+https://github.com/ASEM000/serket
 |Densely connected|`FNN` (Fully connected network), `PFNN` (Parallel fully connected network)|
 | Convolution | `Conv1D`, `Conv2D`, `Conv3D`, `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`, `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`, `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal` |
 | Containers| `Sequential`, `Lambda` |
-|Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` `LPPool1D`, `LPPool2D`,`LPPool3D` , `AdaptivePool1D`, `AdaptivePool2D`, `AdaptivePool3D` (`kernex` backend)|
+|Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` `LPPool1D`, `LPPool2D`,`LPPool3D` , `AdaptivePool1D`, `AdaptivePool2D`, `AdaptivePool3D`,`AdaptiveConcatPool1D`,`AdaptiveConcatPool2D`,`AdaptiveConcatPool3D` (`kernex` backend)|
 |Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsample1D`, `Upsample2D`, `Upsample3D`, `Pad1D`, `Pad2D`, `Pad3D` |
 |Crop|`Crop1D`, `Crop2D`, |
 |Normalization|`LayerNorm`, `InstanceNorm`, `GroupNorm`|
@@ -62,15 +70,6 @@ pip install git+https://github.com/ASEM000/serket
 |Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
 
 
-### ➖➕Finite difference package: `serket.fd`➕➖
-
-| Group| Function/Layer|
-| ------------- | ------------- |
-|Finite difference layer|`Difference`: apply finite difference to input array to any derivative order and accuracy|
-|Finite difference functions| - `difference`: finite difference of array with any accuracy and derivative order  <br> -`generate_finitediff_coeffs` : generate coeffs using sample points and derivative order <br> - `fgrad`: differentiate _functions_ (similar to `jax.grad`) with custom accuracy and derivative order|
-|Vector operator layers|`Curl`, `Divergence`, `Gradient`, `Laplacian`|
-|Vector operator function| `curl`, `divergence`, `gradient`, `laplacian`|
-
 
 
 </div>
@@ -79,7 +78,7 @@ pip install git+https://github.com/ASEM000/serket
 
 <details>
 
-<summary> Finite difference package examples </summary>
+<summary> Finite difference examples </summary>
 
 ```python
 import jax
@@ -106,37 +105,70 @@ F2 = X**4 + Y**3
 F3 = jnp.zeros_like(F1)
 F = jnp.stack([F1, F2, F3], axis=0)
 
-# ∂F1/∂x : lets differentiate F1 with respect to x (i.e axis=0)
+# ∂F1/∂x : differentiate F1 with respect to x (i.e axis=0)
 dF1dx = sk.fd.difference(F1, axis=0, step_size=dx, accuracy=6)
 dF1dx_exact = 2 * X
 npt.assert_allclose(dF1dx, dF1dx_exact, atol=1e-7)
 
-# ∂F2/∂y : let us now differentiate F2 with respect to y (i.e axis=1)
+# ∂F2/∂y : differentiate F2 with respect to y (i.e axis=1)
 dF2dy = sk.fd.difference(F2, axis=1, step_size=dy, accuracy=6)
 dF2dy_exact = 3 * Y**2
 npt.assert_allclose(dF2dy, dF2dy_exact, atol=1e-7)
 
-# ∇.F : lets take the divergence of F
+# ∇.F : the divergence of F
 divF = sk.fd.divergence(F, step_size=(dx, dy, dz), keepdims=False, accuracy=6)
 divF_exact = 2 * X + 3 * Y**2
 npt.assert_allclose(divF, divF_exact, atol=1e-7)
 
-
-# ∇F1 : lets take the gradient of F1
+# ∇F1 : the gradient of F1
 gradF1 = sk.fd.gradient(F1, step_size=(dx, dy, dz), accuracy=6)
 gradF1_exact = jnp.stack([2 * X, 3 * Y**2, 0 * X], axis=0)
 npt.assert_allclose(gradF1, gradF1_exact, atol=1e-7)
 
-# ΔF1 : lets take laplacian of F1
+# ΔF1 : laplacian of F1
 lapF1 = sk.fd.laplacian(F1, step_size=(dx, dy, dz), accuracy=6)
 lapF1_exact = 2 + 6 * Y
 npt.assert_allclose(lapF1, lapF1_exact, atol=1e-7)
 
-
-# # ∇xF : lets take the curl of F
+# ∇xF : the curl of F
 curlF = sk.fd.curl(F, step_size=(dx, dy, dz), accuracy=6)
 curlF_exact = jnp.stack([F1 * 0, F1 * 0, 4 * X**3 - 3 * Y**2], axis=0)
 npt.assert_allclose(curlF, curlF_exact, atol=1e-7)
+
+# Jacobian of F
+JF = sk.fd.jacobian(F, accuracy=4, step_size=(dx, dy, dz))
+JF_exact = jnp.array(
+    [
+        [2 * X, 3 * Y**2, jnp.zeros_like(X)],
+        [4 * X**3, 3 * Y**2, jnp.zeros_like(X)],
+        [jnp.zeros_like(X), jnp.zeros_like(X), jnp.zeros_like(X)],
+    ]
+)
+npt.assert_allclose(JF, JF_exact, atol=1e-7)
+
+# Hessian of F1
+HF1 = sk.fd.hessian(F1, accuracy=4, step_size=(dx, dy, dz))
+HF1_exact = jnp.array(
+    [
+        [
+            2 * jnp.ones_like(X),  # ∂2F1/∂x2
+            0 * jnp.ones_like(X),  # ∂2F1/∂xy
+            0 * jnp.ones_like(X),  # ∂2F1/∂xz
+        ],
+        [
+            0 * jnp.ones_like(X),  # ∂2F1/∂yx
+            6 * Y**2,              # ∂2F1/∂y2
+            0 * jnp.ones_like(X),  # ∂2F1/∂yz
+        ],
+        [
+            0 * jnp.ones_like(X),  # ∂2F1/∂zx
+            0 * jnp.ones_like(X),  # ∂2F1/∂zy
+            0 * jnp.ones_like(X),  # ∂2F1/∂z2
+        ],
+    ]
+)
+npt.assert_allclose(JF, JF_exact, atol=1e-7)
+
 ```
 
 </details>
@@ -319,7 +351,9 @@ print(model[0].__repr__())
 </details>
 
 
-<details><summary>Train MNIST</summary>
+<details>
+
+<summary>Train MNIST</summary>
 
 We will use `tensorflow` datasets for dataloading. for more on interface of jax/tensorflow dataset see [here](https://jax.readthedocs.io/en/latest/notebooks/neural_network_with_tfds_data.html)
 

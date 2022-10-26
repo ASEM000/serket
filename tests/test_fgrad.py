@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pytest
 from jax.experimental import enable_x64
 
 from serket.fd import fgrad, generate_finitediff_coeffs
@@ -143,3 +144,17 @@ def test_fgrad_argnum():
         f2l, f2r = fgrad(func, argnums=(0, 1))(1.0, 1.0, 1.0)
         all_correct(f1l, f2l)
         all_correct(f1r, f2r)
+
+
+def test_fgrad_error():
+    with pytest.raises(ValueError):
+        fgrad(lambda x: x, argnums=-1)
+
+    with pytest.raises(ValueError):
+        fgrad(lambda x: x, argnums=1.0)
+
+    with pytest.raises(ValueError):
+        fgrad(lambda x: x, accuracy=1)
+
+    with pytest.raises(ValueError):
+        fgrad(lambda x: x, argnums=[1, 2])

@@ -800,12 +800,12 @@ class ScanRNN:
         """
         if not isinstance(cell, (RNNCell, SpatialRNNCell)):
             msg = f"Expected cell to be an instance of RNNCell or SpatialRNNCell, got {type(cell)}"
-            raise TypeError(msg)
+            raise ValueError(msg)
 
         if not isinstance(backward_cell, (RNNCell, SpatialRNNCell, type(None))):
             msg = "Expected backward_cell to be an instance of RNNCell, SpatialRNNCell or None"
             msg += f", got {type(backward_cell)}"
-            raise TypeError(msg)
+            raise ValueError(msg)
 
         self.cell = cell
         self.backward_cell = backward_cell
@@ -830,12 +830,12 @@ class ScanRNN:
 
         if not isinstance(state, (type(None), RNNState)):
             msg = f"Expected state to be an instance of RNNState, got {type(state)}"
-            raise TypeError(msg)
+            raise ValueError(msg)
 
         # backward cell
         if not isinstance(backward_state, (type(None), RNNState)):
             msg = f"Expected backward_state to be an instance of RNNState, got {type(backward_state)}"
-            raise TypeError(msg)
+            raise ValueError(msg)
 
         if isinstance(self.cell, SpatialRNNCell):
             # (time steps, in_features, *spatial_dims)

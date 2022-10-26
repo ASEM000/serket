@@ -18,9 +18,11 @@ def _generate_forward_offsets(
         tuple[float | int, ...]: central difference offsets
     """
     if derivative < 1:
-        raise ValueError(f"derivative must be >= 1, got {derivative}")
+        msg = f"derivative must be >= 1 for forward offset generation, got {derivative}"
+        raise ValueError(msg)
     if accuracy < 1:
-        raise ValueError(f"accuracy must be >= 2, got {accuracy}")
+        msg = f"accuracy must be >= 2 for forward offset generation, got {accuracy}"
+        raise ValueError(msg)
 
     return tuple(range(0, (derivative + accuracy)))
 
@@ -37,9 +39,11 @@ def _generate_central_offsets(
         tuple[float | int, ...]: central difference offsets
     """
     if derivative < 1:
-        raise ValueError(f"derivative must be >= 1, got {derivative}")
+        msg = f"derivative must be >= 1 for central offset generation, got {derivative}"
+        raise ValueError(msg)
     if accuracy < 2:
-        raise ValueError(f"accuracy must be >= 2, got {accuracy}")
+        msg = f"accuracy must be >= 2 for central offset generation, got {accuracy}"
+        raise ValueError(msg)
 
     return tuple(
         range(-((derivative + accuracy - 1) // 2), (derivative + accuracy - 1) // 2 + 1)
@@ -58,9 +62,11 @@ def _generate_backward_offsets(
         tuple[float | int, ...]: central difference offsets
     """
     if derivative < 1:
-        raise ValueError(f"derivative must be >= 1, got {derivative}")
+        msg = f"derivative must be >= 1 for back offset generation, got {derivative}"
+        raise ValueError(msg)
     if accuracy < 1:
-        raise ValueError(f"accuracy must be >= 2, got {accuracy}")
+        msg = f"accuracy must be >= 2 for back offset generation, got {accuracy}"
+        raise ValueError(msg)
 
     return tuple(range(-(derivative + accuracy - 1), 1))
 

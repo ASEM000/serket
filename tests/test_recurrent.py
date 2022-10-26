@@ -52,8 +52,19 @@
 
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 
-from serket.nn.recurrent import ConvLSTM1DCell, LSTMCell, ScanRNN, SimpleRNNCell
+from serket.nn.recurrent import (
+    ConvLSTM1DCell,
+    ConvLSTM2DCell,
+    ConvLSTM3DCell,
+    LSTMCell,
+    ScanRNN,
+    SeparableConvLSTM1DCell,
+    SeparableConvLSTM2DCell,
+    SeparableConvLSTM3DCell,
+    SimpleRNNCell,
+)
 
 # import pytest
 
@@ -328,6 +339,15 @@ def test_lstm():
 
     npt.assert_allclose(y, sk_layer(x), atol=1e-5)
 
+    cell = LSTMCell(
+        in_features=None,
+        hidden_features=hidden_features,
+        recurrent_weight_init_func="glorot_uniform",
+    )
+
+    sk_layer = ScanRNN(cell, return_sequences=True)
+    assert sk_layer(x).shape == (10, 3)
+
 
 def test_conv_lstm1d():
     w_in_to_hidden = jnp.array(
@@ -505,6 +525,20 @@ def test_conv_lstm1d():
 
     assert jnp.allclose(res_sk, y, atol=1e-5)
 
+    cell = ConvLSTM1DCell(
+        in_features=None,
+        out_features=out_features,
+        recurrent_act_func="sigmoid",
+        kernel_size=3,
+        padding="same",
+        weight_init_func="glorot_uniform",
+        recurrent_weight_init_func="glorot_uniform",
+        bias_init_func="zeros",
+    )
+
+    res_sk = ScanRNN(cell, return_sequences=False)(x)
+    assert res_sk.shape == (3, 3)
+
 
 def test_bilstm():
     # batch_size = 1
@@ -676,3 +710,63 @@ def test_lazy_rnn():
     right = ConvLSTM1DCell(None, 10, 3)  # in_features, hidden_features
     assert ScanRNN(left, right)(x).shape == (20, 5)
     assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5)
+
+
+def test_rnn_error():
+    with pytest.raises(ValueError):
+        ScanRNN(None)
+
+    with pytest.raises(ValueError):
+        ScanRNN(SimpleRNNCell(3, 3), 1)
+
+    layer = ScanRNN(SimpleRNNCell(3, 3), SimpleRNNCell(3, 3))
+    with pytest.raises(ValueError):
+        layer(jnp.ones([10, 3]), 1.0)
+
+    with pytest.raises(AssertionError):
+        layer(jnp.ones([10, 3, 3]))
+
+
+def test_conv_lstm2d():
+    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
+    left = ConvLSTM2DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5, 5)  # hidden_features, spatial_features
+    right = ConvLSTM2DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5)
+
+
+def test_conv_lstm3d():
+    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
+    left = ConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5, 5, 5)  # hidden_features, spatial_features
+    right = ConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)
+
+
+def test_separable_conv_lstm1d():
+    x = jnp.ones([10, 3, 5])  # time_steps, in_features, spatial_features
+    left = SeparableConvLSTM1DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5)  # hidden_features, spatial_features
+    right = SeparableConvLSTM1DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5)
+
+
+def test_separable_conv_lstm2d():
+    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
+    left = SeparableConvLSTM2DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5, 5)  # hidden_features, spatial_features
+    right = SeparableConvLSTM2DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5)
+
+
+def test_separable_conv_lstm3d():
+    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
+    left = SeparableConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5, 5, 5)  # hidden_features, spatial_features
+    right = SeparableConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)

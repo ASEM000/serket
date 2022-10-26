@@ -43,7 +43,7 @@ class Sequential:
             setattr(self, name, layer)
 
         field_mapping = {**dict(self.__treeclass_fields__), **field_mapping}
-        object.__setattr__(self, "__treeclass_fields__", field_mapping)
+        setattr(self, "__treeclass_fields__", field_mapping)
 
     def __getitem__(self, key: str | int | slice):
         if isinstance(key, str):

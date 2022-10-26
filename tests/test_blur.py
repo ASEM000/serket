@@ -62,6 +62,12 @@ def test_lazy_blur():
     layer = GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0)
     assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
 
+    layer = AvgBlur2D(None, 3)
+    assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
+
+    layer = Filter2D(None, jnp.ones([3, 3]))
+    assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
+
     with pytest.raises(ValueError):
         jax.jit(GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0))(
             jnp.ones([10, 5, 5])

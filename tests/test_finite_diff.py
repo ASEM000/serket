@@ -1,9 +1,17 @@
 # import jax
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 from jax.experimental import enable_x64
 
 from serket.fd import (
+    Curl,
+    Difference,
+    Divergence,
+    Gradient,
+    Hessian,
+    Jacobian,
+    Laplacian,
     curl,
     difference,
     divergence,
@@ -11,6 +19,12 @@ from serket.fd import (
     hessian,
     jacobian,
     laplacian,
+)
+from serket.fd.utils import (
+    _generate_backward_offsets,
+    _generate_central_offsets,
+    _generate_forward_offsets,
+    generate_finitediff_coeffs,
 )
 
 
@@ -24,6 +38,9 @@ def test_difference():
         npt.assert_allclose(dFdX, jnp.cos(X) * jnp.cos(Y), rtol=1e-3)
 
         dFdY = difference(F, step_size=dy, axis=1, accuracy=3)
+        npt.assert_allclose(dFdY, -jnp.sin(X) * jnp.sin(Y), atol=1e-7)
+
+        dFdY = Difference(step_size=dy, axis=1, accuracy=3)(F)
         npt.assert_allclose(dFdY, -jnp.sin(X) * jnp.sin(Y), atol=1e-7)
 
         # 1 4 6 3 2
@@ -63,6 +80,13 @@ def test_divergence():
         divZ_true = 2 * X + 3 * Y**2  # (dF1/dx) + (dF2/dy)
         npt.assert_allclose(divZ, divZ_true, atol=5e-7)
 
+        divZ = divergence(F, step_size=(dx, dy), accuracy=7, keepdims=True)
+        divZ_true = 2 * X + 3 * Y**2  # (dF1/dx) + (dF2/dy)
+        npt.assert_allclose(divZ, divZ_true[None], atol=5e-7)
+
+        divZ = Divergence(step_size=(dx, dy), accuracy=7, keepdims=True)(F)
+        npt.assert_allclose(divZ, divZ_true[None], atol=5e-7)
+
 
 def test_gradient():
     with enable_x64():
@@ -72,6 +96,9 @@ def test_gradient():
         F = X**2 + Y**3
         gradF = gradient(F, step_size=(dx, dy), accuracy=7)
         gradF_true = jnp.stack([2 * X, 3 * Y**2], axis=0)
+        npt.assert_allclose(gradF, gradF_true, atol=5e-7)
+
+        gradF = Gradient(step_size=(dx, dy), accuracy=7)(F)
         npt.assert_allclose(gradF, gradF_true, atol=5e-7)
 
 
@@ -84,6 +111,8 @@ def test_laplacian():
         Z = X**4 + Y**3
         laplacianZ = laplacian(Z, step_size=(dx, dy), accuracy=10)
         laplacianZ_true = 12 * X**2 + 6 * Y
+
+        laplacianZ = Laplacian(step_size=(dx, dy), accuracy=10)(Z)
         npt.assert_allclose(laplacianZ, laplacianZ_true, atol=1e-4)
 
 
@@ -105,6 +134,9 @@ def test_curl():
 
         npt.assert_allclose(curl_Z, curl_Z_true, atol=1e-7)
 
+        curl_Z = Curl(step_size=(dx, dy, dz), accuracy=5)(F)
+        npt.assert_allclose(curl_Z, curl_Z_true, atol=1e-7)
+
         x, y = [jnp.linspace(-1, 1, 50)] * 2
         dx, dy = x[1] - x[0], y[1] - y[0]
         X, Y = jnp.meshgrid(x, y, indexing="ij")
@@ -113,6 +145,12 @@ def test_curl():
         F = jnp.stack([F1, F2], axis=0)
         res = curl(F, accuracy=4, step_size=dx, keepdims=False)
         npt.assert_allclose(res, -jnp.sin(X) - jnp.cos(Y), atol=1e-4)
+
+        res = curl(F, accuracy=4, step_size=dx, keepdims=True)
+        npt.assert_allclose(res[0], -jnp.sin(X) - jnp.cos(Y), atol=1e-4)
+
+    with pytest.raises(ValueError):
+        curl(F[None], accuracy=4, step_size=dx, keepdims=True)
 
 
 def test_jacobian():
@@ -148,6 +186,9 @@ def test_jacobian():
 
         npt.assert_allclose(JY, JY_true, rtol=1e-3, atol=1e-5)
 
+        JY = Jacobian(accuracy=5, step_size=(dx1, dx2, dx3))(Y)
+        npt.assert_allclose(JY, JY_true, rtol=1e-3, atol=1e-5)
+
 
 def test_hessian():
     with enable_x64():
@@ -170,6 +211,9 @@ def test_hessian():
         H_true = jnp.array(
             [[-jnp.sin(X), jnp.zeros_like(X)], [jnp.zeros_like(X), -jnp.cos(Y)]]
         )
+        npt.assert_allclose(H, H_true, atol=1e-7)
+
+        H = Hessian(accuracy=4, step_size=(dx, dy))(F)
         npt.assert_allclose(H, H_true, atol=1e-7)
 
         # x, y, z = [jnp.linspace(0, 0.5, 100)] * 3
@@ -198,3 +242,29 @@ def test_hessian():
         # )
 
         # npt.assert_allclose(H, H_true, atol=1e-7)
+
+
+def test_generate_coeffs():
+    with pytest.raises(ValueError):
+        _generate_backward_offsets(derivative=0, accuracy=1)
+    with pytest.raises(ValueError):
+        _generate_backward_offsets(derivative=1, accuracy=0)
+
+    with pytest.raises(ValueError):
+        _generate_forward_offsets(derivative=0, accuracy=1)
+    with pytest.raises(ValueError):
+        _generate_forward_offsets(derivative=1, accuracy=0)
+
+    with pytest.raises(ValueError):
+        _generate_central_offsets(derivative=0, accuracy=1)
+    with pytest.raises(ValueError):
+        _generate_central_offsets(derivative=1, accuracy=0)
+
+    with pytest.raises(ValueError):
+        generate_finitediff_coeffs(offsets=[1, 2], derivative=2)
+
+
+def test_difference_error():
+    x = jnp.ones([2])
+    with pytest.raises(ValueError):
+        difference(x, accuracy=2)

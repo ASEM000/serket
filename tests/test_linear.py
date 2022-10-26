@@ -98,8 +98,15 @@ def test_multi_linear():
     lhs = Multilinear(None, 10)
     assert lhs(x, x, x).shape == (100, 10)
 
+    with pytest.raises(ValueError):
+        Multilinear([1, 2], 10)
+
 
 def test_general_linear():
+    x = jnp.ones([1, 2, 3, 4])
+    layer = GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
+    assert layer(x).shape == (3, 4, 5)
+
     x = jnp.ones([1, 2, 3, 4])
     layer = GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
     assert layer(x).shape == (3, 4, 5)
@@ -120,3 +127,9 @@ def test_general_linear():
 
     with pytest.raises(ValueError):
         GeneralLinear(in_features=(1,), in_axes=(0, -3), out_features=5)
+
+
+def test_lazy_general_linear():
+    x = jnp.ones([1, 2, 3, 4])
+    layer = GeneralLinear(None, in_axes=(0, 1), out_features=5)
+    assert layer(x).shape == (3, 4, 5)

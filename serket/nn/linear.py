@@ -83,9 +83,8 @@ class Multilinear:
             delattr(self, "_partial_init")
 
         if not isinstance(in_features, (tuple, int)):
-            raise TypeError(
-                f"Expected tuple or int for in_features, got {type(in_features)}"
-            )
+            msg = f"Expected tuple or int for in_features, got {type(in_features)}"
+            raise ValueError(msg)
 
         self.in_features = in_features
         self.out_features = out_features
@@ -238,18 +237,21 @@ class GeneralLinear:
             This layer is similar to to flax linen's DenseGeneral, the difference is that
             this layer uses einsum to apply the linear layer to the specified axes.
         """
+        if in_axes is None:
+            raise ValueError("in_axes must be specified for GeneralLinear")
 
         if (
             any([i is None for i in in_features])
             if isinstance(in_features, Sequence)
             else (in_features is None)
-        ) or in_axes is None:
+        ):
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
-
+            self.in_axes = in_axes
             self._partial_init = ft.partial(
                 GeneralLinear.__init__,
                 self,
+                in_axes=in_axes,
                 out_features=out_features,
                 weight_init_func=weight_init_func,
                 bias_init_func=bias_init_func,
@@ -294,7 +296,9 @@ class GeneralLinear:
         if hasattr(self, "_partial_init"):
             if isinstance(x, jax.core.Tracer):
                 raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[-1], in_axes=-1)
+
+            in_features = tuple(x.shape[i] for i in self.in_axes)
+            self._partial_init(in_features=in_features)
 
         # ensure negative axes
         axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)
