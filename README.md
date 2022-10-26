@@ -2,7 +2,7 @@
 <div align="center">
 <img width="350px" src="assets/serketLogo.svg"></div>
 
-<h2 align="center">The ✨Magical✨ JAX NN Library.</h2>
+<h2 align="center">The ✨Magical✨ JAX Scientific ML Library.</h2>
 <h5 align = "center"> *Serket is the goddess of magic in Egyptian mythology 
 
 [**Installation**](#Installation)
@@ -13,7 +13,7 @@
 
 
 ![Tests](https://github.com/ASEM000/serket/actions/workflows/tests.yml/badge.svg)
-![pyver](https://img.shields.io/badge/python-3.7%203.8%203.9%203.10-red)
+![pyver](https://img.shields.io/badge/python-3.7%203.8%203.9%203.10%203.11-blue)
 ![codestyle](https://img.shields.io/badge/codestyle-black-lightgrey)
 [![Downloads](https://pepy.tech/badge/serket)](https://pepy.tech/project/serket)
 [![codecov](https://codecov.io/gh/ASEM000/serket/branch/main/graph/badge.svg?token=C6NXOK9EVS)](https://codecov.io/gh/ASEM000/serket)
@@ -37,7 +37,7 @@ pip install git+https://github.com/ASEM000/serket
 ## 📖 Description<a id="Description"></a>
 - `serket` aims to be the most intuitive and easy-to-use physics-based Neural network library in JAX.
 - `serket` is built on top of [`pytreeclass`](https://github.com/ASEM000/pytreeclass)
-- `serket` currently implements 
+- `serket` is fully transparent to `jax` transformation (e.g. `vmap`,`grad`,`jit`,...)
 
 <div align="center">
 
@@ -729,7 +729,7 @@ plt.legend()
 
 <details>
 <summary> 
-Reconstructing a vector field F using `∇.F = 0` condition
+Reconstructing a vector field F using ∇.F = 0 and ∇xF=2k condition
 </summary>
 
 ```python
@@ -740,15 +740,12 @@ import optax
 
 import serket as sk
 
-x, y = [jnp.linspace(-1, 1)] * 2
+x, y = [jnp.linspace(-1, 1,50)] * 2
 dx, dy = [x[1] - x[0]] * 2
 X, Y = jnp.meshgrid(x, y, indexing="ij")
 
-# we will try to estimate F=(Y,-X) by training a NN 
-# With collocation points X,Y as input
-# With the following conditions 1) Divergence free 2) F(0,0)=0 
-F1 = Y
-F2 = -X
+F1 = -Y
+F2 = +X
 F = jnp.stack([F1, F2], axis=0)
 
 NN = sk.nn.Sequential(
@@ -767,9 +764,10 @@ optim = optax.adam(1e-3)
 @jax.value_and_grad
 def loss_func(NN, F):
     F_pred = NN(F)
-    div = sk.fd.divergence(F_pred, accuracy=5, step_size=(dx, dy))
+    div = sk.fd.divergence(F_pred, accuracy=5, step_size=(dx, dy))  
     loss = jnp.mean(div**2)  # divergence free condition
-    loss += jnp.mean(NN(jnp.zeros_like(F)) ** 2)  # 0 at origin
+    curl = sk.fd.curl(F_pred, accuracy=2, step_size=(dx, dy))
+    loss += jnp.mean((curl-jnp.ones_like(curl)*2)**2)  # curl condition 
     return loss
 
 
@@ -789,15 +787,16 @@ def train(NN, Z, optim_state, epochs):
 
 Z = jnp.stack([X, Y], axis=0)  # collocation points
 optim_state = optim.init(NN)  # initialise optimiser
-epochs = 1000
+epochs = 1_000
 NN, _, loss = train(NN, Z, optim_state, epochs)
 
 Fpred = NN(Z)  # predicted field
 
-plt.figure(figsize=(7, 7))
+plt.figure(figsize=(10, 10))
 plt.quiver(X, Y, Fpred[0], Fpred[1], color="r", label="pred")
 plt.quiver(X, Y, F1, F2, color="k", alpha=0.5, label="true")
 plt.legend()
+
 ```
 
 ![image](assets/nn_div_free.svg)
