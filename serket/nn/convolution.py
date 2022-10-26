@@ -166,8 +166,8 @@ class ConvND:
         )
 
         if self.bias is None:
-            return y[0]
-        return (y + self.bias)[0]
+            return jnp.squeeze(y, 0)
+        return jnp.squeeze((y + self.bias), 0)
 
 
 @pytc.treeclass
@@ -625,7 +625,7 @@ class DepthwiseConvND:
             self._partial_init(in_features=x.shape[0])
 
         y = jax.lax.conv_general_dilated(
-            lhs=x[None],
+            lhs=jnp.expand_dims(x, axis=0),
             rhs=self.weight,
             window_strides=self.strides,
             padding=self.padding,
@@ -636,8 +636,8 @@ class DepthwiseConvND:
         )
 
         if self.bias is None:
-            return y[0]
-        return (y + self.bias)[0]
+            return jnp.squeeze(y, 0)
+        return jnp.squeeze((y + self.bias), 0)
 
 
 @pytc.treeclass
@@ -1082,7 +1082,7 @@ class ConvNDLocal:
             self._partial_init(in_features=x.shape[0], in_size=x.shape[1:])
 
         y = jax.lax.conv_general_dilated_local(
-            lhs=x[None],
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             window_strides=self.strides,
             padding=self.padding,
@@ -1093,8 +1093,8 @@ class ConvNDLocal:
         )
 
         if self.bias is None:
-            return y[0]
-        return (y + self.bias)[0]
+            return jnp.squeeze(y, 0)
+        return jnp.squeeze((y + self.bias), 0)
 
 
 @pytc.treeclass
