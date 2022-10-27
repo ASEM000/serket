@@ -45,29 +45,29 @@ pip install git+https://github.com/ASEM000/serket
 
 | Group| Function/Layer|
 | ------------- | ------------- |
-|Finite difference layer|`Difference`: apply finite difference to input array to any derivative order and accuracy|
-|Finite difference functions| - `difference`: finite difference of array with any accuracy and derivative order  <br> -`generate_finitediff_coeffs` : generate coeffs using sample points and derivative order <br> - `fgrad`: differentiate _functions_ (similar to `jax.grad`) with custom accuracy and derivative order|
-|Vector operator layers|`Curl`, `Divergence`, `Gradient`, `Laplacian`, `Jacobian`, `Hessian`|
-|Vector operator function| `curl`, `divergence`, `gradient`, `laplacian`, `jacobian`, `hessian`|
+|Finite difference layer| - `Difference`: apply finite difference to input array to any derivative order and accuracy|
+|Finite difference functions| - `difference`: finite difference of array with any accuracy and derivative order  <br> - `generate_finitediff_coeffs` : generate coeffs using sample points and derivative order <br> - `fgrad`: differentiate _functions_ (similar to `jax.grad`) with custom accuracy and derivative order|
+|Vector operator layers|- `Curl`, `Divergence`, `Gradient`, `Laplacian`, `Jacobian`, `Hessian`|
+|Vector operator function| - `curl`, `divergence`, `gradient`, `laplacian`, `jacobian`, `hessian`|
 
 ### 🧠 Neural network package: `serket.nn` 🧠
 | Group | Layers |
 | ------------- | ------------- |
-| Linear  | `Linear`, `Bilinear`, `Multilinear`, `GeneralLinear`, `Identity`   |
-|Densely connected|`FNN` (Fully connected network), `PFNN` (Parallel fully connected network)|
-| Convolution | `Conv1D`, `Conv2D`, `Conv3D`, `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`, `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`, `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal` |
-| Containers| `Sequential`, `Lambda` |
-|Pooling|`MaxPool1D`, `MaxPool2D`, `MaxPool3D`, `AvgPool1D`, `AvgPool2D`, `AvgPool3D` `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` `LPPool1D`, `LPPool2D`,`LPPool3D` , `AdaptivePool1D`, `AdaptivePool2D`, `AdaptivePool3D`,`AdaptiveConcatPool1D`,`AdaptiveConcatPool2D`,`AdaptiveConcatPool3D` (`kernex` backend)|
-|Reshaping|`Flatten`, `Unflatten`, `FlipLeftRight2D`, `FlipUpDown2D`, `Repeat1D`, `Repeat2D`, `Repeat3D`, `Resize1D`, `Resize2D`, `Resize3D`, `Upsample1D`, `Upsample2D`, `Upsample3D`, `Pad1D`, `Pad2D`, `Pad3D` |
-|Crop|`Crop1D`, `Crop2D`, |
-|Normalization|`LayerNorm`, `InstanceNorm`, `GroupNorm`|
-|Blurring| `AvgBlur2D`, `GaussianBlur2D`|
-|Dropout|`Dropout`, `Dropout1D`, `Dropout2D`, `Dropout3D`, |
-|Random transforms|`RandomCrop1D`, `RandomCrop2D`, `RandomApply`, `RandomCutout1D`, `RandomCutout2D`, `RandomZoom2D`, `RandomContrast2D` |
-|Misc|`HistogramEqualization2D`, `AdjustContrast2D`, `Filter2D`, `PixelShuffle`|
-|Activations|`AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br>`CeLU`,`ELU`,`GELU`,`GLU`<br>,`HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br>`LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,<br>`SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake`|
-|Recurrent|`SimpleRNNCell`, `LSTMCell`, `ConvLSTM1D`, `ConvLSTM2D`, `ConvLSTM3D`, `SeparableConvLSTM1DCell`, `SeparableConvLSTM2DCell`, `SeparableConvLSTM3DCell`|
-|Blocks|`VGG16Block`, `VGG19Block`, `UNetBlock`|
+| Linear  | - `Linear`, `Bilinear`, `Multilinear`, `GeneralLinear`, `Identity`   |
+|Densely connected| - `FNN` (Fully connected network), <br> - `PFNN` (Parallel fully connected network)|
+| Convolution | - `Conv1D`, `Conv2D`, `Conv3D`, <br> - `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`,<br> - `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`,  <br> - `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, <br> - `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal` |
+| Containers| - `Sequential`, `Lambda` |
+|Pooling <br> (`kernex` backend)|- `MaxPool1D`, `MaxPool2D`, `MaxPool3D`, <br> - `AvgPool1D`, `AvgPool2D`, `AvgPool3D` <br> - `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, <br> - `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` <br> - `LPPool1D`, `LPPool2D`,`LPPool3D` , <br> - `AdaptivePool1D`, `AdaptivePool2D`, `AdaptivePool3D`,<br> - `AdaptiveConcatPool1D`,`AdaptiveConcatPool2D`,`AdaptiveConcatPool3D` |
+|Reshaping|- `Flatten`, `Unflatten`, <br> - `FlipLeftRight2D`, `FlipUpDown2D`, <br> - `Repeat1D`, `Repeat2D`, `Repeat3D`, <br> - `Resize1D`, `Resize2D`, `Resize3D`, <br> - `Upsample1D`, `Upsample2D`, `Upsample3D`,<br> - `Pad1D`, `Pad2D`, `Pad3D` |
+|Crop| - `Crop1D`, `Crop2D`, |
+|Normalization|- `LayerNorm`, `InstanceNorm`, `GroupNorm`|
+|Blurring| - `AvgBlur2D`, `GaussianBlur2D`|
+|Dropout|- `Dropout`, ,<br> - `Dropout1D`, `Dropout2D`, `Dropout3D`, |
+|Random transforms| - `RandomCrop1D`, `RandomCrop2D`, <br> - `RandomApply`, <br> - `RandomCutout1D`, `RandomCutout2D`,<br> - `RandomZoom2D`, <br> - `RandomContrast2D` |
+|Misc| - `HistogramEqualization2D`, `AdjustContrast2D`, `Filter2D`, `PixelShuffle2D`|
+|Activations|- `AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br> - `CeLU`,`ELU`,`GELU`,`GLU`<br>- `HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br> - `LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> - `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,<br> - `SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake`|
+|Recurrent| - `SimpleRNNCell`, `LSTMCell`, `GRUCell`, <br> - `ConvLSTM1D`, `ConvLSTM2D`, `ConvLSTM3D`, <br> - `SeparableConvLSTM1DCell`, `SeparableConvLSTM2DCell`, `SeparableConvLSTM3DCell`   <br> - `ConvGRU1DCell`,`ConvGRU2DCell`,`ConvGRU3DCell`,<br> - `SeparableConvGRU1DCell`,`SeparableConvGRU2DCell`,`SeparableConvGRU3DCell`|
+|Blocks|- `VGG16Block`, `VGG19Block`, `UNetBlock`|
 
 
 
