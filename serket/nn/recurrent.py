@@ -1396,7 +1396,7 @@ class ScanRNN:
         if isinstance(self.cell, SpatialRNNCell):
             # (time steps, in_features, *spatial_dims)
             msg = f"Expected x to have {self.cell.ndim + 2}"  # account for time and in_features
-            msg += f"dimensions corresponds to (timesteps, in_features, *spatial_dims), got {x.ndim}"
+            msg += f" dimensions corresponds to (timesteps, in_features, *spatial_dims), got {x.ndim}"
             assert x.ndim == (self.cell.ndim + 2), msg
             msg = f"Expected x to have shape (timesteps, {self.cell.in_features}, *spatial_dims)"
             msg += f", got {x.shape}"

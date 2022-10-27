@@ -55,12 +55,18 @@ import numpy.testing as npt
 import pytest
 
 from serket.nn.recurrent import (
+    ConvGRU1DCell,
+    ConvGRU2DCell,
+    ConvGRU3DCell,
     ConvLSTM1DCell,
     ConvLSTM2DCell,
     ConvLSTM3DCell,
     GRUCell,
     LSTMCell,
     ScanRNN,
+    SeparableConvGRU1DCell,
+    SeparableConvGRU2DCell,
+    SeparableConvGRU3DCell,
     SeparableConvLSTM1DCell,
     SeparableConvLSTM2DCell,
     SeparableConvLSTM3DCell,
@@ -832,5 +838,59 @@ def test_separable_conv_lstm3d():
     left = SeparableConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
     assert ScanRNN(left)(x).shape == (10, 5, 5, 5)  # hidden_features, spatial_features
     right = SeparableConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)
+
+
+def test_conv_gru1d():
+    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
+    left = ConvGRU1DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 3)  # hidden_features, spatial_features
+    right = ConvGRU1DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 3)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 3)
+
+
+def test_conv_gru2d():
+    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
+    left = ConvGRU2DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5, 5)  # hidden_features, spatial_features
+    right = ConvGRU2DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5)
+
+
+def test_conv_gru3d():
+    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
+    left = ConvGRU3DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5, 5, 5)  # hidden_features, spatial_features
+    right = ConvGRU3DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)
+
+
+def test_separable_conv_gru1d():
+    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
+    left = SeparableConvGRU1DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 3)  # hidden_features, spatial_features
+    right = ConvGRU1DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 3)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 3)
+
+
+def test_separable_conv_gru2d():
+    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
+    left = SeparableConvGRU2DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5, 5)  # hidden_features, spatial_features
+    right = ConvGRU2DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left, right)(x).shape == (20, 5, 5)
+    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5)
+
+
+def test_separable_conv_gru3d():
+    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
+    left = SeparableConvGRU3DCell(None, 10, 3)  # in_features, hidden_features
+    assert ScanRNN(left)(x).shape == (10, 5, 5, 5)  # hidden_features, spatial_features
+    right = ConvGRU3DCell(None, 10, 3)  # in_features, hidden_features
     assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
     assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)
