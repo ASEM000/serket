@@ -17,7 +17,9 @@ class Repeat1D:
     def __init__(self, scale: int = 1):
         """repeats input along axis 1"""
         self.scale = _check_and_return_positive_int(scale, "scale")
+        self.ndim = 1
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         @kex.kmap(kernel_size=(-1, -1), strides=(1, 1), padding="valid")
         def _repeat(x):
@@ -31,7 +33,9 @@ class Repeat2D:
     def __init__(self, scale: int = 1):
         """repeats input along axes 1,2"""
         self.scale = _check_and_return_positive_int(scale, "scale")
+        self.ndim = 2
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         @kex.kmap(kernel_size=(-1, -1, -1), strides=(1, 1, 1), padding="valid")
         def _repeat(x):
@@ -45,7 +49,9 @@ class Repeat3D:
     def __init__(self, scale: int = 1):
         """repeats input along axes 1,2,3"""
         self.scale = _check_and_return_positive_int(scale, "scale")
+        self.ndim = 3
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         @kex.kmap(kernel_size=(-1, -1, -1, -1), strides=(1, 1, 1, 1), padding="valid")
         def _repeat(x):
@@ -97,6 +103,7 @@ class ResizeND:
         self.antialias = antialias
         self.ndim = ndim
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert x.ndim == self.ndim + 1, f"input must be {self.ndim}D"
 

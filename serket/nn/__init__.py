@@ -92,11 +92,18 @@ from .pooling import (
 from .preprocessing import HistogramEqualization2D, PixelShuffle2D
 from .random_transform import RandomApply, RandomZoom2D
 from .recurrent import (
+    ConvGRU1DCell,
+    ConvGRU2DCell,
+    ConvGRU3DCell,
     ConvLSTM1DCell,
     ConvLSTM2DCell,
     ConvLSTM3DCell,
+    GRUCell,
     LSTMCell,
     ScanRNN,
+    SeparableConvGRU1DCell,
+    SeparableConvGRU2DCell,
+    SeparableConvGRU3DCell,
     SeparableConvLSTM1DCell,
     SeparableConvLSTM2DCell,
     SeparableConvLSTM3DCell,
@@ -260,6 +267,7 @@ __all__ = (
     "RandomContrast2D",
     # RNN
     "LSTMCell",
+    "GRUCell",
     "SimpleRNNCell",
     "ScanRNN",
     "ConvLSTM1DCell",
@@ -268,4 +276,10 @@ __all__ = (
     "SeparableConvLSTM1DCell",
     "SeparableConvLSTM2DCell",
     "SeparableConvLSTM3DCell",
+    "ConvGRU1DCell",
+    "ConvGRU2DCell",
+    "ConvGRU3DCell",
+    "SeparableConvGRU1DCell",
+    "SeparableConvGRU2DCell",
+    "SeparableConvGRU3DCell",
 )

@@ -105,7 +105,7 @@ class Multilinear:
         else:
             self.bias = self.bias_init_func(key, (out_features,))
 
-    @_lazy_call(_multilinear_infer_func, ("_partial_init",))
+    @_lazy_call(_multilinear_infer_func, "_partial_init")
     def __call__(self, *x, **kwargs) -> jnp.ndarray:
         einsum_string = _multilinear_einsum_string(len(self.in_features))
         x = jnp.einsum(einsum_string, *x, self.weight)
@@ -289,7 +289,7 @@ class GeneralLinear:
         else:
             self.bias = self.bias_init_func(key, (self.out_features,))
 
-    @_lazy_call(_general_infer_func, ("_partial_init",))
+    @_lazy_call(_general_infer_func, "_partial_init")
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         # ensure negative axes
         axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)

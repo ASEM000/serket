@@ -58,6 +58,7 @@ from serket.nn.recurrent import (
     ConvLSTM1DCell,
     ConvLSTM2DCell,
     ConvLSTM3DCell,
+    GRUCell,
     LSTMCell,
     ScanRNN,
     SeparableConvLSTM1DCell,
@@ -347,6 +348,69 @@ def test_lstm():
 
     sk_layer = ScanRNN(cell, return_sequences=True)
     assert sk_layer(x).shape == (10, 3)
+
+
+def test_gru():
+    w1 = jnp.array(
+        [
+            [
+                -0.04667467,
+                0.25340378,
+                0.26873875,
+                0.15961742,
+                0.56519365,
+                0.46263158,
+                -0.0030899,
+                0.31380886,
+                0.44481528,
+            ]
+        ]
+    )
+
+    w2 = jnp.array(
+        [
+            [
+                0.23404205,
+                0.10193896,
+                0.27892762,
+                -0.488236,
+                -0.4173184,
+                -0.0588184,
+                0.41350085,
+                0.36151117,
+                -0.45407838,
+            ],
+            [
+                -0.560196,
+                -0.22648495,
+                -0.12656957,
+                0.31881046,
+                0.47110367,
+                0.30805635,
+                0.41259462,
+                0.40002275,
+                -0.0368616,
+            ],
+            [
+                0.5745573,
+                0.4343021,
+                0.42046744,
+                -0.09401041,
+                0.5539224,
+                -0.13675115,
+                -0.5197817,
+                -0.21241805,
+                -0.16732433,
+            ],
+        ]
+    )
+
+    cell = GRUCell(1, 3, bias_init_func=None)
+    cell = cell.at["in_to_hidden.weight"].set(w1)
+    cell = cell.at["hidden_to_hidden.weight"].set(w2)
+    y = jnp.array([[-0.00142191, 0.11011646, 0.1613554]])
+    ypred = ScanRNN(cell, return_sequences=True)(jnp.ones([1, 1]))
+    npt.assert_allclose(y, ypred, atol=1e-4)
 
 
 def test_conv_lstm1d():

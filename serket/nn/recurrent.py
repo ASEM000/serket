@@ -115,7 +115,7 @@ class SimpleRNNCell(RNNCell):
             key=k2,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
     def __call__(
         self, x: jnp.ndarray, state: SimpleRNNState, **kwargs
     ) -> SimpleRNNState:
@@ -213,7 +213,7 @@ class LSTMCell(RNNCell):
             key=k2,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
     def __call__(self, x: jnp.ndarray, state: LSTMState, **kwargs) -> LSTMState:
         msg = f"Expected state to be an instance of LSTMState, got {type(state)}"
         assert isinstance(state, LSTMState), msg
@@ -232,6 +232,106 @@ class LSTMCell(RNNCell):
     def init_state(self) -> LSTMState:
         shape = (self.hidden_features,)
         return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
+
+
+@pytc.treeclass
+class GRUState(RNNState):
+    pass
+
+
+@pytc.treeclass
+class GRUCell(RNNCell):
+    in_to_hidden: Linear
+    hidden_to_hidden: Linear
+
+    def __init__(
+        self,
+        in_features: int,
+        hidden_features: int,
+        *,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """GRU cell that defines the update rule for the hidden state and cell state
+        Args:
+            in_features: the number of input features
+            hidden_features: the number of hidden features
+            weight_init_func: the function to use to initialize the weights
+            bias_init_func: the function to use to initialize the bias
+            recurrent_weight_init_func: the function to use to initialize the recurrent weights
+            act_func: the activation function to use for the hidden state update
+            recurrent_act_func: the activation function to use for the cell state update
+            key: the key to use to initialize the weights
+
+        See:
+            https://keras.io/api/layers/recurrent_layers/gru/
+        """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                # set all fields to None to mark the class as uninitialized
+                # to the user and to avoid errors
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                GRUCell.__init__,
+                self=self,
+                hidden_features=hidden_features,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                recurrent_weight_init_func=recurrent_weight_init_func,
+                act_func=act_func,
+                key=key,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
+        k1, k2 = jr.split(key, 2)
+
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.hidden_features = _check_and_return_positive_int(
+            hidden_features, "hidden_features"
+        )
+        self.act_func = _act_func_map[act_func]
+        self.recurrent_act_func = _act_func_map[recurrent_act_func]
+
+        self.in_to_hidden = Linear(
+            in_features,
+            hidden_features * 3,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=k1,
+        )
+
+        self.hidden_to_hidden = Linear(
+            hidden_features,
+            hidden_features * 3,
+            weight_init_func=recurrent_weight_init_func,
+            bias_init_func=None,
+            key=k2,
+        )
+
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    def __call__(self, x: jnp.ndarray, state: GRUState, **kwargs) -> GRUState:
+        msg = f"Expected state to be an instance of GRUState, got {type(state)}"
+        assert isinstance(state, GRUState), msg
+        h = state.hidden_state
+        xe, xu, xo = jnp.split(self.in_to_hidden(x), 3, axis=-1)
+        he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=-1)
+        e = self.recurrent_act_func(xe + he)
+        u = self.recurrent_act_func(xu + hu)
+        o = self.act_func(xo + (e * ho))
+        h = (1 - u) * o + u * h
+        return GRUState(hidden_state=h)
+
+    def init_state(self) -> GRUState:
+        shape = (self.hidden_features,)
+        return GRUState(jnp.zeros(shape, dtype=jnp.float32))
 
 
 # ------------------------------------------------- Spatial RNN ------------------------------------------------------ #
@@ -347,7 +447,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
     def __call__(
         self, x: jnp.ndarray, state: ConvLSTMNDState, **kwargs
     ) -> ConvLSTMNDState:
@@ -586,7 +686,7 @@ class SeparableConvLSTMNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
     def __call__(
         self, x: jnp.ndarray, state: SeparableConvLSTMNDState, **kwargs
     ) -> SeparableConvLSTMNDState:
@@ -704,6 +804,517 @@ class SeparableConvLSTM3DCell(SeparableConvLSTMNDCell):
             in_features=in_features,
             out_features=out_features,
             kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            recurrent_weight_init_func=recurrent_weight_init_func,
+            act_func=act_func,
+            recurrent_act_func=recurrent_act_func,
+            key=key,
+            ndim=3,
+        )
+
+
+@pytc.treeclass
+class ConvGRUNDState(RNNState):
+    pass
+
+
+@pytc.treeclass
+class ConvGRUNDCell(SpatialRNNCell):
+    in_to_hidden: ConvND
+    hidden_to_hidden: ConvND
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int | tuple[int, ...] = 1,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+        ndim: int = 2,
+    ):
+        """Convolution GRU cell that defines the update rule for the hidden state and cell state
+        Args:
+            in_features: Number of input features
+            out_features: Number of output features
+            kernel_size: Size of the convolutional kernel
+            strides: Stride of the convolution
+            padding: Padding of the convolution
+            input_dilation: Dilation of the input
+            kernel_dilation: Dilation of the convolutional kernel
+            weight_init_func: Weight initialization function
+            bias_init_func: Bias initialization function
+            recurrent_weight_init_func: Recurrent weight initialization function
+            act_func: Activation function
+            recurrent_act_func: Recurrent activation function
+            key: PRNG key
+            ndim: Number of spatial dimensions
+
+        """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                # set all fields to None to mark the class as uninitialized
+                # to the user and to avoid errors
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                ConvGRUNDCell.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                strides=strides,
+                padding=padding,
+                input_dilation=input_dilation,
+                kernel_dilation=kernel_dilation,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                recurrent_weight_init_func=recurrent_weight_init_func,
+                act_func=act_func,
+                recurrent_act_func=recurrent_act_func,
+                ndim=ndim,
+                key=key,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
+        k1, k2 = jr.split(key, 2)
+
+        self.act_func = _act_func_map[act_func]
+        self.recurrent_act_func = _act_func_map[recurrent_act_func]
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.hidden_features = out_features
+        self.ndim = ndim
+
+        self.in_to_hidden = ConvND(
+            in_features,
+            out_features * 3,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=k1,
+            ndim=ndim,
+        )
+
+        self.hidden_to_hidden = ConvND(
+            out_features,
+            out_features * 3,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=recurrent_weight_init_func,
+            bias_init_func=None,
+            key=k2,
+            ndim=ndim,
+        )
+
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    def __call__(
+        self, x: jnp.ndarray, state: ConvGRUNDState, **kwargs
+    ) -> ConvGRUNDState:
+        msg = f"Expected state to be an instance of GRUState, got {type(state)}"
+        assert isinstance(state, ConvGRUNDState), msg
+        h = state.hidden_state
+        xe, xu, xo = jnp.split(self.in_to_hidden(x), 3, axis=0)
+        he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=0)
+        e = self.recurrent_act_func(xe + he)
+        u = self.recurrent_act_func(xu + hu)
+        o = self.act_func(xo + (e * ho))
+        h = (1 - u) * o + u * h
+        return ConvGRUNDState(hidden_state=h)
+
+    def init_state(self, spatial_dim: tuple[int, ...]) -> ConvGRUNDState:
+        msg = f"Expected spatial_dim to be a tuple of length {self.ndim}, got {spatial_dim}"
+        assert len(spatial_dim) == self.ndim, msg
+        shape = (self.hidden_features, *spatial_dim)
+        return ConvGRUNDState(hidden_state=jnp.zeros(shape))
+
+
+@pytc.treeclass
+class ConvGRU1DCell(ConvGRUNDCell):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int,
+        *,
+        strides: int = 1,
+        padding: str | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: int = 1,
+        kernel_dilation: int = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            recurrent_weight_init_func=recurrent_weight_init_func,
+            act_func=act_func,
+            recurrent_act_func=recurrent_act_func,
+            key=key,
+            ndim=1,
+        )
+
+
+@pytc.treeclass
+class ConvGRU2DCell(ConvGRUNDCell):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: tuple[int, int],
+        *,
+        strides: tuple[int, int] = (1, 1),
+        padding: str | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: tuple[int, int] = (1, 1),
+        kernel_dilation: tuple[int, int] = (1, 1),
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            recurrent_weight_init_func=recurrent_weight_init_func,
+            act_func=act_func,
+            recurrent_act_func=recurrent_act_func,
+            key=key,
+            ndim=2,
+        )
+
+
+@pytc.treeclass
+class ConvGRU3DCell(ConvGRUNDCell):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: tuple[int, int, int],
+        *,
+        strides: tuple[int, int, int] = (1, 1, 1),
+        padding: str | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        input_dilation: tuple[int, int, int] = (1, 1, 1),
+        kernel_dilation: tuple[int, int, int] = (1, 1, 1),
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            recurrent_weight_init_func=recurrent_weight_init_func,
+            act_func=act_func,
+            recurrent_act_func=recurrent_act_func,
+            key=key,
+            ndim=3,
+        )
+
+
+@pytc.treeclass
+class SeparableConvGRUNDState(RNNState):
+    pass
+
+
+@pytc.treeclass
+class SeparableConvGRUNDCell(SpatialRNNCell):
+    in_to_hidden: SeparableConvND
+    hidden_to_hidden: SeparableConvND
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+        ndim: int = 2,
+    ):
+        """Separable Convolution GRU cell that defines the update rule for the hidden state and cell state
+        Args:
+            in_features: Number of input features
+            out_features: Number of output features
+            kernel_size: Size of the convolutional kernel
+            strides: Stride of the convolution
+            padding: Padding of the convolution
+            weight_init_func: Weight initialization function
+            bias_init_func: Bias initialization function
+            recurrent_weight_init_func: Recurrent weight initialization function
+            act_func: Activation function
+            recurrent_act_func: Recurrent activation function
+            key: PRNG key
+            ndim: Number of spatial dimensions
+        """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                # set all fields to None to mark the class as uninitialized
+                # to the user and to avoid errors
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                SeparableConvGRUNDCell.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                strides=strides,
+                padding=padding,
+                weight_init_func=weight_init_func,
+                bias_init_func=bias_init_func,
+                recurrent_weight_init_func=recurrent_weight_init_func,
+                act_func=act_func,
+                recurrent_act_func=recurrent_act_func,
+                key=key,
+                ndim=ndim,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
+        k1, k2 = jr.split(key, 2)
+
+        self.act_func = _act_func_map[act_func]
+        self.recurrent_act_func = _act_func_map[recurrent_act_func]
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.hidden_features = out_features
+        self.ndim = ndim
+
+        self.in_to_hidden = SeparableConvND(
+            in_features,
+            out_features * 3,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            depth_multiplier=1,
+            depthwise_weight_init_func=weight_init_func,
+            pointwise_weight_init_func=weight_init_func,
+            pointwise_bias_init_func=bias_init_func,
+            key=k1,
+            ndim=ndim,
+        )
+
+        self.hidden_to_hidden = SeparableConvND(
+            out_features,
+            out_features * 3,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            depth_multiplier=1,
+            depthwise_weight_init_func=recurrent_weight_init_func,
+            pointwise_weight_init_func=recurrent_weight_init_func,
+            pointwise_bias_init_func=None,  # no bias
+            key=k2,
+            ndim=ndim,
+        )
+
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    def __call__(
+        self, x: jnp.ndarray, state: SeparableConvGRUNDState, **kwargs
+    ) -> SeparableConvGRUNDState:
+        msg = f"Expected state to be an instance of GRUState, got {type(state)}"
+        assert isinstance(state, SeparableConvGRUNDState), msg
+        h = state.hidden_state
+        xe, xu, xo = jnp.split(self.in_to_hidden(x), 3, axis=0)
+        he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=0)
+        e = self.recurrent_act_func(xe + he)
+        u = self.recurrent_act_func(xu + hu)
+        o = self.act_func(xo + (e * ho))
+        h = (1 - u) * o + u * h
+        return SeparableConvGRUNDState(hidden_state=h)
+
+    def init_state(self, spatial_dim: tuple[int, ...]) -> SeparableConvGRUNDState:
+        msg = f"Expected spatial_dim to be a tuple of length {self.ndim}, got {spatial_dim}"
+        assert len(spatial_dim) == self.ndim, msg
+        shape = (self.hidden_features, *spatial_dim)
+        return SeparableConvGRUNDState(hidden_state=jnp.zeros(shape))
+
+
+@pytc.treeclass
+class SeparableConvGRU1DCell(SeparableConvGRUNDCell):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int,
+        *,
+        strides: int = 1,
+        padding: str | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """Separable Convolution GRU cell that defines the update rule for the hidden state and cell state
+        Args:
+            in_features: Number of input features
+            out_features: Number of output features
+            kernel_size: Size of the convolutional kernel
+            strides: Stride of the convolution
+            padding: Padding of the convolution
+            weight_init_func: Weight initialization function
+            bias_init_func: Bias initialization function
+            recurrent_weight_init_func: Recurrent weight initialization function
+            act_func: Activation function
+            recurrent_act_func: Recurrent activation function
+            key: PRNG key
+        """
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            recurrent_weight_init_func=recurrent_weight_init_func,
+            act_func=act_func,
+            recurrent_act_func=recurrent_act_func,
+            key=key,
+            ndim=1,
+        )
+
+
+@pytc.treeclass
+class SeparableConvGRU2DCell(SeparableConvGRUNDCell):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: tuple[int, int],
+        *,
+        strides: tuple[int, int] = (1, 1),
+        padding: str | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """Separable Convolution GRU cell that defines the update rule for the hidden state and cell state
+        Args:
+            in_features: Number of input features
+            out_features: Number of output features
+            kernel_size: Size of the convolutional kernel
+            strides: Stride of the convolution
+            padding: Padding of the convolution
+            weight_init_func: Weight initialization function
+            bias_init_func: Bias initialization function
+            recurrent_weight_init_func: Recurrent weight initialization function
+            act_func: Activation function
+            recurrent_act_func: Recurrent activation function
+            key: PRNG key
+        """
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            recurrent_weight_init_func=recurrent_weight_init_func,
+            act_func=act_func,
+            recurrent_act_func=recurrent_act_func,
+            key=key,
+            ndim=2,
+        )
+
+
+@pytc.treeclass
+class SeparableConvGRU3DCell(SeparableConvGRUNDCell):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: tuple[int, int, int],
+        *,
+        strides: tuple[int, int, int] = (1, 1, 1),
+        padding: str | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable | None = "zeros",
+        recurrent_weight_init_func: str | Callable = "orthogonal",
+        act_func: str | None = "tanh",
+        recurrent_act_func: str | None = "sigmoid",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """Separable Convolution GRU cell that defines the update rule for the hidden state and cell state
+        Args:
+            in_features: Number of input features
+            out_features: Number of output features
+            kernel_size: Size of the convolutional kernel
+            strides: Stride of the convolution
+            padding: Padding of the convolution
+            weight_init_func: Weight initialization function
+            bias_init_func: Bias initialization function
+            recurrent_weight_init_func: Recurrent weight initialization function
+            act_func: Activation function
+            recurrent_act_func: Recurrent activation function
+            key: PRNG key
+        """
+        super().__init__(
+            in_features,
+            out_features,
+            kernel_size,
             strides=strides,
             padding=padding,
             weight_init_func=weight_init_func,

@@ -142,7 +142,7 @@ class ConvND:
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
-    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
@@ -372,7 +372,7 @@ class ConvNDTranspose:
             input_dilation=self.kernel_dilation,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
@@ -589,7 +589,7 @@ class DepthwiseConvND:
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
-    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
@@ -800,7 +800,7 @@ class SeparableConvND:
             ndim=ndim,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
@@ -1018,7 +1018,7 @@ class ConvNDLocal:
         else:
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @_lazy_call(_infer_in_features_in_size(axis=0), ("_partial_init",))
+    @_lazy_call(_infer_in_features_in_size(axis=0), "_partial_init")
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:

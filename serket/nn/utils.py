@@ -311,14 +311,15 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
 
 
 def _lazy_call(
-    infer_func: Callable[[Any], dict[str, Any]],
-    partial_kw: tuple[str] = ("_partial_init",),
+    infer_func: Callable[[Any], dict[str, Any]], partial_kw: str | tuple[str]
 ):
     """Decorator to lazily initialize a layer. The layer is initialized when the first call is made.
     Args:
         infer_func: a function that takes the layer as input and returns a dictionary of inferred values.
         partial_kw: the keyword argument that stores the partial function.
     """
+
+    partial_kw = (partial_kw,) if isinstance(partial_kw, str) else partial_kw
 
     def _getattr(item, path):
         """recursive getter"""
