@@ -57,7 +57,7 @@ pip install git+https://github.com/ASEM000/serket
 |Densely connected| - `FNN` (Fully connected network), <br> - `PFNN` (Parallel fully connected network)|
 | Convolution | - `Conv1D`, `Conv2D`, `Conv3D`, <br> - `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`,<br> - `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`,  <br> - `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, <br> - `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal` |
 | Containers| - `Sequential`, `Lambda` |
-|Pooling <br> (`kernex` backend)|- `MaxPool1D`, `MaxPool2D`, `MaxPool3D`, <br> - `AvgPool1D`, `AvgPool2D`, `AvgPool3D` <br> - `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, <br> - `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` <br> - `LPPool1D`, `LPPool2D`,`LPPool3D` , <br> - `AdaptivePool1D`, `AdaptivePool2D`, `AdaptivePool3D`,<br> - `AdaptiveConcatPool1D`,`AdaptiveConcatPool2D`,`AdaptiveConcatPool3D` |
+|Pooling <br> (`kernex` backend)|- `MaxPool1D`, `MaxPool2D`, `MaxPool3D`, <br> - `AvgPool1D`, `AvgPool2D`, `AvgPool3D` <br> - `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, <br> - `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` <br> - `LPPool1D`, `LPPool2D`,`LPPool3D` , <br> - `AdaptiveAvgPool1D`, `AdaptiveAvgPool2D`, `AdaptiveAvgPool3D`,<br> - `AdaptiveMaxPool1D`, `AdaptiveMaxPool2D`, `AdaptiveMaxPool3D` <br> - `AdaptiveConcatPool1D`,`AdaptiveConcatPool2D`,`AdaptiveConcatPool3D` |
 |Reshaping|- `Flatten`, `Unflatten`, <br> - `FlipLeftRight2D`, `FlipUpDown2D`, <br> - `Repeat1D`, `Repeat2D`, `Repeat3D`, <br> - `Resize1D`, `Resize2D`, `Resize3D`, <br> - `Upsample1D`, `Upsample2D`, `Upsample3D`,<br> - `Pad1D`, `Pad2D`, `Pad3D` |
 |Crop| - `Crop1D`, `Crop2D`, |
 |Normalization|- `LayerNorm`, `InstanceNorm`, `GroupNorm`|
