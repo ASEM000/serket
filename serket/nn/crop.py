@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return
+from serket.nn.utils import _check_and_return, _check_spatial_in_shape
 
 
 @pytc.treeclass
@@ -24,10 +24,8 @@ class CropND:
         self.start = _check_and_return(start, ndim, "start")
         self.ndim = ndim
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
-        assert x.ndim == (self.ndim + 1), msg
-
         return jax.lax.dynamic_slice(x, (0, *self.start), (x.shape[0], *self.size))
 
 
@@ -61,12 +59,10 @@ class RandomCropND:
         self.size = _check_and_return(size, ndim, "size")
         self.ndim = ndim
 
+    @_check_spatial_in_shape
     def __call__(
         self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ) -> jnp.ndarray:
-        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
-        assert x.ndim == (self.ndim + 1), msg
-
         start = tuple(
             jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)
             for i, s in enumerate(self.size)

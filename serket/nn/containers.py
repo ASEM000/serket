@@ -33,8 +33,14 @@ class Sequential:
             layers = layers.values()
 
         else:
-            raise TypeError(
-                f"layers must be list, tuple or dict, but got {type(layers)}"
+            raise ValueError(
+                f"Layers must be list, tuple or dict, but got {type(layers)}"
+                "\n>>> # List/Tuple example"
+                "\n>>> layers = [Linear(10, 10), Linear(10, 10)]"
+                "\n>>> model = Sequential(layers)"
+                "\n>>> # Dict example"
+                "\n>>> layers = {'linear1': Linear(10, 10), 'linear2': Linear(10, 10)}"
+                "\n>>> model = Sequential(layers)"
             )
 
         self._keys = tuple(field_mapping.keys())
@@ -52,7 +58,7 @@ class Sequential:
             return getattr(self, self._keys[key])
         elif isinstance(key, slice):
             return Sequential({name: getattr(self, name) for name in self._keys[key]})
-        raise TypeError(f"key must be str or int, but got {type(key)}")
+        raise ValueError(f"key must be str or int, but got {type(key)}")
 
     def __len__(self):
         return len(self._keys)

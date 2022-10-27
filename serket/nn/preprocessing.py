@@ -6,6 +6,8 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
+from serket.nn.utils import _check_spatial_in_shape
+
 
 @ft.partial(jax.jit, static_argnums=(1,))
 def _histeq(x, bins_count: int = 256):
@@ -31,18 +33,19 @@ class HistogramEqualization2D:
             https://scikit-image.org/docs/stable/api/skimage.exposure.html#skimage.exposure.equalize_hist
             https://stackoverflow.com/questions/28518684/histogram-equalization-of-grayscale-images-with-numpy
         """
+        self.ndim = 2
         self.bins = bins
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        msg = f"Input must have 3 dimensions, got {x.ndim}."
-        assert x.ndim == 3, msg
         return _histeq(x, self.bins)
 
 
 @pytc.treeclass
-class PixelShuffle:
+class PixelShuffle2D:
     def __init__(self, upscale_factor: int | tuple[int, int] = 1):
 
+        self.ndim = 2
         if isinstance(upscale_factor, int):
             if upscale_factor < 1:
                 raise ValueError("upscale_factor must be >= 1")
@@ -59,9 +62,8 @@ class PixelShuffle:
         else:
             raise ValueError("upscale_factor must be an integer or tuple of length 2")
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs):
-        msg = f"Input must have 3 dimensions, got {x.ndim}."
-        assert x.ndim == 3, msg
         channels = x.shape[0]
 
         sr, sw = self.upscale_factor

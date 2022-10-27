@@ -7,7 +7,12 @@ import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return, _check_and_return_kernel
+from serket.nn.utils import (
+    _check_and_return,
+    _check_and_return_kernel,
+    _check_and_return_strides,
+    _check_spatial_in_shape,
+)
 
 # Based on colab hardware benchmarks `kernex` seems to
 # be faster on CPU and on par with JAX on GPU.
@@ -39,8 +44,9 @@ class GeneralPoolND:
             func: function to apply to the kernel
         """
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = strides
+        self.strides = _check_and_return_strides(strides, ndim)
         self.padding = padding
+        self.ndim = ndim
 
         @jax.jit
         @jax.vmap
@@ -50,6 +56,7 @@ class GeneralPoolND:
 
         self._func = _maxpoolnd
 
+    @_check_spatial_in_shape
     def __call__(self, x, **kwargs):
         return self._func(x)
 
@@ -313,11 +320,8 @@ class AdaptivePoolND:
         self.ndim = ndim
         self.func = func
 
+    @_check_spatial_in_shape
     def __call__(self, x, **kwargs):
-        assert (
-            x.ndim == self.ndim + 1
-        ), f"Expected {self.ndim+1}D input, got {x.ndim}D input"
-
         input_size = x.shape[1:]
         output_size = self.output_size
         strides = tuple(i // o for i, o in zip(input_size, output_size))

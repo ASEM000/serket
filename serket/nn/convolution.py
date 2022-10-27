@@ -16,7 +16,6 @@ import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
 from serket.nn.utils import (
-    _TRACER_ERROR_MSG,
     _calculate_convolution_output_shape,
     _calculate_transpose_padding,
     _check_and_return_init_func,
@@ -25,7 +24,13 @@ from serket.nn.utils import (
     _check_and_return_kernel,
     _check_and_return_kernel_dilation,
     _check_and_return_padding,
+    _check_and_return_positive_int,
     _check_and_return_strides,
+    _check_in_features,
+    _check_spatial_in_shape,
+    _infer_in_features,
+    _infer_in_features_in_size,
+    _lazy_call,
 )
 
 # ------------------------------ Convolutional Layers ------------------------------ #
@@ -108,29 +113,18 @@ class ConvND:
         if hasattr(self, "_partial_init"):
             delattr(self, "_partial_init")
 
-        if not isinstance(in_features, int) or in_features <= 0:
-            raise ValueError(
-                f"Expected `in_features` to be a positive integer, got {in_features}"
-            )
-
-        if not isinstance(out_features, int) or out_features <= 0:
-            raise ValueError(
-                f"Expected `out_features` to be a positive integer, got {out_features}"
-            )
-
-        if not isinstance(groups, int) or groups <= 0:
-            raise ValueError(f"Expected groups to be a positive integer, got {groups}")
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.groups = _check_and_return_positive_int(groups, "groups")
+        self.ndim = _check_and_return_positive_int(ndim, "ndim")
 
         assert (
-            out_features % groups == 0
-        ), f"Expected out_features % groups == 0, got {out_features % groups}"
-
-        self.in_features = in_features
-        self.out_features = out_features
-        self.groups = groups
+            self.out_features % self.groups == 0
+        ), f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
 
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
+
         self.input_dilation = _check_and_return_input_dilation(input_dilation, ndim)
         self.kernel_dilation = _check_and_return_kernel_dilation(kernel_dilation, ndim)
         self.padding = _check_and_return_padding(padding, self.kernel_size)
@@ -148,12 +142,10 @@ class ConvND:
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_check_spatial_in_shape
+    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -345,26 +337,14 @@ class ConvNDTranspose:
         if hasattr(self, "_partial_init"):
             delattr(self, "_partial_init")
 
-        if not isinstance(in_features, int) or in_features <= 0:
-            raise ValueError(
-                f"Expected in_features to be a positive integer, got {in_features}"
-            )
-
-        if not isinstance(out_features, int) or out_features <= 0:
-            raise ValueError(
-                f"Expected out_features to be a positive integer, got {out_features}"
-            )
-
-        if not isinstance(groups, int) or groups <= 0:
-            raise ValueError(f"Expected groups to be a positive integer, got {groups}")
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.groups = _check_and_return_positive_int(groups, "groups")
+        self.ndim = _check_and_return_positive_int(ndim, "ndim")
 
         assert (
-            out_features % groups == 0
-        ), f"Expected out_features % groups == 0, got {out_features % groups}"
-
-        self.in_features = in_features
-        self.out_features = out_features
-        self.groups = groups
+            self.out_features % self.groups == 0
+        ), f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
 
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
@@ -392,12 +372,10 @@ class ConvNDTranspose:
             input_dilation=self.kernel_dilation,
         )
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_check_spatial_in_shape
+    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
         y = jax.lax.conv_transpose(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -586,18 +564,11 @@ class DepthwiseConvND:
         if hasattr(self, "_partial_init"):
             delattr(self, "_partial_init")
 
-        if not isinstance(in_features, int) or in_features <= 0:
-            raise ValueError(
-                f"Expected in_features to be a positive integer, got {in_features}"
-            )
-
-        if not isinstance(depth_multiplier, int) or depth_multiplier <= 0:
-            raise ValueError(
-                f"Expected depth_multiplier to be a positive integer, got {depth_multiplier}"
-            )
-
-        self.in_features = in_features
-        self.depth_multiplier = depth_multiplier
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.depth_multiplier = _check_and_return_positive_int(
+            depth_multiplier, "in_features"
+        )
+        self.ndim = _check_and_return_positive_int(ndim, "ndim")
 
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
@@ -618,12 +589,10 @@ class DepthwiseConvND:
 
         self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_check_spatial_in_shape
+    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, axis=0),
             rhs=self.weight,
@@ -787,24 +756,12 @@ class SeparableConvND:
         if hasattr(self, "_partial_init"):
             delattr(self, "_partial_init")
 
-        if not isinstance(in_features, int) or in_features <= 0:
-            raise ValueError(
-                f"Expected in_features to be a positive integer, got {in_features}"
-            )
-
-        if not isinstance(out_features, int) or out_features <= 0:
-            raise ValueError(
-                f"Expected out_features to be a positive integer, got {out_features}"
-            )
-
-        if not isinstance(depth_multiplier, int) or depth_multiplier <= 0:
-            raise ValueError(
-                f"Expected depth_multiplier to be a positive integer, got {depth_multiplier}"
-            )
-
-        self.in_features = in_features
-        self.out_features = out_features
-        self.depth_multiplier = depth_multiplier
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.depth_multiplier = _check_and_return_positive_int(
+            depth_multiplier, "in_features"
+        )
+        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.ndim = _check_and_return_positive_int(ndim, "ndim")
 
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
@@ -818,8 +775,6 @@ class SeparableConvND:
         self.pointwise_bias_init_func = _check_and_return_init_func(
             pointwise_bias_init_func, "pointwise_bias_init_func"
         )
-
-        self.ndim = ndim
 
         self.depthwise_conv = DepthwiseConvND(
             in_features=in_features,
@@ -845,12 +800,10 @@ class SeparableConvND:
             ndim=ndim,
         )
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_check_spatial_in_shape
+    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
@@ -1030,19 +983,9 @@ class ConvNDLocal:
         if hasattr(self, "_partial_init"):
             delattr(self, "_partial_init")
 
-        if not isinstance(in_features, int) or in_features <= 0:
-            raise ValueError(
-                f"Expected in_features to be a positive integer, got {in_features}"
-            )
-
-        if not isinstance(out_features, int) or out_features <= 0:
-            raise ValueError(
-                f"Expected out_features to be a positive integer, got {out_features}"
-            )
-
-        self.in_features = in_features
-        self.out_features = out_features
-
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.ndim = _check_and_return_positive_int(ndim, "ndim")
         self.in_size = _check_and_return_input_size(in_size, ndim)
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
@@ -1075,12 +1018,10 @@ class ConvNDLocal:
         else:
             self.bias = self.bias_init_func(key, bias_shape)
 
+    @_lazy_call(_infer_in_features_in_size(axis=0), ("_partial_init",))
+    @_check_spatial_in_shape
+    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0], in_size=x.shape[1:])
-
         y = jax.lax.conv_general_dilated_local(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,

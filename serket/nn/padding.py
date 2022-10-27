@@ -3,16 +3,12 @@ from __future__ import annotations
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return_padding
+from serket.nn.utils import _check_and_return_padding, _check_spatial_in_shape
 
 
 @pytc.treeclass
 class PadND:
-    padding: int | tuple[int, int] = pytc.nondiff_field(default=0)
-    value: float = pytc.nondiff_field(default=0.0)
-    ndim: int = pytc.nondiff_field(default=1, repr=False)
-
-    def __post_init__(self):
+    def __init__(self, padding: int | tuple[int, int], value: float = 0.0, ndim=1):
         """
         Args:
             padding: padding to apply to each side of the input.
@@ -25,11 +21,12 @@ class PadND:
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
-        self.padding = _check_and_return_padding(self.padding, ((1,),) * self.ndim)
+        self.ndim = ndim
+        self.padding = _check_and_return_padding(padding, ((1,),) * self.ndim)
+        self.value = value
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
-        assert x.ndim == self.ndim + 1, msg
         # do not pad the channel axis
         return jnp.pad(x, ((0, 0), *self.padding), constant_values=self.value)
 

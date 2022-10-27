@@ -11,7 +11,12 @@ import pytreeclass as pytc
 
 from serket.nn import Linear
 from serket.nn.convolution import ConvND, SeparableConvND
-from serket.nn.utils import _TRACER_ERROR_MSG, _act_func_map
+from serket.nn.utils import (
+    _act_func_map,
+    _check_and_return_positive_int,
+    _infer_in_features,
+    _lazy_call,
+)
 
 # --------------------------------------------------- RNN ------------------------------------------------------------ #
 
@@ -88,20 +93,11 @@ class SimpleRNNCell(RNNCell):
 
         k1, k2 = jr.split(key, 2)
 
-        if not isinstance(in_features, int) or in_features < 1:
-            raise ValueError(
-                f"Expected in_features to be a positive integer, got {in_features}"
-            )
-
-        if not isinstance(hidden_features, int) or hidden_features < 1:
-            raise ValueError(
-                f"Expected hidden_features to be a positive integer, got {hidden_features}"
-            )
-
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.hidden_features = _check_and_return_positive_int(
+            hidden_features, "hidden_features"
+        )
         self.act_func = _act_func_map[act_func]
-
-        self.in_features = in_features
-        self.hidden_features = hidden_features
 
         self.in_to_hidden = Linear(
             in_features,
@@ -119,14 +115,10 @@ class SimpleRNNCell(RNNCell):
             key=k2,
         )
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
     def __call__(
         self, x: jnp.ndarray, state: SimpleRNNState, **kwargs
     ) -> SimpleRNNState:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
         msg = f"Expected state to be an instance of SimpleRNNState, got {type(state)}"
         assert isinstance(state, SimpleRNNState), msg
         h = state.hidden_state
@@ -198,21 +190,12 @@ class LSTMCell(RNNCell):
 
         k1, k2 = jr.split(key, 2)
 
-        if not isinstance(in_features, int) or in_features < 1:
-            raise ValueError(
-                f"Expected in_features to be a positive integer, got {in_features}"
-            )
-
-        if not isinstance(hidden_features, int) or hidden_features < 1:
-            raise ValueError(
-                f"Expected hidden_features to be a positive integer, got {hidden_features}"
-            )
-
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.hidden_features = _check_and_return_positive_int(
+            hidden_features, "hidden_features"
+        )
         self.act_func = _act_func_map[act_func]
         self.recurrent_act_func = _act_func_map[recurrent_act_func]
-
-        self.in_features = in_features
-        self.hidden_features = hidden_features
 
         self.in_to_hidden = Linear(
             in_features,
@@ -230,12 +213,8 @@ class LSTMCell(RNNCell):
             key=k2,
         )
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
     def __call__(self, x: jnp.ndarray, state: LSTMState, **kwargs) -> LSTMState:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
         msg = f"Expected state to be an instance of LSTMState, got {type(state)}"
         assert isinstance(state, LSTMState), msg
         h, c = state.hidden_state, state.cell_state
@@ -333,20 +312,10 @@ class ConvLSTMNDCell(SpatialRNNCell):
 
         k1, k2 = jr.split(key, 2)
 
-        if not isinstance(in_features, int) or in_features < 1:
-            raise ValueError(
-                f"Expected in_features to be a positive integer, got {in_features}"
-            )
-
-        if not isinstance(out_features, int) or out_features < 1:
-            raise ValueError(
-                f"Expected out_features to be a positive integer, got {out_features}"
-            )
-
         self.act_func = _act_func_map[act_func]
         self.recurrent_act_func = _act_func_map[recurrent_act_func]
-        self.in_features = in_features
-        self.out_features = out_features
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.out_features = _check_and_return_positive_int(out_features, "out_features")
         self.hidden_features = out_features
         self.ndim = ndim
 
@@ -378,14 +347,10 @@ class ConvLSTMNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
     def __call__(
         self, x: jnp.ndarray, state: ConvLSTMNDState, **kwargs
     ) -> ConvLSTMNDState:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
         msg = f"Expected state to be an instance of ConvLSTMNDState, got {type(state)}"
         assert isinstance(state, ConvLSTMNDState), msg
         h, c = state.hidden_state, state.cell_state
@@ -586,20 +551,10 @@ class SeparableConvLSTMNDCell(SpatialRNNCell):
 
         k1, k2 = jr.split(key, 2)
 
-        if not isinstance(in_features, int) or in_features < 1:
-            raise ValueError(
-                f"Expected in_features to be a positive integer, got {in_features}"
-            )
-
-        if not isinstance(out_features, int) or out_features < 1:
-            raise ValueError(
-                f"Expected out_features to be a positive integer, got {out_features}"
-            )
-
         self.act_func = _act_func_map[act_func]
         self.recurrent_act_func = _act_func_map[recurrent_act_func]
-        self.in_features = in_features
-        self.out_features = out_features
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.out_features = _check_and_return_positive_int(out_features, "out_features")
         self.hidden_features = out_features
         self.ndim = ndim
 
@@ -631,15 +586,13 @@ class SeparableConvLSTMNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
     def __call__(
         self, x: jnp.ndarray, state: SeparableConvLSTMNDState, **kwargs
     ) -> SeparableConvLSTMNDState:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
-        msg = f"Expected input to have shape (batch_size, in_features, *spatial_dims), got {x.shape}"
+        msg = (
+            f"Expected state to be of type SeparableConvLSTMNDState, got {type(state)}"
+        )
         assert isinstance(state, SeparableConvLSTMNDState), msg
         h, c = state.hidden_state, state.cell_state
 
@@ -811,23 +764,15 @@ class ScanRNN:
         self.backward_cell = backward_cell
         self.return_sequences = return_sequences
 
+    @_lazy_call(_infer_in_features(axis=1), ("cell", "_partial_init"))
+    @_lazy_call(_infer_in_features(axis=1), ("backward_cell", "_partial_init"))
     def __call__(
         self,
         x: jnp.ndarray,
-        state: RNNState = None,
-        backward_state: RNNState = None,
+        state: RNNState | None = None,
+        backward_state: RNNState | None = None,
         **kwargs,
     ) -> jnp.ndarray:
-        if hasattr(self.cell, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self.cell._partial_init(in_features=x.shape[1])
-
-        if hasattr(self.backward_cell, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self.backward_cell._partial_init(in_features=x.shape[1])
-
         if not isinstance(state, (type(None), RNNState)):
             msg = f"Expected state to be an instance of RNNState, got {type(state)}"
             raise ValueError(msg)
@@ -888,20 +833,19 @@ class ScanRNN:
 
             return result
 
-        else:
-            # only return the hidden state for the last timestep
-            def general_scan_func(cell, carry, x):
-                state = cell(x, state=carry)
-                return state, None
+        # only return the hidden state for the last timestep
+        def general_scan_func(cell, carry, x):
+            state = cell(x, state=carry)
+            return state, None
 
-            scan_func = ft.partial(general_scan_func, self.cell)
-            result = jax.lax.scan(scan_func, state, x)[0].hidden_state
+        scan_func = ft.partial(general_scan_func, self.cell)
+        result = jax.lax.scan(scan_func, state, x)[0].hidden_state
 
-            # backward cell
-            if self.backward_cell is not None:
-                scan_func = ft.partial(general_scan_func, self.backward_cell)
-                x = jnp.flip(x, axis=0)
-                back_result = jax.lax.scan(scan_func, backward_state, x)[0].hidden_state
-                result = jnp.concatenate([result, back_result], axis=0)
+        # backward cell
+        if self.backward_cell is not None:
+            scan_func = ft.partial(general_scan_func, self.backward_cell)
+            x = jnp.flip(x, axis=0)
+            back_result = jax.lax.scan(scan_func, backward_state, x)[0].hidden_state
+            result = jnp.concatenate([result, back_result], axis=0)
 
-            return result
+        return result

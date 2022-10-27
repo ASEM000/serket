@@ -174,6 +174,46 @@ def _check_and_return(value, ndim, name):
     raise ValueError(f"Expected int or tuple for {name}, got {value}.")
 
 
+def _check_and_return_positive_int(value, name):
+    """Check if value is a positive integer."""
+    if not isinstance(value, int):
+        raise ValueError(f"{name} must be an integer, got {type(value)}")
+    if value <= 0:
+        raise ValueError(f"{name} must be positive, got {value}")
+    return value
+
+
+def _check_spatial_in_shape(func):
+    """Decorator to check the input shape of a spatial layer"""
+    spatial_tuple = ("rows", "cols", "depths")
+
+    @ft.wraps(func)
+    def wrapper(self, x, *args, **kwargs):
+        if x.ndim != self.ndim + 1:
+            msg = f"Input must be a {self.ndim+1}D tensor in shape of "
+            msg += f"(in_features, {', '.join(spatial_tuple[:self.ndim])}), "
+            msg += f"but got {x.shape}."
+            raise ValueError(msg)
+        return func(self, x, *args, **kwargs)
+
+    return wrapper
+
+
+def _check_in_features(func):
+    """Check if the input feature dimension is the same as the layer's in_features"""
+
+    @ft.wraps(func)
+    def wrapper(self, x, *args, **kwargs):
+        if x.shape[0] != self.in_features:
+            msg = f"Specified input_features={self.in_features} ,"
+            msg += f"but got input with input_features={x.shape[0]}."
+            raise ValueError(msg)
+
+        return func(self, x, *args, **kwargs)
+
+    return wrapper
+
+
 _check_and_return_kernel = ft.partial(_check_and_return, name="kernel_size")
 _check_and_return_strides = ft.partial(_check_and_return, name="strides")
 _check_and_return_input_dilation = ft.partial(_check_and_return, name="input_dilation")
@@ -219,82 +259,6 @@ _TRACER_ERROR_MSG = lambda cls_name: (
     ">>> layer(x) # dry run to initialize the layer\n"
     ">>> layer = jax.jit(layer)\n"
 )
-
-
-# def _lazy_class(lazy_map: dict[str, Callable]):
-#     """transform a class into a lazy class that initializes its attributes lazily after the first call
-#     Args:
-#         lazy_map:
-#             a mapping from field name to a callable that returns the field value from the input at call time
-#         Example:
-#             >>> class Foo:
-#             ....    def __init__(self, in_features):
-#             ....        self.in_features = in_features
-#             ....    def __call__(self, x):
-#             ....        return self.in_features + x
-
-#             # infer `in_features` from call input
-#             # lets say in_featues is last dimension of input
-#             lazy_foo = _lazy_class({"in_features": lambda x: x.shape[-1]})(Foo)
-#     """
-
-#     def cls_wrapper(cls):
-#         def _init_wrapper(func):
-#             @ft.wraps(func)
-#             def _lazy_init(self, *args, **kwargs):
-#                 self = _tree_mutate(tree=self)
-#                 # here the treeclass is mutable so we can use setattr/delattr
-#                 # get all parameters from the input
-#                 params = inspect.signature(func).parameters
-#                 params = {k: v.default for k, v in params.items()}
-#                 del params["self"]  # remove self
-#                 params.update(kwargs)  # merge user kwargs
-#                 params.update(dict(zip(params.keys(), args)))  # merge user args
-#                 # check if any of the params is marked as lazy (i.e. = None)
-#                 if any(params[lazy_argname] is None for lazy_argname in lazy_map):
-#                     # set all fields to None to give the user a hint that they are lazy
-#                     # and to avoid errors when calling the layer before initializing it
-#                     for field_item in dataclasses.fields(self):
-#                         setattr(self, field_item.name, None)
-#                     # remove lazy arg so that it is not part of the partial function
-#                     for lazy_argname in lazy_map:
-#                         del params[lazy_argname]
-#                     captured_self = ft.partial(func, self, **params)
-#                     setattr(self, "_partial_init", captured_self)
-#                     return
-
-#                 # execute original init
-
-#                 # remove the partial function so that it is not called again
-#                 if hasattr(self, "_partial_init"):
-#                     delattr(self, "_partial_init")
-
-#                 func(self, *args, **kwargs)
-#                 self = _tree_immutate(tree=self)
-
-#             return _lazy_init
-
-#         def _call_wrapper(func):
-#             @ft.wraps(func)
-#             def _lazy_call(self, *args, **kwargs):
-#                 if hasattr(self, "_partial_init"):
-#                     # check if jax transformations are applied to the layer
-#                     # by checking if any of the input is a Tracer
-#                     if any(isinstance(a, jax.core.Tracer) for a in args):
-#                         raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-#                     inferred = {k: v(*args, **kwargs) for k, v in lazy_map.items()}
-#                     # initialize the layer with the inferred values
-#                     getattr(self, "_partial_init")(**inferred)
-#                 # execute original call
-#                 return func(self, *args, **kwargs)
-
-#             return _lazy_call
-
-#         cls.__init__ = _init_wrapper(cls.__init__)
-#         cls.__call__ = _call_wrapper(cls.__call__)
-#         return cls
-
-#     return cls_wrapper
 
 
 @ft.lru_cache(maxsize=128)
@@ -344,3 +308,69 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     result_string = "".join([ai for ai in input_string if ai not in weight_string])
     result_string += alpha[total_axis]
     return f"{input_string},{weight_string}->{result_string}"
+
+
+def _lazy_call(
+    infer_func: Callable[[Any], dict[str, Any]],
+    partial_kw: tuple[str] = ("_partial_init",),
+):
+    """Decorator to lazily initialize a layer. The layer is initialized when the first call is made.
+    Args:
+        infer_func: a function that takes the layer as input and returns a dictionary of inferred values.
+        partial_kw: the keyword argument that stores the partial function.
+    """
+
+    def _getattr(item, path):
+        """recursive getter"""
+        # this function gets a certain attribute value based on a
+        # sequence of strings.
+        # for example _getter(item , ["a", "b", "c"]) is equivalent to item.a.b.c
+        return (
+            _getattr(getattr(item, path[0]), path[1:])
+            if len(path) > 1
+            else getattr(item, path[0])
+        )
+
+    def _hasattr(item, path):
+        """recursive has_attr"""
+        # this function gets a certain attribute value based on a
+        # sequence of strings.
+        # for example _getter(item , ["a", "b", "c"]) is equivalent to item.a.b.c
+        return (
+            _hasattr(getattr(item, path[0]), path[1:])
+            if len(path) > 1
+            else hasattr(item, path[0])
+        )
+
+    def func_wrapper(func):
+        @ft.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if _hasattr(self, partial_kw):
+                if any(isinstance(x, jax.core.Tracer) for x in args):
+                    raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
+                _getattr(self, partial_kw)(**infer_func(self, *args, **kwargs))
+
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
+    return func_wrapper
+
+
+def _infer_in_features(axis: int = 0):
+    return lambda _, *a, **k: {"in_features": a[0].shape[axis]}
+
+
+def _infer_in_features_in_size(axis: int = 0):
+    return lambda _, *a, **k: {
+        "in_features": a[0].shape[axis],
+        "in_size": a[0].shape[axis + 1 :],
+    }
+
+
+def _multilinear_infer_func(_, *a, **k):
+    return {"in_features": tuple(ai.shape[-1] for ai in a)}
+
+
+def _general_infer_func(_, *a, **k):
+    return {"in_features": tuple(a[0].shape[i] for i in _.in_axes)}

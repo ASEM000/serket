@@ -4,16 +4,17 @@ import dataclasses
 import functools as ft
 from typing import Callable, Sequence
 
-import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn.utils import (
-    _TRACER_ERROR_MSG,
     _check_and_return_init_func,
+    _general_infer_func,
     _general_linear_einsum_string,
+    _lazy_call,
     _multilinear_einsum_string,
+    _multilinear_infer_func,
 )
 
 
@@ -104,12 +105,8 @@ class Multilinear:
         else:
             self.bias = self.bias_init_func(key, (out_features,))
 
+    @_lazy_call(_multilinear_infer_func, ("_partial_init",))
     def __call__(self, *x, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if any(isinstance(xi, jax.core.Tracer) for xi in x):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=tuple(xi.shape[-1] for xi in x))
-
         einsum_string = _multilinear_einsum_string(len(self.in_features))
         x = jnp.einsum(einsum_string, *x, self.weight)
 
@@ -292,14 +289,8 @@ class GeneralLinear:
         else:
             self.bias = self.bias_init_func(key, (self.out_features,))
 
+    @_lazy_call(_general_infer_func, ("_partial_init",))
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-
-            in_features = tuple(x.shape[i] for i in self.in_axes)
-            self._partial_init(in_features=in_features)
-
         # ensure negative axes
         axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)
         einsum_string = _general_linear_einsum_string(*axes)

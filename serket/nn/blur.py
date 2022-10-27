@@ -10,7 +10,13 @@ import jax.numpy as jnp
 import pytreeclass as pytc
 
 from serket.nn.convolution import DepthwiseConv2D
-from serket.nn.utils import _TRACER_ERROR_MSG
+from serket.nn.utils import (
+    _check_and_return_positive_int,
+    _check_in_features,
+    _check_spatial_in_shape,
+    _infer_in_features,
+    _lazy_call,
+)
 
 
 @pytc.treeclass
@@ -41,19 +47,16 @@ class AvgBlur2D:
         if hasattr(self, "_partial_init"):
             delattr(self, "_partial_init")
 
-        if not isinstance(in_features, int) or in_features <= 0:
-            msg = f"`in_features` must be a positive integer, got {in_features}"
-            raise ValueError(msg)
-
-        if not isinstance(kernel_size, int) or kernel_size <= 0:
-            msg = f"`kernel_size` must be a positive integer, got {kernel_size}"
-            raise ValueError(msg)
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.kernel_size = _check_and_return_positive_int(kernel_size, "kernel_size")
 
         w = jnp.ones(kernel_size)
         w = w / jnp.sum(w)
         w = w[:, None]
         w = jnp.repeat(w[None, None], in_features, axis=0)
 
+        self.ndim = 2
+        self.in_features = in_features
         self.conv1 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(kernel_size, 1),
@@ -71,13 +74,10 @@ class AvgBlur2D:
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
 
+    @_lazy_call(_infer_in_features(axis=0))
+    @_check_spatial_in_shape
+    @_check_in_features
     def __call__(self, x, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
-        assert x.ndim == 3, "`Input` must be 3D."
         return self.conv2(self.conv1(x))
 
 
@@ -120,12 +120,8 @@ class GaussianBlur2D:
         if hasattr(self, "_partial_init"):
             delattr(self, "_partial_init")
 
-        if not isinstance(in_features, int) or in_features <= 0:
-            msg = f"Expected `in_features` to be a positive integer, got {in_features}"
-            raise ValueError(msg)
-        if not isinstance(kernel_size, int) or kernel_size <= 0:
-            msg = f"Expected `kernel_size` to be a positive integer, got {kernel_size}"
-            raise ValueError(msg)
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.kernel_size = _check_and_return_positive_int(kernel_size, "kernel_size")
 
         self.in_features = in_features
         self.kernel_size = kernel_size
@@ -153,6 +149,9 @@ class GaussianBlur2D:
             bias_init_func=None,
         )
 
+        self.in_features = in_features
+        self.ndim = 2
+
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
@@ -175,13 +174,10 @@ class GaussianBlur2D:
         # else:
         #     raise ValueError(f"Unknown implementation {implementation}")
 
+    @_lazy_call(_infer_in_features(axis=0))
+    @_check_spatial_in_shape
+    @_check_in_features
     def __call__(self, x, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
-        assert x.ndim == 3, "`Input` must be 3D."
         return self.conv1(self.conv2(x))
 
 
@@ -207,14 +203,11 @@ class Filter2D:
         if hasattr(self, "_partial_init"):
             delattr(self, "_partial_init")
 
-        if not isinstance(in_features, int) or in_features <= 0:
-            msg = f"Expected `in_features` to be a positive integer, got {in_features}"
-            raise ValueError(msg)
-
         if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
-        self.in_features = in_features
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.ndim = 2
         self.kernel = jnp.stack([kernel] * in_features, axis=0)
         self.kernel = self.kernel[:, None]
 
@@ -226,11 +219,8 @@ class Filter2D:
         )
         self.conv = self.conv.at["weight"].set(self.kernel)
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
+    @_check_spatial_in_shape
+    @_check_in_features
     def __call__(self, x, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
-        assert x.ndim == 3, "`Input` must be 3D."
         return self.conv(x)

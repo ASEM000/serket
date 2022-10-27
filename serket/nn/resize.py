@@ -5,14 +5,18 @@ import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return
+from serket.nn.utils import (
+    _check_and_return,
+    _check_and_return_positive_int,
+    _check_spatial_in_shape,
+)
 
 
 @pytc.treeclass
 class Repeat1D:
-    """repeats input along axis 1"""
-
-    scale: int = pytc.nondiff_field(default=1)
+    def __init__(self, scale: int = 1):
+        """repeats input along axis 1"""
+        self.scale = _check_and_return_positive_int(scale, "scale")
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         @kex.kmap(kernel_size=(-1, -1), strides=(1, 1), padding="valid")
@@ -24,9 +28,9 @@ class Repeat1D:
 
 @pytc.treeclass
 class Repeat2D:
-    """repeats input along axes 1,2"""
-
-    scale: int = pytc.nondiff_field(default=1)
+    def __init__(self, scale: int = 1):
+        """repeats input along axes 1,2"""
+        self.scale = _check_and_return_positive_int(scale, "scale")
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         @kex.kmap(kernel_size=(-1, -1, -1), strides=(1, 1, 1), padding="valid")
@@ -38,9 +42,9 @@ class Repeat2D:
 
 @pytc.treeclass
 class Repeat3D:
-    """repeats input along axes 1,2,3"""
-
-    scale: int = pytc.nondiff_field(default=1)
+    def __init__(self, scale: int = 1):
+        """repeats input along axes 1,2,3"""
+        self.scale = _check_and_return_positive_int(scale, "scale")
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         @kex.kmap(kernel_size=(-1, -1, -1, -1), strides=(1, 1, 1, 1), padding="valid")
@@ -137,6 +141,7 @@ class UpsampleND:
         self.method = method
         self.ndim = ndim
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         msg = f"Input must have {self.ndim+1} dimensions, got {x.ndim}."
         assert x.ndim == self.ndim + 1, msg

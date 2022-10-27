@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return
+from serket.nn.utils import _check_and_return, _check_spatial_in_shape
 
 
 @pytc.treeclass
@@ -19,7 +19,6 @@ class RandomCutout1D:
         shape: tuple[int, ...],
         cutout_count: int = 1,
         fill_value: int | float = 0,
-        ndim=1,
     ):
         """Random Cutouts for spatial 1D array.
 
@@ -36,16 +35,15 @@ class RandomCutout1D:
             >>> RandomCutout1D(5)(jnp.ones((1, 10))*100)
             [[100., 100., 100., 100.,   0.,   0.,   0.,   0.,   0., 100.]]
         """
-        self.shape = _check_and_return(shape, ndim=ndim, name="shape")
+        self.shape = _check_and_return(shape, ndim=1, name="shape")
         self.cutout_count = cutout_count
         self.fill_value = fill_value
+        self.ndim = 1
 
+    @_check_spatial_in_shape
     def __call__(
         self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ) -> jnp.ndarray:
-        msg = f"Input must have 2 dimensions, got {x.ndim}."
-        assert x.ndim == 2, msg
-
         size = self.shape[0]
         row_arange = jnp.arange(x.shape[1])
 
@@ -93,12 +91,12 @@ class RandomCutout2D:
         self.shape = _check_and_return(shape, 2, "shape")
         self.cutout_count = cutout_count
         self.fill_value = fill_value
+        self.ndim = 2
 
+    @_check_spatial_in_shape
     def __call__(
         self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ) -> jnp.ndarray:
-        msg = f"Input must have 3 dimensions, got {x.ndim}."
-        assert x.ndim == 3, msg
         height, width = self.shape
         row_arange = jnp.arange(x.shape[1])
         col_arange = jnp.arange(x.shape[2])

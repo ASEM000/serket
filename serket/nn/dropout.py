@@ -4,6 +4,8 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
+from serket.nn.utils import _check_spatial_in_shape
+
 
 @pytc.treeclass
 class Dropout:
@@ -69,10 +71,8 @@ class DropoutND:
         self.eval = eval
         self.ndim = ndim
 
+    @_check_spatial_in_shape
     def __call__(self, x, *, key=jr.PRNGKey(0)):
-        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
-        assert x.ndim == (self.ndim + 1), msg
-
         if self.eval is True:
             return x
 

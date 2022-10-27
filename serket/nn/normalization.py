@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _TRACER_ERROR_MSG
+from serket.nn.utils import _infer_in_features, _lazy_call
 
 
 @pytc.treeclass
@@ -125,12 +125,8 @@ class GroupNorm:
             self.γ = jnp.ones(self.in_features)
             self.β = jnp.zeros(self.in_features)
 
+    @_lazy_call(_infer_in_features(axis=0), ("_partial_init",))
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        if hasattr(self, "_partial_init"):
-            if isinstance(x, jax.core.Tracer):
-                raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-            self._partial_init(in_features=x.shape[0])
-
         assert len(x.shape) > 1, "Input must have at least 2 dimensions"
         # split channels into groups
         xx = x.reshape(self.groups, self.in_features // self.groups, *x.shape[1:])

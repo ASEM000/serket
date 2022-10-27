@@ -4,6 +4,8 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
+from serket.nn.utils import _check_spatial_in_shape
+
 
 @pytc.treeclass
 class AdjustContrastND:
@@ -22,9 +24,8 @@ class AdjustContrastND:
         self.ndim = ndim
         self.contrast_factor = contrast_factor
 
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
-        assert x.ndim == self.ndim + 1, msg
         μ = jnp.mean(x, axis=tuple(range(1, x.ndim)), keepdims=True)
         return (self.contrast_factor * (x - μ) + μ).astype(x.dtype)
 
@@ -55,11 +56,10 @@ class RandomContrastND:
         self.contrast_range = contrast_range
         self.ndim = ndim
 
+    @_check_spatial_in_shape
     def __call__(
         self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0), **kwargs
     ) -> jnp.ndarray:
-        msg = f"Input must have {self.ndim + 1} dimensions, got {x.ndim}."
-        assert x.ndim == self.ndim + 1, msg
         contrast_factor = jr.uniform(
             key=key,
             shape=(),
