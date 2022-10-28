@@ -32,8 +32,6 @@ from serket.nn.utils import (
     _lazy_local_conv,
 )
 
-# ------------------------------ Convolutional Layers ------------------------------ #
-
 
 @pytc.treeclass
 class ConvND:
@@ -159,108 +157,6 @@ class ConvND:
         if self.bias is None:
             return jnp.squeeze(y, 0)
         return jnp.squeeze((y + self.bias), 0)
-
-
-@pytc.treeclass
-class Conv1D(ConvND):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        input_dilation: int | tuple[int, ...] = 1,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            ndim=1,
-            key=key,
-        )
-
-
-@pytc.treeclass
-class Conv2D(ConvND):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        input_dilation: int | tuple[int, ...] = 1,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            ndim=2,
-            key=key,
-        )
-
-
-@pytc.treeclass
-class Conv3D(ConvND):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        input_dilation: int | tuple[int, ...] = 1,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            ndim=3,
-            key=key,
-        )
-
-
-# ------------------------------ Transposed Convolutional Layers ------------------------------ #
 
 
 @pytc.treeclass
@@ -390,108 +286,6 @@ class ConvNDTranspose:
 
 
 @pytc.treeclass
-class Conv1DTranspose(ConvNDTranspose):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        output_padding: int = 0,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            ndim=1,
-            key=key,
-        )
-
-
-@pytc.treeclass
-class Conv2DTranspose(ConvNDTranspose):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        output_padding: int = 0,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            ndim=2,
-            key=key,
-        )
-
-
-@pytc.treeclass
-class Conv3DTranspose(ConvNDTranspose):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        output_padding: int = 0,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            ndim=3,
-            key=key,
-        )
-
-
-# ------------------------------ Depthwise Convolutional Layers ------------------------------ #
-
-
-@pytc.treeclass
 class DepthwiseConvND:
     weight: jnp.ndarray
     bias: jnp.ndarray
@@ -609,90 +403,6 @@ class DepthwiseConvND:
 
 
 @pytc.treeclass
-class DepthwiseConv1D(DepthwiseConvND):
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        depth_multiplier: int = 1,
-        strides: int = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            ndim=1,
-            key=key,
-        )
-
-
-@pytc.treeclass
-class DepthwiseConv2D(DepthwiseConvND):
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        depth_multiplier: int = 1,
-        strides: int = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            ndim=2,
-            key=key,
-        )
-
-
-@pytc.treeclass
-class DepthwiseConv3D(DepthwiseConvND):
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        depth_multiplier: int = 1,
-        strides: int = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            ndim=3,
-            key=key,
-        )
-
-
-# ------------------------------ SeparableConvND Depthwise Convolutional Layers ------------------------------ #
-
-
-@pytc.treeclass
 class SeparableConvND:
     depthwise_conv: DepthwiseConvND
     pointwise_conv: DepthwiseConvND
@@ -806,108 +516,6 @@ class SeparableConvND:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
-
-
-@pytc.treeclass
-class SeparableConv1D(SeparableConvND):
-    """1D separable convolutional layer."""
-
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        depth_multiplier: int = 1,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        depthwise_weight_init_func: str | Callable = "glorot_uniform",
-        pointwise_weight_init_func: str | Callable = "glorot_uniform",
-        pointwise_bias_init_func: str | Callable = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            depthwise_weight_init_func=depthwise_weight_init_func,
-            pointwise_weight_init_func=pointwise_weight_init_func,
-            pointwise_bias_init_func=pointwise_bias_init_func,
-            ndim=1,
-            key=key,
-        )
-
-
-@pytc.treeclass
-class SeparableConv2D(SeparableConvND):
-    """2D separable convolutional layer."""
-
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        depth_multiplier: int = 1,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        depthwise_weight_init_func: str | Callable = "glorot_uniform",
-        pointwise_weight_init_func: str | Callable = "glorot_uniform",
-        pointwise_bias_init_func: str | Callable = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            depthwise_weight_init_func=depthwise_weight_init_func,
-            pointwise_weight_init_func=pointwise_weight_init_func,
-            pointwise_bias_init_func=pointwise_bias_init_func,
-            ndim=2,
-            key=key,
-        )
-
-
-@pytc.treeclass
-class SeparableConv3D(SeparableConvND):
-    """3D separable convolutional layer."""
-
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        depth_multiplier: int = 1,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        depthwise_weight_init_func: str | Callable = "glorot_uniform",
-        pointwise_weight_init_func: str | Callable = "glorot_uniform",
-        pointwise_bias_init_func: str | Callable = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            depthwise_weight_init_func=depthwise_weight_init_func,
-            pointwise_weight_init_func=pointwise_weight_init_func,
-            pointwise_bias_init_func=pointwise_bias_init_func,
-            ndim=3,
-            key=key,
-        )
-
-
-# ------------------------------ ConvNDLocal Convolutional Layers ------------------------------ #
 
 
 @pytc.treeclass
@@ -1037,100 +645,22 @@ class ConvNDLocal:
         return jnp.squeeze((y + self.bias), 0)
 
 
-@pytc.treeclass
-class Conv1DLocal(ConvNDLocal):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        in_size: tuple[int, ...],
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        input_dilation: int | tuple[int, ...] = 1,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            in_size=in_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            ndim=1,
-            key=key,
-        )
+Conv1D = ft.partial(ConvND, ndim=1)
+Conv2D = ft.partial(ConvND, ndim=2)
+Conv3D = ft.partial(ConvND, ndim=3)
 
+Conv1DTranspose = ft.partial(ConvNDTranspose, ndim=1)
+Conv2DTranspose = ft.partial(ConvNDTranspose, ndim=2)
+Conv3DTranspose = ft.partial(ConvNDTranspose, ndim=3)
 
-@pytc.treeclass
-class Conv2DLocal(ConvNDLocal):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        in_size: tuple[int, ...],
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        input_dilation: int | tuple[int, ...] = 1,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            in_size=in_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            ndim=2,
-            key=key,
-        )
+DepthwiseConv1D = ft.partial(DepthwiseConvND, ndim=1)
+DepthwiseConv2D = ft.partial(DepthwiseConvND, ndim=2)
+DepthwiseConv3D = ft.partial(DepthwiseConvND, ndim=3)
 
+SeparableConv1D = ft.partial(SeparableConvND, ndim=1)
+SeparableConv2D = ft.partial(SeparableConvND, ndim=2)
+SeparableConv3D = ft.partial(SeparableConvND, ndim=3)
 
-@pytc.treeclass
-class Conv3DLocal(ConvNDLocal):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        in_size: tuple[int, ...],
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        input_dilation: int | tuple[int, ...] = 1,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features,
-            out_features,
-            kernel_size,
-            in_size=in_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            ndim=3,
-            key=key,
-        )
+Conv1DLocal = ft.partial(ConvNDLocal, ndim=1)
+Conv2DLocal = ft.partial(ConvNDLocal, ndim=2)
+Conv3DLocal = ft.partial(ConvNDLocal, ndim=3)

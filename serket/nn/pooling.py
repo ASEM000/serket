@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools as ft
 from typing import Callable
 
 import jax
@@ -62,115 +63,7 @@ class GeneralPoolND:
 
 
 @pytc.treeclass
-class MaxPool1D(GeneralPoolND):
-    def __init__(
-        self,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            kernel_size=kernel_size,
-            strides=strides or kernel_size,
-            padding=padding,
-            ndim=1,
-            func=jnp.max,
-        )
-
-
-@pytc.treeclass
-class MaxPool2D(GeneralPoolND):
-    def __init__(
-        self,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            kernel_size=kernel_size,
-            strides=strides or kernel_size,
-            padding=padding,
-            ndim=2,
-            func=jnp.max,
-        )
-
-
-@pytc.treeclass
-class MaxPool3D(GeneralPoolND):
-    def __init__(
-        self,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            kernel_size=kernel_size,
-            strides=strides or kernel_size,
-            padding=padding,
-            ndim=3,
-            func=jnp.max,
-        )
-
-
-@pytc.treeclass
-class AvgPool1D(GeneralPoolND):
-    def __init__(
-        self,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            kernel_size=kernel_size,
-            strides=strides or kernel_size,
-            padding=padding,
-            ndim=1,
-            func=jnp.mean,
-        )
-
-
-@pytc.treeclass
-class AvgPool2D(GeneralPoolND):
-    def __init__(
-        self,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            kernel_size=kernel_size,
-            strides=strides or kernel_size,
-            padding=padding,
-            ndim=2,
-            func=jnp.mean,
-        )
-
-
-@pytc.treeclass
-class AvgPool3D(GeneralPoolND):
-    def __init__(
-        self,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            kernel_size=kernel_size,
-            strides=strides or kernel_size,
-            padding=padding,
-            ndim=3,
-            func=jnp.mean,
-        )
-
-
-@pytc.treeclass
-class LPPool1D(GeneralPoolND):
+class LPPoolND(GeneralPoolND):
     def __init__(
         self,
         norm_type: float,
@@ -178,113 +71,28 @@ class LPPool1D(GeneralPoolND):
         strides: tuple[int, ...] | int = None,
         *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
+        ndim: int = 1,
     ):
         super().__init__(
             kernel_size=kernel_size,
             strides=strides or kernel_size,
             padding=padding,
-            ndim=1,
+            ndim=ndim,
             func=lambda x: jnp.sum(x**norm_type) ** (1 / norm_type),
         )
 
 
 @pytc.treeclass
-class LPPool2D(GeneralPoolND):
-    def __init__(
-        self,
-        norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            kernel_size=kernel_size,
-            strides=strides or kernel_size,
-            padding=padding,
-            ndim=2,
-            func=lambda x: jnp.sum(x**norm_type) ** (1 / norm_type),
-        )
+class GlobalPoolND:
+    def __init__(self, keepdims: bool = True, ndim: int = 1, func: Callable = jnp.mean):
+        self.keepdims = keepdims
+        self.ndim = ndim
+        self.func = func
 
-
-@pytc.treeclass
-class LPPool3D(GeneralPoolND):
-    def __init__(
-        self,
-        norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
-        *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
-    ):
-        super().__init__(
-            norm_type=norm_type,
-            kernel_size=kernel_size,
-            strides=strides or kernel_size,
-            padding=padding,
-            ndim=3,
-            func=lambda x: jnp.sum(x**norm_type) ** (1 / norm_type),
-        )
-
-
-@pytc.treeclass
-class GlobalAvgPool1D:
-    keepdims: bool = pytc.nondiff_field(default=True)
-    """ Average last channels """
-
+    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 2, "Input must be 2D."
-        return jnp.mean(x, axis=1, keepdims=self.keepdims)
-
-
-@pytc.treeclass
-class GlobalAvgPool2D:
-    keepdims: bool = pytc.nondiff_field(default=True)
-    """ Average last channels """
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 3, "Input must be 3D."
-        return jnp.mean(x, axis=(1, 2), keepdims=self.keepdims)
-
-
-@pytc.treeclass
-class GlobalAvgPool3D:
-    keepdims: bool = pytc.nondiff_field(default=True)
-    """ Average last channels """
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 4, "Input must be 4D."
-        return jnp.mean(x, axis=(1, 2, 3), keepdims=self.keepdims)
-
-
-@pytc.treeclass
-class GlobalMaxPool1D:
-    keepdims: bool = pytc.nondiff_field(default=True)
-    """ Average last channels """
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 2, "Input must be 2D."
-        return jnp.max(x, axis=1, keepdims=self.keepdims)
-
-
-@pytc.treeclass
-class GlobalMaxPool2D:
-    keepdims: bool = pytc.nondiff_field(default=True)
-    """ Average last channels """
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 3, "Input must be 3D."
-        return jnp.max(x, axis=(1, 2), keepdims=self.keepdims)
-
-
-@pytc.treeclass
-class GlobalMaxPool3D:
-    keepdims: bool = pytc.nondiff_field(default=True)
-    """ Get maximum last channels """
-
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == 4, "Input must be 4D."
-        return jnp.max(x, axis=(1, 2, 3), keepdims=self.keepdims)
+        axes = tuple(range(1, self.ndim + 1))
+        return self.func(x, axis=axes, keepdims=self.keepdims)
 
 
 @pytc.treeclass
@@ -338,69 +146,48 @@ class AdaptivePoolND:
 
 
 @pytc.treeclass
-class AdaptiveAvgPool1D(AdaptivePoolND):
-    def __init__(self, output_size: tuple[int, ...]):
-        super().__init__(output_size=output_size, ndim=1, func=jnp.mean)
-
-
-@pytc.treeclass
-class AdaptiveAvgPool2D(AdaptivePoolND):
-    def __init__(self, output_size: tuple[int, ...]):
-        super().__init__(output_size=output_size, ndim=2, func=jnp.mean)
-
-
-@pytc.treeclass
-class AdaptiveAvgPool3D(AdaptivePoolND):
-    def __init__(self, output_size: tuple[int, ...]):
-        super().__init__(output_size=output_size, ndim=3, func=jnp.mean)
-
-
-@pytc.treeclass
-class AdaptiveMaxPool1D(AdaptivePoolND):
-    def __init__(self, output_size: tuple[int, ...]):
-        super().__init__(output_size=output_size, ndim=1, func=jnp.max)
-
-
-@pytc.treeclass
-class AdaptiveMaxPool2D(AdaptivePoolND):
-    def __init__(self, output_size: tuple[int, ...]):
-        super().__init__(output_size=output_size, ndim=2, func=jnp.max)
-
-
-@pytc.treeclass
-class AdaptiveMaxPool3D(AdaptivePoolND):
-    def __init__(self, output_size: tuple[int, ...]):
-        super().__init__(output_size=output_size, ndim=3, func=jnp.max)
-
-
-@pytc.treeclass
-class AdaptiveConcatPool1D:
-    def __init__(self, output_size: tuple[int, ...]):
+class AdaptiveConcatPoolND:
+    def __init__(self, output_size: tuple[int, ...], ndim: int):
         """Concatenate AdaptiveAvgPool1D and AdaptiveMaxPool1D
         See: https://github.com/fastai/fastai/blob/master/fastai/layers.py#L110
         """
-        self.avg_pool = AdaptiveAvgPool1D(output_size)
-        self.max_pool = AdaptiveMaxPool1D(output_size)
+        self.ndim = ndim
+        self.avg_pool = AdaptivePoolND(output_size, func=jnp.mean, ndim=ndim)
+        self.max_pool = AdaptivePoolND(output_size, func=jnp.max, ndim=ndim)
 
+    @_check_spatial_in_shape
     def __call__(self, x, **kwargs):
         return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
 
 
-@pytc.treeclass
-class AdaptiveConcatPool2D:
-    def __init__(self, output_size: tuple[int, ...]):
-        self.avg_pool = AdaptiveAvgPool2D(output_size)
-        self.max_pool = AdaptiveMaxPool2D(output_size)
+MaxPool1D = ft.partial(GeneralPoolND, func=jnp.max, ndim=1)
+MaxPool2D = ft.partial(GeneralPoolND, func=jnp.max, ndim=2)
+MaxPool3D = ft.partial(GeneralPoolND, func=jnp.max, ndim=3)
 
-    def __call__(self, x, **kwargs):
-        return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
+AvgPool1D = ft.partial(GeneralPoolND, func=jnp.mean, ndim=1)
+AvgPool2D = ft.partial(GeneralPoolND, func=jnp.mean, ndim=2)
+AvgPool3D = ft.partial(GeneralPoolND, func=jnp.mean, ndim=3)
 
+LPPool1D = ft.partial(LPPoolND, ndim=1)
+LPPool2D = ft.partial(LPPoolND, ndim=2)
+LPPool3D = ft.partial(LPPoolND, ndim=3)
 
-@pytc.treeclass
-class AdaptiveConcatPool3D:
-    def __init__(self, output_size: tuple[int, ...]):
-        self.avg_pool = AdaptiveAvgPool3D(output_size)
-        self.max_pool = AdaptiveMaxPool3D(output_size)
+GlobalAvgPool1D = ft.partial(GlobalPoolND, func=jnp.mean, ndim=1)
+GlobalAvgPool2D = ft.partial(GlobalPoolND, func=jnp.mean, ndim=2)
+GlobalAvgPool3D = ft.partial(GlobalPoolND, func=jnp.mean, ndim=3)
 
-    def __call__(self, x, **kwargs):
-        return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
+GlobalMaxPool1D = ft.partial(GlobalPoolND, func=jnp.max, ndim=1)
+GlobalMaxPool2D = ft.partial(GlobalPoolND, func=jnp.max, ndim=2)
+GlobalMaxPool3D = ft.partial(GlobalPoolND, func=jnp.max, ndim=3)
+
+AdaptiveAvgPool1D = ft.partial(AdaptivePoolND, func=jnp.mean, ndim=1)
+AdaptiveAvgPool2D = ft.partial(AdaptivePoolND, func=jnp.mean, ndim=2)
+AdaptiveAvgPool3D = ft.partial(AdaptivePoolND, func=jnp.mean, ndim=3)
+
+AdaptiveMaxPool1D = ft.partial(AdaptivePoolND, func=jnp.max, ndim=1)
+AdaptiveMaxPool2D = ft.partial(AdaptivePoolND, func=jnp.max, ndim=2)
+AdaptiveMaxPool3D = ft.partial(AdaptivePoolND, func=jnp.max, ndim=3)
+
+AdaptiveConcatPool1D = ft.partial(AdaptiveConcatPoolND, ndim=1)
+AdaptiveConcatPool2D = ft.partial(AdaptiveConcatPoolND, ndim=2)
+AdaptiveConcatPool3D = ft.partial(AdaptiveConcatPoolND, ndim=3)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import kernex as kex
@@ -12,56 +14,29 @@ from serket.nn.utils import (
 )
 
 
-@pytc.treeclass
-class Repeat1D:
-    def __init__(self, scale: int = 1):
-        """repeats input along axis 1"""
-        self.scale = _check_and_return_positive_int(scale, "scale")
-        self.ndim = 1
-
-    @_check_spatial_in_shape
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        @kex.kmap(kernel_size=(-1, -1), strides=(1, 1), padding="valid")
-        def _repeat(x):
-            return x.repeat(self.scale, axis=1)
-
-        return jnp.squeeze(_repeat(x), axis=(1, 2))
+def _recursive_repeat(x, scale, axis):
+    if axis == 1:
+        return x.repeat(scale, axis=axis)
+    return _recursive_repeat(x.repeat(scale, axis=axis), scale, axis - 1)
 
 
 @pytc.treeclass
-class Repeat2D:
-    def __init__(self, scale: int = 1):
-        """repeats input along axes 1,2"""
-        self.scale = _check_and_return_positive_int(scale, "scale")
-        self.ndim = 2
-
-    @_check_spatial_in_shape
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        @kex.kmap(kernel_size=(-1, -1, -1), strides=(1, 1, 1), padding="valid")
-        def _repeat(x):
-            return x.repeat(self.scale, axis=2).repeat(self.scale, axis=1)
-
-        return jnp.squeeze(_repeat(x), axis=(1, 2, 3))
-
-
-@pytc.treeclass
-class Repeat3D:
-    def __init__(self, scale: int = 1):
+class RepeatND:
+    def __init__(self, scale: int = 1, ndim: int = 1):
         """repeats input along axes 1,2,3"""
         self.scale = _check_and_return_positive_int(scale, "scale")
-        self.ndim = 3
+        self.ndim = ndim
 
     @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        @kex.kmap(kernel_size=(-1, -1, -1, -1), strides=(1, 1, 1, 1), padding="valid")
-        def _repeat(x):
-            return (
-                x.repeat(self.scale, axis=3)
-                .repeat(self.scale, axis=2)
-                .repeat(self.scale, axis=1)
-            )
+        kernel_size = (-1,) * (self.ndim + 1)
+        strides = (1,) * (self.ndim + 1)
 
-        return jnp.squeeze(_repeat(x), axis=(1, 2, 3, 4))
+        @kex.kmap(kernel_size=kernel_size, strides=strides, padding="valid")
+        def _repeat(x):
+            return _recursive_repeat(x, self.scale, self.ndim)
+
+        return jnp.squeeze(_repeat(x), axis=tuple(range(1, self.ndim + 2)))
 
 
 @pytc.treeclass
@@ -116,24 +91,6 @@ class ResizeND:
 
 
 @pytc.treeclass
-class Resize1D(ResizeND):
-    def __init__(self, size, method="nearest", antialias=True):
-        super().__init__(size, method, antialias, ndim=1)
-
-
-@pytc.treeclass
-class Resize2D(ResizeND):
-    def __init__(self, size, method="nearest", antialias=True):
-        super().__init__(size, method, antialias, ndim=2)
-
-
-@pytc.treeclass
-class Resize3D(ResizeND):
-    def __init__(self, size, method="nearest", antialias=True):
-        super().__init__(size, method, antialias, ndim=3)
-
-
-@pytc.treeclass
 class UpsampleND:
     scale: int | tuple[int, ...] = pytc.nondiff_field(default=1)
     method: str = pytc.nondiff_field(default="nearest")
@@ -161,19 +118,14 @@ class UpsampleND:
         )
 
 
-@pytc.treeclass
-class Upsample1D(UpsampleND):
-    def __init__(self, scale: int | tuple[int, ...], method: str = "nearest"):
-        super().__init__(scale, method, ndim=1)
+Repeat1D = ft.partial(RepeatND, ndim=1)
+Repeat2D = ft.partial(RepeatND, ndim=2)
+Repeat3D = ft.partial(RepeatND, ndim=3)
 
+Resize1D = ft.partial(ResizeND, ndim=1)
+Resize2D = ft.partial(ResizeND, ndim=2)
+Resize3D = ft.partial(ResizeND, ndim=3)
 
-@pytc.treeclass
-class Upsample2D(UpsampleND):
-    def __init__(self, scale: int | tuple[int, ...], method: str = "nearest"):
-        super().__init__(scale, method, ndim=2)
-
-
-@pytc.treeclass
-class Upsample3D(UpsampleND):
-    def __init__(self, scale: int | tuple[int, ...], method: str = "nearest"):
-        super().__init__(scale, method, ndim=3)
+Upsample1D = ft.partial(UpsampleND, ndim=1)
+Upsample2D = ft.partial(UpsampleND, ndim=2)
+Upsample3D = ft.partial(UpsampleND, ndim=3)
