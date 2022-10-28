@@ -310,38 +310,30 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     return f"{input_string},{weight_string}->{result_string}"
 
 
-def _lazy_call(
-    infer_func: Callable[[Any], dict[str, Any]], partial_kw: str | tuple[str]
-):
+def _getattr(item, path):
+    return (
+        _getattr(getattr(item, path[0]), path[1:])
+        if len(path) > 1
+        else getattr(item, path[0])
+    )
+
+
+def _hasattr(item, path):
+    return (
+        _hasattr(getattr(item, path[0]), path[1:])
+        if len(path) > 1
+        else hasattr(item, path[0])
+    )
+
+
+def _lazy_call(infer_func: Callable[[Any], dict[str, Any]], partial_kw: str):
     """Decorator to lazily initialize a layer. The layer is initialized when the first call is made.
     Args:
         infer_func: a function that takes the layer as input and returns a dictionary of inferred values.
         partial_kw: the keyword argument that stores the partial function.
     """
 
-    partial_kw = (partial_kw,) if isinstance(partial_kw, str) else partial_kw
-
-    def _getattr(item, path):
-        """recursive getter"""
-        # this function gets a certain attribute value based on a
-        # sequence of strings.
-        # for example _getter(item , ["a", "b", "c"]) is equivalent to item.a.b.c
-        return (
-            _getattr(getattr(item, path[0]), path[1:])
-            if len(path) > 1
-            else getattr(item, path[0])
-        )
-
-    def _hasattr(item, path):
-        """recursive has_attr"""
-        # this function gets a certain attribute value based on a
-        # sequence of strings.
-        # for example _getter(item , ["a", "b", "c"]) is equivalent to item.a.b.c
-        return (
-            _hasattr(getattr(item, path[0]), path[1:])
-            if len(path) > 1
-            else hasattr(item, path[0])
-        )
+    partial_kw = partial_kw.split(".")
 
     def func_wrapper(func):
         @ft.wraps(func)
@@ -358,20 +350,46 @@ def _lazy_call(
     return func_wrapper
 
 
-def _infer_in_features(axis: int = 0):
-    return lambda _, *a, **k: {"in_features": a[0].shape[axis]}
+def _lazy_general_linear(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": tuple(a[0].shape[i] for i in self.in_axes)}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
 
 
-def _infer_in_features_in_size(axis: int = 0):
-    return lambda _, *a, **k: {
-        "in_features": a[0].shape[axis],
-        "in_size": a[0].shape[axis + 1 :],
-    }
+def _lazy_multi_linear(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": tuple(ai.shape[-1] for ai in a)}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
 
 
-def _multilinear_infer_func(_, *a, **k):
-    return {"in_features": tuple(ai.shape[-1] for ai in a)}
+def _lazy_conv(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[0]}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
 
 
-def _general_infer_func(_, *a, **k):
-    return {"in_features": tuple(a[0].shape[i] for i in _.in_axes)}
+_lazy_rnn_cell = _lazy_blur = _lazy_norm = _lazy_conv
+
+
+def _lazy_local_conv(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[0], "in_size": a[0].shape[1:]}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
+
+
+def _lazy_fwd_rnn(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[1]}
+
+    return _lazy_call(infer_func, "cell._partial_init")(func)
+
+
+def _lazy_bwd_rnn(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[1]}
+
+    return _lazy_call(infer_func, "backward_cell._partial_init")(func)

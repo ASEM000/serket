@@ -14,8 +14,9 @@ from serket.nn.convolution import ConvND, SeparableConvND
 from serket.nn.utils import (
     _act_func_map,
     _check_and_return_positive_int,
-    _infer_in_features,
-    _lazy_call,
+    _lazy_bwd_rnn,
+    _lazy_fwd_rnn,
+    _lazy_rnn_cell,
 )
 
 # --------------------------------------------------- RNN ------------------------------------------------------------ #
@@ -115,7 +116,7 @@ class SimpleRNNCell(RNNCell):
             key=k2,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_rnn_cell
     def __call__(
         self, x: jnp.ndarray, state: SimpleRNNState, **kwargs
     ) -> SimpleRNNState:
@@ -213,7 +214,7 @@ class LSTMCell(RNNCell):
             key=k2,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_rnn_cell
     def __call__(self, x: jnp.ndarray, state: LSTMState, **kwargs) -> LSTMState:
         msg = f"Expected state to be an instance of LSTMState, got {type(state)}"
         assert isinstance(state, LSTMState), msg
@@ -316,7 +317,7 @@ class GRUCell(RNNCell):
             key=k2,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_rnn_cell
     def __call__(self, x: jnp.ndarray, state: GRUState, **kwargs) -> GRUState:
         msg = f"Expected state to be an instance of GRUState, got {type(state)}"
         assert isinstance(state, GRUState), msg
@@ -447,7 +448,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_rnn_cell
     def __call__(
         self, x: jnp.ndarray, state: ConvLSTMNDState, **kwargs
     ) -> ConvLSTMNDState:
@@ -686,7 +687,7 @@ class SeparableConvLSTMNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_rnn_cell
     def __call__(
         self, x: jnp.ndarray, state: SeparableConvLSTMNDState, **kwargs
     ) -> SeparableConvLSTMNDState:
@@ -927,7 +928,7 @@ class ConvGRUNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_rnn_cell
     def __call__(
         self, x: jnp.ndarray, state: ConvGRUNDState, **kwargs
     ) -> ConvGRUNDState:
@@ -1164,7 +1165,7 @@ class SeparableConvGRUNDCell(SpatialRNNCell):
             ndim=ndim,
         )
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_rnn_cell
     def __call__(
         self, x: jnp.ndarray, state: SeparableConvGRUNDState, **kwargs
     ) -> SeparableConvGRUNDState:
@@ -1375,8 +1376,8 @@ class ScanRNN:
         self.backward_cell = backward_cell
         self.return_sequences = return_sequences
 
-    @_lazy_call(_infer_in_features(axis=1), ("cell", "_partial_init"))
-    @_lazy_call(_infer_in_features(axis=1), ("backward_cell", "_partial_init"))
+    @_lazy_fwd_rnn
+    @_lazy_bwd_rnn
     def __call__(
         self,
         x: jnp.ndarray,

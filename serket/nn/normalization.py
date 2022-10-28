@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _infer_in_features, _lazy_call
+from serket.nn.utils import _lazy_norm
 
 
 @pytc.treeclass
@@ -125,7 +125,7 @@ class GroupNorm:
             self.γ = jnp.ones(self.in_features)
             self.β = jnp.zeros(self.in_features)
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_norm
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         assert len(x.shape) > 1, "Input must have at least 2 dimensions"
         # split channels into groups

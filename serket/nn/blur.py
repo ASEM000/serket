@@ -14,8 +14,7 @@ from serket.nn.utils import (
     _check_and_return_positive_int,
     _check_in_features,
     _check_spatial_in_shape,
-    _infer_in_features,
-    _lazy_call,
+    _lazy_blur,
 )
 
 
@@ -74,7 +73,7 @@ class AvgBlur2D:
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_blur
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x, **kwargs) -> jnp.ndarray:
@@ -174,7 +173,7 @@ class GaussianBlur2D:
         # else:
         #     raise ValueError(f"Unknown implementation {implementation}")
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_blur
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x, **kwargs) -> jnp.ndarray:
@@ -219,7 +218,7 @@ class Filter2D:
         )
         self.conv = self.conv.at["weight"].set(self.kernel)
 
-    @_lazy_call(_infer_in_features(axis=0), "_partial_init")
+    @_lazy_blur
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x, **kwargs) -> jnp.ndarray:
