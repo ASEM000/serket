@@ -31,20 +31,20 @@ class CropND:
 
 @pytc.treeclass
 class Crop1D(CropND):
-    def __init__(self, size, start=0):
-        super().__init__(size, start, ndim=1)
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
 
 
 @pytc.treeclass
 class Crop2D(CropND):
-    def __init__(self, size, start=0):
-        super().__init__(size, start, ndim=2)
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
 
 
 @pytc.treeclass
 class Crop3D(CropND):
-    def __init__(self, size, start=0):
-        super().__init__(size, start, ndim=3)
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)
 
 
 @pytc.treeclass
@@ -73,17 +73,17 @@ class RandomCropND:
 
 @pytc.treeclass
 class RandomCrop1D(RandomCropND):
-    def __init__(self, size):
-        super().__init__(size, ndim=1)
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
 
 
 @pytc.treeclass
 class RandomCrop2D(RandomCropND):
-    def __init__(self, size):
-        super().__init__(size, ndim=2)
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
 
 
 @pytc.treeclass
 class RandomCrop3D(RandomCropND):
-    def __init__(self, size):
-        super().__init__(size, ndim=3)
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)

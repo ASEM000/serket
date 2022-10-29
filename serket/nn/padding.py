@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import functools as ft
-
 import jax.numpy as jnp
 import pytreeclass as pytc
 
@@ -33,6 +31,19 @@ class PadND:
         return jnp.pad(x, ((0, 0), *self.padding), constant_values=self.value)
 
 
-Pad1D = ft.partial(PadND, ndim=1)
-Pad2D = ft.partial(PadND, ndim=2)
-Pad3D = ft.partial(PadND, ndim=3)
+@pytc.treeclass
+class Pad1D(PadND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
+
+
+@pytc.treeclass
+class Pad2D(PadND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
+
+
+@pytc.treeclass
+class Pad3D(PadND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools as ft
 from typing import Callable
 
 import jax
@@ -160,34 +159,146 @@ class AdaptiveConcatPoolND:
         return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
 
 
-MaxPool1D = ft.partial(GeneralPoolND, func=jnp.max, ndim=1)
-MaxPool2D = ft.partial(GeneralPoolND, func=jnp.max, ndim=2)
-MaxPool3D = ft.partial(GeneralPoolND, func=jnp.max, ndim=3)
+@pytc.treeclass
+class MaxPool1D(GeneralPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, func=jnp.max)
 
-AvgPool1D = ft.partial(GeneralPoolND, func=jnp.mean, ndim=1)
-AvgPool2D = ft.partial(GeneralPoolND, func=jnp.mean, ndim=2)
-AvgPool3D = ft.partial(GeneralPoolND, func=jnp.mean, ndim=3)
 
-LPPool1D = ft.partial(LPPoolND, ndim=1)
-LPPool2D = ft.partial(LPPoolND, ndim=2)
-LPPool3D = ft.partial(LPPoolND, ndim=3)
+# write all the other pooling layers here
+@pytc.treeclass
+class MaxPool2D(GeneralPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, func=jnp.max)
 
-GlobalAvgPool1D = ft.partial(GlobalPoolND, func=jnp.mean, ndim=1)
-GlobalAvgPool2D = ft.partial(GlobalPoolND, func=jnp.mean, ndim=2)
-GlobalAvgPool3D = ft.partial(GlobalPoolND, func=jnp.mean, ndim=3)
 
-GlobalMaxPool1D = ft.partial(GlobalPoolND, func=jnp.max, ndim=1)
-GlobalMaxPool2D = ft.partial(GlobalPoolND, func=jnp.max, ndim=2)
-GlobalMaxPool3D = ft.partial(GlobalPoolND, func=jnp.max, ndim=3)
+@pytc.treeclass
+class MaxPool3D(GeneralPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, func=jnp.max)
 
-AdaptiveAvgPool1D = ft.partial(AdaptivePoolND, func=jnp.mean, ndim=1)
-AdaptiveAvgPool2D = ft.partial(AdaptivePoolND, func=jnp.mean, ndim=2)
-AdaptiveAvgPool3D = ft.partial(AdaptivePoolND, func=jnp.mean, ndim=3)
 
-AdaptiveMaxPool1D = ft.partial(AdaptivePoolND, func=jnp.max, ndim=1)
-AdaptiveMaxPool2D = ft.partial(AdaptivePoolND, func=jnp.max, ndim=2)
-AdaptiveMaxPool3D = ft.partial(AdaptivePoolND, func=jnp.max, ndim=3)
+@pytc.treeclass
+class AvgPool1D(GeneralPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, func=jnp.mean)
 
-AdaptiveConcatPool1D = ft.partial(AdaptiveConcatPoolND, ndim=1)
-AdaptiveConcatPool2D = ft.partial(AdaptiveConcatPoolND, ndim=2)
-AdaptiveConcatPool3D = ft.partial(AdaptiveConcatPoolND, ndim=3)
+
+@pytc.treeclass
+class AvgPool2D(GeneralPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, func=jnp.mean)
+
+
+@pytc.treeclass
+class AvgPool3D(GeneralPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, func=jnp.mean)
+
+
+@pytc.treeclass
+class LPPool1D(LPPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
+
+
+@pytc.treeclass
+class LPPool2D(LPPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
+
+
+@pytc.treeclass
+class LPPool3D(LPPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)
+
+
+@pytc.treeclass
+class GlobalAvgPool1D(GlobalPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, func=jnp.mean)
+
+
+@pytc.treeclass
+class GlobalAvgPool2D(GlobalPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, func=jnp.mean)
+
+
+@pytc.treeclass
+class GlobalAvgPool3D(GlobalPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, func=jnp.mean)
+
+
+@pytc.treeclass
+class GlobalMaxPool1D(GlobalPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, func=jnp.max)
+
+
+@pytc.treeclass
+class GlobalMaxPool2D(GlobalPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, func=jnp.max)
+
+
+@pytc.treeclass
+class GlobalMaxPool3D(GlobalPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, func=jnp.max)
+
+
+@pytc.treeclass
+class AdaptiveAvgPool1D(AdaptivePoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, func=jnp.mean)
+
+
+@pytc.treeclass
+class AdaptiveAvgPool2D(AdaptivePoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, func=jnp.mean)
+
+
+@pytc.treeclass
+class AdaptiveAvgPool3D(AdaptivePoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, func=jnp.mean)
+
+
+@pytc.treeclass
+class AdaptiveMaxPool1D(AdaptivePoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, func=jnp.max)
+
+
+@pytc.treeclass
+class AdaptiveMaxPool2D(AdaptivePoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, func=jnp.max)
+
+
+@pytc.treeclass
+class AdaptiveMaxPool3D(AdaptivePoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, func=jnp.max)
+
+
+@pytc.treeclass
+class AdaptiveConcatPool1D(AdaptiveConcatPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
+
+
+@pytc.treeclass
+class AdaptiveConcatPool2D(AdaptiveConcatPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
+
+
+@pytc.treeclass
+class AdaptiveConcatPool3D(AdaptiveConcatPoolND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)

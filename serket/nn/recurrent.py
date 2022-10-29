@@ -474,13 +474,40 @@ class ConvLSTMNDCell(SpatialRNNCell):
         return ConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
 
 
-ConvLSTM1DCell = ft.partial(ConvLSTMNDCell, conv_layer=ConvND, ndim=1)
-ConvLSTM2DCell = ft.partial(ConvLSTMNDCell, conv_layer=ConvND, ndim=2)
-ConvLSTM3DCell = ft.partial(ConvLSTMNDCell, conv_layer=ConvND, ndim=3)
+@pytc.treeclass
+class ConvLSTM1DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, conv_layer=ConvND)
 
-SeparableConvLSTM1DCell = ft.partial(ConvLSTMNDCell, conv_layer=SeparableConvND, ndim=1)
-SeparableConvLSTM2DCell = ft.partial(ConvLSTMNDCell, conv_layer=SeparableConvND, ndim=2)
-SeparableConvLSTM3DCell = ft.partial(ConvLSTMNDCell, conv_layer=SeparableConvND, ndim=3)
+
+@pytc.treeclass
+class ConvLSTM2DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, conv_layer=ConvND)
+
+
+@pytc.treeclass
+class ConvLSTM3DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, conv_layer=ConvND)
+
+
+@pytc.treeclass
+class SeparableConvLSTM1DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, conv_layer=SeparableConvND)
+
+
+@pytc.treeclass
+class SeparableConvLSTM2DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, conv_layer=SeparableConvND)
+
+
+@pytc.treeclass
+class SeparableConvLSTM3DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, conv_layer=SeparableConvND)
 
 
 @pytc.treeclass
@@ -617,13 +644,40 @@ class ConvGRUNDCell(SpatialRNNCell):
         return ConvGRUNDState(hidden_state=jnp.zeros(shape))
 
 
-ConvGRU1DCell = ft.partial(ConvGRUNDCell, conv_layer=ConvND, ndim=1)
-ConvGRU2DCell = ft.partial(ConvGRUNDCell, conv_layer=ConvND, ndim=2)
-ConvGRU3DCell = ft.partial(ConvGRUNDCell, conv_layer=ConvND, ndim=3)
+@pytc.treeclass
+class ConvGRU1DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, conv_layer=ConvND)
 
-SeparableConvGRU1DCell = ft.partial(ConvGRUNDCell, conv_layer=SeparableConvND, ndim=1)
-SeparableConvGRU2DCell = ft.partial(ConvGRUNDCell, conv_layer=SeparableConvND, ndim=2)
-SeparableConvGRU3DCell = ft.partial(ConvGRUNDCell, conv_layer=SeparableConvND, ndim=3)
+
+@pytc.treeclass
+class ConvGRU2DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, conv_layer=ConvND)
+
+
+@pytc.treeclass
+class ConvGRU3DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, conv_layer=ConvND)
+
+
+@pytc.treeclass
+class SeparableConvGRU1DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, conv_layer=SeparableConvND)
+
+
+@pytc.treeclass
+class SeparableConvGRU2DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, conv_layer=SeparableConvND)
+
+
+@pytc.treeclass
+class SeparableConvGRU3DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, conv_layer=SeparableConvND)
 
 
 # ------------------------------------------------- Scan layer ------------------------------------------------------ #

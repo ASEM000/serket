@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import functools as ft
-
 import jax
 import jax.numpy as jnp
 import kernex as kex
@@ -118,14 +116,55 @@ class UpsampleND:
         )
 
 
-Repeat1D = ft.partial(RepeatND, ndim=1)
-Repeat2D = ft.partial(RepeatND, ndim=2)
-Repeat3D = ft.partial(RepeatND, ndim=3)
+@pytc.treeclass
+class Repeat1D(RepeatND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, ndim=1, **k)
 
-Resize1D = ft.partial(ResizeND, ndim=1)
-Resize2D = ft.partial(ResizeND, ndim=2)
-Resize3D = ft.partial(ResizeND, ndim=3)
 
-Upsample1D = ft.partial(UpsampleND, ndim=1)
-Upsample2D = ft.partial(UpsampleND, ndim=2)
-Upsample3D = ft.partial(UpsampleND, ndim=3)
+@pytc.treeclass
+class Repeat2D(RepeatND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, ndim=2, **k)
+
+
+@pytc.treeclass
+class Repeat3D(RepeatND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, ndim=3, **k)
+
+
+@pytc.treeclass
+class Resize1D(ResizeND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, ndim=1, **k)
+
+
+@pytc.treeclass
+class Resize2D(ResizeND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, ndim=2, **k)
+
+
+@pytc.treeclass
+class Resize3D(ResizeND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, ndim=3, **k)
+
+
+@pytc.treeclass
+class Upsample1D(UpsampleND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, ndim=1, **k)
+
+
+@pytc.treeclass
+class Upsample2D(UpsampleND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, ndim=2, **k)
+
+
+@pytc.treeclass
+class Upsample3D(UpsampleND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, ndim=3, **k)

@@ -645,22 +645,91 @@ class ConvNDLocal:
         return jnp.squeeze((y + self.bias), 0)
 
 
-Conv1D = ft.partial(ConvND, ndim=1)
-Conv2D = ft.partial(ConvND, ndim=2)
-Conv3D = ft.partial(ConvND, ndim=3)
+@pytc.treeclass
+class Conv1D(ConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
 
-Conv1DTranspose = ft.partial(ConvNDTranspose, ndim=1)
-Conv2DTranspose = ft.partial(ConvNDTranspose, ndim=2)
-Conv3DTranspose = ft.partial(ConvNDTranspose, ndim=3)
 
-DepthwiseConv1D = ft.partial(DepthwiseConvND, ndim=1)
-DepthwiseConv2D = ft.partial(DepthwiseConvND, ndim=2)
-DepthwiseConv3D = ft.partial(DepthwiseConvND, ndim=3)
+@pytc.treeclass
+class Conv2D(ConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
 
-SeparableConv1D = ft.partial(SeparableConvND, ndim=1)
-SeparableConv2D = ft.partial(SeparableConvND, ndim=2)
-SeparableConv3D = ft.partial(SeparableConvND, ndim=3)
 
-Conv1DLocal = ft.partial(ConvNDLocal, ndim=1)
-Conv2DLocal = ft.partial(ConvNDLocal, ndim=2)
-Conv3DLocal = ft.partial(ConvNDLocal, ndim=3)
+@pytc.treeclass
+class Conv3D(ConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)
+
+
+@pytc.treeclass
+class Conv1DTranspose(ConvNDTranspose):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
+
+
+@pytc.treeclass
+class Conv2DTranspose(ConvNDTranspose):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
+
+
+@pytc.treeclass
+class Conv3DTranspose(ConvNDTranspose):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)
+
+
+@pytc.treeclass
+class Conv1DLocal(ConvNDLocal):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
+
+
+@pytc.treeclass
+class Conv2DLocal(ConvNDLocal):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
+
+
+@pytc.treeclass
+class Conv3DLocal(ConvNDLocal):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)
+
+
+@pytc.treeclass
+class DepthwiseConv1D(DepthwiseConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
+
+
+@pytc.treeclass
+class DepthwiseConv2D(DepthwiseConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
+
+
+@pytc.treeclass
+class DepthwiseConv3D(DepthwiseConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)
+
+
+@pytc.treeclass
+class SeparableConv1D(SeparableConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
+
+
+@pytc.treeclass
+class SeparableConv2D(SeparableConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
+
+
+@pytc.treeclass
+class SeparableConv3D(SeparableConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)

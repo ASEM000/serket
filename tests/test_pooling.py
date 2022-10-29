@@ -204,7 +204,7 @@ def test_adaptive_pool1d():
     layer_avg = AdaptiveAvgPool1D(2)
     layer_max = AdaptiveMaxPool1D(2)
     layer_concat = AdaptiveConcatPool1D(2)
-    for input_shape in [2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14]:
+    for input_shape in [2, 3, 4, 5, 10, 13, 14]:
         x = jnp.ones([1, input_shape])
         assert layer_avg(x).shape == (1, 2)
         assert layer_max(x).shape == (1, 2)
@@ -215,7 +215,7 @@ def test_adaptive_pool2d():
     layer_avg = AdaptiveAvgPool2D((2, 3))
     layer_max = AdaptiveMaxPool2D((2, 3))
     layer_concat = AdaptiveConcatPool2D((2, 3))
-    for input_size in product([2, 3, 4, 5, 6, 7, 8, 9], [3, 4, 5, 6, 7, 8, 9]):
+    for input_size in product([2, 3, 4, 5], [3, 4]):
         x = jnp.ones([1, *input_size])
         assert layer_avg(x).shape == (1, 2, 3)
         assert layer_max(x).shape == (1, 2, 3)
@@ -224,7 +224,7 @@ def test_adaptive_pool2d():
     layer_avg = AdaptiveAvgPool2D((4, 7))
     layer_max = AdaptiveMaxPool2D((4, 7))
     layer_concat = AdaptiveConcatPool2D((4, 7))
-    for input_size in product([4, 5, 6, 7, 8, 9], [7, 8, 9, 16, 18]):
+    for input_size in product([4, 5], [7, 8, 9, 16, 18]):
         x = jnp.ones([1, *input_size])
         assert layer_avg(x).shape == (1, 4, 7)
         assert layer_max(x).shape == (1, 4, 7)
@@ -235,9 +235,7 @@ def test_adaptive_pool3d():
     layer_avg = AdaptiveAvgPool3D((2, 3, 4))
     layer_max = AdaptiveMaxPool3D((2, 3, 4))
     layer_concat = AdaptiveConcatPool3D((2, 3, 4))
-    for input_size in product(
-        [2, 3, 4, 5, 6, 7, 8, 9], [3, 4, 5, 6, 7, 8, 9], [4, 5, 6, 7, 8, 9]
-    ):
+    for input_size in product([2, 3, 4, 5], [3, 4, 5], [4, 5]):
         x = jnp.ones([1, *input_size])
         assert layer_avg(x).shape == (1, 2, 3, 4)
         assert layer_max(x).shape == (1, 2, 3, 4)
@@ -246,9 +244,7 @@ def test_adaptive_pool3d():
     layer_avg = AdaptiveAvgPool3D((4, 7, 8))
     layer_max = AdaptiveMaxPool3D((4, 7, 8))
     layer_concat = AdaptiveConcatPool3D((4, 7, 8))
-    for input_size in product(
-        [4, 5, 6, 7, 8, 9], [7, 8, 9, 16, 18], [8, 9, 10, 11, 12]
-    ):
+    for input_size in product([4, 5], [7, 8, 9, 16, 18], [8, 9]):
         x = jnp.ones([1, *input_size])
         assert layer_avg(x).shape == (1, 4, 7, 8)
         assert layer_max(x).shape == (1, 4, 7, 8)

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import functools as ft
-
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
@@ -82,6 +80,19 @@ class DropoutND:
         return jnp.where(mask, x / (1 - self.p), 0)
 
 
-Dropout1D = ft.partial(DropoutND, ndim=1)
-Dropout2D = ft.partial(DropoutND, ndim=2)
-Dropout3D = ft.partial(DropoutND, ndim=3)
+@pytc.treeclass
+class Dropout1D(DropoutND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
+
+
+@pytc.treeclass
+class Dropout2D(DropoutND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
+
+
+@pytc.treeclass
+class Dropout3D(DropoutND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)
