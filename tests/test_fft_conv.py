@@ -11,6 +11,9 @@ from serket.experimental import (
     FFTConv2DTranspose,
     FFTConv3D,
     FFTConv3DTranspose,
+    SeparableFFTConv1D,
+    SeparableFFTConv2D,
+    SeparableFFTConv3D,
 )
 from serket.nn import (
     Conv1D,
@@ -22,6 +25,9 @@ from serket.nn import (
     DepthwiseConv1D,
     DepthwiseConv2D,
     DepthwiseConv3D,
+    SeparableConv1D,
+    SeparableConv2D,
+    SeparableConv3D,
 )
 
 
@@ -558,4 +564,21 @@ def test_conv_transpose():
     x = jnp.ones([10, 4, 4, 4])
     npt.assert_allclose(
         Conv3DTranspose(10, 4, 3)(x), FFTConv3DTranspose(10, 4, 3)(x), atol=1e-4
+    )
+
+
+def test_separable_conv():
+    x = jnp.ones([10, 4])
+    npt.assert_allclose(
+        SeparableConv1D(10, 4, 3)(x), SeparableFFTConv1D(10, 4, 3)(x), atol=1e-4
+    )
+
+    x = jnp.ones([10, 4, 4])
+    npt.assert_allclose(
+        SeparableConv2D(10, 4, 3)(x), SeparableFFTConv2D(10, 4, 3)(x), atol=1e-4
+    )
+
+    x = jnp.ones([10, 4, 4, 4])
+    npt.assert_allclose(
+        SeparableConv3D(10, 4, 3)(x), SeparableFFTConv3D(10, 4, 3)(x), atol=1e-4
     )

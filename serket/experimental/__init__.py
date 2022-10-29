@@ -9,6 +9,9 @@ from .fft_conv import (
     FFTConv2DTranspose,
     FFTConv3D,
     FFTConv3DTranspose,
+    SeparableFFTConv1D,
+    SeparableFFTConv2D,
+    SeparableFFTConv3D,
 )
 
 __all__ = (
@@ -24,4 +27,7 @@ __all__ = (
     "FFTConv1DTranspose",
     "FFTConv2DTranspose",
     "FFTConv3DTranspose",
+    "SeparableFFTConv1D",
+    "SeparableFFTConv2D",
+    "SeparableFFTConv3D",
 )

@@ -450,6 +450,122 @@ class DepthwiseFFTConvND:
 
 
 @pytc.treeclass
+class SeparableFFTConvND:
+    depthwise_conv: DepthwiseFFTConvND
+    pointwise_conv: DepthwiseFFTConvND
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        depth_multiplier: int = 1,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        depthwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_weight_init_func: str | Callable = "glorot_uniform",
+        pointwise_bias_init_func: str | Callable = "zeros",
+        ndim: int = 2,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """Separable convolutional layer.
+
+        Note:
+            See:
+                https://en.wikipedia.org/wiki/Separable_filter
+                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
+
+        Args:
+            in_features : Number of input channels.
+            out_features : Number of output channels.
+            kernel_size : Size of the convolving kernel.
+            depth_multiplier : Number of depthwise convolution output channels for each input channel.
+            strides : Stride of the convolution.
+            padding : Padding to apply to the input.
+            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
+            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
+            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
+            ndim : Number of spatial dimensions.
+
+        """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+            self._partial_init = ft.partial(
+                SeparableFFTConvND.__init__,
+                self=self,
+                out_features=out_features,
+                kernel_size=kernel_size,
+                depth_multiplier=depth_multiplier,
+                strides=strides,
+                padding=padding,
+                depthwise_weight_init_func=depthwise_weight_init_func,
+                pointwise_weight_init_func=pointwise_weight_init_func,
+                pointwise_bias_init_func=pointwise_bias_init_func,
+                ndim=ndim,
+                key=key,
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.depth_multiplier = _check_and_return_positive_int(
+            depth_multiplier, "in_features"
+        )
+        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.ndim = _check_and_return_positive_int(ndim, "ndim")
+
+        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
+        self.strides = _check_and_return_strides(strides, ndim)
+        self.padding = _check_and_return_padding(padding, self.kernel_size)
+        self.depthwise_weight_init_func = _check_and_return_init_func(
+            depthwise_weight_init_func, "depthwise_weight_init_func"
+        )
+        self.pointwise_weight_init_func = _check_and_return_init_func(
+            pointwise_weight_init_func, "pointwise_weight_init_func"
+        )
+        self.pointwise_bias_init_func = _check_and_return_init_func(
+            pointwise_bias_init_func, "pointwise_bias_init_func"
+        )
+
+        self.depthwise_conv = DepthwiseFFTConvND(
+            in_features=in_features,
+            depth_multiplier=depth_multiplier,
+            kernel_size=self.kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
+            key=key,
+            ndim=ndim,
+        )
+
+        self.pointwise_conv = FFTConvND(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+            ndim=ndim,
+        )
+
+    @_lazy_conv
+    @_check_spatial_in_shape
+    @_check_in_features
+    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+
+@pytc.treeclass
 class FFTConv1D(FFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, ndim=1)
@@ -499,5 +615,23 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
 
 @pytc.treeclass
 class DepthwiseFFTConv3D(DepthwiseFFTConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3)
+
+
+@pytc.treeclass
+class SeparableFFTConv1D(SeparableFFTConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1)
+
+
+@pytc.treeclass
+class SeparableFFTConv2D(SeparableFFTConvND):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2)
+
+
+@pytc.treeclass
+class SeparableFFTConv3D(SeparableFFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, ndim=3)
