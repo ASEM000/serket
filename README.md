@@ -53,7 +53,7 @@ pip install git+https://github.com/ASEM000/serket
 ### 🧠 Neural network package: `serket.nn` 🧠
 | Group | Layers |
 | ------------- | ------------- |
-| Linear  | - `Linear`, `Bilinear`, `Multilinear`, `GeneralLinear`, `Identity`   |
+| Linear  | - `Linear`, `Bilinear`, `Multilinear`, `GeneralLinear`, `Identity`  |
 |Densely connected| - `FNN` (Fully connected network), <br> - `PFNN` (Parallel fully connected network)|
 | Convolution | - `Conv1D`, `Conv2D`, `Conv3D`, <br> - `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`,<br> - `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`,  <br> - `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, <br> - `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal` |
 | Containers| - `Sequential`, `Lambda` |
@@ -75,6 +75,39 @@ pip install git+https://github.com/ASEM000/serket
 </div>
 
 ## ⏩ Examples: <a id="QuickExample">
+
+
+<details>
+<summary> Linear layers examples</summary>
+
+```python
+import jax.numpy as jnp
+
+import serket as sk
+
+# Linear
+x = jnp.ones([1, 2, 3, 4])
+l1 = sk.nn.Linear(4, 5)  # last dim is 4, output dim is 5
+print(l1(x).shape)  # (1, 2, 3, 5)
+
+# Bilinear
+x1, x2 = jnp.ones([1, 2, 3, 4]), jnp.ones([1, 2, 3, 5])
+l2 = sk.nn.Bilinear(4, 5, 6)  # last dim is 4,5, output dim is 6
+print(l2(x1, x2).shape)  # (1, 2, 3, 6)
+
+# Multilinear
+x1, x2, x3 = jnp.ones([1, 2, 3, 4]), jnp.ones([1, 2, 3, 5]), jnp.ones([1, 2, 3, 6])
+l3 = sk.nn.Multilinear((4, 5, 6), 7)  # last dim is 4,5,6, output dim is 7
+print(l3(x1, x2, x3).shape)  # (1, 2, 3, 7)
+
+# GeneralLinear
+x = jnp.ones([4, 5, 6, 7])
+# apply a linear layer to axis 1,2,3, and output dim is 5
+# in_features = (4, 5, 6)
+l4 = sk.nn.GeneralLinear((5, 6, 7), 5, in_axes=(1, 2, 3))
+print(l4(x).shape)  # (4, 5)
+```
+</details>
 
 <details>
 
