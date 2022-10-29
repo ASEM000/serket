@@ -1,5 +1,15 @@
 from .conv_semi_local import Conv1DSemiLocal, Conv2DSemiLocal, Conv3DSemiLocal
-from .fft_conv import FFTConv1D, FFTConv2D, FFTConv3D
+from .fft_conv import (
+    DepthwiseFFTConv1D,
+    DepthwiseFFTConv2D,
+    DepthwiseFFTConv3D,
+    FFTConv1D,
+    FFTConv1DTranspose,
+    FFTConv2D,
+    FFTConv2DTranspose,
+    FFTConv3D,
+    FFTConv3DTranspose,
+)
 
 __all__ = (
     "FFTConv1D",
@@ -8,4 +18,10 @@ __all__ = (
     "Conv1DSemiLocal",
     "Conv2DSemiLocal",
     "Conv3DSemiLocal",
+    "DepthwiseFFTConv1D",
+    "DepthwiseFFTConv2D",
+    "DepthwiseFFTConv3D",
+    "FFTConv1DTranspose",
+    "FFTConv2DTranspose",
+    "FFTConv3DTranspose",
 )

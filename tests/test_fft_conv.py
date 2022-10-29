@@ -1,7 +1,28 @@
 import jax.numpy as jnp
 import numpy.testing as npt
 
-import serket.experimental as ske
+from serket.experimental import (
+    DepthwiseFFTConv1D,
+    DepthwiseFFTConv2D,
+    DepthwiseFFTConv3D,
+    FFTConv1D,
+    FFTConv1DTranspose,
+    FFTConv2D,
+    FFTConv2DTranspose,
+    FFTConv3D,
+    FFTConv3DTranspose,
+)
+from serket.nn import (
+    Conv1D,
+    Conv1DTranspose,
+    Conv2D,
+    Conv2DTranspose,
+    Conv3D,
+    Conv3DTranspose,
+    DepthwiseConv1D,
+    DepthwiseConv2D,
+    DepthwiseConv3D,
+)
 
 
 def test_fft_conv1d():
@@ -34,7 +55,7 @@ def test_fft_conv1d():
         ]
     )
 
-    layer = ske.FFTConv1D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
+    layer = FFTConv1D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
 
@@ -217,7 +238,7 @@ def test_fft_conv2d():
         ]
     )
 
-    ls = ske.FFTConv2D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
+    ls = FFTConv2D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
     ls = ls.at["weight"].set(w)
     ls = ls.at["bias"].set(b)
 
@@ -482,8 +503,59 @@ def test_fft_conv3d():
         ]
     )
 
-    ls = ske.FFTConv3D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
+    ls = FFTConv3D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
     ls = ls.at["weight"].set(w)
     ls = ls.at["bias"].set(b)
 
     npt.assert_allclose(ls(x), y, atol=1e-6)
+
+
+def test_fft_conv():
+    x = jnp.ones([10, 1])
+    npt.assert_allclose(FFTConv1D(10, 1, 3)(x), Conv1D(10, 1, 3)(x), atol=1e-4)
+    x = jnp.ones([7, 8])
+    npt.assert_allclose(FFTConv1D(7, 1, 3)(x), Conv1D(7, 1, 3)(x), atol=1e-4)
+
+    x = jnp.ones([10, 1, 1])
+    npt.assert_allclose(FFTConv2D(10, 1, 3)(x), Conv2D(10, 1, 3)(x), atol=1e-4)
+    x = jnp.ones([7, 8, 9])
+    npt.assert_allclose(FFTConv2D(7, 1, 3)(x), Conv2D(7, 1, 3)(x), atol=1e-4)
+
+    x = jnp.ones([10, 1, 1, 1])
+    npt.assert_allclose(FFTConv3D(10, 1, 3)(x), Conv3D(10, 1, 3)(x), atol=1e-4)
+    x = jnp.ones([7, 8, 9, 10])
+    npt.assert_allclose(FFTConv3D(7, 1, 3)(x), Conv3D(7, 1, 3)(x), atol=1e-4)
+
+
+def test_depthwise_fft_conv():
+    x = jnp.ones([10, 1])
+    npt.assert_allclose(
+        DepthwiseFFTConv1D(10, 3)(x), DepthwiseConv1D(10, 3)(x), atol=1e-4
+    )
+
+    x = jnp.ones([10, 1, 1])
+    npt.assert_allclose(
+        DepthwiseFFTConv2D(10, 3)(x), DepthwiseConv2D(10, 3)(x), atol=1e-4
+    )
+
+    x = jnp.ones([10, 1, 1, 1])
+    npt.assert_allclose(
+        DepthwiseFFTConv3D(10, 3)(x), DepthwiseConv3D(10, 3)(x), atol=1e-4
+    )
+
+
+def test_conv_transpose():
+    x = jnp.ones([10, 4])
+    npt.assert_allclose(
+        Conv1DTranspose(10, 4, 3)(x), FFTConv1DTranspose(10, 4, 3)(x), atol=1e-4
+    )
+
+    x = jnp.ones([10, 4, 4])
+    npt.assert_allclose(
+        Conv2DTranspose(10, 4, 3)(x), FFTConv2DTranspose(10, 4, 3)(x), atol=1e-4
+    )
+
+    x = jnp.ones([10, 4, 4, 4])
+    npt.assert_allclose(
+        Conv3DTranspose(10, 4, 3)(x), FFTConv3DTranspose(10, 4, 3)(x), atol=1e-4
+    )
