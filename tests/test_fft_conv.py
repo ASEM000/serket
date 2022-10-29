@@ -486,4 +486,4 @@ def test_fft_conv3d():
     ls = ls.at["weight"].set(w)
     ls = ls.at["bias"].set(b)
 
-    npt.assert_allclose(ls(x), y)
+    npt.assert_allclose(ls(x), y, atol=1e-6)
