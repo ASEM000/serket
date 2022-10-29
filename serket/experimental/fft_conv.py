@@ -214,9 +214,7 @@ class FFTConvND:
             padding=self.padding,
             groups=self.groups,
         )
-
-        # y = y.reshape(y.shape[0] * y.shape[1], *y.shape[2:])
-
+        y = jnp.squeeze(y, axis=0)
         if self.bias is None:
             return y
         return y + self.bias
