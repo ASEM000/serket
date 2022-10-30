@@ -75,13 +75,12 @@ def _general_pad(x: jnp.ndarray, pad_width: tuple[[int, int], ...]) -> jnp.ndarr
 @ft.partial(jax.jit, static_argnums=(2, 3, 4))
 def _general_undilated_fft_conv(
     x: jnp.ndarray,
-    y: jnp.ndarray,
+    w: jnp.ndarray,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
     groups: int,
 ):
     ndim = x.ndim - 2  # spatial dimensions
-    w = jnp.kron(y, jnp.ones((1, 1, *(1,) * ndim)))
     x = _general_pad(x, ((0, 0), (0, 0), *padding))
     x_shape = x.shape
 
@@ -89,7 +88,7 @@ def _general_undilated_fft_conv(
     even_padding[-1] = (0, 0) if x.shape[-1] % 2 == 0 else (0, 1)
     x = _general_pad(x, tuple(even_padding))
 
-    kernel_padding = tuple((0, x.shape[i] - y.shape[i]) for i in range(2, ndim + 2))
+    kernel_padding = tuple((0, x.shape[i] - w.shape[i]) for i in range(2, ndim + 2))
     w_pad = _general_pad(w, ((0, 0), (0, 0), *kernel_padding))
 
     x_fft = jnp.fft.rfftn(x, axes=range(2, ndim + 2))
@@ -98,16 +97,14 @@ def _general_undilated_fft_conv(
 
     z = jnp.fft.irfftn(z_fft, axes=range(2, ndim + 2))
 
-    return jax.lax.slice(
-        z,
-        start_indices=(0,) * (ndim + 2),  # start at 0 for all dimensions
-        limit_indices=(
-            z.shape[0],
-            z.shape[1],
-            *tuple((x_shape[i] - w.shape[i] + 1) for i in range(2, ndim + 2)),
-        ),
-        strides=(1, 1, *strides),
-    )
+    start = (0,) * (ndim + 2)  # start at 0 for all dimensions
+    end = (z.shape[0], z.shape[1])
+    end += tuple((x_shape[i] - w.shape[i] + 1) for i in range(2, ndim + 2))
+
+    if all(s == 1 for s in strides):
+        return jax.lax.dynamic_slice(z, start, end)
+
+    return jax.lax.slice(z, start, end, (1, 1, *strides))
 
 
 @pytc.treeclass
