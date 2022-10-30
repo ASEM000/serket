@@ -55,19 +55,19 @@ pip install git+https://github.com/ASEM000/serket
 | ------------- | ------------- |
 | Linear  | - `Linear`, `Bilinear`, `Multilinear`, `GeneralLinear`, `Identity`  |
 |Densely connected| - `FNN` (Fully connected network), <br> - `PFNN` (Parallel fully connected network)|
-| Convolution | - `Conv1D`, `Conv2D`, `Conv3D`, <br> - `Conv1DTranspose` , `Conv2DTranspose`, `Conv3DTranspose`,<br> - `DepthwiseConv1D`, `DepthwiseConv2D`, `DepthwiseConv3D`,  <br> - `SeparableConv1D`, `SeparableConv2D`, `SeparableConv3D`, <br> - `Conv1DLocal`, `Conv2DLocal`, `Conv3DLocal` <br> - `FFTConv1D`, `FFTConv2D`, `FFTConv3D`, <br> - `FFTConv1DTranspose` , `FFTConv2DTranspose`, `FFTConv3DTranspose`,<br> - `DepthwiseFFTConv1D`, `DepthwiseFFTConv2D`, `DepthwiseFFTConv3D`,  <br> - `SeparableFFTConv1D`, `SeparableFFTConv2D`, `SeparableFFTConv3D`|
+| Convolution | - `{Conv,FFTConv}{1D,2D,3D}` <br> - `{Conv,FFTConv}{1D,2D,3D}Transpose` <br> - `Depthwise{Conv,FFTConv}{1D,2D,3D}` <br> - `Separable{Conv,FFTConv}{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local`|
 | Containers| - `Sequential`, `Lambda` |
-|Pooling <br> (`kernex` backend)|- `MaxPool1D`, `MaxPool2D`, `MaxPool3D`, <br> - `AvgPool1D`, `AvgPool2D`, `AvgPool3D` <br> - `GlobalMaxPool1D`, `GlobalMaxPool2D`, `GlobalMaxPool3D`, <br> - `GlobalAvgPool1D`, `GlobalAvgPool2D`, `GlobalAvgPool3D` <br> - `LPPool1D`, `LPPool2D`,`LPPool3D` , <br> - `AdaptiveAvgPool1D`, `AdaptiveAvgPool2D`, `AdaptiveAvgPool3D`,<br> - `AdaptiveMaxPool1D`, `AdaptiveMaxPool2D`, `AdaptiveMaxPool3D` <br> - `AdaptiveConcatPool1D`,`AdaptiveConcatPool2D`,`AdaptiveConcatPool3D` |
-|Reshaping|- `Flatten`, `Unflatten`, <br> - `FlipLeftRight2D`, `FlipUpDown2D`, <br> - `Repeat1D`, `Repeat2D`, `Repeat3D`, <br> - `Resize1D`, `Resize2D`, `Resize3D`, <br> - `Upsample1D`, `Upsample2D`, `Upsample3D`,<br> - `Pad1D`, `Pad2D`, `Pad3D` |
-|Crop| - `Crop1D`, `Crop2D`, |
-|Normalization|- `LayerNorm`, `InstanceNorm`, `GroupNorm`|
+|Pooling <br> (`kernex` backend)|- `{Avg,Max}Pool{1D,2D,3D}`  <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `LPPool{1D,2D,3D}` <br> - `Adaptive{Avg,Max,Concat}Pool{1D,2D,3D}` |
+|Reshaping|- `Flatten`, `Unflatten`, <br> - `FlipLeftRight2D`, `FlipUpDown2D` <br> - `Repeat{1D,2D,3D}` <br> - `Resize{1D,2D,3D}` <br> - `Upsample{1D,2D,3D}` <br> - `Pad{1D,2D,3D}` |
+|Crop| - `Crop{1D,2D}` |
+|Normalization|- `{Layer,Instance,Group}Norm`|
 |Blurring| - `AvgBlur2D`, `GaussianBlur2D`|
-|Dropout|- `Dropout`, ,<br> - `Dropout1D`, `Dropout2D`, `Dropout3D`, |
-|Random transforms| - `RandomCrop1D`, `RandomCrop2D`, <br> - `RandomApply`, <br> - `RandomCutout1D`, `RandomCutout2D`,<br> - `RandomZoom2D`, <br> - `RandomContrast2D` |
+|Dropout|- `Dropout`<br> - `Dropout{1D,2D,3D}`|
+|Random transforms| - `RandomCrop{1D,2D}` <br> - `RandomApply`, <br> - `RandomCutout{1D,2D}` <br> - `RandomZoom2D`, <br> - `RandomContrast2D` |
 |Misc| - `HistogramEqualization2D`, `AdjustContrast2D`, `Filter2D`, `PixelShuffle2D`|
-|Activations|- `AdaptiveLeakyReLU`,`AdaptiveReLU`,`AdaptiveSigmoid`,`AdaptiveTanh`,<br> - `CeLU`,`ELU`,`GELU`,`GLU`<br>- `HardSILU`,`HardShrink`,`HardSigmoid`,`HardSwish`,`HardTanh`,<br> - `LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> - `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid`,`SoftPlus`,`SoftShrink`,<br> - `SoftSign`,`Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake`|
-|Recurrent cells| - `SimpleRNNCell`, `LSTMCell`, `GRUCell`, <br> - `ConvLSTM1D`, `ConvLSTM2D`, `ConvLSTM3D`, <br> - `SeparableConvLSTM1DCell`, `SeparableConvLSTM2DCell`, `SeparableConvLSTM3DCell`   <br> - `ConvGRU1DCell`,`ConvGRU2DCell`,`ConvGRU3DCell`,<br> - `SeparableConvGRU1DCell`,`SeparableConvGRU2DCell`,`SeparableConvGRU3DCell` <br> - `FFTConvLSTM1D`, `FFTConvLSTM2D`, `FFTConvLSTM3D`, <br> - `SeparableFFTConvLSTM1DCell`, `SeparableFFTConvLSTM2DCell`, `SeparableFFTConvLSTM3DCell`   <br> - `FFTConvGRU1DCell`,`FFTConvGRU2DCell`,`FFTConvGRU3DCell`,<br> - `SeparableFFTConvGRU1DCell`,`SeparableFFTConvGRU2DCell`,`SeparableFFTConvGRU3DCell`|
-|Blocks|- `VGG16Block`, `VGG19Block`, `UNetBlock`|
+|Activations|- `Adaptive{LeakyReLU,ReLU,Sigmoid,Tanh}`,<br> - `CeLU`,`ELU`,`GELU`,`GLU`<br>- `Hard{SILU,Shrink,Sigmoid,Swish,Tanh}`, <br> - `Soft{Plus,Sign,Shrink}` <br> - `LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> - `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid` <br> - `Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake`|
+|Recurrent cells| - `{SimpleRNN,LSTM,GRU}Cell` <br> - `{Conv,FFTConv}{LSTM,GRU}{1D,2D,3D}Cell` <br> - `Separable{Conv,FFTConv}{LSTM,GRU}{1D,2D,3D}Cell`|
+|Blocks|- `VGG{16,19}Block`, `UNetBlock`|
 
 
 

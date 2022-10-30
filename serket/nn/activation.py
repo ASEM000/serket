@@ -367,7 +367,7 @@ class Snake:
     See: https://arxiv.org/pdf/2006.08195.pdf
     """
 
-    frequency: float = 1.0
+    frequency: float = pytc.nondiff_field(default=1.0)
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
         return x + (1 - jnp.cos(2 * self.frequency * x)) / (2 * self.frequency)
