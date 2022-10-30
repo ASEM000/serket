@@ -61,6 +61,12 @@ from serket.nn.recurrent import (
     ConvLSTM1DCell,
     ConvLSTM2DCell,
     ConvLSTM3DCell,
+    FFTConvGRU1DCell,
+    FFTConvGRU2DCell,
+    FFTConvGRU3DCell,
+    FFTConvLSTM1DCell,
+    FFTConvLSTM2DCell,
+    FFTConvLSTM3DCell,
     GRUCell,
     LSTMCell,
     ScanRNN,
@@ -70,6 +76,12 @@ from serket.nn.recurrent import (
     SeparableConvLSTM1DCell,
     SeparableConvLSTM2DCell,
     SeparableConvLSTM3DCell,
+    SeparableFFTConvGRU1DCell,
+    SeparableFFTConvGRU2DCell,
+    SeparableFFTConvGRU3DCell,
+    SeparableFFTConvLSTM1DCell,
+    SeparableFFTConvLSTM2DCell,
+    SeparableFFTConvLSTM3DCell,
     SimpleRNNCell,
 )
 
@@ -894,3 +906,99 @@ def test_separable_conv_gru3d():
     right = ConvGRU3DCell(None, 10, 3)  # in_features, hidden_features
     assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
     assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)
+
+
+def test_fft_conv1d_lstm():
+    lhs_cell = FFTConvLSTM1DCell(None, 10, 3)
+    rhs_cell = ConvLSTM1DCell(None, 10, 3)
+
+    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_conv2d_lstm():
+    lhs_cell = FFTConvLSTM2DCell(None, 10, 3)
+    rhs_cell = ConvLSTM2DCell(None, 10, 3)
+
+    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_conv3d_lstm():
+    lhs_cell = FFTConvLSTM3DCell(None, 10, 3)
+    rhs_cell = ConvLSTM3DCell(None, 10, 3)
+
+    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_conv1d_gru():
+    lhs_cell = FFTConvGRU1DCell(None, 10, 3)
+    rhs_cell = ConvGRU1DCell(None, 10, 3)
+
+    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_conv2d_gru():
+    lhs_cell = FFTConvGRU2DCell(None, 10, 3)
+    rhs_cell = ConvGRU2DCell(None, 10, 3)
+
+    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_conv3d_gru():
+    lhs_cell = FFTConvGRU3DCell(None, 10, 3)
+    rhs_cell = ConvGRU3DCell(None, 10, 3)
+
+    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_separable_conv1_lstm():
+    lhs_cell = SeparableFFTConvLSTM1DCell(None, 10, 3)
+    rhs_cell = SeparableConvLSTM1DCell(None, 10, 3)
+
+    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_separable_conv2d_lstm():
+    lhs_cell = SeparableFFTConvLSTM2DCell(None, 10, 3)
+    rhs_cell = SeparableConvLSTM2DCell(None, 10, 3)
+
+    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_separable_conv3d_lstm():
+    lhs_cell = SeparableFFTConvLSTM3DCell(None, 10, 3)
+    rhs_cell = SeparableConvLSTM3DCell(None, 10, 3)
+
+    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_separable_conv1d_gru():
+    lhs_cell = SeparableFFTConvGRU1DCell(None, 10, 3)
+    rhs_cell = SeparableConvGRU1DCell(None, 10, 3)
+
+    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_separable_conv2d_gru():
+    lhs_cell = SeparableFFTConvGRU2DCell(None, 10, 3)
+    rhs_cell = SeparableConvGRU2DCell(None, 10, 3)
+
+    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
+
+
+def test_fft_separable_conv3d_gru():
+    lhs_cell = SeparableFFTConvGRU3DCell(None, 10, 3)
+    rhs_cell = SeparableConvGRU3DCell(None, 10, 3)
+
+    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
+    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)

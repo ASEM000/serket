@@ -11,6 +11,7 @@ import pytreeclass as pytc
 
 from serket.nn import Linear
 from serket.nn.convolution import ConvND, SeparableConvND
+from serket.nn.fft_convolution import FFTConvND, SeparableFFTConvND
 from serket.nn.utils import (
     _act_func_map,
     _check_and_return_positive_int,
@@ -511,6 +512,42 @@ class SeparableConvLSTM3DCell(ConvLSTMNDCell):
 
 
 @pytc.treeclass
+class FFTConvLSTM1DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, conv_layer=FFTConvND)
+
+
+@pytc.treeclass
+class FFTConvLSTM2DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, conv_layer=FFTConvND)
+
+
+@pytc.treeclass
+class FFTConvLSTM3DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, conv_layer=FFTConvND)
+
+
+@pytc.treeclass
+class SeparableFFTConvLSTM1DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, conv_layer=SeparableFFTConvND)
+
+
+@pytc.treeclass
+class SeparableFFTConvLSTM2DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, conv_layer=SeparableFFTConvND)
+
+
+@pytc.treeclass
+class SeparableFFTConvLSTM3DCell(ConvLSTMNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, conv_layer=SeparableFFTConvND)
+
+
+@pytc.treeclass
 class ConvGRUNDState(RNNState):
     pass
 
@@ -678,6 +715,42 @@ class SeparableConvGRU2DCell(ConvGRUNDCell):
 class SeparableConvGRU3DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, ndim=3, conv_layer=SeparableConvND)
+
+
+@pytc.treeclass
+class FFTConvGRU1DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, conv_layer=FFTConvND)
+
+
+@pytc.treeclass
+class FFTConvGRU2DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, conv_layer=FFTConvND)
+
+
+@pytc.treeclass
+class FFTConvGRU3DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, conv_layer=FFTConvND)
+
+
+@pytc.treeclass
+class SeparableFFTConvGRU1DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=1, conv_layer=SeparableFFTConvND)
+
+
+@pytc.treeclass
+class SeparableFFTConvGRU2DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=2, conv_layer=SeparableFFTConvND)
+
+
+@pytc.treeclass
+class SeparableFFTConvGRU3DCell(ConvGRUNDCell):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k, ndim=3, conv_layer=SeparableFFTConvND)
 
 
 # ------------------------------------------------- Scan layer ------------------------------------------------------ #

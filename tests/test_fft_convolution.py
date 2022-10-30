@@ -1,20 +1,6 @@
 import jax.numpy as jnp
 import numpy.testing as npt
 
-from serket.experimental import (
-    DepthwiseFFTConv1D,
-    DepthwiseFFTConv2D,
-    DepthwiseFFTConv3D,
-    FFTConv1D,
-    FFTConv1DTranspose,
-    FFTConv2D,
-    FFTConv2DTranspose,
-    FFTConv3D,
-    FFTConv3DTranspose,
-    SeparableFFTConv1D,
-    SeparableFFTConv2D,
-    SeparableFFTConv3D,
-)
 from serket.nn import (
     Conv1D,
     Conv1DTranspose,
@@ -25,9 +11,21 @@ from serket.nn import (
     DepthwiseConv1D,
     DepthwiseConv2D,
     DepthwiseConv3D,
+    DepthwiseFFTConv1D,
+    DepthwiseFFTConv2D,
+    DepthwiseFFTConv3D,
+    FFTConv1D,
+    FFTConv1DTranspose,
+    FFTConv2D,
+    FFTConv2DTranspose,
+    FFTConv3D,
+    FFTConv3DTranspose,
     SeparableConv1D,
     SeparableConv2D,
     SeparableConv3D,
+    SeparableFFTConv1D,
+    SeparableFFTConv2D,
+    SeparableFFTConv3D,
 )
 
 
@@ -522,15 +520,42 @@ def test_fft_conv():
     x = jnp.ones([7, 8])
     npt.assert_allclose(FFTConv1D(7, 1, 3)(x), Conv1D(7, 1, 3)(x), atol=1e-4)
 
+    x = jnp.ones([10, 1])
+    npt.assert_allclose(
+        FFTConv1D(10, 1, 3, kernel_dilation=2)(x),
+        Conv1D(10, 1, 3, kernel_dilation=2)(x),
+        atol=1e-5,
+    )
+
     x = jnp.ones([10, 1, 1])
     npt.assert_allclose(FFTConv2D(10, 1, 3)(x), Conv2D(10, 1, 3)(x), atol=1e-4)
     x = jnp.ones([7, 8, 9])
     npt.assert_allclose(FFTConv2D(7, 1, 3)(x), Conv2D(7, 1, 3)(x), atol=1e-4)
 
+    x = jnp.ones([10, 10, 10])
+    npt.assert_allclose(
+        FFTConv2D(10, 1, 3, kernel_dilation=3)(x),
+        Conv2D(10, 1, 3, kernel_dilation=3)(x),
+        atol=1e-5,
+    )
+    x = jnp.ones([7, 8, 9])
+    npt.assert_allclose(
+        FFTConv2D(7, 1, 3, kernel_dilation=2)(x),
+        Conv2D(7, 1, 3, kernel_dilation=2)(x),
+        atol=1e-5,
+    )
+
     x = jnp.ones([10, 1, 1, 1])
     npt.assert_allclose(FFTConv3D(10, 1, 3)(x), Conv3D(10, 1, 3)(x), atol=1e-4)
     x = jnp.ones([7, 8, 9, 10])
     npt.assert_allclose(FFTConv3D(7, 1, 3)(x), Conv3D(7, 1, 3)(x), atol=1e-4)
+
+    x = jnp.ones([7, 8, 9, 10])
+    npt.assert_allclose(
+        FFTConv3D(7, 1, 3, kernel_dilation=(1, 2, 3))(x),
+        Conv3D(7, 1, 3, kernel_dilation=(1, 2, 3))(x),
+        atol=1e-5,
+    )
 
 
 def test_depthwise_fft_conv():
@@ -556,6 +581,13 @@ def test_conv_transpose():
         Conv1DTranspose(10, 4, 3)(x), FFTConv1DTranspose(10, 4, 3)(x), atol=1e-4
     )
 
+    x = jnp.ones([10, 4])
+    npt.assert_allclose(
+        Conv1DTranspose(10, 4, 3, kernel_dilation=2)(x),
+        FFTConv1DTranspose(10, 4, 3, kernel_dilation=2)(x),
+        atol=1e-5,
+    )
+
     x = jnp.ones([10, 4, 4])
     npt.assert_allclose(
         Conv2DTranspose(10, 4, 3)(x), FFTConv2DTranspose(10, 4, 3)(x), atol=1e-4
@@ -563,7 +595,9 @@ def test_conv_transpose():
 
     x = jnp.ones([10, 4, 4, 4])
     npt.assert_allclose(
-        Conv3DTranspose(10, 4, 3)(x), FFTConv3DTranspose(10, 4, 3)(x), atol=1e-4
+        Conv3DTranspose(10, 4, 3, kernel_dilation=2)(x),
+        FFTConv3DTranspose(10, 4, 3, kernel_dilation=2)(x),
+        atol=1e-5,
     )
 
 

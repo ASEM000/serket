@@ -56,6 +56,20 @@ from .convolution import (  # Conv1DSemiLocal,; Conv2DSemiLocal,; Conv3DSemiLoca
 from .crop import Crop1D, Crop2D, Crop3D, RandomCrop1D, RandomCrop2D, RandomCrop3D
 from .cutout import RandomCutout1D, RandomCutout2D
 from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D
+from .fft_convolution import (
+    DepthwiseFFTConv1D,
+    DepthwiseFFTConv2D,
+    DepthwiseFFTConv3D,
+    FFTConv1D,
+    FFTConv1DTranspose,
+    FFTConv2D,
+    FFTConv2DTranspose,
+    FFTConv3D,
+    FFTConv3DTranspose,
+    SeparableFFTConv1D,
+    SeparableFFTConv2D,
+    SeparableFFTConv3D,
+)
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, PFNN
@@ -98,6 +112,12 @@ from .recurrent import (
     ConvLSTM1DCell,
     ConvLSTM2DCell,
     ConvLSTM3DCell,
+    FFTConvGRU1DCell,
+    FFTConvGRU2DCell,
+    FFTConvGRU3DCell,
+    FFTConvLSTM1DCell,
+    FFTConvLSTM2DCell,
+    FFTConvLSTM3DCell,
     GRUCell,
     LSTMCell,
     ScanRNN,
@@ -107,6 +127,12 @@ from .recurrent import (
     SeparableConvLSTM1DCell,
     SeparableConvLSTM2DCell,
     SeparableConvLSTM3DCell,
+    SeparableFFTConvGRU1DCell,
+    SeparableFFTConvGRU2DCell,
+    SeparableFFTConvGRU3DCell,
+    SeparableFFTConvLSTM1DCell,
+    SeparableFFTConvLSTM2DCell,
+    SeparableFFTConvLSTM3DCell,
     SimpleRNNCell,
 )
 from .resize import (
@@ -181,9 +207,22 @@ __all__ = (
     "Conv1DLocal",
     "Conv2DLocal",
     "Conv3DLocal",
-    # "Conv1DSemiLocal",
-    # "Conv2DSemiLocal",
-    # "Conv3DSemiLocal",
+    # FFT Convolution
+    "FFTConv1D",
+    "FFTConv2D",
+    "FFTConv3D",
+    "Conv1DSemiLocal",
+    "Conv2DSemiLocal",
+    "Conv3DSemiLocal",
+    "DepthwiseFFTConv1D",
+    "DepthwiseFFTConv2D",
+    "DepthwiseFFTConv3D",
+    "FFTConv1DTranspose",
+    "FFTConv2DTranspose",
+    "FFTConv3DTranspose",
+    "SeparableFFTConv1D",
+    "SeparableFFTConv2D",
+    "SeparableFFTConv3D",
     # Flattening
     "Flatten",
     "Unflatten",
@@ -282,4 +321,16 @@ __all__ = (
     "SeparableConvGRU1DCell",
     "SeparableConvGRU2DCell",
     "SeparableConvGRU3DCell",
+    "FFTConvGRU1DCell",
+    "FFTConvGRU2DCell",
+    "FFTConvGRU3DCell",
+    "FFTConvLSTM1DCell",
+    "FFTConvLSTM2DCell",
+    "FFTConvLSTM3DCell",
+    "SeparableFFTConvGRU1DCell",
+    "SeparableFFTConvGRU2DCell",
+    "SeparableFFTConvGRU3DCell",
+    "SeparableFFTConvLSTM1DCell",
+    "SeparableFFTConvLSTM2DCell",
+    "SeparableFFTConvLSTM3DCell",
 )

@@ -17,6 +17,7 @@ from serket.nn.utils import (
     _calculate_transpose_padding,
     _check_and_return_init_func,
     _check_and_return_kernel,
+    _check_and_return_kernel_dilation,
     _check_and_return_padding,
     _check_and_return_positive_int,
     _check_and_return_strides,
@@ -49,6 +50,32 @@ def grouped_matmul(x, y, groups: int = 1):
     return _ungrouped_matmul(x, y) if groups == 1 else _grouped_matmul(x, y, groups)
 
 
+@ft.partial(jax.jit, static_argnums=(1, 2))
+def _intersperse_along_axis(
+    x: jnp.ndarray, dilation: int, axis: int, value: int | float = 0
+) -> jnp.ndarray:
+    if dilation == 1:
+        return x
+
+    shape = list(x.shape)
+    shape[axis] = (dilation) * shape[axis] - (dilation - 1)
+    z = jnp.ones(shape) * value
+    z = z.at[(slice(None),) * axis + (slice(None, None, (dilation)),)].set(x)
+    return z
+
+
+@ft.partial(jax.jit, static_argnums=(1, 2))
+def _general_intersperse(
+    x: jnp.ndarray,
+    dilation: tuple[int, ...],
+    axis: tuple[int, ...],
+    value: int | float = 0,
+) -> jnp.ndarray:
+    for di, ai in zip(dilation, axis):
+        x = _intersperse_along_axis(x, di, ai)
+    return x
+
+
 @ft.partial(jax.jit, static_argnums=(1,))
 def _general_pad(x: jnp.ndarray, pad_width: tuple[[int, int], ...]) -> jnp.ndarray:
     """Pad the input with `pad_width` on each side. Negative value will lead to cropping.
@@ -72,34 +99,37 @@ def _general_pad(x: jnp.ndarray, pad_width: tuple[[int, int], ...]) -> jnp.ndarr
     return jnp.pad(x, pad_width)
 
 
-@ft.partial(jax.jit, static_argnums=(2, 3, 4))
-def _general_undilated_fft_conv(
+@ft.partial(jax.jit, static_argnums=(2, 3, 4, 5))
+def _general_dilated_fft_conv(
     x: jnp.ndarray,
     w: jnp.ndarray,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
     groups: int,
+    dilation: tuple[int, ...],
 ):
     ndim = x.ndim - 2  # spatial dimensions
+    w = _general_intersperse(w, dilation=dilation, axis=tuple(range(2, 2 + ndim)))
     x = _general_pad(x, ((0, 0), (0, 0), *padding))
-    x_shape = x.shape
+
+    x_shape, w_shape = x.shape, w.shape
 
     even_padding = [(0, 0)] * x.ndim
     even_padding[-1] = (0, 0) if x.shape[-1] % 2 == 0 else (0, 1)
     x = _general_pad(x, tuple(even_padding))
 
     kernel_padding = tuple((0, x.shape[i] - w.shape[i]) for i in range(2, ndim + 2))
-    w_pad = _general_pad(w, ((0, 0), (0, 0), *kernel_padding))
+    w = _general_pad(w, ((0, 0), (0, 0), *kernel_padding))
 
     x_fft = jnp.fft.rfftn(x, axes=range(2, ndim + 2))
-    w_fft = jnp.conjugate(jnp.fft.rfftn(w_pad, axes=range(2, ndim + 2)))
+    w_fft = jnp.conjugate(jnp.fft.rfftn(w, axes=range(2, ndim + 2)))
     z_fft = grouped_matmul(x_fft, w_fft, groups)
 
     z = jnp.fft.irfftn(z_fft, axes=range(2, ndim + 2))
 
-    start = (0,) * (ndim + 2)  # start at 0 for all dimensions
+    start = (0,) * (ndim + 2)
     end = (z.shape[0], z.shape[1])
-    end += tuple((x_shape[i] - w.shape[i] + 1) for i in range(2, ndim + 2))
+    end += tuple(max((x_shape[i] - w_shape[i] + 1), 0) for i in range(2, ndim + 2))
 
     if all(s == 1 for s in strides):
         return jax.lax.dynamic_slice(z, start, end)
@@ -117,6 +147,7 @@ class FFTConvND:
     kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
     strides: int | tuple[int, ...] = pytc.nondiff_field()
     padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.nondiff_field()  # fmt: skip
+    kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: str | Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
     groups: int = pytc.nondiff_field()
@@ -129,6 +160,7 @@ class FFTConvND:
         *,
         strides: int | tuple[int, ...] = 1,
         padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        kernel_dilation: int | tuple[int, ...] = 1,
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
         groups: int = 1,
@@ -143,6 +175,7 @@ class FFTConvND:
             kernel_size: size of the convolutional kernel
             strides: stride of the convolution
             padding: padding of the input
+            kernel_dilation: dilation of the kernel
             weight_init_func: function to use for initializing the weights
             bias_init_func: function to use for initializing the bias
             groups: number of groups to use for grouped convolution
@@ -166,6 +199,7 @@ class FFTConvND:
                 kernel_size=kernel_size,
                 strides=strides,
                 padding=padding,
+                kernel_dilation=kernel_dilation,
                 weight_init_func=weight_init_func,
                 bias_init_func=bias_init_func,
                 groups=groups,
@@ -190,6 +224,7 @@ class FFTConvND:
         self.strides = _check_and_return_strides(strides, ndim)
 
         self.padding = _check_and_return_padding(padding, self.kernel_size)
+        self.kernel_dilation = _check_and_return_kernel_dilation(kernel_dilation, ndim)
         self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
         self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
 
@@ -206,12 +241,13 @@ class FFTConvND:
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = _general_undilated_fft_conv(
+        y = _general_dilated_fft_conv(
             jnp.expand_dims(x, axis=0),
             self.weight,
             strides=self.strides,
             padding=self.padding,
             groups=self.groups,
+            dilation=self.kernel_dilation,
         )
         y = jnp.squeeze(y, axis=0)
         if self.bias is None:
@@ -230,6 +266,7 @@ class FFTConvNDTranspose:
     padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.nondiff_field()  # fmt: skip
     output_padding: int | tuple[int, ...] = pytc.nondiff_field()
     strides: int | tuple[int, ...] = pytc.nondiff_field()
+    kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
     groups: int = pytc.nondiff_field()
@@ -243,6 +280,7 @@ class FFTConvNDTranspose:
         strides: int | tuple[int, ...] = 1,
         padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
         output_padding: int = 0,
+        kernel_dilation: int | tuple[int, ...] = 1,
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
         groups: int = 1,
@@ -258,6 +296,7 @@ class FFTConvNDTranspose:
             strides : Stride of the convolution
             padding : Padding of the input
             output_padding : Additional size added to one side of the output shape
+            kernel_dilation : Dilation of the kernel
             weight_init_func : Weight initialization function
             bias_init_func : Bias initialization function
             groups : Number of groups
@@ -276,6 +315,7 @@ class FFTConvNDTranspose:
                 kernel_size=kernel_size,
                 strides=strides,
                 padding=padding,
+                kernel_dilation=kernel_dilation,
                 output_padding=output_padding,
                 weight_init_func=weight_init_func,
                 bias_init_func=bias_init_func,
@@ -300,6 +340,7 @@ class FFTConvNDTranspose:
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
         self.padding = _check_and_return_padding(padding, self.kernel_size)
+        self.kernel_dilation = _check_and_return_kernel_dilation(kernel_dilation, ndim)
         self.output_padding = _check_and_return_strides(output_padding, ndim)
         self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
         self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
@@ -317,19 +358,20 @@ class FFTConvNDTranspose:
             padding=self.padding,
             extra_padding=self.output_padding,
             kernel_size=self.kernel_size,
-            input_dilation=((1,) * ndim),
+            input_dilation=self.kernel_dilation,
         )
 
     @_lazy_conv
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = _general_undilated_fft_conv(
+        y = _general_dilated_fft_conv(
             jnp.expand_dims(x, axis=0),
             self.weight,
             strides=self.strides,
             padding=self.transposed_padding,
             groups=self.groups,
+            dilation=self.kernel_dilation,
         )
         y = jnp.squeeze(y, axis=0)
         if self.bias is None:
@@ -417,6 +459,7 @@ class DepthwiseFFTConvND:
         self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
         self.strides = _check_and_return_strides(strides, ndim)
         self.padding = _check_and_return_padding(padding, self.kernel_size)
+        self.kernel_dilation = _check_and_return_kernel_dilation(1, ndim)
         self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
         self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
 
@@ -433,12 +476,13 @@ class DepthwiseFFTConvND:
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = _general_undilated_fft_conv(
+        y = _general_dilated_fft_conv(
             jnp.expand_dims(x, axis=0),
             self.weight,
             strides=self.strides,
             padding=self.padding,
             groups=x.shape[0],
+            dilation=self.kernel_dilation,
         )
         y = jnp.squeeze(y, axis=0)
         if self.bias is None:
