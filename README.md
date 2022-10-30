@@ -36,8 +36,98 @@ pip install git+https://github.com/ASEM000/serket
 
 ## 📖 Description<a id="Description"></a>
 - `serket` aims to be the most intuitive and easy-to-use physics-based Neural network library in JAX.
-- `serket` is built on top of [`pytreeclass`](https://github.com/ASEM000/pytreeclass)
 - `serket` is fully transparent to `jax` transformation (e.g. `vmap`,`grad`,`jit`,...)
+
+### Layer structure
+
+`serket` is built on top of [`PyTreeClass`](https://github.com/ASEM000/pytreeclass), this means that layers are represented as a [PyTree](https://jax.readthedocs.io/en/latest/pytrees.html) whose leaves are the layer parameters.
+
+```python
+import serket as sk 
+import jax.tree_util as jtu
+
+""" define a linear layer of in_features=1, out_features=1 """
+l = sk.nn.Linear(1,1)
+
+""" print tree structure """
+print(l.tree_diagram())
+# `*`denotes non-differentiable leaf
+# Linear
+#     ├── weight=f32[1,1]
+#     ├── bias=f32[1]
+#     ├*─ in_features=(1,)
+#     └*─ out_features=1 
+
+""" print tree values """
+print(l)
+# Linear(
+#   weight=[[-0.31568417]],
+#   bias=[1.],
+#   *in_features=(1),
+#   *out_features=1
+# )
+```
+
+
+<details> 
+<summary> 1) Traverse and apply function using `jax.tree_util.tree_map`</summary>
+
+```python
+""" add 10 to all leaves """
+print(jtu.tree_map(lambda x:x+10, l))
+# Linear(
+#   weight=[[9.684316]],
+#   bias=[11.],
+#   *in_features=(1),
+#   *out_features=1
+# )
+```
+
+</details>
+
+<details>
+<summary> 2) Flatten using `jax.tree_util.tree_flatten` </summary>
+
+```python
+""" flatten all params(leaves) """
+print(jtu.tree_leaves(l))
+# [DeviceArray([[-0.31568417]], dtype=float32), DeviceArray([1.], dtype=float32)]
+
+```
+</details>
+
+<details>
+<summary> 3) Filter using `.at[]` methods </summary>
+
+```python
+""" set 100 to all positive values of l (i.e. only to bias) """
+print(l.at[l>0].set(100))
+# Linear(
+#   weight=[[-0.31568417]],
+#   bias=[100.],
+#   *in_features=(1),
+#   *out_features=1
+# )
+
+```
+</details>
+
+<details> <summary>
+4) Apply operations on tree leaves 
+</summary>
+
+```python
+""" same layers can be added,subtracted,divided,... """
+print(l + l + 100 )
+# Linear(
+#   weight=[[99.36863]],
+#   bias=[102.],
+#   *in_features=(1),
+#   *out_features=1
+# )
+```
+</details>
+
 
 <div align="center">
 
@@ -61,7 +151,7 @@ pip install git+https://github.com/ASEM000/serket
 |Reshaping|- `Flatten`, `Unflatten`, <br> - `FlipLeftRight2D`, `FlipUpDown2D` <br> - `Repeat{1D,2D,3D}` <br> - `Resize{1D,2D,3D}` <br> - `Upsample{1D,2D,3D}` <br> - `Pad{1D,2D,3D}` |
 |Crop| - `Crop{1D,2D}` |
 |Normalization|- `{Layer,Instance,Group}Norm`|
-|Blurring| - `AvgBlur2D`, `GaussianBlur2D`|
+|Blurring| - `{Avg,Gaussian}Blur2D`|
 |Dropout|- `Dropout`<br> - `Dropout{1D,2D,3D}`|
 |Random transforms| - `RandomCrop{1D,2D}` <br> - `RandomApply`, <br> - `RandomCutout{1D,2D}` <br> - `RandomZoom2D`, <br> - `RandomContrast2D` |
 |Misc| - `HistogramEqualization2D`, `AdjustContrast2D`, `Filter2D`, `PixelShuffle2D`|
