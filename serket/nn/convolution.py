@@ -28,9 +28,22 @@ from serket.nn.utils import (
     _check_and_return_strides,
     _check_in_features,
     _check_spatial_in_shape,
-    _lazy_conv,
-    _lazy_local_conv,
+    _lazy_call,
 )
+
+
+def _lazy_conv(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[0]}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
+
+
+def _lazy_local_conv(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[0], "in_size": a[0].shape[1:]}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
 
 
 @pytc.treeclass

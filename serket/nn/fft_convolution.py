@@ -23,8 +23,15 @@ from serket.nn.utils import (
     _check_and_return_strides,
     _check_in_features,
     _check_spatial_in_shape,
-    _lazy_conv,
+    _lazy_call,
 )
+
+
+def _lazy_conv(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[0]}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
 
 
 @jax.jit
@@ -100,23 +107,32 @@ def _general_pad(x: jnp.ndarray, pad_width: tuple[[int, int], ...]) -> jnp.ndarr
 
 
 @ft.partial(jax.jit, static_argnums=(2, 3, 4, 5))
-def _general_dilated_fft_conv(
+def fft_conv_general_dilated(
     x: jnp.ndarray,
     w: jnp.ndarray,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
     groups: int,
     dilation: tuple[int, ...],
-):
+) -> jnp.ndarray:
+    """General dilated convolution using FFT
+    Args:
+        x: input array in shape (batch, in_features, *spatial_in_shape)
+        w: kernel array in shape of (out_features, in_features // groups, *kernel_size)
+        strides: strides in form of tuple of ints for each spatial dimension
+        padding: padding in the form of ((before_1, after_1), ..., (before_N, after_N)) for each spatial dimension
+        groups: number of groups
+        dilation: dilation in the form of tuple of ints for each spatial dimension
+    """
+
     ndim = x.ndim - 2  # spatial dimensions
     w = _general_intersperse(w, dilation=dilation, axis=tuple(range(2, 2 + ndim)))
     x = _general_pad(x, ((0, 0), (0, 0), *padding))
 
     x_shape, w_shape = x.shape, w.shape
 
-    even_padding = [(0, 0)] * x.ndim
-    even_padding[-1] = (0, 0) if x.shape[-1] % 2 == 0 else (0, 1)
-    x = _general_pad(x, tuple(even_padding))
+    if x.shape[-1] % 2 != 0:
+        x = jnp.pad(x, tuple([(0, 0)] * (x.ndim - 1) + [(0, 1)]))
 
     kernel_padding = tuple((0, x.shape[i] - w.shape[i]) for i in range(2, ndim + 2))
     w = _general_pad(w, ((0, 0), (0, 0), *kernel_padding))
@@ -241,7 +257,7 @@ class FFTConvND:
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = _general_dilated_fft_conv(
+        y = fft_conv_general_dilated(
             jnp.expand_dims(x, axis=0),
             self.weight,
             strides=self.strides,
@@ -365,7 +381,7 @@ class FFTConvNDTranspose:
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = _general_dilated_fft_conv(
+        y = fft_conv_general_dilated(
             jnp.expand_dims(x, axis=0),
             self.weight,
             strides=self.strides,
@@ -476,7 +492,7 @@ class DepthwiseFFTConvND:
     @_check_spatial_in_shape
     @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        y = _general_dilated_fft_conv(
+        y = fft_conv_general_dilated(
             jnp.expand_dims(x, axis=0),
             self.weight,
             strides=self.strides,

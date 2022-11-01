@@ -12,15 +12,30 @@ import pytreeclass as pytc
 from serket.nn import Linear
 from serket.nn.convolution import ConvND, SeparableConvND
 from serket.nn.fft_convolution import FFTConvND, SeparableFFTConvND
-from serket.nn.utils import (
-    _act_func_map,
-    _check_and_return_positive_int,
-    _lazy_bwd_rnn,
-    _lazy_fwd_rnn,
-    _lazy_rnn_cell,
-)
+from serket.nn.utils import _act_func_map, _check_and_return_positive_int, _lazy_call
 
 # --------------------------------------------------- RNN ------------------------------------------------------------ #
+
+
+def _lazy_fwd_rnn(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[1]}
+
+    return _lazy_call(infer_func, "cell._partial_init")(func)
+
+
+def _lazy_bwd_rnn(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[1]}
+
+    return _lazy_call(infer_func, "backward_cell._partial_init")(func)
+
+
+def _lazy_rnn_cell(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[0]}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
 
 
 @pytc.treeclass

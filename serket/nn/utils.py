@@ -104,10 +104,8 @@ def _check_and_return_padding(
     """
 
     def _resolve_tuple_padding(padding, kernel_size):
-
-        assert len(padding) == len(
-            kernel_size
-        ), f"Expected padding to be of length {len(kernel_size)}, got {len(padding)}"
+        msg = f"Expected padding to be of length {len(kernel_size)}, got {len(padding)}"
+        assert len(padding) == len(kernel_size), msg
 
         resolved_padding = [[]] * len(kernel_size)
 
@@ -132,9 +130,9 @@ def _check_and_return_padding(
                     resolved_padding[i] = (0, 0)
 
                 else:
-                    raise ValueError(
-                        f'string argument must be in ["same","valid"].Found {item}'
-                    )
+                    msg = f'string argument must be in ["same","valid"].Found {item}'
+                    raise ValueError(msg)
+
         return tuple(resolved_padding)
 
     def _resolve_int_padding(padding, kernel_size):
@@ -158,9 +156,8 @@ def _check_and_return_padding(
     elif isinstance(padding, tuple):
         return _resolve_tuple_padding(padding, kernel_size)
 
-    raise ValueError(
-        f"Expected padding to be of type int, str or tuple, got {type(padding)}"
-    )
+    msg = f"Expected padding to be of type int, str or tuple, got {type(padding)}"
+    raise ValueError(msg)
 
 
 def _check_and_return(value, ndim, name):
@@ -175,7 +172,7 @@ def _check_and_return(value, ndim, name):
 
 
 def _check_and_return_positive_int(value, name):
-    """Check if value is a positive integer."""
+    """Return if value is a positive integer, otherwise raise an error."""
     if not isinstance(value, int):
         raise ValueError(f"{name} must be an integer, got {type(value)}")
     if value <= 0:
@@ -261,55 +258,6 @@ _TRACER_ERROR_MSG = lambda cls_name: (
 )
 
 
-@ft.lru_cache(maxsize=128)
-def _multilinear_einsum_string(degree: int) -> str:
-    """Generate einsum string for a linear layer of degree n
-    Example:
-        >>> _multilinear_einsum_string(1)
-        '...a,ab->....b'
-        >>> _multilinear_einsum_string(2)
-        '...a,...b,abc->....c'
-    """
-    alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    assert 1 <= degree <= len(alpha) - 1, f"degree must be between 1 and {len(alpha)-1}"
-
-    xs_string = [f"...{i}" for i in alpha[:degree]]
-    output_string = ",".join(xs_string)
-    output_string += f",{alpha[:degree+1]}->...{alpha[degree]}"
-    return output_string
-
-
-@ft.lru_cache(maxsize=128)
-def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
-    """Return the einsum string for a general linear layer.
-    Example:
-        # apply linear layer to last axis
-        >>> _general_linear_einsum_string(-1)
-        '...a,ab->...b'
-
-        # apply linear layer to last two axes
-        >>> _general_linear_einsum_string(-1,-2)
-        '...ab,abc->...c'
-
-        # apply linear layer to second last axis
-        >>> _general_linear_einsum_string(-2)
-        '...ab,ac->...bc'
-
-        # apply linear layer to last and third last axis
-        >>> _general_linear_einsum_string(-1,-3)
-        '...abc,acd->...bd'
-    """
-    assert all([i < 0 for i in axes]), "axes should be negative"
-    axes = sorted(axes)
-    total_axis = abs(min(axes))  # get the total number of axes
-    alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    input_string = "..." + alpha[:total_axis]
-    weight_string = "".join([input_string[axis] for axis in axes]) + alpha[total_axis]
-    result_string = "".join([ai for ai in input_string if ai not in weight_string])
-    result_string += alpha[total_axis]
-    return f"{input_string},{weight_string}->{result_string}"
-
-
 def _getattr(item, path):
     return (
         _getattr(getattr(item, path[0]), path[1:])
@@ -348,48 +296,3 @@ def _lazy_call(infer_func: Callable[[Any], dict[str, Any]], partial_kw: str):
         return wrapper
 
     return func_wrapper
-
-
-def _lazy_general_linear(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": tuple(a[0].shape[i] for i in self.in_axes)}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
-
-
-def _lazy_multi_linear(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": tuple(ai.shape[-1] for ai in a)}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
-
-
-def _lazy_conv(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[0]}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
-
-
-_lazy_rnn_cell = _lazy_blur = _lazy_norm = _lazy_conv
-
-
-def _lazy_local_conv(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[0], "in_size": a[0].shape[1:]}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
-
-
-def _lazy_fwd_rnn(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[1]}
-
-    return _lazy_call(infer_func, "cell._partial_init")(func)
-
-
-def _lazy_bwd_rnn(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[1]}
-
-    return _lazy_call(infer_func, "backward_cell._partial_init")(func)

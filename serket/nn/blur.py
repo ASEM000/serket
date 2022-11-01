@@ -15,8 +15,15 @@ from serket.nn.utils import (
     _check_and_return_positive_int,
     _check_in_features,
     _check_spatial_in_shape,
-    _lazy_blur,
+    _lazy_call,
 )
+
+
+def _lazy_blur(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[0]}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
 
 
 @pytc.treeclass

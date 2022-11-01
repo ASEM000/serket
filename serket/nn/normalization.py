@@ -7,7 +7,14 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _lazy_norm
+from serket.nn.utils import _lazy_call
+
+
+def _lazy_norm(func):
+    def infer_func(self, *a, **k):
+        return {"in_features": a[0].shape[0]}
+
+    return _lazy_call(infer_func, "_partial_init")(func)
 
 
 @pytc.treeclass
