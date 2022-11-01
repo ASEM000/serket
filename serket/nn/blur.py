@@ -10,6 +10,7 @@ import jax.numpy as jnp
 import pytreeclass as pytc
 
 from serket.nn.convolution import DepthwiseConv2D
+from serket.nn.fft_convolution import DepthwiseFFTConv2D
 from serket.nn.utils import (
     _check_and_return_positive_int,
     _check_in_features,
@@ -211,6 +212,54 @@ class Filter2D:
         self.kernel = self.kernel[:, None]
 
         self.conv = DepthwiseConv2D(
+            in_features=in_features,
+            kernel_size=kernel.shape,
+            padding="same",
+            bias_init_func=None,
+        )
+        self.conv = self.conv.at["weight"].set(self.kernel)
+
+    @_lazy_blur
+    @_check_spatial_in_shape
+    @_check_in_features
+    def __call__(self, x, **kwargs) -> jnp.ndarray:
+        return self.conv(x)
+
+
+@pytc.treeclass
+class FFTFilter2D:
+    in_features: int = pytc.nondiff_field()
+    conv: DepthwiseFFTConv2D = pytc.nondiff_field(repr=False)
+    kernel: jnp.ndarray = pytc.nondiff_field()
+
+    def __init__(self, in_features: int, kernel: jnp.ndarray):
+        """Apply 2D filter for each channel using FFT , faster for large kernels.
+
+        Args:
+            in_features: number of input channels
+            kernel: kernel array
+        """
+        if in_features is None:
+            for field_item in dataclasses.fields(self):
+                setattr(self, field_item.name, None)
+
+            self._partial_init = ft.partial(
+                FFTFilter2D.__init__, self=self, kernel=kernel
+            )
+            return
+
+        if hasattr(self, "_partial_init"):
+            delattr(self, "_partial_init")
+
+        if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
+            raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
+
+        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.ndim = 2
+        self.kernel = jnp.stack([kernel] * in_features, axis=0)
+        self.kernel = self.kernel[:, None]
+
+        self.conv = DepthwiseFFTConv2D(
             in_features=in_features,
             kernel_size=kernel.shape,
             padding="same",

@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from serket.nn import AvgBlur2D, Filter2D, GaussianBlur2D
+from serket.nn import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
 
 
 def test_AvgBlur2D():
@@ -87,3 +87,7 @@ def test_filter2d():
     x = jnp.ones([1, 5, 5])
 
     npt.assert_allclose(AvgBlur2D(1, 3)(x), layer(x), atol=1e-4)
+
+    layer2 = FFTFilter2D(in_features=1, kernel=jnp.ones([3, 3]) / 9.0)
+
+    npt.assert_allclose(layer(x), layer2(x), atol=1e-4)
