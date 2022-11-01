@@ -145,9 +145,9 @@ print(l + l + 100 )
 | ------------- | ------------- |
 | Linear  | - `Linear`, `Bilinear`, `Multilinear`, `GeneralLinear`, `Identity`  |
 |Densely connected| - `FNN` (Fully connected network), <br> - `PFNN` (Parallel fully connected network)|
-| Convolution | - `{Conv,FFTConv}{1D,2D,3D}` <br> - `{Conv,FFTConv}{1D,2D,3D}Transpose` <br> - `Depthwise{Conv,FFTConv}{1D,2D,3D}` <br> - `Separable{Conv,FFTConv}{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local`|
+| Convolution | - `{Conv,FFTConv}{1D,2D,3D}` <br> - `{Conv,FFTConv}{1D,2D,3D}Transpose` <br> - `{Depthwise,Separable}{Conv,FFTConv}{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local`|
 | Containers| - `Sequential`, `Lambda` |
-|Pooling <br> (`kernex` backend)|- `{Avg,Max}Pool{1D,2D,3D}`  <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `LPPool{1D,2D,3D}` <br> - `Adaptive{Avg,Max,Concat}Pool{1D,2D,3D}` |
+|Pooling <br> (`kernex` backend)|- `{Avg,Max,LP}Pool{1D,2D,3D}`  <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `Adaptive{Avg,Max,Concat}Pool{1D,2D,3D}` |
 |Reshaping|- `Flatten`, `Unflatten`, <br> - `FlipLeftRight2D`, `FlipUpDown2D` <br> - `Repeat{1D,2D,3D}` <br> - `Resize{1D,2D,3D}` <br> - `Upsample{1D,2D,3D}` <br> - `Pad{1D,2D,3D}` |
 |Crop| - `Crop{1D,2D}` |
 |Normalization|- `{Layer,Instance,Group}Norm`|
@@ -182,18 +182,17 @@ print(l1(x).shape)  # (1, 2, 3, 5)
 
 # Bilinear
 x1, x2 = jnp.ones([1, 2, 3, 4]), jnp.ones([1, 2, 3, 5])
-l2 = sk.nn.Bilinear(4, 5, 6)  # last dim is 4,5, output dim is 6
+l2 = sk.nn.Bilinear(4, 5, 6)  # last dim of the input x1,x2 are 4,5, output dim is 6
 print(l2(x1, x2).shape)  # (1, 2, 3, 6)
 
 # Multilinear
 x1, x2, x3 = jnp.ones([1, 2, 3, 4]), jnp.ones([1, 2, 3, 5]), jnp.ones([1, 2, 3, 6])
-l3 = sk.nn.Multilinear((4, 5, 6), 7)  # last dim is 4,5,6, output dim is 7
+l3 = sk.nn.Multilinear((4, 5, 6), 7)  # last dim for x1,x2,x3 = 4,5,6, output dim is 7
 print(l3(x1, x2, x3).shape)  # (1, 2, 3, 7)
 
 # GeneralLinear
 x = jnp.ones([4, 5, 6, 7])
-# apply a linear layer to axis 1,2,3, and output dim is 5
-# in_features = (4, 5, 6)
+# apply a linear layer to axis 1,2,3, with dim = (5, 6, 7) and output dim is 5
 l4 = sk.nn.GeneralLinear((5, 6, 7), 5, in_axes=(1, 2, 3))
 print(l4(x).shape)  # (4, 5)
 ```

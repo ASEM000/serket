@@ -51,14 +51,14 @@ class GeneralPoolND:
         @jax.jit
         @jax.vmap
         @kex.kmap(self.kernel_size, self.strides, self.padding)
-        def _maxpoolnd(x):
+        def _poolnd(x):
             return func(x)
 
-        self._func = _maxpoolnd
+        self.func = _poolnd
 
     @_check_spatial_in_shape
     def __call__(self, x, **kwargs):
-        return self._func(x)
+        return self.func(x)
 
 
 @pytc.treeclass
@@ -90,7 +90,7 @@ class GlobalPoolND:
 
     @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        axes = tuple(range(1, self.ndim + 1))
+        axes = tuple(range(1, self.ndim + 1))  # reduce spatial dimensions
         return self.func(x, axis=axes, keepdims=self.keepdims)
 
 
