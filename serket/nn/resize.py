@@ -20,28 +20,29 @@ def _recursive_repeat(x, scale, axis):
 
 @pytc.treeclass
 class RepeatND:
-    def __init__(self, scale: int = 1, ndim: int = 1):
+    def __init__(self, scale: int = 1, spatial_ndim: int = 1):
         """repeats input along axes 1,2,3"""
         self.scale = _check_and_return_positive_int(scale, "scale")
-        self.ndim = ndim
+        self.spatial_ndim = spatial_ndim
 
-    @_check_spatial_in_shape
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        kernel_size = (-1,) * (self.ndim + 1)
-        strides = (1,) * (self.ndim + 1)
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+        _check_spatial_in_shape(x, self.spatial_ndim)
+
+        kernel_size = (-1,) * (self.spatial_ndim + 1)
+        strides = (1,) * (self.spatial_ndim + 1)
 
         @kex.kmap(kernel_size=kernel_size, strides=strides, padding="valid")
         def _repeat(x):
-            return _recursive_repeat(x, self.scale, self.ndim)
+            return _recursive_repeat(x, self.scale, self.spatial_ndim)
 
-        return jnp.squeeze(_repeat(x), axis=tuple(range(1, self.ndim + 2)))
+        return jnp.squeeze(_repeat(x), axis=tuple(range(1, self.spatial_ndim + 2)))
 
 
 @pytc.treeclass
 class ResizeND:
-    size: int | tuple[int, ...] = pytc.nondiff_field()
-    method: str = pytc.nondiff_field()
-    antialias: bool = pytc.nondiff_field()
+    size: int | tuple[int, ...] = pytc.field(nondiff=True)
+    method: str = pytc.field(nondiff=True)
+    antialias: bool = pytc.field(nondiff=True)
 
     """
     Resize an image to a given size using a given interpolation method.
@@ -70,15 +71,15 @@ class ResizeND:
                 Lanczos resampling, using a kernel of radius 5.
     """
 
-    def __init__(self, size, method="nearest", antialias=True, ndim=1):
-        self.size = _check_and_return(size, ndim, "size")
+    def __init__(self, size, method="nearest", antialias=True, spatial_ndim=1):
+        self.size = _check_and_return(size, spatial_ndim, "size")
         self.method = method
         self.antialias = antialias
-        self.ndim = ndim
+        self.spatial_ndim = spatial_ndim
 
-    @_check_spatial_in_shape
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        assert x.ndim == self.ndim + 1, f"input must be {self.ndim}D"
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        assert x.ndim == self.spatial_ndim + 1, f"input must be {self.spatial_ndim}D"
 
         return jax.image.resize(
             x,
@@ -90,23 +91,26 @@ class ResizeND:
 
 @pytc.treeclass
 class UpsampleND:
-    scale: int | tuple[int, ...] = pytc.nondiff_field(default=1)
-    method: str = pytc.nondiff_field(default="nearest")
+    scale: int | tuple[int, ...] = pytc.field(nondiff=True, default=1)
+    method: str = pytc.field(nondiff=True, default="nearest")
 
     def __init__(
-        self, scale: int | tuple[int, ...], method: str = "nearest", ndim: int = 1
+        self,
+        scale: int | tuple[int, ...],
+        method: str = "nearest",
+        spatial_ndim: int = 1,
     ):
         # the difference between this and ResizeND is that UpsamplingND
         # use scale instead of size
         # assert types
-        self.scale = _check_and_return(scale, ndim, "scale")
+        self.scale = _check_and_return(scale, spatial_ndim, "scale")
         self.method = method
-        self.ndim = ndim
+        self.spatial_ndim = spatial_ndim
 
-    @_check_spatial_in_shape
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        msg = f"Input must have {self.ndim+1} dimensions, got {x.ndim}."
-        assert x.ndim == self.ndim + 1, msg
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        msg = f"Input must have {self.spatial_ndim+1} dimensions, got {x.ndim}."
+        assert x.ndim == self.spatial_ndim + 1, msg
 
         resized_shape = tuple(s * x.shape[i + 1] for i, s in enumerate(self.scale))
         return jax.image.resize(
@@ -119,52 +123,52 @@ class UpsampleND:
 @pytc.treeclass
 class Repeat1D(RepeatND):
     def __init__(self, *a, **k):
-        super().__init__(*a, ndim=1, **k)
+        super().__init__(*a, spatial_ndim=1, **k)
 
 
 @pytc.treeclass
 class Repeat2D(RepeatND):
     def __init__(self, *a, **k):
-        super().__init__(*a, ndim=2, **k)
+        super().__init__(*a, spatial_ndim=2, **k)
 
 
 @pytc.treeclass
 class Repeat3D(RepeatND):
     def __init__(self, *a, **k):
-        super().__init__(*a, ndim=3, **k)
+        super().__init__(*a, spatial_ndim=3, **k)
 
 
 @pytc.treeclass
 class Resize1D(ResizeND):
     def __init__(self, *a, **k):
-        super().__init__(*a, ndim=1, **k)
+        super().__init__(*a, spatial_ndim=1, **k)
 
 
 @pytc.treeclass
 class Resize2D(ResizeND):
     def __init__(self, *a, **k):
-        super().__init__(*a, ndim=2, **k)
+        super().__init__(*a, spatial_ndim=2, **k)
 
 
 @pytc.treeclass
 class Resize3D(ResizeND):
     def __init__(self, *a, **k):
-        super().__init__(*a, ndim=3, **k)
+        super().__init__(*a, spatial_ndim=3, **k)
 
 
 @pytc.treeclass
 class Upsample1D(UpsampleND):
     def __init__(self, *a, **k):
-        super().__init__(*a, ndim=1, **k)
+        super().__init__(*a, spatial_ndim=1, **k)
 
 
 @pytc.treeclass
 class Upsample2D(UpsampleND):
     def __init__(self, *a, **k):
-        super().__init__(*a, ndim=2, **k)
+        super().__init__(*a, spatial_ndim=2, **k)
 
 
 @pytc.treeclass
 class Upsample3D(UpsampleND):
     def __init__(self, *a, **k):
-        super().__init__(*a, ndim=3, **k)
+        super().__init__(*a, spatial_ndim=3, **k)

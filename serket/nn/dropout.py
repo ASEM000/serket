@@ -9,7 +9,7 @@ from serket.nn.utils import _check_spatial_in_shape
 
 @pytc.treeclass
 class Dropout:
-    p: float = pytc.nondiff_field()
+    p: float = pytc.field(nondiff=True)
     eval: bool = None
 
     def __init__(self, p=0.5, eval=None):
@@ -40,11 +40,11 @@ class Dropout:
 
 @pytc.treeclass
 class DropoutND:
-    p: float = pytc.nondiff_field()
+    p: float = pytc.field(nondiff=True)
     eval: bool = None
-    ndim: int = pytc.nondiff_field()
+    spatial_ndim: int = pytc.field(nondiff=True)
 
-    def __init__(self, p=0.5, eval=None, ndim=1):
+    def __init__(self, p=0.5, eval=None, spatial_ndim=1):
         """Drops full feature maps along the channel axis.
 
         Args:
@@ -56,7 +56,7 @@ class DropoutND:
                 https://arxiv.org/abs/1411.4280
 
         Example:
-            >>> layer = DropoutND(0.5, ndim=1)
+            >>> layer = DropoutND(0.5, spatial_ndim=1)
             >>> layer(jnp.ones((1, 10)))
             [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
@@ -69,10 +69,10 @@ class DropoutND:
 
         self.p = p
         self.eval = eval
-        self.ndim = ndim
+        self.spatial_ndim = spatial_ndim
 
-    @_check_spatial_in_shape
     def __call__(self, x, *, key=jr.PRNGKey(0)):
+        _check_spatial_in_shape(x, self.spatial_ndim)
         if self.eval is True:
             return x
 
@@ -83,16 +83,16 @@ class DropoutND:
 @pytc.treeclass
 class Dropout1D(DropoutND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1)
+        super().__init__(*a, **k, spatial_ndim=1)
 
 
 @pytc.treeclass
 class Dropout2D(DropoutND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2)
+        super().__init__(*a, **k, spatial_ndim=2)
 
 
 @pytc.treeclass
 class Dropout3D(DropoutND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3)
+        super().__init__(*a, **k, spatial_ndim=3)

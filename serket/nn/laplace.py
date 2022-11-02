@@ -18,8 +18,8 @@ class Laplace2D:
             return -4 * x[1, 1] + x[0, 1] + x[2, 1] + x[1, 0] + x[1, 2]
 
         self._func = op
-        self.ndim = 2
+        self.spatial_ndim = 2
 
-    @_check_spatial_in_shape
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+        _check_spatial_in_shape(x, self.spatial_ndim)
         return self._func(x)

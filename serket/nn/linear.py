@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return_init_func, _lazy_call
+from serket.nn.utils import _check_and_return_init_func, _check_non_tracer
 
 
 @ft.lru_cache(maxsize=128)
@@ -60,27 +60,13 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     return f"{input_string},{weight_string}->{result_string}"
 
 
-def _lazy_general_linear(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": tuple(a[0].shape[i] for i in self.in_axes)}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
-
-
-def _lazy_multi_linear(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": tuple(ai.shape[-1] for ai in a)}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
-
-
 @pytc.treeclass
 class Multilinear:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: tuple[int, ...] | None = pytc.nondiff_field()
-    out_features: int = pytc.nondiff_field()
+    in_features: tuple[int, ...] | None = pytc.field(nondiff=True)
+    out_features: int = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -126,7 +112,7 @@ class Multilinear:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 Multilinear.__init__,
                 self,
                 out_features=out_features,
@@ -136,8 +122,8 @@ class Multilinear:
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         if not isinstance(in_features, (tuple, int)):
             msg = f"Expected tuple or int for in_features, got {type(in_features)}"
@@ -161,8 +147,11 @@ class Multilinear:
         else:
             self.bias = self.bias_init_func(key, (out_features,))
 
-    @_lazy_multi_linear
-    def __call__(self, *x, **kwargs) -> jnp.ndarray:
+    def __call__(self, *x, **k) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(*x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=tuple(xi.shape[-1] for xi in x))
+
         einsum_string = _multilinear_einsum_string(len(self.in_features))
         x = jnp.einsum(einsum_string, *x, self.weight)
 
@@ -212,9 +201,6 @@ class Linear(Multilinear):
             key=key,
         )
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return super().__call__(x, **kwargs)
-
 
 @pytc.treeclass
 class Bilinear(Multilinear):
@@ -257,9 +243,9 @@ class GeneralLinear:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: tuple[int, ...] | None = pytc.nondiff_field()
-    out_features: tuple[int, ...] | None = pytc.nondiff_field()
-    in_axes: tuple[int, ...] | None = pytc.nondiff_field()
+    in_features: tuple[int, ...] | None = pytc.field(nondiff=True)
+    out_features: tuple[int, ...] | None = pytc.field(nondiff=True)
+    in_axes: tuple[int, ...] | None = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -301,7 +287,7 @@ class GeneralLinear:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
             self.in_axes = in_axes
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 GeneralLinear.__init__,
                 self,
                 in_axes=in_axes,
@@ -312,8 +298,8 @@ class GeneralLinear:
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         if not isinstance(in_features, tuple):
             raise ValueError(
@@ -345,8 +331,11 @@ class GeneralLinear:
         else:
             self.bias = self.bias_init_func(key, (self.out_features,))
 
-    @_lazy_general_linear
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=tuple(x.shape[i] for i in self.in_axes))
+
         # ensure negative axes
         axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)
         einsum_string = _general_linear_einsum_string(*axes)
@@ -358,5 +347,5 @@ class GeneralLinear:
 class Identity:
     """Identity layer"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return x

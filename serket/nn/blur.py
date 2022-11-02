@@ -14,25 +14,15 @@ from serket.nn.fft_convolution import DepthwiseFFTConv2D
 from serket.nn.utils import (
     _check_and_return_positive_int,
     _check_in_features,
+    _check_non_tracer,
     _check_spatial_in_shape,
-    _lazy_call,
 )
-
-
-def _lazy_blur(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[0]}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
 
 
 @pytc.treeclass
 class AvgBlur2D:
-    in_features: int = pytc.nondiff_field()
-    kernel_size: int | tuple[int, int] = pytc.nondiff_field()
-
-    conv1: DepthwiseConv2D = pytc.nondiff_field(repr=False)
-    conv2: DepthwiseConv2D = pytc.nondiff_field(repr=False)
+    in_features: int = pytc.field(nondiff=True)
+    kernel_size: int | tuple[int, int] = pytc.field(nondiff=True)
 
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
         """Average blur 2D layer
@@ -44,15 +34,15 @@ class AvgBlur2D:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 AvgBlur2D.__init__,
                 self,
                 kernel_size=kernel_size,
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
         self.kernel_size = _check_and_return_positive_int(kernel_size, "kernel_size")
@@ -62,7 +52,7 @@ class AvgBlur2D:
         w = w[:, None]
         w = jnp.repeat(w[None, None], in_features, axis=0)
 
-        self.ndim = 2
+        self.spatial_ndim = 2
         self.in_features = in_features
         self.conv1 = DepthwiseConv2D(
             in_features=in_features,
@@ -81,21 +71,20 @@ class AvgBlur2D:
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
 
-    @_lazy_blur
-    @_check_spatial_in_shape
-    @_check_in_features
-    def __call__(self, x, **kwargs) -> jnp.ndarray:
+    def __call__(self, x, **k) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        _check_in_features(x, self.in_features)
         return self.conv2(self.conv1(x))
 
 
 @pytc.treeclass
 class GaussianBlur2D:
-    in_features: int = pytc.nondiff_field()
-    kernel_size: int = pytc.nondiff_field()
-    sigma: float = pytc.nondiff_field()
-
-    conv1: DepthwiseConv2D = pytc.nondiff_field(repr=False)
-    conv2: DepthwiseConv2D = pytc.nondiff_field(repr=False)
+    in_features: int = pytc.field(nondiff=True)
+    kernel_size: int = pytc.field(nondiff=True)
+    sigma: float = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -116,7 +105,7 @@ class GaussianBlur2D:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 GaussianBlur2D.__init__,
                 self=self,
                 kernel_size=kernel_size,
@@ -124,8 +113,8 @@ class GaussianBlur2D:
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
         self.kernel_size = _check_and_return_positive_int(kernel_size, "kernel_size")
@@ -140,7 +129,6 @@ class GaussianBlur2D:
         w = w / jnp.sum(w)
         w = w[:, None]
 
-        # if implementation == "jax":
         w = jnp.repeat(w[None, None], in_features, axis=0)
         self.conv1 = DepthwiseConv2D(
             in_features=in_features,
@@ -157,42 +145,26 @@ class GaussianBlur2D:
         )
 
         self.in_features = in_features
-        self.ndim = 2
+        self.spatial_ndim = 2
 
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
-        # elif implementation == "kernex":
-        #     # usually faster than jax for small kernel sizes
-        #     # but slower for large kernel sizes
+    def __call__(self, x, **k) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        _check_in_features(x, self.in_features)
 
-        #     @jax.vmap  # channel
-        #     @kex.kmap(kernel_size=(kernel_size, 1), padding="same")
-        #     def conv1(x):
-        #         return jnp.sum(x * w)
-
-        #     @jax.vmap
-        #     @kex.kmap(kernel_size=(1, kernel_size), padding="same")
-        #     def conv2(x):
-        #         return jnp.sum(x * w.T)
-
-        #     self._func = lambda x: conv2(conv1(x))
-
-        # else:
-        #     raise ValueError(f"Unknown implementation {implementation}")
-
-    @_lazy_blur
-    @_check_spatial_in_shape
-    @_check_in_features
-    def __call__(self, x, **kwargs) -> jnp.ndarray:
         return self.conv1(self.conv2(x))
 
 
 @pytc.treeclass
 class Filter2D:
-    in_features: int = pytc.nondiff_field()
-    conv: DepthwiseConv2D = pytc.nondiff_field(repr=False)
-    kernel: jnp.ndarray = pytc.nondiff_field()
+    in_features: int = pytc.field(nondiff=True)
+    conv: DepthwiseConv2D = pytc.field(nondiff=True, repr=False)
+    kernel: jnp.ndarray = pytc.field(nondiff=True)
 
     def __init__(self, in_features: int, kernel: jnp.ndarray):
         """Apply 2D filter for each channel
@@ -204,17 +176,17 @@ class Filter2D:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(Filter2D.__init__, self=self, kernel=kernel)
+            self._init = ft.partial(Filter2D.__init__, self=self, kernel=kernel)
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.ndim = 2
+        self.spatial_ndim = 2
         self.kernel = jnp.stack([kernel] * in_features, axis=0)
         self.kernel = self.kernel[:, None]
 
@@ -226,18 +198,19 @@ class Filter2D:
         )
         self.conv = self.conv.at["weight"].set(self.kernel)
 
-    @_lazy_blur
-    @_check_spatial_in_shape
-    @_check_in_features
-    def __call__(self, x, **kwargs) -> jnp.ndarray:
+    def __call__(self, x, **k) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        _check_in_features(x, self.in_features)
         return self.conv(x)
 
 
 @pytc.treeclass
 class FFTFilter2D:
-    in_features: int = pytc.nondiff_field()
-    conv: DepthwiseFFTConv2D = pytc.nondiff_field(repr=False)
-    kernel: jnp.ndarray = pytc.nondiff_field()
+    in_features: int = pytc.field(nondiff=True)
+    kernel: jnp.ndarray = pytc.field(nondiff=True)
 
     def __init__(self, in_features: int, kernel: jnp.ndarray):
         """Apply 2D filter for each channel using FFT , faster for large kernels.
@@ -250,19 +223,17 @@ class FFTFilter2D:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
-                FFTFilter2D.__init__, self=self, kernel=kernel
-            )
+            self._init = ft.partial(FFTFilter2D.__init__, self=self, kernel=kernel)
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.ndim = 2
+        self.spatial_ndim = 2
         self.kernel = jnp.stack([kernel] * in_features, axis=0)
         self.kernel = self.kernel[:, None]
 
@@ -274,8 +245,10 @@ class FFTFilter2D:
         )
         self.conv = self.conv.at["weight"].set(self.kernel)
 
-    @_lazy_blur
-    @_check_spatial_in_shape
-    @_check_in_features
-    def __call__(self, x, **kwargs) -> jnp.ndarray:
+    def __call__(self, x, **k) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        _check_in_features(x, self.in_features)
         return self.conv(x)

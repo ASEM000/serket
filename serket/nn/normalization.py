@@ -7,14 +7,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _lazy_call
-
-
-def _lazy_norm(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[0]}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
+from serket.nn.utils import _check_non_tracer
 
 
 @pytc.treeclass
@@ -22,9 +15,9 @@ class LayerNorm:
     γ: jnp.ndarray = None
     β: jnp.ndarray = None
 
-    ε: float = pytc.nondiff_field()
-    affine: bool = pytc.nondiff_field()
-    normalized_shape: int | tuple[int] = pytc.nondiff_field()
+    ε: float = pytc.field(nondiff=True)
+    affine: bool = pytc.field(nondiff=True)
+    normalized_shape: int | tuple[int] = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -73,10 +66,10 @@ class GroupNorm:
     γ: jnp.ndarray = None
     β: jnp.ndarray = None
 
-    in_features: int = pytc.nondiff_field()
-    groups: int = pytc.nondiff_field()
-    ε: float = pytc.nondiff_field()
-    affine: bool = pytc.nondiff_field()
+    in_features: int = pytc.field(nondiff=True)
+    groups: int = pytc.field(nondiff=True)
+    ε: float = pytc.field(nondiff=True)
+    affine: bool = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -99,7 +92,7 @@ class GroupNorm:
         if in_features is None:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 GroupNorm.__init__,
                 self=self,
                 groups=groups,
@@ -108,8 +101,8 @@ class GroupNorm:
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         if in_features <= 0 or not isinstance(in_features, int):
             raise ValueError("in_features must be a positive integer")
@@ -132,8 +125,11 @@ class GroupNorm:
             self.γ = jnp.ones(self.in_features)
             self.β = jnp.zeros(self.in_features)
 
-    @_lazy_norm
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, name=self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+
         assert len(x.shape) > 1, "Input must have at least 2 dimensions"
         # split channels into groups
         xx = x.reshape(self.groups, self.in_features // self.groups, *x.shape[1:])

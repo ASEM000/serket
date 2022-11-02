@@ -27,23 +27,9 @@ from serket.nn.utils import (
     _check_and_return_positive_int,
     _check_and_return_strides,
     _check_in_features,
+    _check_non_tracer,
     _check_spatial_in_shape,
-    _lazy_call,
 )
-
-
-def _lazy_conv(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[0]}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
-
-
-def _lazy_local_conv(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[0], "in_size": a[0].shape[1:]}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
 
 
 @pytc.treeclass
@@ -51,16 +37,16 @@ class ConvND:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: int = pytc.nondiff_field()
-    out_features: int = pytc.nondiff_field()
-    kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
-    strides: int | tuple[int, ...] = pytc.nondiff_field()
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.nondiff_field()  # fmt: skip
-    input_dilation: int | tuple[int, ...] = pytc.nondiff_field()
-    kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
+    in_features: int = pytc.field(nondiff=True)
+    out_features: int = pytc.field(nondiff=True)
+    kernel_size: int | tuple[int, ...] = pytc.field(nondiff=True)
+    strides: int | tuple[int, ...] = pytc.field(nondiff=True)
+    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(nondiff=True)  # fmt: skip
+    input_dilation: int | tuple[int, ...] = pytc.field(nondiff=True)
+    kernel_dilation: int | tuple[int, ...] = pytc.field(nondiff=True)
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: str | Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
-    groups: int = pytc.nondiff_field()
+    groups: int = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -75,7 +61,7 @@ class ConvND:
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        ndim: int = 2,
+        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Convolutional layer.
@@ -91,7 +77,7 @@ class ConvND:
             weight_init_func: function to use for initializing the weights
             bias_init_func: function to use for initializing the bias
             groups: number of groups to use for grouped convolution
-            ndim: number of dimensions of the convolution
+            spatial_ndim: number of dimensions of the convolution
             key: key to use for initializing the weights
 
         See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -102,7 +88,7 @@ class ConvND:
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 ConvND.__init__,
                 self=self,
                 out_features=out_features,
@@ -114,29 +100,32 @@ class ConvND:
                 weight_init_func=weight_init_func,
                 bias_init_func=bias_init_func,
                 groups=groups,
-                ndim=ndim,
+                spatial_ndim=spatial_ndim,
                 key=key,
             )
 
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
         self.out_features = _check_and_return_positive_int(out_features, "out_features")
         self.groups = _check_and_return_positive_int(groups, "groups")
-        self.ndim = _check_and_return_positive_int(ndim, "ndim")
+        self.spatial_ndim = _check_and_return_positive_int(spatial_ndim, "spatial_ndim")
 
-        assert (
-            self.out_features % self.groups == 0
-        ), f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
+        msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
+        assert self.out_features % self.groups == 0, msg
 
-        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = _check_and_return_strides(strides, ndim)
+        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
+        self.strides = _check_and_return_strides(strides, spatial_ndim)
 
-        self.input_dilation = _check_and_return_input_dilation(input_dilation, ndim)
-        self.kernel_dilation = _check_and_return_kernel_dilation(kernel_dilation, ndim)
+        self.input_dilation = _check_and_return_input_dilation(
+            input_dilation, spatial_ndim
+        )
+        self.kernel_dilation = _check_and_return_kernel_dilation(
+            kernel_dilation, spatial_ndim
+        )
         self.padding = _check_and_return_padding(padding, self.kernel_size)
         self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
         self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
@@ -147,15 +136,20 @@ class ConvND:
         if bias_init_func is None:
             self.bias = None
         else:
-            bias_shape = (out_features, *(1,) * ndim)
+            bias_shape = (out_features, *(1,) * spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-        self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
+        self.dimension_numbers = ConvDimensionNumbers(
+            *((tuple(range(spatial_ndim + 2)),) * 3)
+        )
 
-    @_lazy_conv
-    @_check_spatial_in_shape
-    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, name=self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        _check_in_features(x, self.in_features)
+
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -177,16 +171,16 @@ class ConvNDTranspose:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: int = pytc.nondiff_field()
-    out_features: int = pytc.nondiff_field()
-    kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.nondiff_field()  # fmt: skip
-    output_padding: int | tuple[int, ...] = pytc.nondiff_field()
-    strides: int | tuple[int, ...] = pytc.nondiff_field()
-    kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
+    in_features: int = pytc.field(nondiff=True)
+    out_features: int = pytc.field(nondiff=True)
+    kernel_size: int | tuple[int, ...] = pytc.field(nondiff=True)
+    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(nondiff=True)  # fmt: skip
+    output_padding: int | tuple[int, ...] = pytc.field(nondiff=True)
+    strides: int | tuple[int, ...] = pytc.field(nondiff=True)
+    kernel_dilation: int | tuple[int, ...] = pytc.field(nondiff=True)
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
-    groups: int = pytc.nondiff_field()
+    groups: int = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -201,7 +195,7 @@ class ConvNDTranspose:
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        ndim: int = 2,
+        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Convolutional Transpose Layer
@@ -217,7 +211,7 @@ class ConvNDTranspose:
             weight_init_func : Weight initialization function
             bias_init_func : Bias initialization function
             groups : Number of groups
-            ndim : Number of dimensions
+            spatial_ndim : Number of dimensions
             key : PRNG key
         """
         if in_features is None:
@@ -225,7 +219,7 @@ class ConvNDTranspose:
                 # set all fields to None to mark the class as uninitialized
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 ConvNDTranspose.__init__,
                 self=self,
                 out_features=out_features,
@@ -237,28 +231,29 @@ class ConvNDTranspose:
                 weight_init_func=weight_init_func,
                 bias_init_func=bias_init_func,
                 groups=groups,
-                ndim=ndim,
+                spatial_ndim=spatial_ndim,
                 key=key,
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
         self.out_features = _check_and_return_positive_int(out_features, "out_features")
         self.groups = _check_and_return_positive_int(groups, "groups")
-        self.ndim = _check_and_return_positive_int(ndim, "ndim")
+        self.spatial_ndim = _check_and_return_positive_int(spatial_ndim, "spatial_ndim")
 
-        assert (
-            self.out_features % self.groups == 0
-        ), f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
+        msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
+        assert self.out_features % self.groups == 0, msg
 
-        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = _check_and_return_strides(strides, ndim)
-        self.kernel_dilation = _check_and_return_kernel_dilation(kernel_dilation, ndim)
+        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
+        self.strides = _check_and_return_strides(strides, spatial_ndim)
+        self.kernel_dilation = _check_and_return_kernel_dilation(
+            kernel_dilation, spatial_ndim
+        )
         self.padding = _check_and_return_padding(padding, self.kernel_size)
-        self.output_padding = _check_and_return_strides(output_padding, ndim)
+        self.output_padding = _check_and_return_strides(output_padding, spatial_ndim)
         self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
         self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
 
@@ -268,10 +263,12 @@ class ConvNDTranspose:
         if bias_init_func is None:
             self.bias = None
         else:
-            bias_shape = (out_features, *(1,) * ndim)
+            bias_shape = (out_features, *(1,) * spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-        self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
+        self.dimension_numbers = ConvDimensionNumbers(
+            *((tuple(range(spatial_ndim + 2)),) * 3)
+        )
 
         self.transposed_padding = _calculate_transpose_padding(
             padding=self.padding,
@@ -280,10 +277,13 @@ class ConvNDTranspose:
             input_dilation=self.kernel_dilation,
         )
 
-    @_lazy_conv
-    @_check_spatial_in_shape
-    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, name=self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        _check_in_features(x, self.in_features)
+
         y = jax.lax.conv_transpose(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -303,15 +303,15 @@ class DepthwiseConvND:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: int = pytc.nondiff_field()  # number of input features
-    kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
-    strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.nondiff_field()  # fmt: skip
-    depth_multiplier: int = pytc.nondiff_field()
+    in_features: int = pytc.field(nondiff=True)  # number of input features
+    kernel_size: int | tuple[int, ...] = pytc.field(nondiff=True)
+    strides: int | tuple[int, ...] = pytc.field(nondiff=True)
+    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(nondiff=True)  # fmt: skip
+    depth_multiplier: int = pytc.field(nondiff=True)
 
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: str | Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
-    kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
+    kernel_dilation: int | tuple[int, ...] = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -323,7 +323,7 @@ class DepthwiseConvND:
         padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
-        ndim: int = 2,
+        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Depthwise Convolutional layer.
@@ -336,7 +336,7 @@ class DepthwiseConvND:
             padding: padding of the input
             weight_init_func: function to initialize the weights
             bias_init_func: function to initialize the bias
-            ndim: number of spatial dimensions
+            spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
         Examples:
@@ -353,7 +353,7 @@ class DepthwiseConvND:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 DepthwiseConvND.__init__,
                 self=self,
                 kernel_size=kernel_size,
@@ -362,24 +362,22 @@ class DepthwiseConvND:
                 padding=padding,
                 weight_init_func=weight_init_func,
                 bias_init_func=bias_init_func,
-                ndim=ndim,
+                spatial_ndim=spatial_ndim,
                 key=key,
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.depth_multiplier = _check_and_return_positive_int(
-            depth_multiplier, "in_features"
-        )
-        self.ndim = _check_and_return_positive_int(ndim, "ndim")
+        self.depth_multiplier = _check_and_return_positive_int(depth_multiplier, "in_features")  # fmt: skip
+        self.spatial_ndim = _check_and_return_positive_int(spatial_ndim, "spatial_ndim")
 
-        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = _check_and_return_strides(strides, ndim)
-        self.input_dilation = _check_and_return_input_dilation(1, ndim)
-        self.kernel_dilation = _check_and_return_kernel_dilation(1, ndim)
+        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
+        self.strides = _check_and_return_strides(strides, spatial_ndim)
+        self.input_dilation = _check_and_return_input_dilation(1, spatial_ndim)
+        self.kernel_dilation = _check_and_return_kernel_dilation(1, spatial_ndim)
         self.padding = _check_and_return_padding(padding, self.kernel_size)
         self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
         self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
@@ -390,15 +388,18 @@ class DepthwiseConvND:
         if bias_init_func is None:
             self.bias = None
         else:
-            bias_shape = (depth_multiplier * in_features, *(1,) * ndim)
+            bias_shape = (depth_multiplier * in_features, *(1,) * spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-        self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
+        self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(spatial_ndim + 2)),) * 3))  # fmt: skip
 
-    @_lazy_conv
-    @_check_spatial_in_shape
-    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, name=self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        _check_in_features(x, self.in_features)
+
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, axis=0),
             rhs=self.weight,
@@ -432,7 +433,7 @@ class SeparableConvND:
         depthwise_weight_init_func: str | Callable = "glorot_uniform",
         pointwise_weight_init_func: str | Callable = "glorot_uniform",
         pointwise_bias_init_func: str | Callable = "zeros",
-        ndim: int = 2,
+        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Separable convolutional layer.
@@ -453,13 +454,13 @@ class SeparableConvND:
             depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
             pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
             pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-            ndim : Number of spatial dimensions.
+            spatial_ndim : Number of spatial dimensions.
 
         """
         if in_features is None:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 SeparableConvND.__init__,
                 self=self,
                 out_features=out_features,
@@ -470,23 +471,23 @@ class SeparableConvND:
                 depthwise_weight_init_func=depthwise_weight_init_func,
                 pointwise_weight_init_func=pointwise_weight_init_func,
                 pointwise_bias_init_func=pointwise_bias_init_func,
-                ndim=ndim,
+                spatial_ndim=spatial_ndim,
                 key=key,
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
         self.depth_multiplier = _check_and_return_positive_int(
             depth_multiplier, "in_features"
         )
         self.out_features = _check_and_return_positive_int(out_features, "out_features")
-        self.ndim = _check_and_return_positive_int(ndim, "ndim")
+        self.spatial_ndim = _check_and_return_positive_int(spatial_ndim, "spatial_ndim")
 
-        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = _check_and_return_strides(strides, ndim)
+        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
+        self.strides = _check_and_return_strides(strides, spatial_ndim)
         self.padding = _check_and_return_padding(padding, self.kernel_size)
         self.depthwise_weight_init_func = _check_and_return_init_func(
             depthwise_weight_init_func, "depthwise_weight_init_func"
@@ -507,7 +508,7 @@ class SeparableConvND:
             weight_init_func=depthwise_weight_init_func,
             bias_init_func=None,  # no bias for lhs
             key=key,
-            ndim=ndim,
+            spatial_ndim=spatial_ndim,
         )
 
         self.pointwise_conv = ConvND(
@@ -519,13 +520,16 @@ class SeparableConvND:
             weight_init_func=pointwise_weight_init_func,
             bias_init_func=pointwise_bias_init_func,
             key=key,
-            ndim=ndim,
+            spatial_ndim=spatial_ndim,
         )
 
-    @_lazy_conv
-    @_check_spatial_in_shape
-    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, name=self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        _check_in_features(x, self.in_features)
+
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
@@ -536,14 +540,14 @@ class ConvNDLocal:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: int = pytc.nondiff_field()  # number of input features
-    out_features: int = pytc.nondiff_field()  # number of output features
-    kernel_size: int | tuple[int, ...] = pytc.nondiff_field()
-    in_size: tuple[int, ...] = pytc.nondiff_field()  # size of input
-    strides: int | tuple[int, ...] = pytc.nondiff_field()  # stride of the convolution
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.nondiff_field()  # fmt: skip
-    input_dilation: int | tuple[int, ...] = pytc.nondiff_field()
-    kernel_dilation: int | tuple[int, ...] = pytc.nondiff_field()
+    in_features: int = pytc.field(nondiff=True)  # number of input features
+    out_features: int = pytc.field(nondiff=True)  # number of output features
+    kernel_size: int | tuple[int, ...] = pytc.field(nondiff=True)
+    in_size: tuple[int, ...] = pytc.field(nondiff=True)  # size of input
+    strides: int | tuple[int, ...] = pytc.field(nondiff=True)
+    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(nondiff=True)  # fmt: skip
+    input_dilation: int | tuple[int, ...] = pytc.field(nondiff=True)
+    kernel_dilation: int | tuple[int, ...] = pytc.field(nondiff=True)
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
 
@@ -560,7 +564,7 @@ class ConvNDLocal:
         kernel_dilation: int | tuple[int, ...] = 1,
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
-        ndim: int = 2,
+        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
     ):
         """Local convolutional layer.
@@ -576,7 +580,7 @@ class ConvNDLocal:
             kernel_dilation: dilation of the convolution kernel
             weight_init_func: weight initialization function
             bias_init_func: bias initialization function
-            ndim: number of dimensions
+            spatial_ndim: number of dimensions
             key: random number generator key
         Note:
             See : https://keras.io/api/layers/locally_connected_layers/
@@ -584,7 +588,7 @@ class ConvNDLocal:
         if in_features is None:
             for field_item in dataclasses.fields(self):
                 setattr(self, field_item.name, None)
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 ConvNDLocal.__init__,
                 self=self,
                 out_features=out_features,
@@ -595,26 +599,28 @@ class ConvNDLocal:
                 kernel_dilation=kernel_dilation,
                 weight_init_func=weight_init_func,
                 bias_init_func=bias_init_func,
-                ndim=ndim,
+                spatial_ndim=spatial_ndim,
                 key=key,
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
         self.out_features = _check_and_return_positive_int(out_features, "out_features")
-        self.ndim = _check_and_return_positive_int(ndim, "ndim")
-        self.in_size = _check_and_return_input_size(in_size, ndim)
-        self.kernel_size = _check_and_return_kernel(kernel_size, ndim)
-        self.strides = _check_and_return_strides(strides, ndim)
-        self.input_dilation = _check_and_return_input_dilation(input_dilation, ndim)
-        self.kernel_dilation = _check_and_return_kernel_dilation(1, ndim)
+        self.spatial_ndim = _check_and_return_positive_int(spatial_ndim, "spatial_ndim")
+        self.in_size = _check_and_return_input_size(in_size, spatial_ndim)
+        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
+        self.strides = _check_and_return_strides(strides, spatial_ndim)
+        self.input_dilation = _check_and_return_input_dilation(
+            input_dilation, spatial_ndim
+        )
+        self.kernel_dilation = _check_and_return_kernel_dilation(1, spatial_ndim)
         self.padding = _check_and_return_padding(padding, self.kernel_size)
         self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
         self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
-        self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(ndim + 2)),) * 3))
+        self.dimension_numbers = ConvDimensionNumbers(*((tuple(range(spatial_ndim + 2)),) * 3))  # fmt: skip
         self.out_size = _calculate_convolution_output_shape(
             shape=self.in_size,
             kernel_size=self.kernel_size,
@@ -638,10 +644,13 @@ class ConvNDLocal:
         else:
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @_lazy_local_conv
-    @_check_spatial_in_shape
-    @_check_in_features
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, name=self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0], in_size=x.shape[1:])
+        _check_spatial_in_shape(x, self.spatial_ndim)
+        _check_in_features(x, self.in_features)
+
         y = jax.lax.conv_general_dilated_local(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -661,88 +670,88 @@ class ConvNDLocal:
 @pytc.treeclass
 class Conv1D(ConvND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1)
+        super().__init__(*a, **k, spatial_ndim=1)
 
 
 @pytc.treeclass
 class Conv2D(ConvND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2)
+        super().__init__(*a, **k, spatial_ndim=2)
 
 
 @pytc.treeclass
 class Conv3D(ConvND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3)
+        super().__init__(*a, **k, spatial_ndim=3)
 
 
 @pytc.treeclass
 class Conv1DTranspose(ConvNDTranspose):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1)
+        super().__init__(*a, **k, spatial_ndim=1)
 
 
 @pytc.treeclass
 class Conv2DTranspose(ConvNDTranspose):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2)
+        super().__init__(*a, **k, spatial_ndim=2)
 
 
 @pytc.treeclass
 class Conv3DTranspose(ConvNDTranspose):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3)
+        super().__init__(*a, **k, spatial_ndim=3)
 
 
 @pytc.treeclass
 class Conv1DLocal(ConvNDLocal):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1)
+        super().__init__(*a, **k, spatial_ndim=1)
 
 
 @pytc.treeclass
 class Conv2DLocal(ConvNDLocal):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2)
+        super().__init__(*a, **k, spatial_ndim=2)
 
 
 @pytc.treeclass
 class Conv3DLocal(ConvNDLocal):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3)
+        super().__init__(*a, **k, spatial_ndim=3)
 
 
 @pytc.treeclass
 class DepthwiseConv1D(DepthwiseConvND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1)
+        super().__init__(*a, **k, spatial_ndim=1)
 
 
 @pytc.treeclass
 class DepthwiseConv2D(DepthwiseConvND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2)
+        super().__init__(*a, **k, spatial_ndim=2)
 
 
 @pytc.treeclass
 class DepthwiseConv3D(DepthwiseConvND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3)
+        super().__init__(*a, **k, spatial_ndim=3)
 
 
 @pytc.treeclass
 class SeparableConv1D(SeparableConvND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1)
+        super().__init__(*a, **k, spatial_ndim=1)
 
 
 @pytc.treeclass
 class SeparableConv2D(SeparableConvND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2)
+        super().__init__(*a, **k, spatial_ndim=2)
 
 
 @pytc.treeclass
 class SeparableConv3D(SeparableConvND):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3)
+        super().__init__(*a, **k, spatial_ndim=3)

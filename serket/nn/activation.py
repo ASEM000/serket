@@ -42,82 +42,80 @@ __all__ = (
 @pytc.treeclass
 class AdaptiveLeakyReLU:
     a: float = 1.0
-    v: float = pytc.nondiff_field(default=1.0)
 
-    def __post_init__(self, a: float = 1.0, v: float = 1.0):
-        """
+    def __init__(self, a: float = 1.0, v: float = 1.0):
+        """Leaky ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf
         Args:
             a: scaling factor for positive values
             v: scaling factor for negative values
-
-        See:
-            https://arxiv.org/pdf/1906.01170.pdf
         """
-        if not isinstance(self.a, float) or self.a < 0:
-            raise ValueError(f"`a` must be a positive float, got {self.a}")
+        if not isinstance(a, float) or a < 0:
+            raise ValueError(f"`a` must be a positive float, got {a}")
 
-        if not isinstance(self.v, float) or self.v < 0:
-            raise ValueError(f"`v` must be a positive float, got {self.v}")
+        if not isinstance(v, float) or v < 0:
+            raise ValueError(f"`v` must be a positive float, got {v}")
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        self.a = a
+        self.v = v
+
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jnp.maximum(0, self.a * x) - self.v * jnp.maximum(0, -self.a * x)
 
 
 @pytc.treeclass
 class AdaptiveReLU:
-    a: float = 1.0
+    a: float
 
-    def __post_init__(self):
-        """
+    def __init_(self, a: float = 1.0):
+        """ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf
         Args:
             a: scaling factor
-        See:
-            https://arxiv.org/pdf/1906.01170.pdf"""
-        if not isinstance(self.a, float) or self.a < 0:
-            raise ValueError(f"`a` must be a positive float, got {self.a}")
+        """
+        if not isinstance(a, float) or a < 0:
+            raise ValueError(f"`a` must be a positive float, got {a}")
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        self.a = a
+
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jnp.maximum(0, self.a * x)
 
 
 @pytc.treeclass
 class AdaptiveSigmoid:
-    a: float = 1.0
+    a: float
 
-    def __post_init__(self):
-        """
+    def __init__(self, a: float = 1.0):
+        """Sigmoid activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf
         Args:
             a: scaling factor
-
-        See:
-            https://arxiv.org/pdf/1906.01170.pdf
         """
-        if not isinstance(self.a, float):
-            raise TypeError(f"AdaptiveSigmoid: a must be a float, not {type(self.a)}")
+        if not isinstance(a, float):
+            raise TypeError(f"AdaptiveSigmoid: a must be a float, not {type(a)}")
 
-        if self.a < 0:
-            raise ValueError(f"AdaptiveSigmoid: a must be positive, not {self.a}")
+        if a < 0:
+            raise ValueError(f"AdaptiveSigmoid: a must be positive, not {a}")
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        self.a = a
+
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return 1 / (1 + jnp.exp(-self.a * x))
 
 
 @pytc.treeclass
 class AdaptiveTanh:
-    a: float = 1.0
+    a: float
 
-    def __post_init__(self):
-        """
+    def __init__(self, a: float = 1.0):
+        """Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf
         Args:
             a: scaling factor
-
-        See:
-            https://arxiv.org/pdf/1906.01170.pdf
         """
-        if not isinstance(self.a, float) or self.a < 0:
-            raise ValueError(f"`a` must be a positive float, got {self.a}")
+        if not isinstance(a, float) or a < 0:
+            raise ValueError(f"`a` must be a positive float, got {a}")
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        self.a = a
+
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return (jnp.exp(self.a * x) - jnp.exp(-self.a * x)) / (
             jnp.exp(self.a * x) + jnp.exp(-self.a * x)
         )
@@ -127,9 +125,9 @@ class AdaptiveTanh:
 class CeLU:
     """Celu activation function"""
 
-    alpha: float = pytc.nondiff_field(default=1.0)
+    alpha: float = pytc.field(nondiff=True, default=1.0)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.celu(x, alpha=self.alpha)
 
 
@@ -137,18 +135,18 @@ class CeLU:
 class ELU:
     """Exponential linear unit"""
 
-    alpha: float = pytc.nondiff_field(default=1.0)
+    alpha: float = pytc.field(nondiff=True, default=1.0)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.elu(x, alpha=self.alpha)
 
 
 @pytc.treeclass
 class GELU:
-    approximate: bool = pytc.nondiff_field(default=True)
+    approximate: bool = pytc.field(nondiff=True, default=True)
     """Gaussian error linear unit"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.gelu(x, approximate=self.approximate)
 
 
@@ -156,7 +154,7 @@ class GELU:
 class GLU:
     """Gated linear unit"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.glu(x)
 
 
@@ -164,7 +162,7 @@ class GLU:
 class HardSILU:
     """Hard SILU activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.hard_silu(x)
 
 
@@ -172,9 +170,9 @@ class HardSILU:
 class HardShrink:
     """Hard shrink activation function"""
 
-    alpha: float = pytc.nondiff_field(default=0.5)
+    alpha: float = pytc.field(nondiff=True, default=0.5)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jnp.where(x > self.alpha, x, jnp.where(x < -self.alpha, x, 0.0))
 
 
@@ -182,7 +180,7 @@ class HardShrink:
 class HardSigmoid:
     """Hard sigmoid activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.hard_sigmoid(x)
 
 
@@ -190,7 +188,7 @@ class HardSigmoid:
 class HardSwish:
     """Hard swish activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.hard_swish(x)
 
 
@@ -198,7 +196,7 @@ class HardSwish:
 class HardTanh:
     """Hard tanh activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.hard_tanh(x)
 
 
@@ -206,7 +204,7 @@ class HardTanh:
 class LogSigmoid:
     """Log sigmoid activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.log_sigmoid(x)
 
 
@@ -214,7 +212,7 @@ class LogSigmoid:
 class LogSoftmax:
     """Log softmax activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.log_softmax(x)
 
 
@@ -222,9 +220,9 @@ class LogSoftmax:
 class LeakyReLU:
     """Leaky ReLU activation function"""
 
-    negative_slope: float = pytc.nondiff_field(default=0.01)
+    negative_slope: float = pytc.field(nondiff=True, default=0.01)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.leaky_relu(x, negative_slope=self.negative_slope)
 
 
@@ -232,7 +230,7 @@ class LeakyReLU:
 class ReLU:
     """ReLU activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.relu(x)
 
 
@@ -240,7 +238,7 @@ class ReLU:
 class ReLU6:
     """ReLU activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.relu6(x)
 
 
@@ -248,7 +246,7 @@ class ReLU6:
 class SeLU:
     """Scaled Exponential Linear Unit"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.selu(x)
 
 
@@ -256,7 +254,7 @@ class SeLU:
 class SILU:
     """SILU activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return x * jax.nn.sigmoid(x)
 
 
@@ -264,7 +262,7 @@ class SILU:
 class Sigmoid:
     """Sigmoid activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.sigmoid(x)
 
 
@@ -272,7 +270,7 @@ class Sigmoid:
 class SoftPlus:
     """SoftPlus activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.softplus(x)
 
 
@@ -280,7 +278,7 @@ class SoftPlus:
 class SoftSign:
     """SoftSign activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return x / (1 + jnp.abs(x))
 
 
@@ -288,9 +286,9 @@ class SoftSign:
 class SoftShrink:
     """SoftShrink activation function"""
 
-    alpha: float = pytc.nondiff_field(default=0.5)
+    alpha: float = pytc.field(nondiff=True, default=0.5)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jnp.where(
             x < -self.alpha,
             x + self.alpha,
@@ -302,7 +300,7 @@ class SoftShrink:
 class Swish:
     """Swish activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.swish(x)
 
 
@@ -310,7 +308,7 @@ class Swish:
 class Tanh:
     """Tanh activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.tanh(x)
 
 
@@ -318,13 +316,15 @@ class Tanh:
 class TanhShrink:
     """TanhShrink activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return x - jax.nn.tanh(x)
 
 
 @pytc.treeclass
 class ThresholdedReLU:
-    theta: float = pytc.nondiff_field()
+    theta: float = pytc.field(
+        nondiff=True,
+    )
 
     def __post_init__(self):
         """
@@ -339,7 +339,7 @@ class ThresholdedReLU:
         if not isinstance(self.theta, float) or self.theta < 0:
             raise ValueError(f"`theta` must be a positive float, got {self.theta}")
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jnp.where(x > self.theta, x, 0)
 
 
@@ -347,7 +347,7 @@ class ThresholdedReLU:
 class Mish:
     """Mish activation function"""
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return x * jax.nn.tanh(jax.nn.softplus(x))
 
 
@@ -357,7 +357,7 @@ class PReLU:
 
     a: float = 0.25
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jnp.where(x > 0, x, x * self.a)
 
 
@@ -367,7 +367,7 @@ class Snake:
     See: https://arxiv.org/pdf/2006.08195.pdf
     """
 
-    frequency: float = pytc.nondiff_field(default=1.0)
+    frequency: float = pytc.field(nondiff=True, default=1.0)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return x + (1 - jnp.cos(2 * self.frequency * x)) / (2 * self.frequency)

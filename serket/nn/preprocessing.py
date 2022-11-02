@@ -33,11 +33,11 @@ class HistogramEqualization2D:
             https://scikit-image.org/docs/stable/api/skimage.exposure.html#skimage.exposure.equalize_hist
             https://stackoverflow.com/questions/28518684/histogram-equalization-of-grayscale-images-with-numpy
         """
-        self.ndim = 2
+        self.spatial_ndim = 2
         self.bins = bins
 
-    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        _check_spatial_in_shape(x, self.spatial_ndim)
         return _histeq(x, self.bins)
 
 
@@ -45,7 +45,7 @@ class HistogramEqualization2D:
 class PixelShuffle2D:
     def __init__(self, upscale_factor: int | tuple[int, int] = 1):
 
-        self.ndim = 2
+        self.spatial_ndim = 2
         if isinstance(upscale_factor, int):
             if upscale_factor < 1:
                 raise ValueError("upscale_factor must be >= 1")
@@ -62,8 +62,8 @@ class PixelShuffle2D:
         else:
             raise ValueError("upscale_factor must be an integer or tuple of length 2")
 
-    @_check_spatial_in_shape
     def __call__(self, x: jnp.ndarray, **kwargs):
+        _check_spatial_in_shape(x, self.spatial_ndim)
         channels = x.shape[0]
 
         sr, sw = self.upscale_factor

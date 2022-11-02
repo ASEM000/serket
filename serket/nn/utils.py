@@ -180,35 +180,20 @@ def _check_and_return_positive_int(value, name):
     return value
 
 
-def _check_spatial_in_shape(func):
-    """Decorator to check the input shape of a spatial layer"""
+def _check_spatial_in_shape(x, spatial_ndim: int) -> None:
     spatial_tuple = ("rows", "cols", "depths")
-
-    @ft.wraps(func)
-    def wrapper(self, x, *args, **kwargs):
-        if x.ndim != self.ndim + 1:
-            msg = f"Input must be a {self.ndim+1}D tensor in shape of "
-            msg += f"(in_features, {', '.join(spatial_tuple[:self.ndim])}), "
-            msg += f"but got {x.shape}."
-            raise ValueError(msg)
-        return func(self, x, *args, **kwargs)
-
-    return wrapper
+    if x.ndim != spatial_ndim + 1:
+        msg = f"Input must be a {spatial_ndim+1}D tensor in shape of "
+        msg += f"(in_features, {', '.join(spatial_tuple[:spatial_ndim])}), "
+        msg += f"but got {x.shape}."
+        raise ValueError(msg)
 
 
-def _check_in_features(func):
-    """Check if the input feature dimension is the same as the layer's in_features"""
-
-    @ft.wraps(func)
-    def wrapper(self, x, *args, **kwargs):
-        if x.shape[0] != self.in_features:
-            msg = f"Specified input_features={self.in_features} ,"
-            msg += f"but got input with input_features={x.shape[0]}."
-            raise ValueError(msg)
-
-        return func(self, x, *args, **kwargs)
-
-    return wrapper
+def _check_in_features(x, in_features: int, axis: int = 0) -> None:
+    if x.shape[0] != in_features:
+        msg = f"Specified input_features={in_features} ,"
+        msg += f"but got input with input_features={x.shape[0]}."
+        raise ValueError(msg)
 
 
 _check_and_return_kernel = ft.partial(_check_and_return, name="kernel_size")
@@ -239,60 +224,24 @@ def _create_fields_from_mapping(items: dict[str, Any]) -> dict:
     return return_map
 
 
-_TRACER_ERROR_MSG = lambda cls_name: (
-    "Using Tracers as input to a lazy layer is not supported. "
-    "Use non-Tracer input to initialize the layer.\n"
-    "This error can occur if jax transformations are applied to a layer before "
-    "calling it with a non Tracer input.\n"
-    "Example: \n"
-    "# This will fail\n"
-    ">>> x = jax.numpy.ones(...)\n"
-    f">>> layer = {cls_name}(None, ...)\n"
-    ">>> layer = jax.jit(layer)\n"
-    ">>> layer(x) \n"
-    "# Instead, first initialize the layer with a non Tracer input\n"
-    "# and then apply jax transformations\n"
-    f">>> layer = {cls_name}(None, ...)\n"
-    ">>> layer(x) # dry run to initialize the layer\n"
-    ">>> layer = jax.jit(layer)\n"
-)
+def _check_non_tracer(*x, name: str = "Class"):
+    if any(isinstance(xi, jax.core.Tracer) for xi in x):
+        _TRACER_ERROR_MSG = (
+            f"Using Tracers as input to a lazy layer is not supported. "
+            "Use non-Tracer input to initialize the layer.\n"
+            "This error can occur if jax transformations are applied to a layer before "
+            "calling it with a non Tracer input.\n"
+            "Example: \n"
+            "# This will fail\n"
+            ">>> x = jax.numpy.ones(...)\n"
+            f">>> layer = {name}(None, ...)\n"
+            ">>> layer = jax.jit(layer)\n"
+            ">>> layer(x) \n"
+            "# Instead, first initialize the layer with a non Tracer input\n"
+            "# and then apply jax transformations\n"
+            f">>> layer = {name}(None, ...)\n"
+            ">>> layer(x) # dry run to initialize the layer\n"
+            ">>> layer = jax.jit(layer)\n"
+        )
 
-
-def _getattr(item, path):
-    return (
-        _getattr(getattr(item, path[0]), path[1:])
-        if len(path) > 1
-        else getattr(item, path[0])
-    )
-
-
-def _hasattr(item, path):
-    return (
-        _hasattr(getattr(item, path[0]), path[1:])
-        if len(path) > 1
-        else hasattr(item, path[0])
-    )
-
-
-def _lazy_call(infer_func: Callable[[Any], dict[str, Any]], partial_kw: str):
-    """Decorator to lazily initialize a layer. The layer is initialized when the first call is made.
-    Args:
-        infer_func: a function that takes the layer as input and returns a dictionary of inferred values.
-        partial_kw: the keyword argument that stores the partial function.
-    """
-
-    partial_kw = partial_kw.split(".")
-
-    def func_wrapper(func):
-        @ft.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            if _hasattr(self, partial_kw):
-                if any(isinstance(x, jax.core.Tracer) for x in args):
-                    raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))
-                _getattr(self, partial_kw)(**infer_func(self, *args, **kwargs))
-
-            return func(self, *args, **kwargs)
-
-        return wrapper
-
-    return func_wrapper
+        raise ValueError(_TRACER_ERROR_MSG)

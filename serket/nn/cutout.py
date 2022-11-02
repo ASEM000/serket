@@ -10,9 +10,9 @@ from serket.nn.utils import _check_and_return, _check_spatial_in_shape
 
 @pytc.treeclass
 class RandomCutout1D:
-    shape: int = pytc.nondiff_field()
-    cutout_count: int = pytc.nondiff_field()
-    fill_value: float = pytc.nondiff_field()
+    shape: int = pytc.field(nondiff=True)
+    cutout_count: int = pytc.field(nondiff=True)
+    fill_value: float = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -38,12 +38,12 @@ class RandomCutout1D:
         self.shape = _check_and_return(shape, ndim=1, name="shape")
         self.cutout_count = cutout_count
         self.fill_value = fill_value
-        self.ndim = 1
+        self.spatial_ndim = 1
 
-    @_check_spatial_in_shape
     def __call__(
         self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ) -> jnp.ndarray:
+        _check_spatial_in_shape(x, self.spatial_ndim)
         size = self.shape[0]
         row_arange = jnp.arange(x.shape[1])
 
@@ -67,9 +67,9 @@ class RandomCutout1D:
 
 @pytc.treeclass
 class RandomCutout2D:
-    shape: tuple[int, int] = pytc.nondiff_field()
-    cutout_count: int = pytc.nondiff_field()
-    fill_value: float = pytc.nondiff_field()
+    shape: tuple[int, int] = pytc.field(nondiff=True)
+    cutout_count: int = pytc.field(nondiff=True)
+    fill_value: float = pytc.field(nondiff=True)
 
     def __init__(
         self,
@@ -91,12 +91,12 @@ class RandomCutout2D:
         self.shape = _check_and_return(shape, 2, "shape")
         self.cutout_count = cutout_count
         self.fill_value = fill_value
-        self.ndim = 2
+        self.spatial_ndim = 2
 
-    @_check_spatial_in_shape
     def __call__(
         self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
     ) -> jnp.ndarray:
+        _check_spatial_in_shape(x, self.spatial_ndim)
         height, width = self.shape
         row_arange = jnp.arange(x.shape[1])
         col_arange = jnp.arange(x.shape[2])

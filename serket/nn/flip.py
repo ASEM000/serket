@@ -25,10 +25,10 @@ class FlipLeftRight2D:
             [6 5 4]
             [9 8 7]]]
         """
-        self.ndim = 2
+        self.spatial_ndim = 2
 
-    @_check_spatial_in_shape
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+        _check_spatial_in_shape(x, self.spatial_ndim)
         flip = lambda x: jnp.flip(x, axis=1)
         return jax.vmap(flip)(x)
 
@@ -53,9 +53,9 @@ class FlipUpDown2D:
             [4 5 6]
             [1 2 3]]]
         """
-        self.ndim = 2
+        self.spatial_ndim = 2
 
-    @_check_spatial_in_shape
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+        _check_spatial_in_shape(x, self.spatial_ndim)
         flip = lambda x: jnp.flip(x, axis=0)
         return jax.vmap(flip)(x)

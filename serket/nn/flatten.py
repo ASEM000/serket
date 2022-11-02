@@ -9,8 +9,8 @@ import pytreeclass as pytc
 
 @pytc.treeclass
 class Flatten:
-    start_dim: int = pytc.nondiff_field(default=0)
-    end_dim: int = pytc.nondiff_field(default=-1)
+    start_dim: int = pytc.field(nondiff=True, default=0)
+    end_dim: int = pytc.field(nondiff=True, default=-1)
 
     """
     See https://pytorch.org/docs/stable/generated/torch.nn.Flatten.html?highlight=flatten#torch.nn.Flatten
@@ -42,7 +42,7 @@ class Flatten:
         (1, 2, 60)
     """
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         # normalize start_dim and end_dim for negative indices
         start = self.start_dim + (0 if self.start_dim >= 0 else len(x.shape))
         end = self.end_dim + (0 if self.end_dim >= 0 else len(x.shape))
@@ -55,8 +55,8 @@ class Flatten:
 
 @pytc.treeclass
 class Unflatten:
-    dim: int = pytc.nondiff_field(default=0)
-    shape: tuple = pytc.nondiff_field(default=None)
+    dim: int = pytc.field(nondiff=True, default=0)
+    shape: tuple = pytc.field(nondiff=True, default=None)
 
     """
     See https://pytorch.org/docs/stable/generated/torch.nn.Unflatten.html?highlight=unflatten
@@ -68,7 +68,7 @@ class Unflatten:
         (1, 2, 2, 3)
     """
 
-    def __call__(self, x: jnp.ndaray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndaray, **k) -> jnp.ndarray:
         shape = list(x.shape)
         shape = [*shape[: self.dim], *self.shape, *shape[self.dim + 1 :]]
         return jnp.reshape(x, shape)

@@ -11,9 +11,9 @@ from serket.nn.utils import _create_fields_from_container, _create_fields_from_m
 
 @pytc.treeclass
 class Lambda:
-    func: Callable[[Any], jnp.ndarray] = pytc.nondiff_field()
+    func: Callable[[Any], jnp.ndarray] = pytc.field(nondiff=True)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return self.func(x)
 
 

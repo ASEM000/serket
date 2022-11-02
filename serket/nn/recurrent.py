@@ -12,30 +12,13 @@ import pytreeclass as pytc
 from serket.nn import Linear
 from serket.nn.convolution import ConvND, SeparableConvND
 from serket.nn.fft_convolution import FFTConvND, SeparableFFTConvND
-from serket.nn.utils import _act_func_map, _check_and_return_positive_int, _lazy_call
+from serket.nn.utils import (
+    _act_func_map,
+    _check_and_return_positive_int,
+    _check_non_tracer,
+)
 
 # --------------------------------------------------- RNN ------------------------------------------------------------ #
-
-
-def _lazy_fwd_rnn(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[1]}
-
-    return _lazy_call(infer_func, "cell._partial_init")(func)
-
-
-def _lazy_bwd_rnn(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[1]}
-
-    return _lazy_call(infer_func, "backward_cell._partial_init")(func)
-
-
-def _lazy_rnn_cell(func):
-    def infer_func(self, *a, **k):
-        return {"in_features": a[0].shape[0]}
-
-    return _lazy_call(infer_func, "_partial_init")(func)
 
 
 @pytc.treeclass
@@ -93,7 +76,7 @@ class SimpleRNNCell(RNNCell):
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 SimpleRNNCell.__init__,
                 self=self,
                 hidden_features=hidden_features,
@@ -105,8 +88,8 @@ class SimpleRNNCell(RNNCell):
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         k1, k2 = jr.split(key, 2)
 
@@ -132,10 +115,11 @@ class SimpleRNNCell(RNNCell):
             key=k2,
         )
 
-    @_lazy_rnn_cell
-    def __call__(
-        self, x: jnp.ndarray, state: SimpleRNNState, **kwargs
-    ) -> SimpleRNNState:
+    def __call__(self, x: jnp.ndarray, state: SimpleRNNState, **k) -> SimpleRNNState:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+
         msg = f"Expected state to be an instance of SimpleRNNState, got {type(state)}"
         assert isinstance(state, SimpleRNNState), msg
         h = state.hidden_state
@@ -190,7 +174,7 @@ class LSTMCell(RNNCell):
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 LSTMCell.__init__,
                 self=self,
                 hidden_features=hidden_features,
@@ -202,8 +186,8 @@ class LSTMCell(RNNCell):
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         k1, k2 = jr.split(key, 2)
 
@@ -230,8 +214,11 @@ class LSTMCell(RNNCell):
             key=k2,
         )
 
-    @_lazy_rnn_cell
-    def __call__(self, x: jnp.ndarray, state: LSTMState, **kwargs) -> LSTMState:
+    def __call__(self, x: jnp.ndarray, state: LSTMState, **k) -> LSTMState:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+
         msg = f"Expected state to be an instance of LSTMState, got {type(state)}"
         assert isinstance(state, LSTMState), msg
         h, c = state.hidden_state, state.cell_state
@@ -293,7 +280,7 @@ class GRUCell(RNNCell):
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 GRUCell.__init__,
                 self=self,
                 hidden_features=hidden_features,
@@ -305,8 +292,8 @@ class GRUCell(RNNCell):
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         k1, k2 = jr.split(key, 2)
 
@@ -333,8 +320,11 @@ class GRUCell(RNNCell):
             key=k2,
         )
 
-    @_lazy_rnn_cell
-    def __call__(self, x: jnp.ndarray, state: GRUState, **kwargs) -> GRUState:
+    def __call__(self, x: jnp.ndarray, state: GRUState, **k) -> GRUState:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+
         msg = f"Expected state to be an instance of GRUState, got {type(state)}"
         assert isinstance(state, GRUState), msg
         h = state.hidden_state
@@ -379,7 +369,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
         recurrent_act_func: str | None = "hard_sigmoid",
         key: jr.PRNGKey = jr.PRNGKey(0),
         conv_layer: ConvND | SeparableConvND = ConvND,
-        ndim: int = 2,
+        spatial_ndim: int = 2,
     ):
         """Convolution LSTM cell that defines the update rule for the hidden state and cell state
         Args:
@@ -396,7 +386,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            ndim: Number of spatial dimensions
+            spatial_ndim: Number of spatial dimensions
 
         See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
@@ -406,7 +396,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 ConvLSTMNDCell.__init__,
                 self=self,
                 out_features=out_features,
@@ -420,13 +410,13 @@ class ConvLSTMNDCell(SpatialRNNCell):
                 recurrent_weight_init_func=recurrent_weight_init_func,
                 act_func=act_func,
                 recurrent_act_func=recurrent_act_func,
-                ndim=ndim,
+                spatial_ndim=spatial_ndim,
                 key=key,
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         k1, k2 = jr.split(key, 2)
 
@@ -435,7 +425,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
         self.out_features = _check_and_return_positive_int(out_features, "out_features")
         self.hidden_features = out_features
-        self.ndim = ndim
+        self.spatial_ndim = spatial_ndim
 
         self.in_to_hidden = conv_layer(
             in_features,
@@ -448,7 +438,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
-            ndim=ndim,
+            spatial_ndim=spatial_ndim,
         )
 
         self.hidden_to_hidden = conv_layer(
@@ -462,13 +452,14 @@ class ConvLSTMNDCell(SpatialRNNCell):
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
             key=k2,
-            ndim=ndim,
+            spatial_ndim=spatial_ndim,
         )
 
-    @_lazy_rnn_cell
-    def __call__(
-        self, x: jnp.ndarray, state: ConvLSTMNDState, **kwargs
-    ) -> ConvLSTMNDState:
+    def __call__(self, x: jnp.ndarray, state: ConvLSTMNDState, **k) -> ConvLSTMNDState:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+
         msg = f"Expected state to be an instance of ConvLSTMNDState, got {type(state)}"
         assert isinstance(state, ConvLSTMNDState), msg
         h, c = state.hidden_state, state.cell_state
@@ -484,8 +475,8 @@ class ConvLSTMNDCell(SpatialRNNCell):
         return ConvLSTMNDState(h, c)
 
     def init_state(self, spatial_dim: tuple[int, ...]) -> ConvLSTMNDState:
-        msg = f"Expected spatial_dim to be a tuple of length {self.ndim}, got {spatial_dim}"
-        assert len(spatial_dim) == self.ndim, msg
+        msg = f"Expected spatial_dim to be a tuple of length {self.spatial_ndim}, got {spatial_dim}"
+        assert len(spatial_dim) == self.spatial_ndim, msg
         shape = (self.hidden_features, *spatial_dim)
         return ConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
 
@@ -493,73 +484,73 @@ class ConvLSTMNDCell(SpatialRNNCell):
 @pytc.treeclass
 class ConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1, conv_layer=ConvND)
+        super().__init__(*a, **k, spatial_ndim=1, conv_layer=ConvND)
 
 
 @pytc.treeclass
 class ConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2, conv_layer=ConvND)
+        super().__init__(*a, **k, spatial_ndim=2, conv_layer=ConvND)
 
 
 @pytc.treeclass
 class ConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3, conv_layer=ConvND)
+        super().__init__(*a, **k, spatial_ndim=3, conv_layer=ConvND)
 
 
 @pytc.treeclass
 class SeparableConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1, conv_layer=SeparableConvND)
+        super().__init__(*a, **k, spatial_ndim=1, conv_layer=SeparableConvND)
 
 
 @pytc.treeclass
 class SeparableConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2, conv_layer=SeparableConvND)
+        super().__init__(*a, **k, spatial_ndim=2, conv_layer=SeparableConvND)
 
 
 @pytc.treeclass
 class SeparableConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3, conv_layer=SeparableConvND)
+        super().__init__(*a, **k, spatial_ndim=3, conv_layer=SeparableConvND)
 
 
 @pytc.treeclass
 class FFTConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1, conv_layer=FFTConvND)
+        super().__init__(*a, **k, spatial_ndim=1, conv_layer=FFTConvND)
 
 
 @pytc.treeclass
 class FFTConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2, conv_layer=FFTConvND)
+        super().__init__(*a, **k, spatial_ndim=2, conv_layer=FFTConvND)
 
 
 @pytc.treeclass
 class FFTConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3, conv_layer=FFTConvND)
+        super().__init__(*a, **k, spatial_ndim=3, conv_layer=FFTConvND)
 
 
 @pytc.treeclass
 class SeparableFFTConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1, conv_layer=SeparableFFTConvND)
+        super().__init__(*a, **k, spatial_ndim=1, conv_layer=SeparableFFTConvND)
 
 
 @pytc.treeclass
 class SeparableFFTConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2, conv_layer=SeparableFFTConvND)
+        super().__init__(*a, **k, spatial_ndim=2, conv_layer=SeparableFFTConvND)
 
 
 @pytc.treeclass
 class SeparableFFTConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3, conv_layer=SeparableFFTConvND)
+        super().__init__(*a, **k, spatial_ndim=3, conv_layer=SeparableFFTConvND)
 
 
 @pytc.treeclass
@@ -589,7 +580,7 @@ class ConvGRUNDCell(SpatialRNNCell):
         recurrent_act_func: str | None = "sigmoid",
         key: jr.PRNGKey = jr.PRNGKey(0),
         conv_layer: ConvND | SeparableConvND = ConvND,
-        ndim: int = 2,
+        spatial_ndim: int = 2,
     ):
         """Convolution GRU cell that defines the update rule for the hidden state and cell state
         Args:
@@ -606,7 +597,7 @@ class ConvGRUNDCell(SpatialRNNCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            ndim: Number of spatial dimensions
+            spatial_ndim: Number of spatial dimensions
 
         """
         if in_features is None:
@@ -615,7 +606,7 @@ class ConvGRUNDCell(SpatialRNNCell):
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
 
-            self._partial_init = ft.partial(
+            self._init = ft.partial(
                 ConvGRUNDCell.__init__,
                 self=self,
                 out_features=out_features,
@@ -629,13 +620,13 @@ class ConvGRUNDCell(SpatialRNNCell):
                 recurrent_weight_init_func=recurrent_weight_init_func,
                 act_func=act_func,
                 recurrent_act_func=recurrent_act_func,
-                ndim=ndim,
+                spatial_ndim=spatial_ndim,
                 key=key,
             )
             return
 
-        if hasattr(self, "_partial_init"):
-            delattr(self, "_partial_init")
+        if hasattr(self, "_init"):
+            delattr(self, "_init")
 
         k1, k2 = jr.split(key, 2)
 
@@ -644,7 +635,7 @@ class ConvGRUNDCell(SpatialRNNCell):
         self.in_features = _check_and_return_positive_int(in_features, "in_features")
         self.out_features = _check_and_return_positive_int(out_features, "out_features")
         self.hidden_features = out_features
-        self.ndim = ndim
+        self.spatial_ndim = spatial_ndim
 
         self.in_to_hidden = conv_layer(
             in_features,
@@ -657,7 +648,7 @@ class ConvGRUNDCell(SpatialRNNCell):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
-            ndim=ndim,
+            spatial_ndim=spatial_ndim,
         )
 
         self.hidden_to_hidden = conv_layer(
@@ -671,13 +662,14 @@ class ConvGRUNDCell(SpatialRNNCell):
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
             key=k2,
-            ndim=ndim,
+            spatial_ndim=spatial_ndim,
         )
 
-    @_lazy_rnn_cell
-    def __call__(
-        self, x: jnp.ndarray, state: ConvGRUNDState, **kwargs
-    ) -> ConvGRUNDState:
+    def __call__(self, x: jnp.ndarray, state: ConvGRUNDState, **k) -> ConvGRUNDState:
+        if hasattr(self, "_init"):
+            _check_non_tracer(x, self.__class__.__name__)
+            getattr(self, "_init")(in_features=x.shape[0])
+
         msg = f"Expected state to be an instance of GRUState, got {type(state)}"
         assert isinstance(state, ConvGRUNDState), msg
         h = state.hidden_state
@@ -690,8 +682,8 @@ class ConvGRUNDCell(SpatialRNNCell):
         return ConvGRUNDState(hidden_state=h)
 
     def init_state(self, spatial_dim: tuple[int, ...]) -> ConvGRUNDState:
-        msg = f"Expected spatial_dim to be a tuple of length {self.ndim}, got {spatial_dim}"
-        assert len(spatial_dim) == self.ndim, msg
+        msg = f"Expected spatial_dim to be a tuple of length {self.spatial_ndim}, got {spatial_dim}"
+        assert len(spatial_dim) == self.spatial_ndim, msg
         shape = (self.hidden_features, *spatial_dim)
         return ConvGRUNDState(hidden_state=jnp.zeros(shape))
 
@@ -699,73 +691,73 @@ class ConvGRUNDCell(SpatialRNNCell):
 @pytc.treeclass
 class ConvGRU1DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1, conv_layer=ConvND)
+        super().__init__(*a, **k, spatial_ndim=1, conv_layer=ConvND)
 
 
 @pytc.treeclass
 class ConvGRU2DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2, conv_layer=ConvND)
+        super().__init__(*a, **k, spatial_ndim=2, conv_layer=ConvND)
 
 
 @pytc.treeclass
 class ConvGRU3DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3, conv_layer=ConvND)
+        super().__init__(*a, **k, spatial_ndim=3, conv_layer=ConvND)
 
 
 @pytc.treeclass
 class SeparableConvGRU1DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1, conv_layer=SeparableConvND)
+        super().__init__(*a, **k, spatial_ndim=1, conv_layer=SeparableConvND)
 
 
 @pytc.treeclass
 class SeparableConvGRU2DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2, conv_layer=SeparableConvND)
+        super().__init__(*a, **k, spatial_ndim=2, conv_layer=SeparableConvND)
 
 
 @pytc.treeclass
 class SeparableConvGRU3DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3, conv_layer=SeparableConvND)
+        super().__init__(*a, **k, spatial_ndim=3, conv_layer=SeparableConvND)
 
 
 @pytc.treeclass
 class FFTConvGRU1DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1, conv_layer=FFTConvND)
+        super().__init__(*a, **k, spatial_ndim=1, conv_layer=FFTConvND)
 
 
 @pytc.treeclass
 class FFTConvGRU2DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2, conv_layer=FFTConvND)
+        super().__init__(*a, **k, spatial_ndim=2, conv_layer=FFTConvND)
 
 
 @pytc.treeclass
 class FFTConvGRU3DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3, conv_layer=FFTConvND)
+        super().__init__(*a, **k, spatial_ndim=3, conv_layer=FFTConvND)
 
 
 @pytc.treeclass
 class SeparableFFTConvGRU1DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=1, conv_layer=SeparableFFTConvND)
+        super().__init__(*a, **k, spatial_ndim=1, conv_layer=SeparableFFTConvND)
 
 
 @pytc.treeclass
 class SeparableFFTConvGRU2DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=2, conv_layer=SeparableFFTConvND)
+        super().__init__(*a, **k, spatial_ndim=2, conv_layer=SeparableFFTConvND)
 
 
 @pytc.treeclass
 class SeparableFFTConvGRU3DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
-        super().__init__(*a, **k, ndim=3, conv_layer=SeparableFFTConvND)
+        super().__init__(*a, **k, spatial_ndim=3, conv_layer=SeparableFFTConvND)
 
 
 # ------------------------------------------------- Scan layer ------------------------------------------------------ #
@@ -816,15 +808,22 @@ class ScanRNN:
         self.backward_cell = backward_cell
         self.return_sequences = return_sequences
 
-    @_lazy_fwd_rnn
-    @_lazy_bwd_rnn
     def __call__(
         self,
         x: jnp.ndarray,
         state: RNNState | None = None,
         backward_state: RNNState | None = None,
-        **kwargs,
+        **k,
     ) -> jnp.ndarray:
+
+        if hasattr(self.cell, "_init"):
+            _check_non_tracer(x, self.cell.__class__.__name__)
+            getattr(self.cell, "_init")(in_features=x.shape[1])
+
+        if hasattr(self.backward_cell, "_init"):
+            _check_non_tracer(x, self.backward_cell.__class__.__name__)
+            getattr(self.backward_cell, "_init")(in_features=x.shape[1])
+
         if not isinstance(state, (type(None), RNNState)):
             msg = f"Expected state to be an instance of RNNState, got {type(state)}"
             raise ValueError(msg)
@@ -836,9 +835,9 @@ class ScanRNN:
 
         if isinstance(self.cell, SpatialRNNCell):
             # (time steps, in_features, *spatial_dims)
-            msg = f"Expected x to have {self.cell.ndim + 2}"  # account for time and in_features
+            msg = f"Expected x to have {self.cell.spatial_ndim + 2}"  # account for time and in_features
             msg += f" dimensions corresponds to (timesteps, in_features, *spatial_dims), got {x.ndim}"
-            assert x.ndim == (self.cell.ndim + 2), msg
+            assert x.ndim == (self.cell.spatial_ndim + 2), msg
             msg = f"Expected x to have shape (timesteps, {self.cell.in_features}, *spatial_dims)"
             msg += f", got {x.shape}"
             assert self.cell.in_features == x.shape[1], msg

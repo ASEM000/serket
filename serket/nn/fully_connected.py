@@ -55,7 +55,7 @@ class FNN:
             for (ki, in_dim, out_dim) in (zip(keys, layers[:-1], layers[1:]))
         ]
 
-    def __call__(self, x, **kwargs):
+    def __call__(self, x, **k):
         *layers, last = self.layers
         for layer in layers:
             x = layer(x)
@@ -121,7 +121,7 @@ class PFNN:
             │           ├*─ out_features=1
             │           ├*─ weight_init_func=init(key,shape,dtype)
             │           └*─ bias_init_func=Lambda(key,shape)
-            └*─ act_func=relu(*args,**kwargs)
+            └*─ act_func=relu(*args,**k)
     """
 
     layers: Sequence[Sequence[Linear, ...], ...]
@@ -202,7 +202,7 @@ class PFNN:
 
         self.layers = list(map(list, zip(*self.layers)))
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         X = [x] * len(self.layers)
         for i, sub_network in enumerate(self.layers):
             *layers, last = sub_network
