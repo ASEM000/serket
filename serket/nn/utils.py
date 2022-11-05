@@ -190,9 +190,9 @@ def _check_spatial_in_shape(x, spatial_ndim: int) -> None:
 
 
 def _check_in_features(x, in_features: int, axis: int = 0) -> None:
-    if x.shape[0] != in_features:
+    if x.shape[axis] != in_features:
         msg = f"Specified input_features={in_features} ,"
-        msg += f"but got input with input_features={x.shape[0]}."
+        msg += f"but got input with input_features={x.shape[axis]}."
         raise ValueError(msg)
 
 
