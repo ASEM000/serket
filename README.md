@@ -34,9 +34,10 @@ pip install git+https://github.com/ASEM000/serket
 ```
 
 
-## 📖 Description<a id="Description"></a>
+## 📖 Description and motivation<a id="Description"></a>
 - `serket` aims to be the most intuitive and easy-to-use physics-based Neural network library in JAX.
 - `serket` is fully transparent to `jax` transformation (e.g. `vmap`,`grad`,`jit`,...)
+- `serket` current aim to facilitate the integration of numerical methods in a NN setting (see examples for more)
 
 ### Layer structure
 
@@ -748,7 +749,7 @@ show_images_with_predictions(test_model, sample_test_images, sample_test_labels)
 PINN with Finite difference
 </summary>
 
-We will try to estimate NN(x)~f(x), where df(x)/dx = cos(x) and df(x)/dx will be represented with finite difference scheme
+We will try to estimate $NN(x)~f(x)$, where $df(x)/dx = cos(x)$ and $df(x)/dx$ will be represented with finite difference scheme. The following code compares between finite difference `fd` based implementation and automatic differentation `ad` based implementation.
 
 ```python
 import copy
