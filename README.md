@@ -141,6 +141,11 @@ print(l + l + 100 )
 |Vector operator layers|- `Curl`, `Divergence`, `Gradient`, `Laplacian`, `Jacobian`, `Hessian`|
 |Vector operator function| - `curl`, `divergence`, `gradient`, `laplacian`, `jacobian`, `hessian`|
 
+### #️⃣ Stencil decorators #️⃣
+|Name|description|
+| ------------- | ------------- |
+|`serket.kmap`| Differentiable vectorized stencil decorator using `jax.vmap`. somehow similar to `numba.stencil`|
+|`serket.kscan`|Differentialbe stecil decorator that scans the stencil kernel along array while carrying along state. uses `jax.lax.scan`|
 ### 🧠 Neural network package: `serket.nn` 🧠
 | Group | Layers |
 | ------------- | ------------- |
@@ -968,7 +973,111 @@ avg_blur(jnp.arange(1,26).reshape(5,5))
 #  [17 18 19]]
 ```
 
+
 </details>
+
+<details>
+
+<summary>
+Scan a stencil kernel to solve linear convection using `serket.kscan`
+</summary>
+
+
+
+
+
+<div align ="center">
+
+$\Large {\partial u \over \partial t} + c {\partial u \over \partial x} = 0$ <br> <br>
+$\Large u_i^{n} = u_i^{n-1} - c \frac{\Delta t}{\Delta x}(u_i^{n-1}-u_{i-1}^{n-1})$
+
+<table>
+<tr>
+<td> Problem setup </td> <td> Stencil view  </td>
+</tr>
+<tr>
+<td>
+
+<img src="assets/linear_convection_init.png" width="500px">
+
+</td>
+<td>
+
+<img src="assets/linear_convection_view.png" width="500px">
+
+</td>
+</tr>
+</table>
+</div>
+
+By using `serket.kscan`, the stencil kernel can be scanned carrying along state, in a way similar to how RNN works. This enables BPTT algorithm that is useful for some problems (ex. time-dependent PDEs) .
+
+
+```python
+import jax
+import jax.numpy as jnp
+import serket as sk
+import matplotlib.pyplot as plt
+
+# see https://nbviewer.org/github/barbagroup/CFDPython/blob/master/lessons/01_Step_1.ipynb
+
+tmax,xmax = 0.5,2.0
+nt,nx = 151,51
+dt,dx = tmax/(nt-1) , xmax/(nx-1)
+u = jnp.ones([nt,nx])
+c = 0.5
+
+# kscan moves sequentially in row-major order and updates in-place using lax.scan.
+
+F = sk.kscan(
+        kernel_size = (3,3),
+        padding = ((1,1),(1,1)),
+        named_axis={0:'n',1:'i'},  # n for time axis , i for spatial axis (optional naming)
+        relative=True
+    )
+
+
+# boundary condtion as a function
+def bc(u):
+    return 1
+
+# initial condtion as a function
+def ic1(u):
+    return 1
+
+def ic2(u):
+    return 2
+
+def linear_convection(u):
+    return ( u['i','n-1'] - (c*dt/dx) * (u['i','n-1'] - u['i-1','n-1']) )
+
+
+F[:,0]  = F[:,-1] = bc # assign 1 for left and right boundary for all t
+
+# square wave initial condition
+F[:,:int((nx-1)/4)+1] = F[:,int((nx-1)/2):] = ic1
+F[0:1, int((nx-1)/4)+1 : int((nx-1)/2)] = ic2
+
+# assign linear convection function for
+# interior spatial location [1:-1]
+# and start from t>0  [1:]
+F[1:,1:-1] = linear_convection
+
+kx_solution = F(jnp.array(u))
+
+plt.figure(figsize=(20,7))
+for line in kx_solution[::20]:
+    plt.plot(jnp.linspace(0,xmax,nx),line)
+```
+
+![image](assets/linear_convection.svg)
+
+
+
+
+
+</details>
+
 
 ## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
 
