@@ -927,6 +927,49 @@ plt.legend()
 
 </details>
 
+<details>
+<summary>
+Vectorized differentiable stencil computation with `serket.kmap`
+</summary>
+
+Serket uses `kernex.kmap` decorator that applies a user-defined stencil kernel. `kmap` uses `jax.vmap` as it's backend to vectorized the operation, this means that the decorator is transparent to `jax` transformation.
+
+#### Example
+```python
+@sk.kmap(
+     # a kernel size applied to 2D input with size =3x3
+    kernel_size = (3,3),
+
+    # a strides = 1
+    strides= (1,1) ,
+
+    # padding can be among the following options
+    # 1) a single integer for each dimension -> ex: (1,) pads zeros before and after axis=0
+    # 2) a tuple of two integer for each dimension -> ex: ((1,2),) pads one zero on left and 2 zeros on right of axis=0
+    # 3) "same"/"valid" 
+    # 4) "same"/"valid" tuple for each dimension -> ex: ("same",) same padding for axis=0
+    padding = "valid",
+
+    # relative means if the indexing should be row-col wise or center wise.
+    # for example in a 3x3  1..9 kernel , x[0,0] yields
+    # 1 if relative = False
+    # 5 if relative = True (i.e. the center value)
+    relative= True,
+
+)
+def avg_blur(x):
+    return (x[-1, -1] + x[-1, 0] + x[-1, 1] +
+            x[ 0, -1] + x[ 0, 0] + x[ 0, 1] +
+            x[ 1, -1] + x[ 1, 0] + x[ 1, 1]) // 9
+
+avg_blur(jnp.arange(1,26).reshape(5,5))
+# [[ 7  8  9]
+#  [12 13 14]
+#  [17 18 19]]
+```
+
+</details>
+
 ## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
 
 ✨[See here for more about freezing](https://github.com/ASEM000/PyTreeClass#%EF%B8%8F-model-surgery)✨
