@@ -4,6 +4,8 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
+from serket.nn.callbacks import non_negative_scalar_cb
+
 __all__ = (
     "AdaptiveLeakyReLU",
     "AdaptiveReLU",
@@ -39,86 +41,93 @@ __all__ = (
 )
 
 
+def adaptive_leaky_relu(x: jnp.ndarray, a: float = 1.0, v: float = 1.0) -> jnp.ndarray:
+    return jnp.maximum(0, a * x) - v * jnp.maximum(0, -a * x)
+
+
+def adaptive_relu(x: jnp.ndarray, a: float = 1.0) -> jnp.ndarray:
+    return jnp.maximum(0, a * x)
+
+
+def adaptive_sigmoid(x: jnp.ndarray, a: float = 1.0) -> jnp.ndarray:
+    return 1 / (1 + jnp.exp(-a * x))
+
+
+def adaptive_tanh(x: jnp.ndarray, a: float = 1.0) -> jnp.ndarray:
+    return (jnp.exp(a * x) - jnp.exp(-a * x)) / (jnp.exp(a * x) + jnp.exp(-a * x))
+
+
+def hard_shrink(x: jnp.ndarray, alpha: float = 0.5) -> jnp.ndarray:
+    return jnp.where(x > alpha, x, jnp.where(x < -alpha, x, 0.0))
+
+
+def parametric_relu(x: jnp.ndarray, a: float = 0.25) -> jnp.ndarray:
+    return jnp.where(x >= 0, x, x * a)
+
+
+def soft_shrink(x: jnp.ndarray, alpha: float = 0.5) -> jnp.ndarray:
+    return jnp.where(
+        x < -alpha,
+        x + alpha,
+        jnp.where(x > alpha, x - alpha, 0.0),
+    )
+
+
+def soft_sign(x: jnp.ndarray) -> jnp.ndarray:
+    return x / (1 + jnp.abs(x))
+
+
+def thresholded_relu(x: jnp.ndarray, theta: float = 1.0) -> jnp.ndarray:
+    return jnp.where(x > theta, x, 0)
+
+
+def mish(x: jnp.ndarray) -> jnp.ndarray:
+    return x * jax.nn.tanh(jax.nn.softplus(x))
+
+
+def snake(x: jnp.ndarray, frequency: float = 1.0) -> jnp.ndarray:
+    return x + (1 - jnp.cos(2 * frequency * x)) / (2 * frequency)
+
+
 @pytc.treeclass
 class AdaptiveLeakyReLU:
-    a: float = 1.0
+    """Leaky ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
-    def __init__(self, a: float = 1.0, v: float = 1.0):
-        """Leaky ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf
-        Args:
-            a: scaling factor for positive values
-            v: scaling factor for negative values
-        """
-        if not isinstance(a, float) or a < 0:
-            raise ValueError(f"`a` must be a positive float, got {a}")
-
-        if not isinstance(v, float) or v < 0:
-            raise ValueError(f"`v` must be a positive float, got {v}")
-
-        self.a = a
-        self.v = v
+    a: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb])
+    v: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb, pytc.freeze])
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return jnp.maximum(0, self.a * x) - self.v * jnp.maximum(0, -self.a * x)
+        return adaptive_leaky_relu(x, self.a, self.v)
 
 
 @pytc.treeclass
 class AdaptiveReLU:
-    a: float
+    """ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
-    def __init_(self, a: float = 1.0):
-        """ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf
-        Args:
-            a: scaling factor
-        """
-        if not isinstance(a, float) or a < 0:
-            raise ValueError(f"`a` must be a positive float, got {a}")
-
-        self.a = a
+    a: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb])
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return jnp.maximum(0, self.a * x)
+        return adaptive_relu(x, self.a)
 
 
 @pytc.treeclass
 class AdaptiveSigmoid:
-    a: float
+    """Sigmoid activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
-    def __init__(self, a: float = 1.0):
-        """Sigmoid activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf
-        Args:
-            a: scaling factor
-        """
-        if not isinstance(a, float):
-            raise TypeError(f"AdaptiveSigmoid: a must be a float, not {type(a)}")
-
-        if a < 0:
-            raise ValueError(f"AdaptiveSigmoid: a must be positive, not {a}")
-
-        self.a = a
+    a: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb])
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return 1 / (1 + jnp.exp(-self.a * x))
+        return adaptive_sigmoid(x, self.a)
 
 
 @pytc.treeclass
 class AdaptiveTanh:
-    a: float
+    """Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
-    def __init__(self, a: float = 1.0):
-        """Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf
-        Args:
-            a: scaling factor
-        """
-        if not isinstance(a, float) or a < 0:
-            raise ValueError(f"`a` must be a positive float, got {a}")
-
-        self.a = a
+    a: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb])
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return (jnp.exp(self.a * x) - jnp.exp(-self.a * x)) / (
-            jnp.exp(self.a * x) + jnp.exp(-self.a * x)
-        )
+        return adaptive_tanh(x, self.a)
 
 
 @pytc.treeclass
@@ -173,7 +182,7 @@ class HardShrink:
     alpha: float = pytc.field(callbacks=[pytc.freeze], default=0.5)
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return jnp.where(x > self.alpha, x, jnp.where(x < -self.alpha, x, 0.0))
+        return hard_shrink(x, self.alpha)
 
 
 @pytc.treeclass
@@ -279,7 +288,7 @@ class SoftSign:
     """SoftSign activation function"""
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return x / (1 + jnp.abs(x))
+        return soft_sign(x)
 
 
 @pytc.treeclass
@@ -289,11 +298,7 @@ class SoftShrink:
     alpha: float = pytc.field(callbacks=[pytc.freeze], default=0.5)
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return jnp.where(
-            x < -self.alpha,
-            x + self.alpha,
-            jnp.where(x > self.alpha, x - self.alpha, 0.0),
-        )
+        return soft_shrink(x, self.alpha)
 
 
 @pytc.treeclass
@@ -322,33 +327,20 @@ class TanhShrink:
 
 @pytc.treeclass
 class ThresholdedReLU:
-    theta: float = pytc.field(
-        callbacks=[pytc.freeze],
-    )
+    """Thresholded ReLU activation function"""
 
-    def __post_init__(self):
-        """
-        Args:
-            theta: threshold value
-
-        See:
-            https://arxiv.org/pdf/1402.3337.pdf
-            https://keras.io/api/layers/activation_layers/threshold_relu/
-        """
-
-        if not isinstance(self.theta, float) or self.theta < 0:
-            raise ValueError(f"`theta` must be a positive float, got {self.theta}")
+    theta: float = pytc.field(callbacks=[non_negative_scalar_cb, pytc.freeze])
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return jnp.where(x > self.theta, x, 0)
+        return thresholded_relu(x, self.theta)
 
 
 @pytc.treeclass
 class Mish:
-    """Mish activation function"""
+    """Mish activation function https://arxiv.org/pdf/1908.08681.pdf"""
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return x * jax.nn.tanh(jax.nn.softplus(x))
+        return mish(x)
 
 
 @pytc.treeclass
@@ -358,16 +350,14 @@ class PReLU:
     a: float = 0.25
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return jnp.where(x >= 0, x, x * self.a)
+        return parametric_relu(x, self.a)
 
 
 @pytc.treeclass
 class Snake:
-    """Snake activation function
-    See: https://arxiv.org/pdf/2006.08195.pdf
-    """
+    """Snake activation function https://arxiv.org/pdf/2006.08195.pdf"""
 
-    frequency: float = pytc.field(callbacks=[pytc.freeze], default=1.0)
+    a: float = pytc.field(callbacks=[non_negative_scalar_cb, pytc.freeze], default=1.0)
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return x + (1 - jnp.cos(2 * self.frequency * x)) / (2 * self.frequency)
+        return snake(x, self.a)
