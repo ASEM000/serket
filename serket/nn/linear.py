@@ -65,8 +65,8 @@ class Multilinear:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: tuple[int, ...] | None = pytc.field(nondiff=True)
-    out_features: int = pytc.field(nondiff=True)
+    in_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
+    out_features: int = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -109,7 +109,7 @@ class Multilinear:
             if isinstance(in_features, Sequence)
             else (in_features is None)
         ):
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
 
             self._init = ft.partial(
@@ -243,9 +243,9 @@ class GeneralLinear:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: tuple[int, ...] | None = pytc.field(nondiff=True)
-    out_features: tuple[int, ...] | None = pytc.field(nondiff=True)
-    in_axes: tuple[int, ...] | None = pytc.field(nondiff=True)
+    in_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
+    out_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
+    in_axes: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -284,7 +284,7 @@ class GeneralLinear:
             if isinstance(in_features, Sequence)
             else (in_features is None)
         ):
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
             self.in_axes = in_axes
             self._init = ft.partial(

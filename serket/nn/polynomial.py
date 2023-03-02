@@ -19,7 +19,7 @@ from serket.nn.utils import (
 
 @pytc.treeclass
 class Polynomial:
-    degree: int = pytc.field(nondiff=True)
+    degree: int = pytc.field(callbacks=[pytc.freeze])
     linears: tuple[sk.nn.Linear, ...]
     bias: jnp.ndarray
 
@@ -50,7 +50,7 @@ class Polynomial:
             key: key for the random number generator
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
 
             self._init = ft.partial(

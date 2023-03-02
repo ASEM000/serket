@@ -10,9 +10,9 @@ from serket.nn.utils import _check_and_return, _check_spatial_in_shape
 
 @pytc.treeclass
 class RandomCutout1D:
-    shape: int = pytc.field(nondiff=True)
-    cutout_count: int = pytc.field(nondiff=True)
-    fill_value: float = pytc.field(nondiff=True)
+    shape: int = pytc.field(callbacks=[pytc.freeze])
+    cutout_count: int = pytc.field(callbacks=[pytc.freeze])
+    fill_value: float = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -67,9 +67,9 @@ class RandomCutout1D:
 
 @pytc.treeclass
 class RandomCutout2D:
-    shape: tuple[int, int] = pytc.field(nondiff=True)
-    cutout_count: int = pytc.field(nondiff=True)
-    fill_value: float = pytc.field(nondiff=True)
+    shape: tuple[int, int] = pytc.field(callbacks=[pytc.freeze])
+    cutout_count: int = pytc.field(callbacks=[pytc.freeze])
+    fill_value: float = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,

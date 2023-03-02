@@ -151,15 +151,15 @@ class FFTConvND:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: int = pytc.field(nondiff=True)
-    out_features: int = pytc.field(nondiff=True)
-    kernel_size: int | tuple[int, ...] = pytc.field(nondiff=True)
-    strides: int | tuple[int, ...] = pytc.field(nondiff=True)
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(nondiff=True)  # fmt: skip
-    kernel_dilation: int | tuple[int, ...] = pytc.field(nondiff=True)
+    in_features: int = pytc.field(callbacks=[pytc.freeze])
+    out_features: int = pytc.field(callbacks=[pytc.freeze])
+    kernel_size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    strides: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(callbacks=[pytc.freeze])  # fmt: skip
+    kernel_dilation: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: str | Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
-    groups: int = pytc.field(nondiff=True)
+    groups: int = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -196,7 +196,7 @@ class FFTConvND:
             The implementation is tested against https://github.com/fkodom/fft-conv-pytorch
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 # set all fields to None to mark the class as uninitialized
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
@@ -274,16 +274,16 @@ class FFTConvNDTranspose:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: int = pytc.field(nondiff=True)
-    out_features: int = pytc.field(nondiff=True)
-    kernel_size: int | tuple[int, ...] = pytc.field(nondiff=True)
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(nondiff=True)  # fmt: skip
-    output_padding: int | tuple[int, ...] = pytc.field(nondiff=True)
-    strides: int | tuple[int, ...] = pytc.field(nondiff=True)
-    kernel_dilation: int | tuple[int, ...] = pytc.field(nondiff=True)
+    in_features: int = pytc.field(callbacks=[pytc.freeze])
+    out_features: int = pytc.field(callbacks=[pytc.freeze])
+    kernel_size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(callbacks=[pytc.freeze])  # fmt: skip
+    output_padding: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    strides: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    kernel_dilation: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
-    groups: int = pytc.field(nondiff=True)
+    groups: int = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -318,7 +318,7 @@ class FFTConvNDTranspose:
             key : PRNG key
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 # set all fields to None to mark the class as uninitialized
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
@@ -403,11 +403,11 @@ class DepthwiseFFTConvND:
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    in_features: int = pytc.field(nondiff=True)  # number of input features
-    kernel_size: int | tuple[int, ...] = pytc.field(nondiff=True)
-    strides: int | tuple[int, ...] = pytc.field(nondiff=True)
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(nondiff=True)  # fmt: skip
-    depth_multiplier: int = pytc.field(nondiff=True)
+    in_features: int = pytc.field(callbacks=[pytc.freeze])  # number of input features
+    kernel_size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    strides: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(callbacks=[pytc.freeze])  # fmt: skip
+    depth_multiplier: int = pytc.field(callbacks=[pytc.freeze])
 
     weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
     bias_init_func: str | Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
@@ -449,7 +449,7 @@ class DepthwiseFFTConvND:
                 https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
 
             self._init = ft.partial(
@@ -554,7 +554,7 @@ class SeparableFFTConvND:
 
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
             self._init = ft.partial(
                 SeparableFFTConvND.__init__,

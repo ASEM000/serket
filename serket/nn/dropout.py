@@ -9,7 +9,7 @@ from serket.nn.utils import _check_spatial_in_shape
 
 @pytc.treeclass
 class Dropout:
-    p: float = pytc.field(nondiff=True)
+    p: float = pytc.field(callbacks=[pytc.freeze])
     eval: bool = None
 
     def __init__(self, p=0.5, eval=None):
@@ -40,9 +40,9 @@ class Dropout:
 
 @pytc.treeclass
 class DropoutND:
-    p: float = pytc.field(nondiff=True)
+    p: float = pytc.field(callbacks=[pytc.freeze])
     eval: bool = None
-    spatial_ndim: int = pytc.field(nondiff=True)
+    spatial_ndim: int = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, p=0.5, eval=None, spatial_ndim=1):
         """Drops full feature maps along the channel axis.

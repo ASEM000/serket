@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import jax.tree_util as jtu
 import numpy.testing as npt
 import pytest
 import pytreeclass as pytc
@@ -22,8 +23,8 @@ def test_linear():
 
     model = FNN([1, 128, 128, 1])
 
-    model = pytc.filter_nondiff(model)
-    print(model.tree_diagram())
+    model = jtu.tree_map(lambda x: pytc.freeze(x) if pytc.is_nondiff(x) else x, model)
+    print(pytc.tree_diagram(model))
     for _ in range(20_000):
         value, model = update(model, x, y)
 

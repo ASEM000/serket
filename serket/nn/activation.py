@@ -125,7 +125,7 @@ class AdaptiveTanh:
 class CeLU:
     """Celu activation function"""
 
-    alpha: float = pytc.field(nondiff=True, default=1.0)
+    alpha: float = pytc.field(callbacks=[pytc.freeze], default=1.0)
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.celu(x, alpha=self.alpha)
@@ -135,7 +135,7 @@ class CeLU:
 class ELU:
     """Exponential linear unit"""
 
-    alpha: float = pytc.field(nondiff=True, default=1.0)
+    alpha: float = pytc.field(callbacks=[pytc.freeze], default=1.0)
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.elu(x, alpha=self.alpha)
@@ -143,7 +143,7 @@ class ELU:
 
 @pytc.treeclass
 class GELU:
-    approximate: bool = pytc.field(nondiff=True, default=True)
+    approximate: bool = pytc.field(callbacks=[pytc.freeze], default=True)
     """Gaussian error linear unit"""
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
@@ -170,7 +170,7 @@ class HardSILU:
 class HardShrink:
     """Hard shrink activation function"""
 
-    alpha: float = pytc.field(nondiff=True, default=0.5)
+    alpha: float = pytc.field(callbacks=[pytc.freeze], default=0.5)
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jnp.where(x > self.alpha, x, jnp.where(x < -self.alpha, x, 0.0))
@@ -220,7 +220,7 @@ class LogSoftmax:
 class LeakyReLU:
     """Leaky ReLU activation function"""
 
-    negative_slope: float = pytc.field(nondiff=True, default=0.01)
+    negative_slope: float = pytc.field(callbacks=[pytc.freeze], default=0.01)
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jax.nn.leaky_relu(x, negative_slope=self.negative_slope)
@@ -286,7 +286,7 @@ class SoftSign:
 class SoftShrink:
     """SoftShrink activation function"""
 
-    alpha: float = pytc.field(nondiff=True, default=0.5)
+    alpha: float = pytc.field(callbacks=[pytc.freeze], default=0.5)
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return jnp.where(
@@ -323,7 +323,7 @@ class TanhShrink:
 @pytc.treeclass
 class ThresholdedReLU:
     theta: float = pytc.field(
-        nondiff=True,
+        callbacks=[pytc.freeze],
     )
 
     def __post_init__(self):
@@ -358,7 +358,7 @@ class PReLU:
     a: float = 0.25
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        return jnp.where(x > 0, x, x * self.a)
+        return jnp.where(x >= 0, x, x * self.a)
 
 
 @pytc.treeclass
@@ -367,7 +367,7 @@ class Snake:
     See: https://arxiv.org/pdf/2006.08195.pdf
     """
 
-    frequency: float = pytc.field(nondiff=True, default=1.0)
+    frequency: float = pytc.field(callbacks=[pytc.freeze], default=1.0)
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return x + (1 - jnp.cos(2 * self.frequency * x)) / (2 * self.frequency)

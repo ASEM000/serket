@@ -9,7 +9,7 @@ from serket.nn.utils import _check_spatial_in_shape
 
 @pytc.treeclass
 class AdjustContrastND:
-    contrast_factor: float = pytc.field(nondiff=True)
+    contrast_factor: float = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, contrast_factor=1.0, spatial_ndim=1):
         """Adjusts the contrast of an image by scaling the pixel values by a factor.
@@ -38,7 +38,7 @@ class AdjustContrast2D(AdjustContrastND):
 
 @pytc.treeclass
 class RandomContrastND:
-    contrast_range: tuple = pytc.field(nondiff=True)
+    contrast_range: tuple = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, contrast_range=(0.5, 1), spatial_ndim=1):
         """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.

@@ -10,8 +10,8 @@ from serket.nn.utils import _check_and_return, _check_spatial_in_shape
 
 @pytc.treeclass
 class CropND:
-    size: int | tuple[int, ...] = pytc.field(nondiff=True)
-    start: int | tuple[int, ...] = pytc.field(nondiff=True, default=0)
+    size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    start: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze], default=0)
 
     def __init__(self, size, start, spatial_ndim):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.

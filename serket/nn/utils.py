@@ -245,3 +245,25 @@ def _check_non_tracer(*x, name: str = "Class"):
         )
 
         raise ValueError(_TRACER_ERROR_MSG)
+
+
+def _range_cb(min_val: float = -float("inf"), max_val: float = float("inf")):
+    """Return a function that checks if the input is in the range [min_val, max_val]."""
+
+    def range_check(value: float):
+        if jnp.min(value) <= value <= jnp.max(max_val):
+            return value
+        raise ValueError(f"Expected value between {min_val} and {max_val}, got {value}")
+
+    return range_check
+
+
+def _instance_cb(expected_type: type | tuple[type]):
+    """Return a function that checks if the input is an instance of expected_type."""
+
+    def instance_check(value: Any):
+        if isinstance(value, expected_type):
+            return value
+        raise ValueError(f"Expected value of type {expected_type}, got {type(value)}")
+
+    return instance_check

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 import functools as ft
 
 import jax
@@ -16,13 +15,17 @@ from serket.nn.utils import (
     _check_in_features,
     _check_non_tracer,
     _check_spatial_in_shape,
+    _instance_cb,
+    _range_cb,
 )
+
+_frozen_positive_int_cb = [_range_cb(1), _instance_cb(int), pytc.freeze]
 
 
 @pytc.treeclass
 class AvgBlur2D:
-    in_features: int = pytc.field(nondiff=True)
-    kernel_size: int | tuple[int, int] = pytc.field(nondiff=True)
+    in_features: int = pytc.field(callbacks=[pytc.freeze])
+    kernel_size: int | tuple[int, int] = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
         """Average blur 2D layer
@@ -31,7 +34,7 @@ class AvgBlur2D:
             kernel_size: size of the convolving kernel
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
 
             self._init = ft.partial(
@@ -82,9 +85,9 @@ class AvgBlur2D:
 
 @pytc.treeclass
 class GaussianBlur2D:
-    in_features: int = pytc.field(nondiff=True)
-    kernel_size: int = pytc.field(nondiff=True)
-    sigma: float = pytc.field(nondiff=True)
+    in_features: int = pytc.field(callbacks=[pytc.freeze])
+    kernel_size: int = pytc.field(callbacks=[pytc.freeze])
+    sigma: float = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -102,7 +105,7 @@ class GaussianBlur2D:
             sigma: sigma. Defaults to 1.
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
 
             self._init = ft.partial(
@@ -162,9 +165,9 @@ class GaussianBlur2D:
 
 @pytc.treeclass
 class Filter2D:
-    in_features: int = pytc.field(nondiff=True)
-    conv: DepthwiseConv2D = pytc.field(nondiff=True, repr=False)
-    kernel: jnp.ndarray = pytc.field(nondiff=True)
+    in_features: int = pytc.field(callbacks=[pytc.freeze])
+    conv: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze], repr=False)
+    kernel: jnp.ndarray = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, in_features: int, kernel: jnp.ndarray):
         """Apply 2D filter for each channel
@@ -173,7 +176,7 @@ class Filter2D:
             kernel: kernel array
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
 
             self._init = ft.partial(Filter2D.__init__, self=self, kernel=kernel)
@@ -209,8 +212,8 @@ class Filter2D:
 
 @pytc.treeclass
 class FFTFilter2D:
-    in_features: int = pytc.field(nondiff=True)
-    kernel: jnp.ndarray = pytc.field(nondiff=True)
+    in_features: int = pytc.field(callbacks=[pytc.freeze])
+    kernel: jnp.ndarray = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, in_features: int, kernel: jnp.ndarray):
         """Apply 2D filter for each channel using FFT , faster for large kernels.
@@ -220,7 +223,7 @@ class FFTFilter2D:
             kernel: kernel array
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
 
             self._init = ft.partial(FFTFilter2D.__init__, self=self, kernel=kernel)

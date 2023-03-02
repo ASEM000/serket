@@ -12,7 +12,7 @@ from serket.nn.resize import Resize2D
 @pytc.treeclass
 class RandomApply:
     layer: int
-    p: float = pytc.nondiff_field()
+    p: float = pytc.field(callbacks=[pytc.freeze])
     eval: bool | None
 
     def __init__(self, layer, p: float = 0.5, ndim: int = 1, eval: bool | None = None):
@@ -46,8 +46,8 @@ class RandomApply:
 
         self.p = p
 
-        if not pytc.is_treeclass(layer):
-            raise ValueError("Layer must be a `treeclass`.")
+        # if not pytc.is_treeclass(layer):
+        #     raise ValueError("Layer must be a `treeclass`.")
         self.layer = layer
 
     def __call__(self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0)):

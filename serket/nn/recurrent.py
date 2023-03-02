@@ -71,7 +71,7 @@ class SimpleRNNCell(RNNCell):
             key: the key to use to initialize the weights
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 # set all fields to None to mark the class as uninitialized
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
@@ -169,7 +169,7 @@ class LSTMCell(RNNCell):
             https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 # set all fields to None to mark the class as uninitialized
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
@@ -275,7 +275,7 @@ class GRUCell(RNNCell):
             https://keras.io/api/layers/recurrent_layers/gru/
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 # set all fields to None to mark the class as uninitialized
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
@@ -391,7 +391,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
         See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 # set all fields to None to mark the class as uninitialized
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)
@@ -601,7 +601,7 @@ class ConvGRUNDCell(SpatialRNNCell):
 
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 # set all fields to None to mark the class as uninitialized
                 # to the user and to avoid errors
                 setattr(self, field_item.name, None)

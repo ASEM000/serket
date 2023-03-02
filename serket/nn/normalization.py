@@ -15,9 +15,9 @@ class LayerNorm:
     γ: jnp.ndarray = None
     β: jnp.ndarray = None
 
-    ε: float = pytc.field(nondiff=True)
-    affine: bool = pytc.field(nondiff=True)
-    normalized_shape: int | tuple[int] = pytc.field(nondiff=True)
+    ε: float = pytc.field(callbacks=[pytc.freeze])
+    affine: bool = pytc.field(callbacks=[pytc.freeze])
+    normalized_shape: int | tuple[int] = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -66,10 +66,10 @@ class GroupNorm:
     γ: jnp.ndarray = None
     β: jnp.ndarray = None
 
-    in_features: int = pytc.field(nondiff=True)
-    groups: int = pytc.field(nondiff=True)
-    ε: float = pytc.field(nondiff=True)
-    affine: bool = pytc.field(nondiff=True)
+    in_features: int = pytc.field(callbacks=[pytc.freeze])
+    groups: int = pytc.field(callbacks=[pytc.freeze])
+    ε: float = pytc.field(callbacks=[pytc.freeze])
+    affine: bool = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -90,7 +90,7 @@ class GroupNorm:
             affine : a boolean value that when set to True, this module has learnable affine parameters.
         """
         if in_features is None:
-            for field_item in dataclasses.fields(self):
+            for field_item in pytc.fields(self):
                 setattr(self, field_item.name, None)
             self._init = ft.partial(
                 GroupNorm.__init__,

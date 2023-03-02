@@ -40,9 +40,9 @@ class RepeatND:
 
 @pytc.treeclass
 class ResizeND:
-    size: int | tuple[int, ...] = pytc.field(nondiff=True)
-    method: str = pytc.field(nondiff=True)
-    antialias: bool = pytc.field(nondiff=True)
+    size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    method: str = pytc.field(callbacks=[pytc.freeze])
+    antialias: bool = pytc.field(callbacks=[pytc.freeze])
 
     """
     Resize an image to a given size using a given interpolation method.
@@ -91,8 +91,8 @@ class ResizeND:
 
 @pytc.treeclass
 class UpsampleND:
-    scale: int | tuple[int, ...] = pytc.field(nondiff=True, default=1)
-    method: str = pytc.field(nondiff=True, default="nearest")
+    scale: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze], default=1)
+    method: str = pytc.field(callbacks=[pytc.freeze], default="nearest")
 
     def __init__(
         self,

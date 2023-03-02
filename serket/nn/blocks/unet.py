@@ -61,10 +61,10 @@ class UpscaleBlock:
 
 @pytc.treeclass
 class UNetBlock:
-    in_features: int = pytc.nondiff_field()
-    out_features: int = pytc.nondiff_field()
-    blocks: int = pytc.nondiff_field()
-    init_features: int = pytc.nondiff_field()
+    in_features: int = pytc.field(callbacks=[pytc.freeze])
+    out_features: int = pytc.field(callbacks=[pytc.freeze])
+    blocks: int = pytc.field(callbacks=[pytc.freeze])
+    init_features: int = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,

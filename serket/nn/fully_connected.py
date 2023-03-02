@@ -41,9 +41,7 @@ class FNN:
         """
 
         keys = jr.split(key, len(layers))
-        self.act_func = (
-            jtu.Partial(act_func) if not pytc.is_treeclass(act_func) else act_func
-        )
+        self.act_func = act_func
         self.layers = [
             Linear(
                 in_features=in_dim,
@@ -137,9 +135,7 @@ class PFNN:
         key=jr.PRNGKey(0),
     ):
 
-        self.act_func = (
-            jtu.Partial(act_func) if not pytc.is_treeclass(act_func) else act_func
-        )
+        self.act_func = act_func
 
         # check input/output node
         assert isinstance(layers[0], int), "Input node must be an integer"

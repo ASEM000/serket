@@ -9,8 +9,8 @@ import pytreeclass as pytc
 
 @pytc.treeclass
 class Flatten:
-    start_dim: int = pytc.field(nondiff=True, default=0)
-    end_dim: int = pytc.field(nondiff=True, default=-1)
+    start_dim: int = pytc.field(callbacks=[pytc.freeze], default=0)
+    end_dim: int = pytc.field(callbacks=[pytc.freeze], default=-1)
 
     """
     See https://pytorch.org/docs/stable/generated/torch.nn.Flatten.html?highlight=flatten#torch.nn.Flatten
@@ -55,8 +55,8 @@ class Flatten:
 
 @pytc.treeclass
 class Unflatten:
-    dim: int = pytc.field(nondiff=True, default=0)
-    shape: tuple = pytc.field(nondiff=True, default=None)
+    dim: int = pytc.field(callbacks=[pytc.freeze], default=0)
+    shape: tuple = pytc.field(callbacks=[pytc.freeze], default=None)
 
     """
     See https://pytorch.org/docs/stable/generated/torch.nn.Unflatten.html?highlight=unflatten

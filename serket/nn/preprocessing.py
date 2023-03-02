@@ -19,7 +19,7 @@ def _histeq(x, bins_count: int = 256):
 
 @pytc.treeclass
 class HistogramEqualization2D:
-    bins: int = pytc.nondiff_field()
+    bins: int = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, bins: int = 256):
         """Apply histogram equalization to 2D spatial array channel wise

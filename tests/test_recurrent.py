@@ -239,8 +239,8 @@ def test_lstm():
         recurrent_weight_init_func="glorot_uniform",
     )
     cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
+    cell = cell.at["in_to_hidden.bias"].set(b_hidden_to_hidden)
     cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
-    cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell, return_sequences=False)
     y = jnp.array([0.18658024, -0.6338659, 0.3445018])
@@ -336,8 +336,8 @@ def test_lstm():
         recurrent_weight_init_func="glorot_uniform",
     )
     cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
+    cell = cell.at["in_to_hidden.bias"].set(b_hidden_to_hidden)
     cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
-    cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell, return_sequences=True)
 
@@ -758,15 +758,13 @@ def test_bilstm():
 
     cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
     cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
-    cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
+    cell = cell.at["in_to_hidden.bias"].set(b_hidden_to_hidden)
 
     reverse_cell = reverse_cell.at["in_to_hidden.weight"].set(w_in_to_hidden_reverse)
     reverse_cell = reverse_cell.at["hidden_to_hidden.weight"].set(
         w_hidden_to_hidden_reverse
     )
-    reverse_cell = reverse_cell.at["hidden_to_hidden.bias"].set(
-        b_hidden_to_hidden_reverse
-    )
+    reverse_cell = reverse_cell.at["in_to_hidden.bias"].set(b_hidden_to_hidden_reverse)
 
     res = ScanRNN(cell, backward_cell=reverse_cell, return_sequences=False)(x)
 
