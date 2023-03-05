@@ -1,3 +1,4 @@
+from __future__ import annotations
 import jax.numpy as jnp
 
 from serket.nn.blocks import UNetBlock, VGG16Block, VGG19Block
