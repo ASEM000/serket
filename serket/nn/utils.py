@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import functools as ft
 from types import FunctionType
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Sequence, Union
 
 import jax
 import jax.nn.initializers as ji
@@ -284,8 +284,8 @@ def _instance_cb(expected_type: type | tuple[type]):
     return instance_check
 
 
-KernelSizeType = int | Sequence[int]
-StridesType = int | Sequence[int]
-PaddingType = str | int | Sequence[int] | Sequence[tuple[int, int]]
-DilationType = int | Sequence[int]
-InitFuncType = str | Callable[[jr.PRNGKey, Sequence[int]], jnp.ndarray]
+KernelSizeType = Union[int, Sequence[int]]
+StridesType = Union[int, Sequence[int]]
+PaddingType = Union[str, int, Sequence[int], Sequence[tuple[int, int]]]
+DilationType = Union[int, Sequence[int]]
+InitFuncType = Union[str, Callable[[jr.PRNGKey, Sequence[int]], jnp.ndarray]]
