@@ -1,31 +1,28 @@
 from __future__ import annotations
 
+# import kernex as kex
 import functools as ft
 
 import jax
 import jax.numpy as jnp
-
-# import kernex as kex
 import pytreeclass as pytc
 
 from serket.nn.convolution import DepthwiseConv2D
 from serket.nn.fft_convolution import DepthwiseFFTConv2D
 from serket.nn.utils import (
-    _check_and_return_positive_int,
+    _canonicalize_positive_int,
     _check_in_features,
     _check_non_tracer,
     _check_spatial_in_shape,
-    _instance_cb,
-    _range_cb,
 )
-
-_frozen_positive_int_cb = [_range_cb(1), _instance_cb(int), pytc.freeze]
 
 
 @pytc.treeclass
 class AvgBlur2D:
     in_features: int = pytc.field(callbacks=[pytc.freeze])
     kernel_size: int | tuple[int, int] = pytc.field(callbacks=[pytc.freeze])
+    conv1: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
+    conv2: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
         """Average blur 2D layer
@@ -47,8 +44,8 @@ class AvgBlur2D:
         if hasattr(self, "_init"):
             delattr(self, "_init")
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.kernel_size = _check_and_return_positive_int(kernel_size, "kernel_size")
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.kernel_size = _canonicalize_positive_int(kernel_size, "kernel_size")
 
         w = jnp.ones(kernel_size)
         w = w / jnp.sum(w)
@@ -88,6 +85,8 @@ class GaussianBlur2D:
     in_features: int = pytc.field(callbacks=[pytc.freeze])
     kernel_size: int = pytc.field(callbacks=[pytc.freeze])
     sigma: float = pytc.field(callbacks=[pytc.freeze])
+    conv1: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
+    conv2: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -119,8 +118,8 @@ class GaussianBlur2D:
         if hasattr(self, "_init"):
             delattr(self, "_init")
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.kernel_size = _check_and_return_positive_int(kernel_size, "kernel_size")
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.kernel_size = _canonicalize_positive_int(kernel_size, "kernel_size")
 
         self.in_features = in_features
         self.kernel_size = kernel_size
@@ -188,7 +187,7 @@ class Filter2D:
         if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.in_features = in_features
         self.spatial_ndim = 2
         self.kernel = jnp.stack([kernel] * in_features, axis=0)
         self.kernel = self.kernel[:, None]
@@ -214,6 +213,7 @@ class Filter2D:
 class FFTFilter2D:
     in_features: int = pytc.field(callbacks=[pytc.freeze])
     kernel: jnp.ndarray = pytc.field(callbacks=[pytc.freeze])
+    conv: DepthwiseFFTConv2D = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, in_features: int, kernel: jnp.ndarray):
         """Apply 2D filter for each channel using FFT , faster for large kernels.
@@ -235,7 +235,7 @@ class FFTFilter2D:
         if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
         self.spatial_ndim = 2
         self.kernel = jnp.stack([kernel] * in_features, axis=0)
         self.kernel = self.kernel[:, None]

@@ -6,8 +6,8 @@ import kernex as kex
 import pytreeclass as pytc
 
 from serket.nn.utils import (
-    _check_and_return,
-    _check_and_return_positive_int,
+    _canonicalize,
+    _canonicalize_positive_int,
     _check_spatial_in_shape,
 )
 
@@ -22,7 +22,7 @@ def _recursive_repeat(x, scale, axis):
 class RepeatND:
     def __init__(self, scale: int = 1, spatial_ndim: int = 1):
         """repeats input along axes 1,2,3"""
-        self.scale = _check_and_return_positive_int(scale, "scale")
+        self.scale = _canonicalize_positive_int(scale, "scale")
         self.spatial_ndim = spatial_ndim
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
@@ -72,7 +72,7 @@ class ResizeND:
     """
 
     def __init__(self, size, method="nearest", antialias=True, spatial_ndim=1):
-        self.size = _check_and_return(size, spatial_ndim, "size")
+        self.size = _canonicalize(size, spatial_ndim, "size")
         self.method = method
         self.antialias = antialias
         self.spatial_ndim = spatial_ndim
@@ -103,7 +103,7 @@ class UpsampleND:
         # the difference between this and ResizeND is that UpsamplingND
         # use scale instead of size
         # assert types
-        self.scale = _check_and_return(scale, spatial_ndim, "scale")
+        self.scale = _canonicalize(scale, spatial_ndim, "scale")
         self.method = method
         self.spatial_ndim = spatial_ndim
 

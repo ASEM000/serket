@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return, _check_spatial_in_shape
+from serket.nn.utils import _canonicalize, _check_spatial_in_shape
 
 
 @pytc.treeclass
@@ -20,8 +20,8 @@ class CropND:
             size: size of the slice
             start: start of the slice
         """
-        self.size = _check_and_return(size, spatial_ndim, "size")
-        self.start = _check_and_return(start, spatial_ndim, "start")
+        self.size = _canonicalize(size, spatial_ndim, "size")
+        self.start = _canonicalize(start, spatial_ndim, "start")
         self.spatial_ndim = spatial_ndim
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
@@ -56,7 +56,7 @@ class RandomCropND:
             size: size of the slice
             start: start of the slice
         """
-        self.size = _check_and_return(size, spatial_ndim, "size")
+        self.size = _canonicalize(size, spatial_ndim, "size")
         self.spatial_ndim = spatial_ndim
 
     def __call__(

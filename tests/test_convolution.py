@@ -18,16 +18,16 @@ from serket.nn.convolution import (  # Conv3DLocal,; Conv1DSemiLocal,; Conv2DSem
     DepthwiseConv2D,
     SeparableConv1D,
     SeparableConv2D,
-    _check_and_return_init_func,
-    _check_and_return_input_dilation,
-    _check_and_return_kernel,
-    _check_and_return_padding,
-    _check_and_return_strides,
+    _canonicalize_init_func,
+    _canonicalize_input_dilation,
+    _canonicalize_kernel,
+    _canonicalize_padding,
+    _canonicalize_strides,
 )
 
 
-def test_check_and_return_init_func():
-    _check_partial = lambda f: _check_and_return_init_func(f, "test")
+def test_canonicalize_init_func():
+    _check_partial = lambda f: _canonicalize_init_func(f, "test")
     k = jr.PRNGKey(0)
 
     assert _check_partial("he_normal")(k, (2, 2)).shape == (2, 2)
@@ -53,47 +53,47 @@ def test_check_and_return_init_func():
         _check_partial(1)
 
 
-def test_check_and_return():
+def test_canonicalize():
 
-    assert _check_and_return_kernel(3, 2) == (3, 3)
-    assert _check_and_return_kernel((3, 3), 2) == (3, 3)
-    assert _check_and_return_kernel((3, 3, 3), 3) == (3, 3, 3)
-
-    with pytest.raises(AssertionError):
-        _check_and_return_kernel((3, 3), 3)
+    assert _canonicalize_kernel(3, 2) == (3, 3)
+    assert _canonicalize_kernel((3, 3), 2) == (3, 3)
+    assert _canonicalize_kernel((3, 3, 3), 3) == (3, 3, 3)
 
     with pytest.raises(AssertionError):
-        _check_and_return_kernel((3, 3, 3), 2)
+        _canonicalize_kernel((3, 3), 3)
 
     with pytest.raises(AssertionError):
-        _check_and_return_kernel((3, 3, 3), 1)
+        _canonicalize_kernel((3, 3, 3), 2)
 
-    assert _check_and_return_input_dilation(3, 2) == (3, 3)
-    assert _check_and_return_input_dilation((3, 3), 2) == (3, 3)
-    assert _check_and_return_input_dilation((3, 3, 3), 3) == (3, 3, 3)
+    with pytest.raises(AssertionError):
+        _canonicalize_kernel((3, 3, 3), 1)
 
-    assert _check_and_return_strides(3, 2) == (3, 3)
-    assert _check_and_return_strides((3, 3), 2) == (3, 3)
-    assert _check_and_return_strides((3, 3, 3), 3) == (3, 3, 3)
+    assert _canonicalize_input_dilation(3, 2) == (3, 3)
+    assert _canonicalize_input_dilation((3, 3), 2) == (3, 3)
+    assert _canonicalize_input_dilation((3, 3, 3), 3) == (3, 3, 3)
+
+    assert _canonicalize_strides(3, 2) == (3, 3)
+    assert _canonicalize_strides((3, 3), 2) == (3, 3)
+    assert _canonicalize_strides((3, 3, 3), 3) == (3, 3, 3)
 
 
-def test_check_and_return_padding():
-    assert _check_and_return_padding(1, (3, 3)) == ((1, 1), (1, 1))
-    assert _check_and_return_padding(0, (3, 3)) == ((0, 0), (0, 0))
-    assert _check_and_return_padding(2, (3, 3)) == ((2, 2), (2, 2))
+def test_canonicalize_padding():
+    assert _canonicalize_padding(1, (3, 3)) == ((1, 1), (1, 1))
+    assert _canonicalize_padding(0, (3, 3)) == ((0, 0), (0, 0))
+    assert _canonicalize_padding(2, (3, 3)) == ((2, 2), (2, 2))
 
-    assert _check_and_return_padding((1, 1), (3, 3)) == ((1, 1), (1, 1))
-    assert _check_and_return_padding(((1, 1), (1, 1)), (3, 3)) == ((1, 1), (1, 1))
-    assert _check_and_return_padding(("same", "same"), (3, 3)) == ((1, 1), (1, 1))
-    assert _check_and_return_padding(("valid", "valid"), (3, 3)) == ((0, 0), (0, 0))
+    assert _canonicalize_padding((1, 1), (3, 3)) == ((1, 1), (1, 1))
+    assert _canonicalize_padding(((1, 1), (1, 1)), (3, 3)) == ((1, 1), (1, 1))
+    assert _canonicalize_padding(("same", "same"), (3, 3)) == ((1, 1), (1, 1))
+    assert _canonicalize_padding(("valid", "valid"), (3, 3)) == ((0, 0), (0, 0))
     with pytest.raises(ValueError):
-        _check_and_return_padding(("invalid", "valid"), (3, 3))
+        _canonicalize_padding(("invalid", "valid"), (3, 3))
 
     with pytest.raises(ValueError):
-        _check_and_return_padding(("valid", "invalid"), (3, 3))
+        _canonicalize_padding(("valid", "invalid"), (3, 3))
 
     with pytest.raises(ValueError):
-        _check_and_return_padding(("invalid", {}), (3, 3))
+        _canonicalize_padding(("invalid", {}), (3, 3))
 
 
 def test_conv1D():

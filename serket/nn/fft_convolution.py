@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import functools as ft
 from typing import Callable
 
@@ -14,13 +13,18 @@ import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn.utils import (
+    DilationType,
+    InitFuncType,
+    KernelSizeType,
+    PaddingType,
+    StridesType,
     _calculate_transpose_padding,
-    _check_and_return_init_func,
-    _check_and_return_kernel,
-    _check_and_return_kernel_dilation,
-    _check_and_return_padding,
-    _check_and_return_positive_int,
-    _check_and_return_strides,
+    _canonicalize_init_func,
+    _canonicalize_kernel,
+    _canonicalize_kernel_dilation,
+    _canonicalize_padding,
+    _canonicalize_positive_int,
+    _canonicalize_strides,
     _check_in_features,
     _check_non_tracer,
     _check_spatial_in_shape,
@@ -77,7 +81,7 @@ def _general_intersperse(
 
 
 @ft.partial(jax.jit, static_argnums=(1,))
-def _general_pad(x: jnp.ndarray, pad_width: tuple[[int, int], ...]) -> jnp.ndarray:
+def _general_pad(x: jnp.ndarray, pad_width: tuple[tuple[int, int], ...]) -> jnp.ndarray:
     """Pad the input with `pad_width` on each side. Negative value will lead to cropping.
     Example:
         >>> _general_pad(jnp.ones([3,3]),((0,0),(-1,1)))
@@ -221,23 +225,23 @@ class FFTConvND:
         if hasattr(self, "_init"):
             delattr(self, "_init")
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.out_features = _check_and_return_positive_int(out_features, "out_features")
-        self.groups = _check_and_return_positive_int(groups, "groups")
-        self.spatial_ndim = _check_and_return_positive_int(spatial_ndim, "spatial_ndim")
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.out_features = _canonicalize_positive_int(out_features, "out_features")
+        self.groups = _canonicalize_positive_int(groups, "groups")
+        self.spatial_ndim = _canonicalize_positive_int(spatial_ndim, "spatial_ndim")
 
         msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
         assert self.out_features % self.groups == 0, msg
 
-        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
-        self.strides = _check_and_return_strides(strides, spatial_ndim)
+        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
+        self.strides = _canonicalize_strides(strides, spatial_ndim)
 
-        self.padding = _check_and_return_padding(padding, self.kernel_size)
-        self.kernel_dilation = _check_and_return_kernel_dilation(
+        self.padding = _canonicalize_padding(padding, self.kernel_size)
+        self.kernel_dilation = _canonicalize_kernel_dilation(
             kernel_dilation, spatial_ndim
         )
-        self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
-        self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
+        self.weight_init_func = _canonicalize_init_func(weight_init_func, "weight_init_func")  # fmt: skip
+        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")  # fmt: skip
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
         self.weight = self.weight_init_func(key, weight_shape)
@@ -342,24 +346,24 @@ class FFTConvNDTranspose:
         if hasattr(self, "_init"):
             delattr(self, "_init")
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.out_features = _check_and_return_positive_int(out_features, "out_features")
-        self.groups = _check_and_return_positive_int(groups, "groups")
-        self.spatial_ndim = _check_and_return_positive_int(spatial_ndim, "spatial_ndim")
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.out_features = _canonicalize_positive_int(out_features, "out_features")
+        self.groups = _canonicalize_positive_int(groups, "groups")
+        self.spatial_ndim = _canonicalize_positive_int(spatial_ndim, "spatial_ndim")
 
         assert (
             self.out_features % self.groups == 0
         ), f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
 
-        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
-        self.strides = _check_and_return_strides(strides, spatial_ndim)
-        self.padding = _check_and_return_padding(padding, self.kernel_size)
-        self.kernel_dilation = _check_and_return_kernel_dilation(
+        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
+        self.strides = _canonicalize_strides(strides, spatial_ndim)
+        self.padding = _canonicalize_padding(padding, self.kernel_size)
+        self.kernel_dilation = _canonicalize_kernel_dilation(
             kernel_dilation, spatial_ndim
         )
-        self.output_padding = _check_and_return_strides(output_padding, spatial_ndim)
-        self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
-        self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
+        self.output_padding = _canonicalize_strides(output_padding, spatial_ndim)
+        self.weight_init_func = _canonicalize_init_func(weight_init_func, "weight_init_func")  # fmt: skip
+        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")  # fmt: skip
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -469,18 +473,18 @@ class DepthwiseFFTConvND:
         if hasattr(self, "_init"):
             delattr(self, "_init")
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.depth_multiplier = _check_and_return_positive_int(
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.depth_multiplier = _canonicalize_positive_int(
             depth_multiplier, "in_features"
         )
-        self.spatial_ndim = _check_and_return_positive_int(spatial_ndim, "spatial_ndim")
+        self.spatial_ndim = _canonicalize_positive_int(spatial_ndim, "spatial_ndim")
 
-        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
-        self.strides = _check_and_return_strides(strides, spatial_ndim)
-        self.padding = _check_and_return_padding(padding, self.kernel_size)
-        self.kernel_dilation = _check_and_return_kernel_dilation(1, spatial_ndim)
-        self.weight_init_func = _check_and_return_init_func(weight_init_func, "weight_init_func")  # fmt: skip
-        self.bias_init_func = _check_and_return_init_func(bias_init_func, "bias_init_func")  # fmt: skip
+        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
+        self.strides = _canonicalize_strides(strides, spatial_ndim)
+        self.padding = _canonicalize_padding(padding, self.kernel_size)
+        self.kernel_dilation = _canonicalize_kernel_dilation(1, spatial_ndim)
+        self.weight_init_func = _canonicalize_init_func(weight_init_func, "weight_init_func")  # fmt: skip
+        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")  # fmt: skip
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -575,23 +579,23 @@ class SeparableFFTConvND:
         if hasattr(self, "_init"):
             delattr(self, "_init")
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.depth_multiplier = _check_and_return_positive_int(
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.depth_multiplier = _canonicalize_positive_int(
             depth_multiplier, "in_features"
         )
-        self.out_features = _check_and_return_positive_int(out_features, "out_features")
-        self.spatial_ndim = _check_and_return_positive_int(spatial_ndim, "spatial_ndim")
+        self.out_features = _canonicalize_positive_int(out_features, "out_features")
+        self.spatial_ndim = _canonicalize_positive_int(spatial_ndim, "spatial_ndim")
 
-        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
-        self.strides = _check_and_return_strides(strides, spatial_ndim)
-        self.padding = _check_and_return_padding(padding, self.kernel_size)
-        self.depthwise_weight_init_func = _check_and_return_init_func(
+        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
+        self.strides = _canonicalize_strides(strides, spatial_ndim)
+        self.padding = _canonicalize_padding(padding, self.kernel_size)
+        self.depthwise_weight_init_func = _canonicalize_init_func(
             depthwise_weight_init_func, "depthwise_weight_init_func"
         )
-        self.pointwise_weight_init_func = _check_and_return_init_func(
+        self.pointwise_weight_init_func = _canonicalize_init_func(
             pointwise_weight_init_func, "pointwise_weight_init_func"
         )
-        self.pointwise_bias_init_func = _check_and_return_init_func(
+        self.pointwise_bias_init_func = _canonicalize_init_func(
             pointwise_bias_init_func, "pointwise_bias_init_func"
         )
 

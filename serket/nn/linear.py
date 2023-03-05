@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return_init_func, _check_non_tracer
+from serket.nn.utils import _canonicalize_init_func, _check_non_tracer
 
 
 @ft.lru_cache(maxsize=128)
@@ -132,12 +132,10 @@ class Multilinear:
         self.in_features = in_features
         self.out_features = out_features
 
-        self.weight_init_func = _check_and_return_init_func(
+        self.weight_init_func = _canonicalize_init_func(
             weight_init_func, "weight_init_func"
         )
-        self.bias_init_func = _check_and_return_init_func(
-            bias_init_func, "bias_init_func"
-        )
+        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")
 
         weight_shape = (*self.in_features, out_features)
         self.weight = self.weight_init_func(key, weight_shape)
@@ -317,12 +315,10 @@ class GeneralLinear:
         self.in_features = in_features
         self.out_features = out_features
         self.in_axes = in_axes
-        self.weight_init_func = _check_and_return_init_func(
+        self.weight_init_func = _canonicalize_init_func(
             weight_init_func, "weight_init_func"
         )
-        self.bias_init_func = _check_and_return_init_func(
-            bias_init_func, "bias_init_func"
-        )
+        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")
 
         self.weight = self.weight_init_func(key, (*self.in_features, self.out_features))
 

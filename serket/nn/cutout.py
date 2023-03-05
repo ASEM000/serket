@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return, _check_spatial_in_shape
+from serket.nn.utils import _canonicalize, _check_spatial_in_shape
 
 
 @pytc.treeclass
@@ -35,7 +35,7 @@ class RandomCutout1D:
             >>> RandomCutout1D(5)(jnp.ones((1, 10))*100)
             [[100., 100., 100., 100.,   0.,   0.,   0.,   0.,   0., 100.]]
         """
-        self.shape = _check_and_return(shape, ndim=1, name="shape")
+        self.shape = _canonicalize(shape, ndim=1, name="shape")
         self.cutout_count = cutout_count
         self.fill_value = fill_value
         self.spatial_ndim = 1
@@ -88,7 +88,7 @@ class RandomCutout2D:
             https://arxiv.org/abs/1708.04552
             https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
         """
-        self.shape = _check_and_return(shape, 2, "shape")
+        self.shape = _canonicalize(shape, 2, "shape")
         self.cutout_count = cutout_count
         self.fill_value = fill_value
         self.spatial_ndim = 2

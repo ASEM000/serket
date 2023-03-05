@@ -3,7 +3,7 @@ from __future__ import annotations
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_and_return_padding, _check_spatial_in_shape
+from serket.nn.utils import _canonicalize_padding, _check_spatial_in_shape
 
 
 @pytc.treeclass
@@ -24,7 +24,7 @@ class PadND:
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
         self.spatial_ndim = spatial_ndim
-        self.padding = _check_and_return_padding(padding, ((1,),) * self.spatial_ndim)
+        self.padding = _canonicalize_padding(padding, ((1,),) * self.spatial_ndim)
         self.value = value
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:

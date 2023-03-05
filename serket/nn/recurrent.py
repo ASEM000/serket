@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 import functools as ft
 from typing import Callable
 
@@ -12,11 +11,7 @@ import pytreeclass as pytc
 from serket.nn import Linear
 from serket.nn.convolution import ConvND, SeparableConvND
 from serket.nn.fft_convolution import FFTConvND, SeparableFFTConvND
-from serket.nn.utils import (
-    _act_func_map,
-    _check_and_return_positive_int,
-    _check_non_tracer,
-)
+from serket.nn.utils import _act_func_map, _canonicalize_positive_int, _check_non_tracer
 
 # --------------------------------------------------- RNN ------------------------------------------------------------ #
 
@@ -93,8 +88,8 @@ class SimpleRNNCell(RNNCell):
 
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.hidden_features = _check_and_return_positive_int(
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.hidden_features = _canonicalize_positive_int(
             hidden_features, "hidden_features"
         )
         self.act_func = _act_func_map[act_func]
@@ -191,8 +186,8 @@ class LSTMCell(RNNCell):
 
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.hidden_features = _check_and_return_positive_int(
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.hidden_features = _canonicalize_positive_int(
             hidden_features, "hidden_features"
         )
         self.act_func = _act_func_map[act_func]
@@ -297,8 +292,8 @@ class GRUCell(RNNCell):
 
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.hidden_features = _check_and_return_positive_int(
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.hidden_features = _canonicalize_positive_int(
             hidden_features, "hidden_features"
         )
         self.act_func = _act_func_map[act_func]
@@ -422,8 +417,8 @@ class ConvLSTMNDCell(SpatialRNNCell):
 
         self.act_func = _act_func_map[act_func]
         self.recurrent_act_func = _act_func_map[recurrent_act_func]
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.out_features = _canonicalize_positive_int(out_features, "out_features")
         self.hidden_features = out_features
         self.spatial_ndim = spatial_ndim
 
@@ -632,8 +627,8 @@ class ConvGRUNDCell(SpatialRNNCell):
 
         self.act_func = _act_func_map[act_func]
         self.recurrent_act_func = _act_func_map[recurrent_act_func]
-        self.in_features = _check_and_return_positive_int(in_features, "in_features")
-        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.in_features = _canonicalize_positive_int(in_features, "in_features")
+        self.out_features = _canonicalize_positive_int(out_features, "out_features")
         self.hidden_features = out_features
         self.spatial_ndim = spatial_ndim
 

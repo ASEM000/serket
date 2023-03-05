@@ -8,6 +8,7 @@ from typing import Any, Callable, Sequence
 import jax
 import jax.nn.initializers as ji
 import jax.numpy as jnp
+import jax.random as jr
 import jax.tree_util as jtu
 
 
@@ -27,6 +28,21 @@ def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_pad
             padding, kernel_size, extra_padding, input_dilation
         )
     )
+
+
+class UninitializedParameterError(Exception):
+    """Raised when a parameter is accessed before it is initialized."""
+
+    pass
+
+
+class UnInitialized:
+    """A sentinel value for uninitialized parameters."""
+
+    __repr__ = lambda self: "UnInitialized"
+
+
+_uninitialized = UnInitialized()
 
 
 def _rename_func(func: Callable, name: str) -> Callable:
@@ -60,9 +76,7 @@ _init_func_dict = {
 }
 
 
-def _check_and_return_init_func(
-    init_func: str | Callable, name: str
-) -> Callable | None:
+def _canonicalize_init_func(init_func: str | Callable, name: str) -> Callable | None:
     if isinstance(init_func, FunctionType):
         return jtu.Partial(init_func)
 
@@ -85,7 +99,7 @@ def _calculate_convolution_output_shape(shape, kernel_size, padding, strides):
     )
 
 
-def _check_and_return_padding(
+def _canonicalize_padding(
     padding: tuple[int | tuple[int, int] | str, ...] | int | str,
     kernel_size: tuple[int, ...],
 ):
@@ -99,7 +113,7 @@ def _check_and_return_padding(
     Examples:
         >>> padding= (1, (2, 3), "same")
         >>> kernel_size = (3, 3, 3)
-        >>> _check_and_return_padding(padding, kernel_size)
+        >>> _canonicalize_padding(padding, kernel_size)
         ((1, 1), (2, 3), (1, 1))
     """
 
@@ -160,7 +174,7 @@ def _check_and_return_padding(
     raise ValueError(msg)
 
 
-def _check_and_return(value, ndim, name):
+def _canonicalize(value, ndim, name):
     if isinstance(value, int):
         return (value,) * ndim
     elif isinstance(value, jnp.ndarray):
@@ -171,7 +185,7 @@ def _check_and_return(value, ndim, name):
     raise ValueError(f"Expected int or tuple for {name}, got {value}.")
 
 
-def _check_and_return_positive_int(value, name):
+def _canonicalize_positive_int(value, name):
     """Return if value is a positive integer, otherwise raise an error."""
     if not isinstance(value, int):
         raise ValueError(f"{name} must be an integer, got {type(value)}")
@@ -187,6 +201,7 @@ def _check_spatial_in_shape(x, spatial_ndim: int) -> None:
         msg += f"(in_features, {', '.join(spatial_tuple[:spatial_ndim])}), "
         msg += f"but got {x.shape}."
         raise ValueError(msg)
+    return x
 
 
 def _check_in_features(x, in_features: int, axis: int = 0) -> None:
@@ -196,11 +211,11 @@ def _check_in_features(x, in_features: int, axis: int = 0) -> None:
         raise ValueError(msg)
 
 
-_check_and_return_kernel = ft.partial(_check_and_return, name="kernel_size")
-_check_and_return_strides = ft.partial(_check_and_return, name="strides")
-_check_and_return_input_dilation = ft.partial(_check_and_return, name="input_dilation")
-_check_and_return_kernel_dilation = ft.partial(_check_and_return, name="kernel_dilation")  # fmt: skip
-_check_and_return_input_size = ft.partial(_check_and_return, name="input_size")  # fmt: skip
+_canonicalize_kernel = ft.partial(_canonicalize, name="kernel_size")
+_canonicalize_strides = ft.partial(_canonicalize, name="strides")
+_canonicalize_input_dilation = ft.partial(_canonicalize, name="input_dilation")
+_canonicalize_kernel_dilation = ft.partial(_canonicalize, name="kernel_dilation")  # fmt: skip
+_canonicalize_input_size = ft.partial(_canonicalize, name="input_size")  # fmt: skip
 
 
 def _create_fields_from_container(items: Sequence[Any]) -> dict:
@@ -267,3 +282,10 @@ def _instance_cb(expected_type: type | tuple[type]):
         raise ValueError(f"Expected value of type {expected_type}, got {type(value)}")
 
     return instance_check
+
+
+KernelSizeType = int | Sequence[int]
+StridesType = int | Sequence[int]
+PaddingType = str | int | Sequence[int] | Sequence[tuple[int, int]]
+DilationType = int | Sequence[int]
+InitFuncType = str | Callable[[jr.PRNGKey, Sequence[int]], jnp.ndarray]

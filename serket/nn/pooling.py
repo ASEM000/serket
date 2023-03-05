@@ -8,9 +8,9 @@ import kernex as kex
 import pytreeclass as pytc
 
 from serket.nn.utils import (
-    _check_and_return,
-    _check_and_return_kernel,
-    _check_and_return_strides,
+    _canonicalize,
+    _canonicalize_kernel,
+    _canonicalize_strides,
     _check_spatial_in_shape,
 )
 
@@ -45,8 +45,8 @@ class GeneralPoolND:
             spatial_ndim: number of dimensions
             func: function to apply to the kernel
         """
-        self.kernel_size = _check_and_return_kernel(kernel_size, spatial_ndim)
-        self.strides = _check_and_return_strides(strides, spatial_ndim)
+        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
+        self.strides = _canonicalize_strides(strides, spatial_ndim)
         self.padding = padding
         self.spatial_ndim = spatial_ndim
 
@@ -127,7 +127,7 @@ class AdaptivePoolND:
             * kernel_size_i = input_size_i - (output_size_i-1)*stride_i
             * padding_i = "valid"
         """
-        self.output_size = _check_and_return(output_size, spatial_ndim, "output_size")
+        self.output_size = _canonicalize(output_size, spatial_ndim, "output_size")
         self.spatial_ndim = spatial_ndim
         self.func = func
 

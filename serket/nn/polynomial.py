@@ -10,8 +10,8 @@ import pytreeclass as pytc
 
 import serket as sk
 from serket.nn.utils import (
-    _check_and_return_init_func,
-    _check_and_return_positive_int,
+    _canonicalize_init_func,
+    _canonicalize_positive_int,
     _check_in_features,
     _check_non_tracer,
 )
@@ -67,8 +67,8 @@ class Polynomial:
         if hasattr(self, "_init"):
             delattr(self, "_init")
 
-        self.degree = _check_and_return_positive_int(degree, "degree")
-        self.out_features = _check_and_return_positive_int(out_features, "out_features")
+        self.degree = _canonicalize_positive_int(degree, "degree")
+        self.out_features = _canonicalize_positive_int(out_features, "out_features")
 
         keys = jr.split(key, self.degree + 1)
 
@@ -83,9 +83,7 @@ class Polynomial:
             for i in range(self.degree)
         ]
 
-        self.bias_init_func = _check_and_return_init_func(
-            bias_init_func, "bias_init_func"
-        )
+        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")
         self.bias = self.bias_init_func(keys[-1], (self.out_features,))
 
     def __call__(self, x, **k):

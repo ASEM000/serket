@@ -7,31 +7,54 @@ import pytreeclass as pytc
 from serket.nn.utils import _check_spatial_in_shape
 
 
+def adjust_contrast_nd(x: jnp.ndarray, contrast_factor: float, spatial_ndim: int):
+    """Adjusts the contrast of an image by scaling the pixel values by a factor."""
+    x = _check_spatial_in_shape(x, spatial_ndim=spatial_ndim)
+    μ = jnp.mean(x, axis=tuple(range(1, x.ndim)), keepdims=True)
+    return (contrast_factor * (x - μ) + μ).astype(x.dtype)
+
+
+def random_contrast_nd(
+    x: jnp.ndarray,
+    contrast_range: tuple[float, float],
+    spatial_ndim: int,
+    key: jr.PRNGKey = jr.PRNGKey(0),
+) -> jnp.ndarray:
+    """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
+    x = _check_spatial_in_shape(x, spatial_ndim)
+    minval, maxval = contrast_range
+    contrast_factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
+    return adjust_contrast_nd(x, contrast_factor, spatial_ndim)
+
+
 @pytc.treeclass
 class AdjustContrastND:
+    """Adjusts the contrast of an NDimage by scaling the pixel values by a factor.
+
+    See:
+        https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
+        https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
+    """
+
     contrast_factor: float = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, contrast_factor=1.0, spatial_ndim=1):
-        """Adjusts the contrast of an image by scaling the pixel values by a factor.
-
-        Args:
-            contrast_factor: factor to scale the pixel values by.
-
-        See:
-            https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
-            https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
         """
+        Args:
+            contrast_factor: contrast factor to adjust the image by.
+        """
+
         self.spatial_ndim = spatial_ndim
         self.contrast_factor = contrast_factor
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        μ = jnp.mean(x, axis=tuple(range(1, x.ndim)), keepdims=True)
-        return (self.contrast_factor * (x - μ) + μ).astype(x.dtype)
+        return adjust_contrast_nd(x, self.contrast_factor, self.spatial_ndim)
 
 
 @pytc.treeclass
 class AdjustContrast2D(AdjustContrastND):
+    __doc__ = AdjustContrastND.__doc__.replace("ND", "2D")
+
     def __init__(self, contrast_factor=1.0):
         super().__init__(contrast_factor, spatial_ndim=2)
 
@@ -59,16 +82,7 @@ class RandomContrastND:
     def __call__(
         self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0), **k
     ) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        contrast_factor = jr.uniform(
-            key=key,
-            shape=(),
-            minval=self.contrast_range[0],
-            maxval=self.contrast_range[1],
-        )
-        return AdjustContrastND(
-            contrast_factor=contrast_factor, spatial_ndim=self.spatial_ndim
-        )(x)
+        return random_contrast_nd(x, self.contrast_range, self.spatial_ndim, key=key)
 
 
 @pytc.treeclass

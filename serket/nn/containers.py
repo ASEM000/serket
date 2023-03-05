@@ -19,7 +19,7 @@ class Lambda:
 
 @pytc.treeclass
 class Sequential:
-    def __init__(self, layers: list[Any] | tuple[Any] | dict[[str], Any]):
+    def __init__(self, layers: list[Any] | tuple[Any] | dict[str, Any]):
         """Register layers in a sequential container.
 
         Args:

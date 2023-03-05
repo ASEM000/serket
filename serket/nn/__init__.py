@@ -72,7 +72,8 @@ from .fft_convolution import (
 )
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
-from .fully_connected import FNN, PFNN
+
+# from .fully_connected import FNN, PFNN
 from .laplace import Laplace2D
 from .linear import Bilinear, GeneralLinear, Identity, Linear, Multilinear
 from .normalization import GroupNorm, InstanceNorm, LayerNorm
@@ -151,8 +152,8 @@ from .resize import (
 __all__ = (
     "blocks",
     # Fully connected
-    "FNN",
-    "PFNN",
+    # "FNN",
+    # "PFNN",
     # Linear
     "Linear",
     "Bilinear",
