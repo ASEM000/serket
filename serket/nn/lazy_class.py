@@ -138,7 +138,8 @@ def _lazy_call_wrapper(call_func, infer_func):
                     lazy_args[i] = item
                 else:
                     # assume kwargs are returned last
-                    if index := (i - len(lazy_args)) < len(keys):
+                    index = i - len(lazy_args)
+                    if index < len(keys):
                         lazy_kwargs[keys[index]] = item
 
             partial_func(*lazy_args, **lazy_kwargs)
@@ -147,14 +148,14 @@ def _lazy_call_wrapper(call_func, infer_func):
     return wrapper
 
 
-def _lazy_class(klass, lazy_keywords, infer_func):
+def _lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
     """
-    # wrap init and call methods of a class to allow inference of lazy arguments
-    # at call time
-    # this is done by wrapping the init method to allow for partialization of the
-    # lazy arguments, and wrapping the call method to allow for inference of the
-    # lazy arguments at call time.
-    # the lazy decorator achieves the following pattern:
+    wrap init and call methods of a class to allow inference of lazy arguments
+    at call time
+    this is done by wrapping the init method to allow for partialization of the
+    lazy arguments, and wrapping the call method to allow for inference of the
+    lazy arguments at call time.
+    the lazy decorator achieves the following pattern:
 
     >>> @pytc.treeclass
     ... class Test:

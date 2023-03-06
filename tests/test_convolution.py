@@ -93,7 +93,7 @@ def test_canonicalize_padding():
         _canonicalize_padding(("valid", "invalid"), (3, 3))
 
     with pytest.raises(ValueError):
-        _canonicalize_padding(("invalid", {}), (3, 3))
+        _canonicalize_padding(("invalid", ()), (3, 3))
 
 
 def test_conv1D():

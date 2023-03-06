@@ -14,7 +14,12 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
-from serket.nn.callbacks import init_func_cb, positive_int_cb
+from serket.nn.callbacks import (
+    canonicalize_cb,
+    canonicalize_padding_cb,
+    init_func_cb,
+    positive_int_cb,
+)
 from serket.nn.lazy_class import _lazy_class
 from serket.nn.utils import (
     DilationType,
@@ -38,6 +43,11 @@ from serket.nn.utils import (
 
 _lazy_keywords = ["in_features"]
 _infer_func = lambda self, *a, **k: (a[0].shape[0],)
+
+
+@ft.lru_cache(maxsize=None)
+def generate_conv_dim_numbers(spatial_ndim):
+    return ConvDimensionNumbers(*((tuple(range(spatial_ndim + 2)),) * 3))
 
 
 @ft.partial(_lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
@@ -93,22 +103,19 @@ class ConvND:
         """
         self.in_features = in_features
         self.out_features = out_features
-        self.groups = groups
-        self.bias_init_func = bias_init_func
+        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
+        self.strides = canonicalize_cb(strides, spatial_ndim)
+        self.padding = canonicalize_padding_cb(padding, self.kernel_size)
+        self.input_dilation = canonicalize_cb(input_dilation, spatial_ndim)
+        self.kernel_dilation = canonicalize_cb(kernel_dilation, spatial_ndim)
         self.weight_init_func = weight_init_func
+        self.bias_init_func = bias_init_func
+        self.groups = groups
         self.spatial_ndim = spatial_ndim
 
-        msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
-        assert self.out_features % self.groups == 0, msg
-
-        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
-        self.strides = _canonicalize_strides(strides, spatial_ndim)
-
-        self.input_dilation = _canonicalize_input_dilation(input_dilation, spatial_ndim)
-        self.kernel_dilation = _canonicalize_kernel_dilation(
-            kernel_dilation, spatial_ndim
-        )
-        self.padding = _canonicalize_padding(padding, self.kernel_size)
+        if self.out_features % self.groups != 0:
+            msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
+            raise ValueError(msg)
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
         self.weight = self.weight_init_func(key, weight_shape)
@@ -119,28 +126,24 @@ class ConvND:
             bias_shape = (out_features, *(1,) * spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-        self.dimension_numbers = ConvDimensionNumbers(
-            *((tuple(range(spatial_ndim + 2)),) * 3)
-        )
+    def __call__(self, array: jnp.ndarray, **k) -> jnp.ndarray:
+        array = _check_spatial_in_shape(array, self.spatial_ndim)
+        array = _check_in_features(array, self.in_features)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        _check_in_features(x, self.in_features)
-
-        y = jax.lax.conv_general_dilated(
-            lhs=jnp.expand_dims(x, 0),
+        array = jax.lax.conv_general_dilated(
+            lhs=jnp.expand_dims(array, 0),
             rhs=self.weight,
             window_strides=self.strides,
             padding=self.padding,
             lhs_dilation=self.input_dilation,
             rhs_dilation=self.kernel_dilation,
-            dimension_numbers=self.dimension_numbers,
+            dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
             feature_group_count=self.groups,
         )
 
         if self.bias is None:
-            return jnp.squeeze(y, 0)
-        return jnp.squeeze((y + self.bias), 0)
+            return jnp.squeeze(array, 0)
+        return jnp.squeeze((array + self.bias), 0)
 
 
 @ft.partial(_lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import functools as ft
 from types import FunctionType
-from typing import Any, Callable, Sequence, Union,Tuple
+from typing import Any, Callable, Sequence, Tuple, Union
 
 import jax
 import jax.nn.initializers as ji
@@ -99,6 +99,7 @@ def _calculate_convolution_output_shape(shape, kernel_size, padding, strides):
     )
 
 
+@ft.lru_cache(maxsize=None)
 def _canonicalize_padding(
     padding: tuple[int | tuple[int, int] | str, ...] | int | str,
     kernel_size: tuple[int, ...],
@@ -209,6 +210,7 @@ def _check_in_features(x, in_features: int, axis: int = 0) -> None:
         msg = f"Specified input_features={in_features} ,"
         msg += f"but got input with input_features={x.shape[axis]}."
         raise ValueError(msg)
+    return x
 
 
 _canonicalize_kernel = ft.partial(_canonicalize, name="kernel_size")
