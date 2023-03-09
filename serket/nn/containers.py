@@ -11,7 +11,22 @@ from serket.nn.callbacks import instance_cb
 
 @pytc.treeclass
 class Lambda:
-    func: Callable[[Any], jnp.ndarray] = pytc.field(callbacks=[pytc.freeze])
+    func: Callable[[Any], Any] = pytc.field(callbacks=[pytc.freeze])
+
+    def __init__(self, func: Callable[[Any], Any]):
+        """A layer that applies a function to its input.
+
+        Args:
+            func: a function that takes a single argument and returns a jax.numpy.ndarray.
+
+        Example:
+            >>> import jax.numpy as jnp
+            >>> from serket.nn import Lambda
+            >>> layer = Lambda(lambda x: x + 1)
+            >>> layer(jnp.array([1, 2, 3]))
+            [2 3 4]
+        """
+        self.func = func
 
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return self.func(x)
@@ -20,6 +35,21 @@ class Lambda:
 @pytc.treeclass
 class Sequential:
     layers: tuple[Any, ...] = pytc.field(callbacks=[instance_cb(tuple)])
+
+    def __init__(self, layers: tuple[Any, ...]):
+        """A sequential container for layers.
+
+        Args:
+            layers: a tuple of layers.
+
+        Example:
+            >>> import jax.numpy as jnp
+            >>> import jax.random as jr
+            >>> from serket.nn import Sequential, Lambda
+            >>> layers = Sequential((Lambda(lambda x: x + 1), Lambda(lambda x: x * 2)))
+            >>> layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0))
+        """
+        self.layers = layers
 
     def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
         key = key or jr.PRNGKey(0)

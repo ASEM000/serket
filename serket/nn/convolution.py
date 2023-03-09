@@ -15,8 +15,6 @@ import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
 from serket.nn.callbacks import (
-    canonicalize_cb,
-    canonicalize_padding_cb,
     frozen_positive_int_cb,
     init_func_cb,
     validate_in_features,
@@ -31,10 +29,12 @@ from serket.nn.utils import (
     StridesType,
     _calculate_convolution_output_shape,
     _calculate_transpose_padding,
+    canonicalize,
+    canonicalize_padding,
 )
 
 _lazy_keywords = ["in_features"]
-_infer_func = lambda self, *a, **k: (a[0].shape[0],)
+_infer_func = lambda _, *a, **k: (a[0].shape[0],)
 
 
 @ft.lru_cache(maxsize=None)
@@ -72,8 +72,8 @@ class ConvND:
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
-        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
+        spatial_ndim: int = 2,
     ):
         """Convolutional layer.
 
@@ -102,11 +102,11 @@ class ConvND:
         self.spatial_ndim = spatial_ndim
 
         # needs more info to be checked
-        self.kernel_size = canonicalize_cb(kernel_size, spatial_ndim, name="kernel_size")  # fmt: skip
-        self.strides = canonicalize_cb(strides, spatial_ndim, name="strides")
-        self.padding = canonicalize_padding_cb(padding, self.kernel_size)
-        self.input_dilation = canonicalize_cb(input_dilation, spatial_ndim, name="input_dilation")  # fmt: skip
-        self.kernel_dilation = canonicalize_cb(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
+        self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")  # fmt: skip
+        self.strides = canonicalize(strides, spatial_ndim, name="strides")
+        self.padding = canonicalize_padding(padding, self.kernel_size)
+        self.input_dilation = canonicalize(input_dilation, spatial_ndim, name="input_dilation")  # fmt: skip
+        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
 
         if self.out_features % self.groups != 0:
             msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
@@ -140,6 +140,162 @@ class ConvND:
         return jnp.squeeze((x + self.bias), 0)
 
 
+@pytc.treeclass
+class Conv1D(ConvND):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        input_dilation: DilationType = 1,
+        kernel_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """Convolutional layer.
+
+        Args:
+            in_features: number of input features
+            out_features: number of output features
+            kernel_size: size of the convolutional kernel
+            strides: stride of the convolution
+            padding: padding of the input
+            input_dilation: dilation of the input
+            kernel_dilation: dilation of the convolutional kernel
+            weight_init_func: function to use for initializing the weights
+            bias_init_func: function to use for initializing the bias
+            groups: number of groups to use for grouped convolution
+            key: key to use for initializing the weights
+
+        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        """
+
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            groups=groups,
+            key=key,
+            spatial_ndim=1,
+        )
+
+
+@pytc.treeclass
+class Conv2D(ConvND):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        input_dilation: DilationType = 1,
+        kernel_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """2D Convolutional layer.
+
+        Args:
+            in_features: number of input features
+            out_features: number of output features
+            kernel_size: size of the convolutional kernel
+            strides: stride of the convolution
+            padding: padding of the input
+            input_dilation: dilation of the input
+            kernel_dilation: dilation of the convolutional kernel
+            weight_init_func: function to use for initializing the weights
+            bias_init_func: function to use for initializing the bias
+            groups: number of groups to use for grouped convolution
+            key: key to use for initializing the weights
+
+        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        """
+
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            groups=groups,
+            key=key,
+            spatial_ndim=2,
+        )
+
+
+@pytc.treeclass
+class Conv3D(ConvND):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        input_dilation: DilationType = 1,
+        kernel_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """3D Convolutional layer.
+
+        Args:
+            in_features: number of input features
+            out_features: number of output features
+            kernel_size: size of the convolutional kernel
+            strides: stride of the convolution
+            padding: padding of the input
+            input_dilation: dilation of the input
+            kernel_dilation: dilation of the convolutional kernel
+            weight_init_func: function to use for initializing the weights
+            bias_init_func: function to use for initializing the bias
+            groups: number of groups to use for grouped convolution
+            key: key to use for initializing the weights
+
+        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        """
+
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            groups=groups,
+            key=key,
+            spatial_ndim=3,
+        )
+
+
+# ----------------------------------------------------------------------------------------------------------------------#
+
+
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
 @pytc.treeclass
 class ConvNDTranspose:
@@ -170,8 +326,8 @@ class ConvNDTranspose:
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
+        spatial_ndim: int = 2,
     ):
         """Convolutional Transpose Layer
 
@@ -186,8 +342,8 @@ class ConvNDTranspose:
             weight_init_func : Weight initialization function
             bias_init_func : Bias initialization function
             groups : Number of groups
-            spatial_ndim : Number of dimensions
             key : PRNG key
+            spatial_ndim : Number of dimensions
         """
         # already checked by the callbacks
         self.in_features = in_features
@@ -202,11 +358,11 @@ class ConvNDTranspose:
             raise ValueError(msg)
 
         # needs more info to be checked
-        self.kernel_size = canonicalize_cb(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
-        self.strides = canonicalize_cb(strides, spatial_ndim, "strides")  # fmt: skip
-        self.kernel_dilation = canonicalize_cb(kernel_dilation, spatial_ndim, "kernel_dilation")  # fmt: skip
-        self.padding = canonicalize_padding_cb(padding, self.kernel_size, "padding")  # fmt: skip
-        self.output_padding = canonicalize_cb(output_padding, spatial_ndim, "output_padding")  # fmt: skip
+        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, "kernel_dilation")  # fmt: skip
+        self.padding = canonicalize_padding(padding, self.kernel_size, "padding")  # fmt: skip
+        self.output_padding = canonicalize(output_padding, spatial_ndim, "output_padding")  # fmt: skip
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -226,7 +382,7 @@ class ConvNDTranspose:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         y = jax.lax.conv_transpose(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -241,6 +397,154 @@ class ConvNDTranspose:
         return (y + self.bias)[0]
 
 
+@pytc.treeclass
+class Conv1DTranspose(ConvNDTranspose):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        output_padding: int = 0,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """1D Convolutional Transpose Layer
+
+        Args:
+            in_features : Number of input channels
+            out_features : Number of output channels
+            kernel_size : Size of the convolutional kernel
+            strides : Stride of the convolution
+            padding : Padding of the input
+            output_padding : Additional size added to one side of the output shape
+            kernel_dilation : Dilation of the convolutional kernel
+            weight_init_func : Weight initialization function
+            bias_init_func : Bias initialization function
+            groups : Number of groups
+            key : PRNG key
+            spatial_ndim : Number of dimensions
+        """
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            output_padding=output_padding,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            groups=groups,
+            key=key,
+            spatial_ndim=1,
+        )
+
+
+@pytc.treeclass
+class Conv2DTranspose(ConvNDTranspose):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        output_padding: int = 0,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """2D Convolutional Transpose Layer
+
+        Args:
+            in_features : Number of input channels
+            out_features : Number of output channels
+            kernel_size : Size of the convolutional kernel
+            strides : Stride of the convolution
+            padding : Padding of the input
+            output_padding : Additional size added to one side of the output shape
+            kernel_dilation : Dilation of the convolutional kernel
+            weight_init_func : Weight initialization function
+            bias_init_func : Bias initialization function
+            groups : Number of groups
+            key : PRNG key
+            spatial_ndim : Number of dimensions
+        """
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            output_padding=output_padding,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            groups=groups,
+            key=key,
+            spatial_ndim=2,
+        )
+
+
+@pytc.treeclass
+class Conv3DTranspose(ConvNDTranspose):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: int | tuple[int, ...],
+        *,
+        strides: int | tuple[int, ...] = 1,
+        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        output_padding: int = 0,
+        kernel_dilation: int | tuple[int, ...] = 1,
+        weight_init_func: str | Callable = "glorot_uniform",
+        bias_init_func: str | Callable = "zeros",
+        groups: int = 1,
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """3D Convolutional Transpose Layer
+
+        Args:
+            in_features : Number of input channels
+            out_features : Number of output channels
+            kernel_size : Size of the convolutional kernel
+            strides : Stride of the convolution
+            padding : Padding of the input
+            output_padding : Additional size added to one side of the output shape
+            kernel_dilation : Dilation of the convolutional kernel
+            weight_init_func : Weight initialization function
+            bias_init_func : Bias initialization function
+            groups : Number of groups
+            key : PRNG key
+            spatial_ndim : Number of dimensions
+        """
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            output_padding=output_padding,
+            kernel_dilation=kernel_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            groups=groups,
+            key=key,
+            spatial_ndim=3,
+        )
+
+
+# ----------------------------------------------------------------------------------------------------------------------#
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
 @pytc.treeclass
 class DepthwiseConvND:
@@ -267,8 +571,8 @@ class DepthwiseConvND:
         padding: PaddingType = "SAME",
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
-        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
+        spatial_ndim: int = 2,
     ):
         """Depthwise Convolutional layer.
 
@@ -301,12 +605,12 @@ class DepthwiseConvND:
         self.bias_init_func = bias_init_func
 
         # needs more info to be checked
-        self.kernel_size = canonicalize_cb(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
-        self.strides = canonicalize_cb(strides, spatial_ndim, "strides")  # fmt: skip
-        self.input_dilation = canonicalize_cb(1, spatial_ndim, "input_dilation")  # fmt: skip
-        self.kernel_dilation = canonicalize_cb(1, spatial_ndim, "kernel_dilation")  # fmt: skip
+        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.input_dilation = canonicalize(1, spatial_ndim, "input_dilation")  # fmt: skip
+        self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
 
-        self.padding = canonicalize_padding_cb(padding, self.kernel_size, "padding")  # fmt: skip
+        self.padding = canonicalize_padding(padding, self.kernel_size, "padding")  # fmt: skip
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -319,7 +623,7 @@ class DepthwiseConvND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, axis=0),
             rhs=self.weight,
@@ -334,6 +638,147 @@ class DepthwiseConvND:
         if self.bias is None:
             return jnp.squeeze(y, 0)
         return jnp.squeeze((y + self.bias), 0)
+
+
+@pytc.treeclass
+class DepthwiseConv1D(DepthwiseConvND):
+    def __init__(
+        self,
+        in_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        depth_multiplier: int = 1,
+        strides: int = 1,
+        padding: PaddingType = "SAME",
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """1D Depthwise Convolutional layer.
+
+        Args:
+            in_features: number of input features
+            kernel_size: size of the convolution kernel
+            depth_multiplier : number of output channels per input channel
+            strides: stride of the convolution
+            padding: padding of the input
+            weight_init_func: function to initialize the weights
+            bias_init_func: function to initialize the bias
+            spatial_ndim: number of spatial dimensions
+            key: random key for weight initialization
+
+        Note:
+            See :
+                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+                https://github.com/google/flax/blob/main/flax/linen/linear.py
+        """
+
+        super().__init__(
+            in_features=in_features,
+            kernel_size=kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=key,
+            spatial_ndim=1,
+        )
+
+
+@pytc.treeclass
+class DepthwiseConv2D(DepthwiseConvND):
+    def __init__(
+        self,
+        in_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        depth_multiplier: int = 1,
+        strides: int = 1,
+        padding: PaddingType = "SAME",
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """2D Depthwise Convolutional layer.
+
+        Args:
+            in_features: number of input features
+            kernel_size: size of the convolution kernel
+            depth_multiplier : number of output channels per input channel
+            strides: stride of the convolution
+            padding: padding of the input
+            weight_init_func: function to initialize the weights
+            bias_init_func: function to initialize the bias
+            spatial_ndim: number of spatial dimensions
+            key: random key for weight initialization
+
+        Note:
+            See :
+                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+                https://github.com/google/flax/blob/main/flax/linen/linear.py
+        """
+
+        super().__init__(
+            in_features=in_features,
+            kernel_size=kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=key,
+            spatial_ndim=2,
+        )
+
+
+@pytc.treeclass
+class DepthwiseConv3D(DepthwiseConvND):
+    def __init__(
+        self,
+        in_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        depth_multiplier: int = 1,
+        strides: int = 1,
+        padding: PaddingType = "SAME",
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """3D Depthwise Convolutional layer.
+
+        Args:
+            in_features: number of input features
+            kernel_size: size of the convolution kernel
+            depth_multiplier : number of output channels per input channel
+            strides: stride of the convolution
+            padding: padding of the input
+            weight_init_func: function to initialize the weights
+            bias_init_func: function to initialize the bias
+            spatial_ndim: number of spatial dimensions
+            key: random key for weight initialization
+
+        Note:
+            See :
+                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+                https://github.com/google/flax/blob/main/flax/linen/linear.py
+        """
+
+        super().__init__(
+            in_features=in_features,
+            kernel_size=kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=key,
+            spatial_ndim=3,
+        )
+
+
+# ----------------------------------------------------------------------------------------------------------------------#
 
 
 @ft.partial(lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
@@ -380,7 +825,7 @@ class SeparableConvND:
 
         """
         self.in_features = in_features
-        self.depth_multiplier = canonicalize_cb(depth_multiplier, self.in_features, "depth_multiplier")  # fmt: skip
+        self.depth_multiplier = canonicalize(depth_multiplier, self.in_features, "depth_multiplier")  # fmt: skip
         self.spatial_ndim = spatial_ndim
 
         self.depthwise_conv = DepthwiseConvND(
@@ -409,11 +854,169 @@ class SeparableConvND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
 
+
+@pytc.treeclass
+class SeparableConv1D(SeparableConvND):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        depth_multiplier: int = 1,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
+        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
+        pointwise_bias_init_func: InitFuncType = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """1D Separable convolutional layer.
+
+        Note:
+            See:
+                https://en.wikipedia.org/wiki/Separable_filter
+                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
+
+        Args:
+            in_features : Number of input channels.
+            out_features : Number of output channels.
+            kernel_size : Size of the convolving kernel.
+            depth_multiplier : Number of depthwise convolution output channels for each input channel.
+            strides : Stride of the convolution.
+            padding : Padding to apply to the input.
+            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
+            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
+            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
+            spatial_ndim : Number of spatial dimensions.
+
+        """
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            depthwise_weight_init_func=depthwise_weight_init_func,
+            pointwise_weight_init_func=pointwise_weight_init_func,
+            pointwise_bias_init_func=pointwise_bias_init_func,
+            key=key,
+            spatial_ndim=1,
+        )
+
+
+@pytc.treeclass
+class SeparableConv2D(SeparableConvND):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        depth_multiplier: int = 1,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
+        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
+        pointwise_bias_init_func: InitFuncType = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """2D Separable convolutional layer.
+
+        Note:
+            See:
+                https://en.wikipedia.org/wiki/Separable_filter
+                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
+
+        Args:
+            in_features : Number of input channels.
+            out_features : Number of output channels.
+            kernel_size : Size of the convolving kernel.
+            depth_multiplier : Number of depthwise convolution output channels for each input channel.
+            strides : Stride of the convolution.
+            padding : Padding to apply to the input.
+            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
+            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
+            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
+            spatial_ndim : Number of spatial dimensions.
+
+        """
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            depthwise_weight_init_func=depthwise_weight_init_func,
+            pointwise_weight_init_func=pointwise_weight_init_func,
+            pointwise_bias_init_func=pointwise_bias_init_func,
+            key=key,
+            spatial_ndim=2,
+        )
+
+
+@pytc.treeclass
+class SeparableConv3D(SeparableConvND):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        depth_multiplier: int = 1,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
+        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
+        pointwise_bias_init_func: InitFuncType = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """3D Separable convolutional layer.
+
+        Note:
+            See:
+                https://en.wikipedia.org/wiki/Separable_filter
+                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
+
+        Args:
+            in_features : Number of input channels.
+            out_features : Number of output channels.
+            kernel_size : Size of the convolving kernel.
+            depth_multiplier : Number of depthwise convolution output channels for each input channel.
+            strides : Stride of the convolution.
+            padding : Padding to apply to the input.
+            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
+            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
+            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
+            spatial_ndim : Number of spatial dimensions.
+
+        """
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            depth_multiplier=depth_multiplier,
+            strides=strides,
+            padding=padding,
+            depthwise_weight_init_func=depthwise_weight_init_func,
+            pointwise_weight_init_func=pointwise_weight_init_func,
+            pointwise_bias_init_func=pointwise_bias_init_func,
+            key=key,
+            spatial_ndim=3,
+        )
+
+
+# ----------------------------------------------------------------------------------------------------------------------#
 
 _infer_func = lambda self, *a, **k: (a[0].shape[0], a[0].shape[1:])
 _lazy_keywords = ["in_features", "in_size"]
@@ -478,13 +1081,13 @@ class ConvNDLocal:
         self.spatial_ndim = spatial_ndim
 
         # needs more info to check
-        self.in_size = canonicalize_cb(in_size, spatial_ndim, "in_size")  # fmt: skip
-        self.kernel_size = canonicalize_cb(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
-        self.strides = canonicalize_cb(strides, spatial_ndim, "strides")  # fmt: skip
+        self.in_size = canonicalize(in_size, spatial_ndim, "in_size")  # fmt: skip
+        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
 
-        self.input_dilation = canonicalize_cb(input_dilation, spatial_ndim, "input_dilation")  # fmt: skip
-        self.kernel_dilation = canonicalize_cb(1, spatial_ndim, "kernel_dilation")  # fmt: skip
-        self.padding = canonicalize_padding_cb(padding, self.kernel_size, "padding")  # fmt: skip
+        self.input_dilation = canonicalize(input_dilation, spatial_ndim, "input_dilation")  # fmt: skip
+        self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
+        self.padding = canonicalize_padding(padding, self.kernel_size, "padding")  # fmt: skip
 
         self.out_size = _calculate_convolution_output_shape(
             shape=self.in_size,
@@ -511,7 +1114,7 @@ class ConvNDLocal:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         y = jax.lax.conv_general_dilated_local(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -529,90 +1132,147 @@ class ConvNDLocal:
 
 
 @pytc.treeclass
-class Conv1D(ConvND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1)
-
-
-@pytc.treeclass
-class Conv2D(ConvND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2)
-
-
-@pytc.treeclass
-class Conv3D(ConvND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3)
-
-
-@pytc.treeclass
-class Conv1DTranspose(ConvNDTranspose):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1)
-
-
-@pytc.treeclass
-class Conv2DTranspose(ConvNDTranspose):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2)
-
-
-@pytc.treeclass
-class Conv3DTranspose(ConvNDTranspose):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3)
-
-
-@pytc.treeclass
 class Conv1DLocal(ConvNDLocal):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1)
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        in_size: Sequence[int],
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        input_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """1D Local convolutional layer.
+
+        Args:
+            in_features: number of input features
+            out_features: number of output features
+            kernel_size: size of the convolution kernel
+            in_size: size of the input
+            strides: stride of the convolution
+            padding: padding of the convolution
+            input_dilation: dilation of the input
+            kernel_dilation: dilation of the convolution kernel
+            weight_init_func: weight initialization function
+            bias_init_func: bias initialization function
+            spatial_ndim: number of dimensions
+            key: random number generator key
+        Note:
+            See : https://keras.io/api/layers/locally_connected_layers/
+        """
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            in_size=in_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=key,
+            spatial_ndim=1,
+        )
 
 
 @pytc.treeclass
 class Conv2DLocal(ConvNDLocal):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2)
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        in_size: Sequence[int],
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        input_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """2D Local convolutional layer.
+
+        Args:
+            in_features: number of input features
+            out_features: number of output features
+            kernel_size: size of the convolution kernel
+            in_size: size of the input
+            strides: stride of the convolution
+            padding: padding of the convolution
+            input_dilation: dilation of the input
+            kernel_dilation: dilation of the convolution kernel
+            weight_init_func: weight initialization function
+            bias_init_func: bias initialization function
+            spatial_ndim: number of dimensions
+            key: random number generator key
+        Note:
+            See : https://keras.io/api/layers/locally_connected_layers/
+        """
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            in_size=in_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=key,
+            spatial_ndim=2,
+        )
 
 
 @pytc.treeclass
 class Conv3DLocal(ConvNDLocal):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3)
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        in_size: Sequence[int],
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        input_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        key: jr.PRNGKey = jr.PRNGKey(0),
+    ):
+        """3D Local convolutional layer.
 
-
-@pytc.treeclass
-class DepthwiseConv1D(DepthwiseConvND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1)
-
-
-@pytc.treeclass
-class DepthwiseConv2D(DepthwiseConvND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2)
-
-
-@pytc.treeclass
-class DepthwiseConv3D(DepthwiseConvND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3)
-
-
-@pytc.treeclass
-class SeparableConv1D(SeparableConvND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1)
-
-
-@pytc.treeclass
-class SeparableConv2D(SeparableConvND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2)
-
-
-@pytc.treeclass
-class SeparableConv3D(SeparableConvND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3)
+        Args:
+            in_features: number of input features
+            out_features: number of output features
+            kernel_size: size of the convolution kernel
+            in_size: size of the input
+            strides: stride of the convolution
+            padding: padding of the convolution
+            input_dilation: dilation of the input
+            kernel_dilation: dilation of the convolution kernel
+            weight_init_func: weight initialization function
+            bias_init_func: bias initialization function
+            spatial_ndim: number of dimensions
+            key: random number generator key
+        Note:
+            See : https://keras.io/api/layers/locally_connected_layers/
+        """
+        super().__init__(
+            in_features=in_features,
+            out_features=out_features,
+            kernel_size=kernel_size,
+            in_size=in_size,
+            strides=strides,
+            padding=padding,
+            input_dilation=input_dilation,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=key,
+            spatial_ndim=3,
+        )

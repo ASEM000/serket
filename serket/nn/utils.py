@@ -30,21 +30,6 @@ def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_pad
     )
 
 
-class UninitializedParameterError(Exception):
-    """Raised when a parameter is accessed before it is initialized."""
-
-    pass
-
-
-class UnInitialized:
-    """A sentinel value for uninitialized parameters."""
-
-    __repr__ = lambda self: "UnInitialized"
-
-
-_uninitialized = UnInitialized()
-
-
 def _rename_func(func: Callable, name: str) -> Callable:
     """Rename a function."""
     func.__name__ = name
@@ -291,3 +276,105 @@ StridesType = Union[int, Sequence[int]]
 PaddingType = Union[str, int, Sequence[int], Sequence[Tuple[int, int]]]
 DilationType = Union[int, Sequence[int]]
 InitFuncType = Union[str, Callable[[jr.PRNGKey, Sequence[int]], jnp.ndarray]]
+
+
+def canonicalize(value, ndim, name: str | None = None):
+    # in essence this is a type check that allows for int, tuple, and jnp.ndarray
+    # canonicalization is done by converting to a tuple of length ndim
+    if isinstance(value, int):
+        return (value,) * ndim
+    if isinstance(value, jnp.ndarray):
+        return jnp.repeat(value, ndim)
+    if isinstance(value, tuple):
+        if len(value) != ndim:
+            msg = f"Expected tuple of length {ndim}, got {len(value)}: {value}"
+            msg += f" for {name}" if name is not None else ""
+            raise ValueError(msg)
+        return tuple(value)
+    msg = f"Expected int or tuple for , got {value}."
+    msg += f" for {name}" if name is not None else ""
+    raise ValueError(msg)
+
+
+@ft.lru_cache(maxsize=None)
+def canonicalize_padding(
+    padding: tuple[int | tuple[int, int] | str, ...] | int | str,
+    kernel_size: tuple[int, ...],
+    name: str | None = None,
+):
+    """
+    Resolve padding to a tuple of tuples of ints.
+
+    Args:
+        padding: padding to resolve
+        kernel_size: kernel size to use for resolving padding
+        name: name of the argument being resolved
+
+    Examples:
+        >>> padding= (1, (2, 3), "same")
+        >>> kernel_size = (3, 3, 3)
+        >>> _canonicalize_padding(padding, kernel_size)
+        ((1, 1), (2, 3), (1, 1))
+    """
+
+    def resolve_tuple_padding(padding, kernel_size):
+        if len(padding) != len(kernel_size):
+            msg = f"Expected padding to be of length {len(kernel_size)}, got {len(padding)}"
+            msg += f" for {name}" if name is not None else ""
+            raise ValueError(msg)
+
+        resolved_padding = [[]] * len(kernel_size)
+
+        for i, item in enumerate(padding):
+            if isinstance(item, int):
+                # ex: padding = (1, 2, 3)
+                resolved_padding[i] = (item, item)
+
+            elif isinstance(item, tuple):
+                # ex: padding = ((1, 2), (3, 4), (5, 6))
+                if len(item) != 2:
+                    msg = f"Expected tuple of length 2, got {len(item)}"
+                    msg += f" for {name}" if name is not None else ""
+                    raise ValueError(msg)
+
+                resolved_padding[i] = item
+
+            elif isinstance(item, str):
+                # ex: padding = ("same", "valid", "same")
+                if item.lower() == "same":
+                    lhs, rhs = ((kernel_size[i] - 1) // 2), (kernel_size[i] // 2)
+                    resolved_padding[i] = (lhs, rhs)
+
+                elif item.lower() == "valid":
+                    resolved_padding[i] = (0, 0)
+
+                else:
+                    msg = f'String argument must be in ["same","valid"].Found {item}'
+                    msg += f" for {name}" if name is not None else ""
+                    raise ValueError(msg)
+        return tuple(resolved_padding)
+
+    def resolve_int_padding(padding, kernel_size):
+        return ((padding, padding),) * len(kernel_size)
+
+    def resolve_string_padding(padding, kernel_size):
+        if padding.lower() == "same":
+            return tuple(((wi - 1) // 2, wi // 2) for wi in kernel_size)
+
+        elif padding.lower() == "valid":
+            return ((0, 0),) * len(kernel_size)
+
+        raise ValueError(f'string argument must be in ["same","valid"].Found {padding}')
+
+    if isinstance(padding, int):
+        return resolve_int_padding(padding, kernel_size)
+
+    if isinstance(padding, str):
+        return resolve_string_padding(padding, kernel_size)
+
+    if isinstance(padding, tuple):
+        return resolve_tuple_padding(padding, kernel_size)
+
+    msg = f"Expected padding to be of type int, str or tuple, got {type(padding)}"
+    msg += f" for {name}" if name is not None else ""
+    raise ValueError(msg)
