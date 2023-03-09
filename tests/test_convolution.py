@@ -18,6 +18,8 @@ from serket.nn.convolution import (  # Conv3DLocal,; Conv1DSemiLocal,; Conv2DSem
     DepthwiseConv2D,
     SeparableConv1D,
     SeparableConv2D,
+)
+from serket.nn.utils import (
     _canonicalize_init_func,
     _canonicalize_input_dilation,
     _canonicalize_kernel,
@@ -54,7 +56,6 @@ def test_canonicalize_init_func():
 
 
 def test_canonicalize():
-
     assert _canonicalize_kernel(3, 2) == (3, 3)
     assert _canonicalize_kernel((3, 3), 2) == (3, 3)
     assert _canonicalize_kernel((3, 3, 3), 3) == (3, 3, 3)
@@ -97,7 +98,6 @@ def test_canonicalize_padding():
 
 
 def test_conv1D():
-
     layer = Conv1D(
         in_features=1, out_features=1, kernel_size=2, padding="SAME", strides=1
     )
@@ -190,7 +190,6 @@ def test_conv1D():
 
 
 def test_conv2D():
-
     layer = Conv2D(in_features=1, out_features=1, kernel_size=2)
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2, 2], dtype=jnp.float32))  # OIHW
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
@@ -269,7 +268,6 @@ def test_conv2D():
 
 
 def test_conv3D():
-
     layer = Conv3D(1, 3, 3)
     layer = layer.at["weight"].set(jnp.ones([3, 1, 3, 3, 3]))
     layer = layer.at["bias"].set(jnp.zeros([3, 1, 1, 1]))
@@ -403,7 +401,6 @@ def test_conv2dtranspose():
 
 
 def test_conv3dtranspose():
-
     x = jnp.array(
         [
             [
@@ -660,7 +657,6 @@ def test_depthwise_conv1d():
 
 
 def test_depthwise_conv2d():
-
     w = jnp.array(
         [
             [
@@ -725,7 +721,6 @@ def test_depthwise_conv2d():
 
 
 def test_seperable_conv1d():
-
     x = jnp.array(
         [
             [0.60440326, 0.44108868, 0.89211035, 0.86819136, 0.99565816],
@@ -750,8 +745,8 @@ def test_seperable_conv1d():
         in_features=2, out_features=1, kernel_size=3, depth_multiplier=2
     )
 
-    layer = layer.at["depthwise_conv.weight"].set(w1)
-    layer = layer.at["pointwise_conv.weight"].set(w2)
+    layer = layer.at["depthwise_conv"].at["weight"].set(w1)
+    layer = layer.at["pointwise_conv"].at["weight"].set(w2)
 
     npt.assert_allclose(y, layer(x), atol=1e-5)
 
@@ -827,8 +822,8 @@ def test_seperable_conv2d():
         in_features=2, out_features=1, kernel_size=3, depth_multiplier=2
     )
 
-    layer_jax = layer_jax.at["depthwise_conv.weight"].set(w1)
-    layer_jax = layer_jax.at["pointwise_conv.weight"].set(w2)
+    layer_jax = layer_jax.at["depthwise_conv"].at["weight"].set(w1)
+    layer_jax = layer_jax.at["pointwise_conv"].at["weight"].set(w2)
 
     npt.assert_allclose(y, layer_jax(x), atol=1e-5)
 
@@ -968,7 +963,6 @@ def test_conv1d_local():
 
 
 def test_conv2d_local():
-
     w = jnp.array(
         [
             [
@@ -1031,7 +1025,6 @@ def test_in_feature_error():
 
 
 def test_out_feature_error():
-
     with pytest.raises(ValueError):
         Conv1D(1, 0, 2)
 
@@ -1058,7 +1051,6 @@ def test_out_feature_error():
 
 
 def test_groups_error():
-
     with pytest.raises(ValueError):
         Conv1D(1, 1, 2, groups=0)
 

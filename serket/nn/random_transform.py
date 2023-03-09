@@ -51,7 +51,6 @@ class RandomApply:
         self.layer = layer
 
     def __call__(self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0)):
-
         if self.eval is True or not jr.bernoulli(key, (self.p)):
             return x
 
@@ -86,7 +85,6 @@ class RandomZoom2D:
         self.width_factor = width_factor
 
     def __call__(self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0)) -> jnp.ndarray:
-
         keys = jr.split(key, 4)
 
         height_factor = jr.uniform(

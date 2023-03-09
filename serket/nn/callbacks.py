@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools as ft
 from types import FunctionType
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 import jax.nn.initializers as ji
 import jax.numpy as jnp
@@ -70,13 +70,16 @@ def range_cb(min_val: float = -float("inf"), max_val: float = float("inf")):
     return range_check
 
 
-def instance_cb(expected_type: type | tuple[type]):
+def instance_cb(expected_type: type | Sequence[type]):
     """Return a function that checks if the input is an instance of expected_type."""
 
     def instance_check(value: Any):
         if isinstance(value, expected_type):
             return value
-        raise ValueError(f"Expected value of type {expected_type}, got {type(value)}")
+
+        msg = f"Expected value of type {expected_type.__name__}, "
+        msg += f"got {type(value).__name__}"
+        raise ValueError(msg)
 
     return instance_check
 
@@ -96,26 +99,22 @@ def scalar_like_cb(value: Any):
     raise ValueError(msg)
 
 
-def canonicalize_cb(value, ndim):
+def canonicalize_cb(value, ndim, name: str | None = None):
+    # in essence this is a type check that allows for int, tuple, and jnp.ndarray
+    # canonicalization is done by converting to a tuple of length ndim
     if isinstance(value, int):
         return (value,) * ndim
-    elif isinstance(value, jnp.ndarray):
+    if isinstance(value, jnp.ndarray):
         return jnp.repeat(value, ndim)
-    elif isinstance(value, tuple):
+    if isinstance(value, tuple):
         if len(value) != ndim:
             msg = f"Expected tuple of length {ndim}, got {len(value)}: {value}"
+            msg += f" for {name}" if name is not None else ""
             raise ValueError(msg)
         return tuple(value)
-    raise ValueError(f"Expected int or tuple for , got {value}.")
-
-
-canonicalize_1d_cb = ft.partial(canonicalize_cb, ndim=1)
-canonicalize_2d_cb = ft.partial(canonicalize_cb, ndim=2)
-canonicalize_3d_cb = ft.partial(canonicalize_cb, ndim=3)
-
-frozen_canonicalize_1d_cb = and_cb(canonicalize_1d_cb, pytc.freeze)
-frozen_canonicalize_2d_cb = and_cb(canonicalize_2d_cb, pytc.freeze)
-frozen_canonicalize_3d_cb = and_cb(canonicalize_3d_cb, pytc.freeze)
+    msg = f"Expected int or tuple for , got {value}."
+    msg += f" for {name}" if name is not None else ""
+    raise ValueError(msg)
 
 
 def positive_int_cb(value):
@@ -128,22 +127,6 @@ def positive_int_cb(value):
     if value <= 0:
         raise ValueError(f"value must be positive, got {value}")
     return value
-
-
-non_negative_scalar_cb = and_cb(range_cb(0), scalar_like_cb)
-
-frozen_positive_int_cb = and_cb(positive_int_cb, pytc.freeze)
-
-
-def _canonicalize_cb(value, ndim):
-    if isinstance(value, int):
-        return (value,) * ndim
-    elif isinstance(value, jnp.ndarray):
-        return jnp.repeat(value, ndim)
-    elif isinstance(value, tuple):
-        assert len(value) == ndim, f"Value must be a tuple of length {ndim}"
-        return tuple(value)
-    raise ValueError(f"Expected int or tuple for Value, got {value}.")
 
 
 def init_func_cb(init_func: str | Callable) -> Callable:
@@ -165,6 +148,7 @@ def init_func_cb(init_func: str | Callable) -> Callable:
 def canonicalize_padding_cb(
     padding: tuple[int | tuple[int, int] | str, ...] | int | str,
     kernel_size: tuple[int, ...],
+    name: str | None = None,
 ):
     """
     Resolve padding to a tuple of tuples of ints.
@@ -172,6 +156,7 @@ def canonicalize_padding_cb(
     Args:
         padding: padding to resolve
         kernel_size: kernel size to use for resolving padding
+        name: name of the argument being resolved
 
     Examples:
         >>> padding= (1, (2, 3), "same")
@@ -180,9 +165,11 @@ def canonicalize_padding_cb(
         ((1, 1), (2, 3), (1, 1))
     """
 
-    def _resolve_tuple_padding(padding, kernel_size):
-        msg = f"Expected padding to be of length {len(kernel_size)}, got {len(padding)}"
-        assert len(padding) == len(kernel_size), msg
+    def resolve_tuple_padding(padding, kernel_size):
+        if len(padding) != len(kernel_size):
+            msg = f"Expected padding to be of length {len(kernel_size)}, got {len(padding)}"
+            msg += f" for {name}" if name is not None else ""
+            raise ValueError(msg)
 
         resolved_padding = [[]] * len(kernel_size)
 
@@ -193,29 +180,32 @@ def canonicalize_padding_cb(
 
             elif isinstance(item, tuple):
                 # ex: padding = ((1, 2), (3, 4), (5, 6))
-                assert len(item) == 2, f"Expected tuple of length 2, got {len(item)}"
+                if len(item) != 2:
+                    msg = f"Expected tuple of length 2, got {len(item)}"
+                    msg += f" for {name}" if name is not None else ""
+                    raise ValueError(msg)
+
                 resolved_padding[i] = item
 
             elif isinstance(item, str):
                 # ex: padding = ("same", "valid", "same")
                 if item.lower() == "same":
-                    resolved_padding[i] = ((kernel_size[i] - 1) // 2), (
-                        kernel_size[i] // 2
-                    )
+                    lhs, rhs = ((kernel_size[i] - 1) // 2), (kernel_size[i] // 2)
+                    resolved_padding[i] = (lhs, rhs)
 
                 elif item.lower() == "valid":
                     resolved_padding[i] = (0, 0)
 
                 else:
-                    msg = f'string argument must be in ["same","valid"].Found {item}'
+                    msg = f'String argument must be in ["same","valid"].Found {item}'
+                    msg += f" for {name}" if name is not None else ""
                     raise ValueError(msg)
-
         return tuple(resolved_padding)
 
-    def _resolve_int_padding(padding, kernel_size):
+    def resolve_int_padding(padding, kernel_size):
         return ((padding, padding),) * len(kernel_size)
 
-    def _resolve_string_padding(padding, kernel_size):
+    def resolve_string_padding(padding, kernel_size):
         if padding.lower() == "same":
             return tuple(((wi - 1) // 2, wi // 2) for wi in kernel_size)
 
@@ -225,13 +215,56 @@ def canonicalize_padding_cb(
         raise ValueError(f'string argument must be in ["same","valid"].Found {padding}')
 
     if isinstance(padding, int):
-        return _resolve_int_padding(padding, kernel_size)
+        return resolve_int_padding(padding, kernel_size)
 
-    elif isinstance(padding, str):
-        return _resolve_string_padding(padding, kernel_size)
+    if isinstance(padding, str):
+        return resolve_string_padding(padding, kernel_size)
 
-    elif isinstance(padding, tuple):
-        return _resolve_tuple_padding(padding, kernel_size)
+    if isinstance(padding, tuple):
+        return resolve_tuple_padding(padding, kernel_size)
 
     msg = f"Expected padding to be of type int, str or tuple, got {type(padding)}"
+    msg += f" for {name}" if name is not None else ""
     raise ValueError(msg)
+
+
+def validate_spatial_in_shape(call_wrapper, *, attribute_name: str):
+    """Decorator to validate spatial input shape."""
+
+    def check_spatial_in_shape(x, spatial_ndim: int) -> None:
+        spatial_tuple = ("rows", "cols", "depths")
+        if x.ndim != spatial_ndim + 1:
+            msg = f"Input must be a {spatial_ndim+1}D tensor in shape of "
+            msg += f"(in_features, {', '.join(spatial_tuple[:spatial_ndim])}), "
+            msg += f"but got {x.shape}."
+            raise ValueError(msg)
+        return x
+
+    @ft.wraps(call_wrapper)
+    def wrapper(self, array, *a, **k):
+        array = check_spatial_in_shape(array, getattr(self, attribute_name))
+        return call_wrapper(self, array, *a, **k)
+
+    return wrapper
+
+
+def validate_in_features(call_wrapper, *, attribute_name: str, axis: int = 0):
+    """Decorator to validate input features."""
+
+    def check_in_features(x, in_features: int, axis: int) -> None:
+        if x.shape[axis] != in_features:
+            msg = f"Specified input_features={in_features} ,"
+            msg += f"but got input with input_features={x.shape[axis]}."
+            raise ValueError(msg)
+        return x
+
+    @ft.wraps(call_wrapper)
+    def wrapper(self, array, *a, **k):
+        check_in_features(array, getattr(self, attribute_name), axis)
+        return call_wrapper(self, array, *a, **k)
+
+    return wrapper
+
+
+non_negative_scalar_cb = and_cb(range_cb(0), scalar_like_cb)
+frozen_positive_int_cb = and_cb(positive_int_cb, pytc.freeze)

@@ -20,7 +20,6 @@ from serket.nn.utils import (
 
 @pytc.treeclass
 class GeneralPoolND:
-
     kernel_size: tuple[int, ...] | int = pytc.field(callbacks=[pytc.freeze])
     strides: tuple[int, ...] | int = pytc.field(callbacks=[pytc.freeze])
     padding: tuple[tuple[int, int], ...] | int | str = pytc.field(
@@ -100,7 +99,6 @@ class GlobalPoolND:
 
 @pytc.treeclass
 class AdaptivePoolND:
-
     output_size: tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(

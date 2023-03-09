@@ -49,7 +49,6 @@ class LayerNorm:
             self.β = jnp.zeros(normalized_shape)
 
     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-
         dims = tuple(range(len(x.shape) - len(self.normalized_shape), len(x.shape)))
 
         μ = jnp.mean(x, axis=dims, keepdims=True)

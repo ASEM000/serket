@@ -74,7 +74,6 @@ def test_identity():
 
 
 def test_lazy():
-
     layer = Linear(None, 1)
     assert layer.weight is None
     assert layer(jnp.ones([10, 2])).shape == (10, 1)

@@ -89,7 +89,6 @@ from serket.nn.recurrent import (
 
 
 def test_vanilla_rnn():
-
     in_features = 2
     hidden_features = 3
     # batch_size = 1
@@ -122,8 +121,8 @@ def test_vanilla_rnn():
         recurrent_weight_init_func="glorot_uniform",
     )
 
-    cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
-    cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
+    cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
+    cell = cell.at["hidden_to_hidden"].at["weight"].set(w_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell)
     y = jnp.array([0.9637042, -0.8282256, 0.7314449])
@@ -131,7 +130,6 @@ def test_vanilla_rnn():
 
 
 def test_lstm():
-
     # tensorflow
     in_features = 2
     hidden_features = 3
@@ -238,9 +236,9 @@ def test_lstm():
         hidden_features=hidden_features,
         recurrent_weight_init_func="glorot_uniform",
     )
-    cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
-    cell = cell.at["in_to_hidden.bias"].set(b_hidden_to_hidden)
-    cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
+    cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
+    cell = cell.at["in_to_hidden"].at["bias"].set(b_hidden_to_hidden)
+    cell = cell.at["hidden_to_hidden"].at["weight"].set(w_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell, return_sequences=False)
     y = jnp.array([0.18658024, -0.6338659, 0.3445018])
@@ -335,9 +333,9 @@ def test_lstm():
         hidden_features=hidden_features,
         recurrent_weight_init_func="glorot_uniform",
     )
-    cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
-    cell = cell.at["in_to_hidden.bias"].set(b_hidden_to_hidden)
-    cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
+    cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
+    cell = cell.at["in_to_hidden"].at["bias"].set(b_hidden_to_hidden)
+    cell = cell.at["hidden_to_hidden"].at["weight"].set(w_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell, return_sequences=True)
 
@@ -424,8 +422,8 @@ def test_gru():
     )
 
     cell = GRUCell(1, 3, bias_init_func=None)
-    cell = cell.at["in_to_hidden.weight"].set(w1)
-    cell = cell.at["hidden_to_hidden.weight"].set(w2)
+    cell = cell.at["in_to_hidden"].at["weight"].set(w1)
+    cell = cell.at["hidden_to_hidden"].at["weight"].set(w2)
     y = jnp.array([[-0.00142191, 0.11011646, 0.1613554]])
     ypred = ScanRNN(cell, return_sequences=True)(jnp.ones([1, 1]))
     npt.assert_allclose(y, ypred, atol=1e-4)
@@ -589,9 +587,9 @@ def test_conv_lstm1d():
         bias_init_func="zeros",
     )
 
-    cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
-    cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
-    cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
+    cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
+    cell = cell.at["hidden_to_hidden"].at["weight"].set(w_hidden_to_hidden)
+    cell = cell.at["hidden_to_hidden"].at["bias"].set(b_hidden_to_hidden)
 
     x = jnp.ones([time_steps, in_features, *spatial_dim])
 
@@ -756,15 +754,19 @@ def test_bilstm():
 
     b_hidden_to_hidden_reverse = jnp.array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
 
-    cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
-    cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
-    cell = cell.at["in_to_hidden.bias"].set(b_hidden_to_hidden)
+    cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
+    cell = cell.at["hidden_to_hidden"].at["weight"].set(w_hidden_to_hidden)
+    cell = cell.at["in_to_hidden"].at["bias"].set(b_hidden_to_hidden)
 
-    reverse_cell = reverse_cell.at["in_to_hidden.weight"].set(w_in_to_hidden_reverse)
-    reverse_cell = reverse_cell.at["hidden_to_hidden.weight"].set(
-        w_hidden_to_hidden_reverse
+    reverse_cell = (
+        reverse_cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden_reverse)
     )
-    reverse_cell = reverse_cell.at["in_to_hidden.bias"].set(b_hidden_to_hidden_reverse)
+    reverse_cell = (
+        reverse_cell.at["hidden_to_hidden"].at["weight"].set(w_hidden_to_hidden_reverse)
+    )
+    reverse_cell = (
+        reverse_cell.at["in_to_hidden"].at["bias"].set(b_hidden_to_hidden_reverse)
+    )
 
     res = ScanRNN(cell, backward_cell=reverse_cell, return_sequences=False)(x)
 
@@ -774,7 +776,6 @@ def test_bilstm():
 
 
 def test_lazy_rnn():
-
     x = jnp.ones([10, 1])  # time_steps, in_features
     left = SimpleRNNCell(None, 15)  # in_features, hidden_features
     assert ScanRNN(left)(x).shape == (15,)

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_spatial_in_shape
+from serket.nn.callbacks import validate_spatial_in_shape
 
 
 def adjust_contrast_nd(x: jnp.ndarray, contrast_factor: float, spatial_ndim: int):
     """Adjusts the contrast of an image by scaling the pixel values by a factor."""
-    x = _check_spatial_in_shape(x, spatial_ndim=spatial_ndim)
     μ = jnp.mean(x, axis=tuple(range(1, x.ndim)), keepdims=True)
     return (contrast_factor * (x - μ) + μ).astype(x.dtype)
 
@@ -21,7 +22,6 @@ def random_contrast_nd(
     key: jr.PRNGKey = jr.PRNGKey(0),
 ) -> jnp.ndarray:
     """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
-    x = _check_spatial_in_shape(x, spatial_ndim)
     minval, maxval = contrast_range
     contrast_factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
     return adjust_contrast_nd(x, contrast_factor, spatial_ndim)
@@ -47,14 +47,13 @@ class AdjustContrastND:
         self.spatial_ndim = spatial_ndim
         self.contrast_factor = contrast_factor
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
         return adjust_contrast_nd(x, self.contrast_factor, self.spatial_ndim)
 
 
 @pytc.treeclass
 class AdjustContrast2D(AdjustContrastND):
-    __doc__ = AdjustContrastND.__doc__.replace("ND", "2D")
-
     def __init__(self, contrast_factor=1.0):
         super().__init__(contrast_factor, spatial_ndim=2)
 
@@ -79,8 +78,9 @@ class RandomContrastND:
         self.contrast_range = contrast_range
         self.spatial_ndim = spatial_ndim
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(
-        self, x: jnp.ndarray, key: jr.PRNGKey = jr.PRNGKey(0), **k
+        self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0), **k
     ) -> jnp.ndarray:
         return random_contrast_nd(x, self.contrast_range, self.spatial_ndim, key=key)
 

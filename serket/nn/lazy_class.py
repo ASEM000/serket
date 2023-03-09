@@ -61,7 +61,6 @@ def _lazy_init_wrapper(
             # somewhere in the instance
             # set all fields to None to mark the instance as lazy
             for field in pytc.fields(self):
-                print(field.name)
                 vars(self)[field.name] = None
 
             # store the partialized init function in the instance
@@ -83,7 +82,7 @@ def _lazy_init_wrapper(
     return wrapper
 
 
-def _check_non_tracer(args: Any, name: str = "Class") -> None:
+def _check_non_tracer(args: Any, name: str = "Class") -> Any:
     # check if any of the inputs are Tracers
     if any(isinstance(arg, jax.core.Tracer) for arg in args):
         raise ValueError(
@@ -103,6 +102,7 @@ def _check_non_tracer(args: Any, name: str = "Class") -> None:
             ">>> layer(x) # dry run to initialize the layer\n"
             ">>> layer = jax.jit(layer)\n"
         )
+    return args
 
 
 def _lazy_call_wrapper(call_func, infer_func):
@@ -114,7 +114,7 @@ def _lazy_call_wrapper(call_func, infer_func):
             # in case we have more than input argument
             # then we need to check if any of them is a tracer
             # tracer means that some `jax` transformation was applied
-            _check_non_tracer(args, name=type(self).__name__)
+            args = _check_non_tracer(args, name=type(self).__name__)
 
             # we are forwarded from the init method, so we need
             # to infer the lazy arguments and call the init method
@@ -148,7 +148,7 @@ def _lazy_call_wrapper(call_func, infer_func):
     return wrapper
 
 
-def _lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
+def lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
     """
     wrap init and call methods of a class to allow inference of lazy arguments
     at call time
@@ -184,9 +184,7 @@ def _lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
     ** usage **
     >>> lazy_keywords = ["kernel_size"]
     >>> infer_func = lambda self, *args, **kwargs:(args[0].shape[-1],)
-    >>> lazy_keywords = ["kernel_size"]
-    >>> infer_func = lambda self, *args, **kwargs:(args[0].shape[-1],)
-    >>> @ft.partial(_lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
+    >>> @ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
     ... @pytc.treeclass
     ... class Test:
     ...     ...

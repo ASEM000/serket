@@ -44,7 +44,6 @@ class HistogramEqualization2D:
 @pytc.treeclass
 class PixelShuffle2D:
     def __init__(self, upscale_factor: int | tuple[int, int] = 1):
-
         self.spatial_ndim = 2
         if isinstance(upscale_factor, int):
             if upscale_factor < 1:

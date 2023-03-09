@@ -7,17 +7,19 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import frozen_positive_int_cb
+from serket.nn.callbacks import (
+    frozen_positive_int_cb,
+    validate_in_features,
+    validate_spatial_in_shape,
+)
 from serket.nn.convolution import DepthwiseConv2D
 from serket.nn.fft_convolution import DepthwiseFFTConv2D
-from serket.nn.lazy_class import _lazy_class
-from serket.nn.utils import _check_in_features, _check_spatial_in_shape
+from serket.nn.lazy_class import lazy_class
 
 _infer_func = lambda self, *a, **k: (a[0].shape[0],)
-_lazy_keywords = ["in_features"]
 
 
-@ft.partial(_lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
 @pytc.treeclass
 class AvgBlur2D:
     in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
@@ -58,13 +60,13 @@ class AvgBlur2D:
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x, **k) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        _check_in_features(x, self.in_features)
         return self.conv2(self.conv1(x))
 
 
-@ft.partial(_lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
 @pytc.treeclass
 class GaussianBlur2D:
     in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
@@ -79,7 +81,6 @@ class GaussianBlur2D:
         kernel_size,
         *,
         sigma=1.0,
-        # implementation="jax",
     ):
         """Apply Gaussian blur to a channel-first image.
 
@@ -123,14 +124,13 @@ class GaussianBlur2D:
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x, **k) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        _check_in_features(x, self.in_features)
-
         return self.conv1(self.conv2(x))
 
 
-@ft.partial(_lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
 @pytc.treeclass
 class Filter2D:
     in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
@@ -159,13 +159,13 @@ class Filter2D:
         )
         self.conv = self.conv.at["weight"].set(self.kernel)
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x, **k) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        _check_in_features(x, self.in_features)
         return self.conv(x)
 
 
-@ft.partial(_lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
 @pytc.treeclass
 class FFTFilter2D:
     in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
@@ -195,7 +195,7 @@ class FFTFilter2D:
         )
         self.conv = self.conv.at["weight"].set(self.kernel)
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x, **k) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        _check_in_features(x, self.in_features)
         return self.conv(x)

@@ -810,7 +810,6 @@ class ScanRNN:
         backward_state: RNNState | None = None,
         **k,
     ) -> jnp.ndarray:
-
         if hasattr(self.cell, "_init"):
             _check_non_tracer(x, self.cell.__class__.__name__)
             getattr(self.cell, "_init")(in_features=x.shape[1])
