@@ -17,7 +17,7 @@ from serket.nn.utils import (
 )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Polynomial:
     degree: int = pytc.field(callbacks=[pytc.freeze])
     linears: tuple[sk.nn.Linear, ...]

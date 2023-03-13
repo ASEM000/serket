@@ -16,27 +16,27 @@ from serket.nn.utils import _act_func_map, _canonicalize_positive_int, _check_no
 # --------------------------------------------------- RNN ------------------------------------------------------------ #
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class RNNState:
     hidden_state: jnp.ndarray
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class RNNCell:
     pass
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SpatialRNNCell:
     pass
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SimpleRNNState(RNNState):
     pass
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SimpleRNNCell(RNNCell):
     in_to_hidden: Linear
     hidden_to_hidden: Linear
@@ -126,12 +126,12 @@ class SimpleRNNCell(RNNCell):
         return SimpleRNNState(jnp.zeros(shape))
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class LSTMState(RNNState):
     cell_state: jnp.ndarray
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class LSTMCell(RNNCell):
     in_to_hidden: Linear
     hidden_to_hidden: Linear
@@ -233,12 +233,12 @@ class LSTMCell(RNNCell):
         return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class GRUState(RNNState):
     pass
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class GRUCell(RNNCell):
     in_to_hidden: Linear
     hidden_to_hidden: Linear
@@ -337,12 +337,12 @@ class GRUCell(RNNCell):
 
 
 # ------------------------------------------------- Spatial RNN ------------------------------------------------------ #
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvLSTMNDState(RNNState):
     cell_state: jnp.ndarray
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvLSTMNDCell(SpatialRNNCell):
     in_to_hidden: ConvND
     hidden_to_hidden: ConvND
@@ -476,84 +476,84 @@ class ConvLSTMNDCell(SpatialRNNCell):
         return ConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, conv_layer=ConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, conv_layer=ConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, conv_layer=ConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, conv_layer=SeparableConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, conv_layer=SeparableConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, conv_layer=SeparableConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, conv_layer=FFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, conv_layer=FFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, conv_layer=FFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, conv_layer=SeparableFFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, conv_layer=SeparableFFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, conv_layer=SeparableFFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvGRUNDState(RNNState):
     pass
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvGRUNDCell(SpatialRNNCell):
     in_to_hidden: ConvND
     hidden_to_hidden: ConvND
@@ -683,73 +683,73 @@ class ConvGRUNDCell(SpatialRNNCell):
         return ConvGRUNDState(hidden_state=jnp.zeros(shape))
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvGRU1DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, conv_layer=ConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvGRU2DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, conv_layer=ConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvGRU3DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, conv_layer=ConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConvGRU1DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, conv_layer=SeparableConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConvGRU2DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, conv_layer=SeparableConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConvGRU3DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, conv_layer=SeparableConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConvGRU1DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, conv_layer=FFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConvGRU2DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, conv_layer=FFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConvGRU3DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, conv_layer=FFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConvGRU1DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, conv_layer=SeparableFFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConvGRU2DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, conv_layer=SeparableFFTConvND)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConvGRU3DCell(ConvGRUNDCell):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, conv_layer=SeparableFFTConvND)
@@ -758,7 +758,7 @@ class SeparableFFTConvGRU3DCell(ConvGRUNDCell):
 # ------------------------------------------------- Scan layer ------------------------------------------------------ #
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ScanRNN:
     cell: RNNCell | SpatialRNNCell
     backward_cell: RNNCell | SpatialRNNCell | None

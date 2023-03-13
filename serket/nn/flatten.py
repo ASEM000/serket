@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import pytreeclass as pytc
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Flatten:
     start_dim: int = pytc.field(callbacks=[pytc.freeze], default=0)
     end_dim: int = pytc.field(callbacks=[pytc.freeze], default=-1)
@@ -54,7 +54,7 @@ class Flatten:
         return jnp.reshape(x, shape)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Unflatten:
     dim: int = pytc.field(callbacks=[pytc.freeze], default=0)
     shape: tuple = pytc.field(callbacks=[pytc.freeze], default=None)

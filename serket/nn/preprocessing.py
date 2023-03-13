@@ -17,7 +17,7 @@ def _histeq(x, bins_count: int = 256):
     return jnp.interp(x.flatten(), bins[:-1], cdf).reshape(x.shape)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class HistogramEqualization2D:
     bins: int = pytc.field(callbacks=[pytc.freeze])
 
@@ -41,7 +41,7 @@ class HistogramEqualization2D:
         return _histeq(x, self.bins)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class PixelShuffle2D:
     def __init__(self, upscale_factor: int | tuple[int, int] = 1):
         self.spatial_ndim = 2

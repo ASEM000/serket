@@ -21,7 +21,7 @@ _lazy_keywords = ["in_features"]
 
 
 @ft.partial(lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class AvgBlur2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel_size: int | tuple[int, int] = pytc.field(
@@ -70,7 +70,7 @@ class AvgBlur2D:
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class GaussianBlur2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel_size: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -134,7 +134,7 @@ class GaussianBlur2D:
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Filter2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     conv: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze], repr=False)
@@ -169,7 +169,7 @@ class Filter2D:
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTFilter2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel: jax.Array = pytc.field(callbacks=[pytc.freeze])

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
@@ -7,7 +9,7 @@ import pytreeclass as pytc
 from serket.nn.utils import _canonicalize_padding, _check_spatial_in_shape
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class PadND:
     def __init__(
         self, padding: int | tuple[int, int], value: float = 0.0, spatial_ndim=1
@@ -34,19 +36,19 @@ class PadND:
         return jnp.pad(x, ((0, 0), *self.padding), constant_values=self.value)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Pad1D(PadND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Pad2D(PadND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Pad3D(PadND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3)

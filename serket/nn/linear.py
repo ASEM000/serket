@@ -60,7 +60,7 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     return f"{input_string},{weight_string}->{result_string}"
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Multilinear:
     weight: jax.Array
     bias: jax.Array
@@ -158,7 +158,7 @@ class Multilinear:
         return x + self.bias
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Linear(Multilinear):
     """Linear layer with 1 input applied to last axis of input
 
@@ -200,7 +200,7 @@ class Linear(Multilinear):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Bilinear(Multilinear):
     def __init__(
         self,
@@ -236,7 +236,7 @@ class Bilinear(Multilinear):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class GeneralLinear:
     weight: jax.Array
     bias: jax.Array
@@ -339,7 +339,7 @@ class GeneralLinear:
         return x
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Identity:
     """Identity layer"""
 

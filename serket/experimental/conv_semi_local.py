@@ -15,7 +15,7 @@
 # # ------------------------------ ConvNDSemiLocal Convolutional Layers ------------------------------ #
 
 
-# @pytc.treeclass
+# @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 # class ConvNDSemiLocal:
 #     spatial_groups: int = pytc.nondiff_field()
 #     convs: tuple[ConvND]

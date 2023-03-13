@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import kernex as kex
@@ -18,7 +20,7 @@ def _recursive_repeat(x, scale, axis):
     return _recursive_repeat(x.repeat(scale, axis=axis), scale, axis - 1)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class RepeatND:
     def __init__(self, scale: int = 1, spatial_ndim: int = 1):
         """repeats input along axes 1,2,3"""
@@ -38,7 +40,7 @@ class RepeatND:
         return jnp.squeeze(_repeat(x), axis=tuple(range(1, self.spatial_ndim + 2)))
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ResizeND:
     size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
     method: str = pytc.field(callbacks=[pytc.freeze])
@@ -89,7 +91,7 @@ class ResizeND:
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class UpsampleND:
     scale: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze], default=1)
     method: str = pytc.field(callbacks=[pytc.freeze], default="nearest")
@@ -120,55 +122,55 @@ class UpsampleND:
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Repeat1D(RepeatND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=1, **k)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Repeat2D(RepeatND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=2, **k)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Repeat3D(RepeatND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=3, **k)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Resize1D(ResizeND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=1, **k)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Resize2D(ResizeND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=2, **k)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Resize3D(ResizeND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=3, **k)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Upsample1D(UpsampleND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=1, **k)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Upsample2D(UpsampleND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=2, **k)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Upsample3D(UpsampleND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=3, **k)

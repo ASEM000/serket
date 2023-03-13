@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
@@ -55,7 +57,7 @@ def snake(x: jax.Array, frequency: float = 1.0) -> jax.Array:
     return x + (1 - jnp.cos(2 * frequency * x)) / (2 * frequency)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class AdaptiveLeakyReLU:
     """Leaky ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
@@ -68,7 +70,7 @@ class AdaptiveLeakyReLU:
         return adaptive_leaky_relu(x, self.a, self.v)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class AdaptiveReLU:
     """ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
@@ -78,7 +80,7 @@ class AdaptiveReLU:
         return adaptive_relu(x, self.a)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class AdaptiveSigmoid:
     """Sigmoid activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
@@ -88,7 +90,7 @@ class AdaptiveSigmoid:
         return adaptive_sigmoid(x, self.a)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class AdaptiveTanh:
     """Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
@@ -98,7 +100,7 @@ class AdaptiveTanh:
         return adaptive_tanh(x, self.a)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class CeLU:
     """Celu activation function"""
 
@@ -108,7 +110,7 @@ class CeLU:
         return jax.nn.celu(x, alpha=self.alpha)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ELU:
     """Exponential linear unit"""
 
@@ -118,7 +120,7 @@ class ELU:
         return jax.nn.elu(x, alpha=self.alpha)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class GELU:
     approximate: bool = pytc.field(callbacks=[pytc.freeze], default=True)
     """Gaussian error linear unit"""
@@ -127,7 +129,7 @@ class GELU:
         return jax.nn.gelu(x, approximate=self.approximate)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class GLU:
     """Gated linear unit"""
 
@@ -135,7 +137,7 @@ class GLU:
         return jax.nn.glu(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class HardSILU:
     """Hard SILU activation function"""
 
@@ -143,7 +145,7 @@ class HardSILU:
         return jax.nn.hard_silu(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class HardShrink:
     """Hard shrink activation function"""
 
@@ -153,7 +155,7 @@ class HardShrink:
         return hard_shrink(x, self.alpha)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class HardSigmoid:
     """Hard sigmoid activation function"""
 
@@ -161,7 +163,7 @@ class HardSigmoid:
         return jax.nn.hard_sigmoid(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class HardSwish:
     """Hard swish activation function"""
 
@@ -169,7 +171,7 @@ class HardSwish:
         return jax.nn.hard_swish(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class HardTanh:
     """Hard tanh activation function"""
 
@@ -177,7 +179,7 @@ class HardTanh:
         return jax.nn.hard_tanh(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class LogSigmoid:
     """Log sigmoid activation function"""
 
@@ -185,7 +187,7 @@ class LogSigmoid:
         return jax.nn.log_sigmoid(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class LogSoftmax:
     """Log softmax activation function"""
 
@@ -193,7 +195,7 @@ class LogSoftmax:
         return jax.nn.log_softmax(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class LeakyReLU:
     """Leaky ReLU activation function"""
 
@@ -203,7 +205,7 @@ class LeakyReLU:
         return jax.nn.leaky_relu(x, negative_slope=self.negative_slope)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ReLU:
     """ReLU activation function"""
 
@@ -211,7 +213,7 @@ class ReLU:
         return jax.nn.relu(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ReLU6:
     """ReLU activation function"""
 
@@ -219,7 +221,7 @@ class ReLU6:
         return jax.nn.relu6(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeLU:
     """Scaled Exponential Linear Unit"""
 
@@ -227,7 +229,7 @@ class SeLU:
         return jax.nn.selu(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SILU:
     """SILU activation function"""
 
@@ -235,7 +237,7 @@ class SILU:
         return x * jax.nn.sigmoid(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Sigmoid:
     """Sigmoid activation function"""
 
@@ -243,7 +245,7 @@ class Sigmoid:
         return jax.nn.sigmoid(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SoftPlus:
     """SoftPlus activation function"""
 
@@ -251,7 +253,7 @@ class SoftPlus:
         return jax.nn.softplus(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SoftSign:
     """SoftSign activation function"""
 
@@ -259,7 +261,7 @@ class SoftSign:
         return soft_sign(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SoftShrink:
     """SoftShrink activation function"""
 
@@ -269,7 +271,7 @@ class SoftShrink:
         return soft_shrink(x, self.alpha)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Swish:
     """Swish activation function"""
 
@@ -277,7 +279,7 @@ class Swish:
         return jax.nn.swish(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Tanh:
     """Tanh activation function"""
 
@@ -285,7 +287,7 @@ class Tanh:
         return jax.nn.tanh(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class TanhShrink:
     """TanhShrink activation function"""
 
@@ -293,7 +295,7 @@ class TanhShrink:
         return x - jax.nn.tanh(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ThresholdedReLU:
     """Thresholded ReLU activation function"""
 
@@ -303,7 +305,7 @@ class ThresholdedReLU:
         return thresholded_relu(x, self.theta)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Mish:
     """Mish activation function https://arxiv.org/pdf/1908.08681.pdf"""
 
@@ -311,7 +313,7 @@ class Mish:
         return mish(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class PReLU:
     """Parametric ReLU activation function"""
 
@@ -321,7 +323,7 @@ class PReLU:
         return parametric_relu(x, self.a)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Snake:
     """Snake activation function https://arxiv.org/pdf/2006.08195.pdf"""
 

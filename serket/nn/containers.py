@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools as ft
 from typing import Any, Callable
 
 import jax
@@ -9,7 +10,7 @@ import pytreeclass as pytc
 from serket.nn.callbacks import instance_cb_factory
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Lambda:
     func: Callable[[Any], Any] = pytc.field(callbacks=[pytc.freeze])
 
@@ -32,7 +33,7 @@ class Lambda:
         return self.func(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Sequential:
     layers: tuple[Any, ...] = pytc.field(callbacks=[instance_cb_factory(tuple)])
 

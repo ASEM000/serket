@@ -154,7 +154,7 @@ infer_func = lambda _, *a, **k: (a[0].shape[0],)
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConvND:
     weight: jax.Array
     bias: jax.Array
@@ -249,7 +249,7 @@ class FFTConvND:
 
 # ----------------------------------------------------------------------------------------------------------------------#
 @ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConvNDTranspose:
     weight: jax.Array
     bias: jax.Array
@@ -354,7 +354,7 @@ class FFTConvNDTranspose:
 
 # ----------------------------------------------------------------------------------------------------------------------#
 @ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class DepthwiseFFTConvND:
     weight: jax.Array
     bias: jax.Array
@@ -450,7 +450,7 @@ class DepthwiseFFTConvND:
 
 
 @ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConvND:
     depthwise_conv: DepthwiseFFTConvND
     pointwise_conv: DepthwiseFFTConvND
@@ -527,73 +527,73 @@ class SeparableFFTConvND:
         return x
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConv1D(FFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConv2D(FFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConv3D(FFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConv1DTranspose(FFTConvNDTranspose):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConv2DTranspose(FFTConvNDTranspose):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FFTConv3DTranspose(FFTConvNDTranspose):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class DepthwiseFFTConv1D(DepthwiseFFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class DepthwiseFFTConv2D(DepthwiseFFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class DepthwiseFFTConv3D(DepthwiseFFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConv1D(SeparableFFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConv2D(SeparableFFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableFFTConv3D(SeparableFFTConvND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3)

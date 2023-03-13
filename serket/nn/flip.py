@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
@@ -7,7 +9,7 @@ import pytreeclass as pytc
 from serket.nn.utils import _check_spatial_in_shape
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FlipLeftRight2D:
     def __init__(self):
         """Flip channels left to right.
@@ -35,7 +37,7 @@ class FlipLeftRight2D:
         return jax.vmap(flip)(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class FlipUpDown2D:
     def __init__(self):
         """Flip channels up to down.

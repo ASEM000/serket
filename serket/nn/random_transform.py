@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
@@ -9,7 +11,7 @@ from serket.nn.padding import Pad2D
 from serket.nn.resize import Resize2D
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class RandomApply:
     layer: int
     p: float = pytc.field(callbacks=[pytc.freeze])
@@ -57,7 +59,7 @@ class RandomApply:
         return self.layer(x)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class RandomZoom2D:
     def __init__(
         self,

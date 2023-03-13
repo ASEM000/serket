@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import jax.random as jr
@@ -8,7 +10,7 @@ import pytreeclass as pytc
 import serket as sk
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class VGG16Block:
     def __init__(
         self, in_features: int, *, pooling: str = "max", key: jr.PRNGKey = jr.PRNGKey(0)
@@ -148,7 +150,7 @@ class VGG16Block:
         return x
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class VGG19Block:
     def __init__(
         self, in_feautres: int, *, pooling: str = "max", key: jr.PRNGKey = jr.PRNGKey(0)

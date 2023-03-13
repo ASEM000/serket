@@ -10,7 +10,7 @@ import pytreeclass as pytc
 from serket.nn.utils import _check_non_tracer
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class LayerNorm:
     γ: jax.Array = None
     β: jax.Array = None
@@ -60,7 +60,7 @@ class LayerNorm:
         return x̂
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class GroupNorm:
     γ: jax.Array = None
     β: jax.Array = None
@@ -146,7 +146,7 @@ class GroupNorm:
         return x̂
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class InstanceNorm(GroupNorm):
     def __init__(
         self,

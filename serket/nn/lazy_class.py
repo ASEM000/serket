@@ -157,7 +157,7 @@ def lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
     lazy arguments at call time.
     the lazy decorator achieves the following pattern:
 
-    >>> @pytc.treeclass
+    >>> @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
     ... class Test:
     ...    a : int
     ...    b : float
@@ -185,7 +185,7 @@ def lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
     >>> lazy_keywords = ["kernel_size"]
     >>> infer_func = lambda self, *args, **kwargs:(args[0].shape[-1],)
     >>> @ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
-    ... @pytc.treeclass
+    ... @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
     ... class Test:
     ...     ...
     """

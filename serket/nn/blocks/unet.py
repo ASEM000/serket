@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
@@ -11,7 +13,7 @@ import pytreeclass as pytc
 import serket as sk
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ResizeAndCat:
     def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray) -> jnp.ndarray:
         """resize a tensor to the same size as another tensor and concatenate x2 to x1 along the channel axis"""
@@ -20,7 +22,7 @@ class ResizeAndCat:
         return x1
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class DoubleConvBlock:
     def __init__(self, in_features: int, out_features: int):
         self.conv1 = sk.nn.Conv2D(
@@ -46,7 +48,7 @@ class DoubleConvBlock:
         return x
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class UpscaleBlock:
     def __init__(self, in_features: int, out_features: int):
         self.conv = sk.nn.Conv2DTranspose(
@@ -59,7 +61,7 @@ class UpscaleBlock:
         return x
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class UNetBlock:
     in_features: int = pytc.field(callbacks=[pytc.freeze])
     out_features: int = pytc.field(callbacks=[pytc.freeze])

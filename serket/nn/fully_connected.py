@@ -8,11 +8,11 @@
 # import jax.random as jr
 # import jax.tree_util as jtu
 # import pytreeclass as pytc
-
+# import functools as ft
 # from serket.nn.linear import Linear
 
 
-# @pytc.treeclass
+# @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 # class FNN:
 #     layers: Sequence[Linear]
 #     act_func: Callable
@@ -61,7 +61,7 @@
 #         return last(x)
 
 
-# @pytc.treeclass
+# @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 # class PFNN:
 #     """Parallel fully connected neural network
 

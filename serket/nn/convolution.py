@@ -43,7 +43,7 @@ def generate_conv_dim_numbers(spatial_ndim):
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvND:
     weight: jax.Array
     bias: jax.Array
@@ -140,7 +140,7 @@ class ConvND:
         return jnp.squeeze((x + self.bias), 0)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Conv1D(ConvND):
     def __init__(
         self,
@@ -191,7 +191,7 @@ class Conv1D(ConvND):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Conv2D(ConvND):
     def __init__(
         self,
@@ -242,7 +242,7 @@ class Conv2D(ConvND):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Conv3D(ConvND):
     def __init__(
         self,
@@ -297,7 +297,7 @@ class Conv3D(ConvND):
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvNDTranspose:
     weight: jax.Array
     bias: jax.Array
@@ -397,7 +397,7 @@ class ConvNDTranspose:
         return (y + self.bias)[0]
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Conv1DTranspose(ConvNDTranspose):
     def __init__(
         self,
@@ -446,7 +446,7 @@ class Conv1DTranspose(ConvNDTranspose):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Conv2DTranspose(ConvNDTranspose):
     def __init__(
         self,
@@ -495,7 +495,7 @@ class Conv2DTranspose(ConvNDTranspose):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Conv3DTranspose(ConvNDTranspose):
     def __init__(
         self,
@@ -546,7 +546,7 @@ class Conv3DTranspose(ConvNDTranspose):
 
 # ----------------------------------------------------------------------------------------------------------------------#
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class DepthwiseConvND:
     weight: jax.Array
     bias: jax.Array
@@ -639,7 +639,7 @@ class DepthwiseConvND:
         return jnp.squeeze((y + self.bias), 0)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class DepthwiseConv1D(DepthwiseConvND):
     def __init__(
         self,
@@ -685,7 +685,7 @@ class DepthwiseConv1D(DepthwiseConvND):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class DepthwiseConv2D(DepthwiseConvND):
     def __init__(
         self,
@@ -731,7 +731,7 @@ class DepthwiseConv2D(DepthwiseConvND):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class DepthwiseConv3D(DepthwiseConvND):
     def __init__(
         self,
@@ -781,7 +781,7 @@ class DepthwiseConv3D(DepthwiseConvND):
 
 
 @ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConvND:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     depthwise_conv: DepthwiseConvND
@@ -859,7 +859,7 @@ class SeparableConvND:
         return x
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConv1D(SeparableConvND):
     def __init__(
         self,
@@ -911,7 +911,7 @@ class SeparableConv1D(SeparableConvND):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConv2D(SeparableConvND):
     def __init__(
         self,
@@ -963,7 +963,7 @@ class SeparableConv2D(SeparableConvND):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class SeparableConv3D(SeparableConvND):
     def __init__(
         self,
@@ -1022,7 +1022,7 @@ lazy_keywords = ["in_features", "in_size"]
 
 
 @ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class ConvNDLocal:
     weight: jax.Array
     bias: jax.Array
@@ -1130,7 +1130,7 @@ class ConvNDLocal:
         return jnp.squeeze((y + self.bias), 0)
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Conv1DLocal(ConvNDLocal):
     def __init__(
         self,
@@ -1179,7 +1179,7 @@ class Conv1DLocal(ConvNDLocal):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Conv2DLocal(ConvNDLocal):
     def __init__(
         self,
@@ -1228,7 +1228,7 @@ class Conv2DLocal(ConvNDLocal):
         )
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Conv3DLocal(ConvNDLocal):
     def __init__(
         self,

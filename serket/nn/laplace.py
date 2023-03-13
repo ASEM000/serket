@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import kernex as kex
 import pytreeclass as pytc
@@ -7,7 +9,7 @@ import pytreeclass as pytc
 from serket.nn.utils import _check_spatial_in_shape
 
 
-@pytc.treeclass
+@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class Laplace2D:
     def __init__(self):
         # apply laplace operator on channel axis
