@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import functools as ft
 from types import FunctionType
-from typing import Any, Callable, Sequence, Tuple, Union
+from typing import Any, Callable, Sequence, Tuple, TypeVar, Union
 
 import jax
 import jax.nn.initializers as ji
@@ -279,8 +279,6 @@ InitFuncType = Union[str, Callable[[jr.PRNGKey, Sequence[int]], jnp.ndarray]]
 
 
 def canonicalize(value, ndim, name: str | None = None):
-    # in essence this is a type check that allows for int, tuple, and jnp.ndarray
-    # canonicalization is done by converting to a tuple of length ndim
     if isinstance(value, int):
         return (value,) * ndim
     if isinstance(value, jnp.ndarray):

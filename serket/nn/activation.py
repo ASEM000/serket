@@ -4,34 +4,34 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import non_negative_scalar_cb
+from serket.nn.callbacks import non_negative_scalar_cbs
 
 
-def adaptive_leaky_relu(x: jnp.ndarray, a: float = 1.0, v: float = 1.0) -> jnp.ndarray:
+def adaptive_leaky_relu(x: jax.Array, a: float = 1.0, v: float = 1.0) -> jax.Array:
     return jnp.maximum(0, a * x) - v * jnp.maximum(0, -a * x)
 
 
-def adaptive_relu(x: jnp.ndarray, a: float = 1.0) -> jnp.ndarray:
+def adaptive_relu(x: jax.Array, a: float = 1.0) -> jax.Array:
     return jnp.maximum(0, a * x)
 
 
-def adaptive_sigmoid(x: jnp.ndarray, a: float = 1.0) -> jnp.ndarray:
+def adaptive_sigmoid(x: jax.Array, a: float = 1.0) -> jax.Array:
     return 1 / (1 + jnp.exp(-a * x))
 
 
-def adaptive_tanh(x: jnp.ndarray, a: float = 1.0) -> jnp.ndarray:
+def adaptive_tanh(x: jax.Array, a: float = 1.0) -> jax.Array:
     return (jnp.exp(a * x) - jnp.exp(-a * x)) / (jnp.exp(a * x) + jnp.exp(-a * x))
 
 
-def hard_shrink(x: jnp.ndarray, alpha: float = 0.5) -> jnp.ndarray:
+def hard_shrink(x: jax.Array, alpha: float = 0.5) -> jax.Array:
     return jnp.where(x > alpha, x, jnp.where(x < -alpha, x, 0.0))
 
 
-def parametric_relu(x: jnp.ndarray, a: float = 0.25) -> jnp.ndarray:
+def parametric_relu(x: jax.Array, a: float = 0.25) -> jax.Array:
     return jnp.where(x >= 0, x, x * a)
 
 
-def soft_shrink(x: jnp.ndarray, alpha: float = 0.5) -> jnp.ndarray:
+def soft_shrink(x: jax.Array, alpha: float = 0.5) -> jax.Array:
     return jnp.where(
         x < -alpha,
         x + alpha,
@@ -39,19 +39,19 @@ def soft_shrink(x: jnp.ndarray, alpha: float = 0.5) -> jnp.ndarray:
     )
 
 
-def soft_sign(x: jnp.ndarray) -> jnp.ndarray:
+def soft_sign(x: jax.Array) -> jax.Array:
     return x / (1 + jnp.abs(x))
 
 
-def thresholded_relu(x: jnp.ndarray, theta: float = 1.0) -> jnp.ndarray:
+def thresholded_relu(x: jax.Array, theta: float = 1.0) -> jax.Array:
     return jnp.where(x > theta, x, 0)
 
 
-def mish(x: jnp.ndarray) -> jnp.ndarray:
+def mish(x: jax.Array) -> jax.Array:
     return x * jax.nn.tanh(jax.nn.softplus(x))
 
 
-def snake(x: jnp.ndarray, frequency: float = 1.0) -> jnp.ndarray:
+def snake(x: jax.Array, frequency: float = 1.0) -> jax.Array:
     return x + (1 - jnp.cos(2 * frequency * x)) / (2 * frequency)
 
 
@@ -59,10 +59,12 @@ def snake(x: jnp.ndarray, frequency: float = 1.0) -> jnp.ndarray:
 class AdaptiveLeakyReLU:
     """Leaky ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
-    a: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb])
-    v: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb, pytc.freeze])
+    a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
+    v: float = pytc.field(
+        default=1.0, callbacks=[*non_negative_scalar_cbs, pytc.freeze]
+    )
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return adaptive_leaky_relu(x, self.a, self.v)
 
 
@@ -70,9 +72,9 @@ class AdaptiveLeakyReLU:
 class AdaptiveReLU:
     """ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
-    a: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb])
+    a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return adaptive_relu(x, self.a)
 
 
@@ -80,9 +82,9 @@ class AdaptiveReLU:
 class AdaptiveSigmoid:
     """Sigmoid activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
-    a: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb])
+    a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return adaptive_sigmoid(x, self.a)
 
 
@@ -90,9 +92,9 @@ class AdaptiveSigmoid:
 class AdaptiveTanh:
     """Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
 
-    a: float = pytc.field(default=1.0, callbacks=[non_negative_scalar_cb])
+    a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return adaptive_tanh(x, self.a)
 
 
@@ -102,7 +104,7 @@ class CeLU:
 
     alpha: float = pytc.field(callbacks=[pytc.freeze], default=1.0)
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.celu(x, alpha=self.alpha)
 
 
@@ -112,7 +114,7 @@ class ELU:
 
     alpha: float = pytc.field(callbacks=[pytc.freeze], default=1.0)
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.elu(x, alpha=self.alpha)
 
 
@@ -121,7 +123,7 @@ class GELU:
     approximate: bool = pytc.field(callbacks=[pytc.freeze], default=True)
     """Gaussian error linear unit"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.gelu(x, approximate=self.approximate)
 
 
@@ -129,7 +131,7 @@ class GELU:
 class GLU:
     """Gated linear unit"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.glu(x)
 
 
@@ -137,7 +139,7 @@ class GLU:
 class HardSILU:
     """Hard SILU activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.hard_silu(x)
 
 
@@ -147,7 +149,7 @@ class HardShrink:
 
     alpha: float = pytc.field(callbacks=[pytc.freeze], default=0.5)
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return hard_shrink(x, self.alpha)
 
 
@@ -155,7 +157,7 @@ class HardShrink:
 class HardSigmoid:
     """Hard sigmoid activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.hard_sigmoid(x)
 
 
@@ -163,7 +165,7 @@ class HardSigmoid:
 class HardSwish:
     """Hard swish activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.hard_swish(x)
 
 
@@ -171,7 +173,7 @@ class HardSwish:
 class HardTanh:
     """Hard tanh activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.hard_tanh(x)
 
 
@@ -179,7 +181,7 @@ class HardTanh:
 class LogSigmoid:
     """Log sigmoid activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.log_sigmoid(x)
 
 
@@ -187,7 +189,7 @@ class LogSigmoid:
 class LogSoftmax:
     """Log softmax activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.log_softmax(x)
 
 
@@ -197,7 +199,7 @@ class LeakyReLU:
 
     negative_slope: float = pytc.field(callbacks=[pytc.freeze], default=0.01)
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.leaky_relu(x, negative_slope=self.negative_slope)
 
 
@@ -205,7 +207,7 @@ class LeakyReLU:
 class ReLU:
     """ReLU activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.relu(x)
 
 
@@ -213,7 +215,7 @@ class ReLU:
 class ReLU6:
     """ReLU activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.relu6(x)
 
 
@@ -221,7 +223,7 @@ class ReLU6:
 class SeLU:
     """Scaled Exponential Linear Unit"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.selu(x)
 
 
@@ -229,7 +231,7 @@ class SeLU:
 class SILU:
     """SILU activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return x * jax.nn.sigmoid(x)
 
 
@@ -237,7 +239,7 @@ class SILU:
 class Sigmoid:
     """Sigmoid activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.sigmoid(x)
 
 
@@ -245,7 +247,7 @@ class Sigmoid:
 class SoftPlus:
     """SoftPlus activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.softplus(x)
 
 
@@ -253,7 +255,7 @@ class SoftPlus:
 class SoftSign:
     """SoftSign activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return soft_sign(x)
 
 
@@ -263,7 +265,7 @@ class SoftShrink:
 
     alpha: float = pytc.field(callbacks=[pytc.freeze], default=0.5)
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return soft_shrink(x, self.alpha)
 
 
@@ -271,7 +273,7 @@ class SoftShrink:
 class Swish:
     """Swish activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.swish(x)
 
 
@@ -279,7 +281,7 @@ class Swish:
 class Tanh:
     """Tanh activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.tanh(x)
 
 
@@ -287,7 +289,7 @@ class Tanh:
 class TanhShrink:
     """TanhShrink activation function"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return x - jax.nn.tanh(x)
 
 
@@ -295,9 +297,9 @@ class TanhShrink:
 class ThresholdedReLU:
     """Thresholded ReLU activation function"""
 
-    theta: float = pytc.field(callbacks=[non_negative_scalar_cb, pytc.freeze])
+    theta: float = pytc.field(callbacks=[*non_negative_scalar_cbs, pytc.freeze])
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return thresholded_relu(x, self.theta)
 
 
@@ -305,7 +307,7 @@ class ThresholdedReLU:
 class Mish:
     """Mish activation function https://arxiv.org/pdf/1908.08681.pdf"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return mish(x)
 
 
@@ -315,7 +317,7 @@ class PReLU:
 
     a: float = 0.25
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return parametric_relu(x, self.a)
 
 
@@ -323,7 +325,9 @@ class PReLU:
 class Snake:
     """Snake activation function https://arxiv.org/pdf/2006.08195.pdf"""
 
-    a: float = pytc.field(callbacks=[non_negative_scalar_cb, pytc.freeze], default=1.0)
+    a: float = pytc.field(
+        callbacks=[*non_negative_scalar_cbs, pytc.freeze], default=1.0
+    )
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return snake(x, self.a)

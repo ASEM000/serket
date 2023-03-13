@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import jax
-import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
@@ -20,6 +19,6 @@ class Laplace2D:
         self._func = op
         self.spatial_ndim = 2
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         _check_spatial_in_shape(x, self.spatial_ndim)
         return self._func(x)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools as ft
 import operator as op
 
+import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
@@ -20,7 +21,7 @@ class Flatten:
         end_dim: the last dim to flatten (inclusive)
 
     Returns:
-        a function that flattens a jnp.ndarray
+        a function that flattens a jax.Array
     
     Example:
         >>> Flatten(0,1)(jnp.ones([1,2,3,4,5])).shape
@@ -42,7 +43,7 @@ class Flatten:
         (1, 2, 60)
     """
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         # normalize start_dim and end_dim for negative indices
         start = self.start_dim + (0 if self.start_dim >= 0 else len(x.shape))
         end = self.end_dim + (0 if self.end_dim >= 0 else len(x.shape))
@@ -68,7 +69,7 @@ class Unflatten:
         (1, 2, 2, 3)
     """
 
-    def __call__(self, x: jnp.ndaray, **k) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndaray, **k) -> jax.Array:
         shape = list(x.shape)
         shape = [*shape[: self.dim], *self.shape, *shape[self.dim + 1 :]]
         return jnp.reshape(x, shape)

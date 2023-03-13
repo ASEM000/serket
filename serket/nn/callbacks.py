@@ -4,6 +4,7 @@ import functools as ft
 from types import FunctionType
 from typing import Any, Callable, Sequence
 
+import jax
 import jax.nn.initializers as ji
 import jax.numpy as jnp
 import jax.tree_util as jtu
@@ -59,27 +60,27 @@ def or_cb(*callbacks):
     return wrapper
 
 
-def range_cb(min_val: float = -float("inf"), max_val: float = float("inf")):
+def range_cb_factory(min_val: float = -float("inf"), max_val: float = float("inf")):
     """Return a function that checks if the input is in the range [min_val, max_val]."""
 
     def range_check(value: float):
-        if jnp.min(value) <= value <= jnp.max(max_val):
+        if min_val <= value <= max_val:
             return value
         raise ValueError(f"Expected value between {min_val} and {max_val}, got {value}")
 
     return range_check
 
 
-def instance_cb(expected_type: type | Sequence[type]):
+def instance_cb_factory(expected_type: type | Sequence[type]):
     """Return a function that checks if the input is an instance of expected_type."""
 
     def instance_check(value: Any):
         if isinstance(value, expected_type):
             return value
 
-        msg = f"Expected value of type {expected_type.__name__}, "
+        msg = f"Expected value of type {expected_type}, "
         msg += f"got {type(value).__name__}"
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     return instance_check
 
@@ -89,7 +90,7 @@ def scalar_like_cb(value: Any):
     if isinstance(value, (float, complex)):
         return value
     if (
-        isinstance(value, (jnp.ndarray, np.ndarray))
+        isinstance(value, (jax.Array, np.ndarray))
         and np.issubdtype(value.dtype, np.inexact)
         and value.shape == ()
     ):
@@ -100,11 +101,11 @@ def scalar_like_cb(value: Any):
 
 
 def canonicalize_cb(value, ndim, name: str | None = None):
-    # in essence this is a type check that allows for int, tuple, and jnp.ndarray
+    # in essence this is a type check that allows for int, tuple, and jax.Array
     # canonicalization is done by converting to a tuple of length ndim
     if isinstance(value, int):
         return (value,) * ndim
-    if isinstance(value, jnp.ndarray):
+    if isinstance(value, jax.Array):
         return jnp.repeat(value, ndim)
     if isinstance(value, tuple):
         if len(value) != ndim:
@@ -182,5 +183,5 @@ def validate_in_features(call_wrapper, *, attribute_name: str, axis: int = 0):
     return wrapper
 
 
-non_negative_scalar_cb = and_cb(range_cb(0), scalar_like_cb)
-frozen_positive_int_cb = and_cb(positive_int_cb, pytc.freeze)
+non_negative_scalar_cbs = [range_cb_factory(0), scalar_like_cb]
+frozen_positive_int_cbs = [positive_int_cb, pytc.freeze]

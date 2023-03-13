@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import pytreeclass as pytc
 
 from serket.nn.callbacks import (
-    frozen_positive_int_cb,
+    frozen_positive_int_cbs,
     validate_in_features,
     validate_spatial_in_shape,
 )
@@ -17,13 +17,16 @@ from serket.nn.fft_convolution import DepthwiseFFTConv2D
 from serket.nn.lazy_class import lazy_class
 
 _infer_func = lambda self, *a, **k: (a[0].shape[0],)
+_lazy_keywords = ["in_features"]
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
 @pytc.treeclass
 class AvgBlur2D:
-    in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
-    kernel_size: int | tuple[int, int] = pytc.field(callbacks=[frozen_positive_int_cb])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    kernel_size: int | tuple[int, int] = pytc.field(
+        callbacks=[*frozen_positive_int_cbs]
+    )
     conv1: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
     conv2: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
 
@@ -62,15 +65,15 @@ class AvgBlur2D:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x, **k) -> jnp.ndarray:
+    def __call__(self, x, **k) -> jax.Array:
         return self.conv2(self.conv1(x))
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
 @pytc.treeclass
 class GaussianBlur2D:
-    in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
-    kernel_size: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    kernel_size: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     sigma: float = pytc.field(callbacks=[pytc.freeze])
     conv1: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
     conv2: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
@@ -126,24 +129,24 @@ class GaussianBlur2D:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x, **k) -> jnp.ndarray:
+    def __call__(self, x, **k) -> jax.Array:
         return self.conv1(self.conv2(x))
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
 @pytc.treeclass
 class Filter2D:
-    in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     conv: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze], repr=False)
-    kernel: jnp.ndarray = pytc.field(callbacks=[pytc.freeze])
+    kernel: jax.Array = pytc.field(callbacks=[pytc.freeze])
 
-    def __init__(self, in_features: int, kernel: jnp.ndarray):
+    def __init__(self, in_features: int, kernel: jax.Array):
         """Apply 2D filter for each channel
         Args:
             in_features: number of input channels
             kernel: kernel array
         """
-        if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
+        if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
         self.in_features = in_features
@@ -161,25 +164,25 @@ class Filter2D:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x, **k) -> jnp.ndarray:
+    def __call__(self, x, **k) -> jax.Array:
         return self.conv(x)
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
 @pytc.treeclass
 class FFTFilter2D:
-    in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
-    kernel: jnp.ndarray = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    kernel: jax.Array = pytc.field(callbacks=[pytc.freeze])
     conv: DepthwiseFFTConv2D = pytc.field(callbacks=[pytc.freeze])
 
-    def __init__(self, in_features: int, kernel: jnp.ndarray):
+    def __init__(self, in_features: int, kernel: jax.Array):
         """Apply 2D filter for each channel using FFT , faster for large kernels.
 
         Args:
             in_features: number of input channels
             kernel: kernel array
         """
-        if not isinstance(kernel, jnp.ndarray) or kernel.ndim != 2:
+        if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
         self.in_features = in_features
@@ -197,5 +200,5 @@ class FFTFilter2D:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x, **k) -> jnp.ndarray:
+    def __call__(self, x, **k) -> jax.Array:
         return self.conv(x)

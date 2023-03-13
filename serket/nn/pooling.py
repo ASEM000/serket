@@ -91,7 +91,7 @@ class GlobalPoolND:
         self.spatial_ndim = spatial_ndim
         self.func = func
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         _check_spatial_in_shape(x, self.spatial_ndim)
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
         return self.func(x, axis=axes, keepdims=self.keepdims)

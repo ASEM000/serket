@@ -12,8 +12,8 @@ from serket.nn.utils import _check_non_tracer
 
 @pytc.treeclass
 class LayerNorm:
-    γ: jnp.ndarray = None
-    β: jnp.ndarray = None
+    γ: jax.Array = None
+    β: jax.Array = None
 
     ε: float = pytc.field(callbacks=[pytc.freeze])
     affine: bool = pytc.field(callbacks=[pytc.freeze])
@@ -48,7 +48,7 @@ class LayerNorm:
             self.γ = jnp.ones(normalized_shape)
             self.β = jnp.zeros(normalized_shape)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         dims = tuple(range(len(x.shape) - len(self.normalized_shape), len(x.shape)))
 
         μ = jnp.mean(x, axis=dims, keepdims=True)
@@ -62,8 +62,8 @@ class LayerNorm:
 
 @pytc.treeclass
 class GroupNorm:
-    γ: jnp.ndarray = None
-    β: jnp.ndarray = None
+    γ: jax.Array = None
+    β: jax.Array = None
 
     in_features: int = pytc.field(callbacks=[pytc.freeze])
     groups: int = pytc.field(callbacks=[pytc.freeze])
@@ -124,7 +124,7 @@ class GroupNorm:
             self.γ = jnp.ones(self.in_features)
             self.β = jnp.zeros(self.in_features)
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         if hasattr(self, "_init"):
             _check_non_tracer(x, name=self.__class__.__name__)
             getattr(self, "_init")(in_features=x.shape[0])

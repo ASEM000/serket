@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-import jax.numpy as jnp
+import jax
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.callbacks import instance_cb
+from serket.nn.callbacks import instance_cb_factory
 
 
 @pytc.treeclass
@@ -28,13 +28,13 @@ class Lambda:
         """
         self.func = func
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
 
 
 @pytc.treeclass
 class Sequential:
-    layers: tuple[Any, ...] = pytc.field(callbacks=[instance_cb(tuple)])
+    layers: tuple[Any, ...] = pytc.field(callbacks=[instance_cb_factory(tuple)])
 
     def __init__(self, layers: tuple[Any, ...]):
         """A sequential container for layers.
@@ -51,8 +51,7 @@ class Sequential:
         """
         self.layers = layers
 
-    def __call__(self, x: jnp.ndarray, *, key: jr.PRNGKey | None = None) -> jnp.ndarray:
-        key = key or jr.PRNGKey(0)
+    def __call__(self, x: jax.Array, *, key: jr.PRNGKey = jr.PRNGKey(0)) -> jax.Array:
         key = jr.split(key, len(self.layers))
 
         for key, layer in zip(key, self.layers):
@@ -65,7 +64,9 @@ class Sequential:
         if isinstance(i, slice):
             # return a new Sequential object with the sliced layers
             return self.__class__(self.layers[i])
-        return self.layers[i]
+        if isinstance(i, int):
+            return self.layers[i]
+        raise TypeError(f"Invalid index type: {type(i)}")
 
     def __len__(self):
         return len(self.layers)

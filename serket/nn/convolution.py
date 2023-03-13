@@ -15,7 +15,7 @@ import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
 from serket.nn.callbacks import (
-    frozen_positive_int_cb,
+    frozen_positive_int_cbs,
     init_func_cb,
     validate_in_features,
     validate_spatial_in_shape,
@@ -33,8 +33,8 @@ from serket.nn.utils import (
     canonicalize_padding,
 )
 
-_lazy_keywords = ["in_features"]
-_infer_func = lambda _, *a, **k: (a[0].shape[0],)
+lazy_keywords = ["in_features"]
+infer_func = lambda _, *a, **k: (a[0].shape[0],)
 
 
 @ft.lru_cache(maxsize=None)
@@ -42,14 +42,14 @@ def generate_conv_dim_numbers(spatial_ndim):
     return ConvDimensionNumbers(*((tuple(range(spatial_ndim + 2)),) * 3))
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class ConvND:
-    weight: jnp.ndarray
-    bias: jnp.ndarray
+    weight: jax.Array
+    bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
-    out_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
     strides: StridesType = pytc.field(callbacks=[pytc.freeze])
     padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
@@ -57,7 +57,7 @@ class ConvND:
     kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    groups: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
 
     def __init__(
         self,
@@ -123,7 +123,7 @@ class ConvND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -296,14 +296,14 @@ class Conv3D(ConvND):
 # ----------------------------------------------------------------------------------------------------------------------#
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class ConvNDTranspose:
-    weight: jnp.ndarray
-    bias: jnp.ndarray
+    weight: jax.Array
+    bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
-    out_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
     padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
     output_padding: DilationType = pytc.field(callbacks=[pytc.freeze])
@@ -311,7 +311,7 @@ class ConvNDTranspose:
     kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    groups: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
 
     def __init__(
         self,
@@ -382,7 +382,7 @@ class ConvNDTranspose:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         y = jax.lax.conv_transpose(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
@@ -545,21 +545,20 @@ class Conv3DTranspose(ConvNDTranspose):
 
 
 # ----------------------------------------------------------------------------------------------------------------------#
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class DepthwiseConvND:
-    weight: jnp.ndarray
-    bias: jnp.ndarray
+    weight: jax.Array
+    bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
     strides: StridesType = pytc.field(callbacks=[pytc.freeze])
     padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
-    depth_multiplier: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    depth_multiplier: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
 
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -623,7 +622,7 @@ class DepthwiseConvND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, axis=0),
             rhs=self.weight,
@@ -781,10 +780,10 @@ class DepthwiseConv3D(DepthwiseConvND):
 # ----------------------------------------------------------------------------------------------------------------------#
 
 
-@ft.partial(lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
 @pytc.treeclass
 class SeparableConvND:
-    in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     depthwise_conv: DepthwiseConvND
     pointwise_conv: DepthwiseConvND
 
@@ -854,7 +853,7 @@ class SeparableConvND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
@@ -1018,18 +1017,18 @@ class SeparableConv3D(SeparableConvND):
 
 # ----------------------------------------------------------------------------------------------------------------------#
 
-_infer_func = lambda self, *a, **k: (a[0].shape[0], a[0].shape[1:])
-_lazy_keywords = ["in_features", "in_size"]
+infer_func = lambda self, *a, **k: (a[0].shape[0], a[0].shape[1:])
+lazy_keywords = ["in_features", "in_size"]
 
 
-@ft.partial(lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
 @pytc.treeclass
 class ConvNDLocal:
-    weight: jnp.ndarray
-    bias: jnp.ndarray
+    weight: jax.Array
+    bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
-    out_features: int = pytc.field(callbacks=[frozen_positive_int_cb])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
     in_size: Sequence[int] = pytc.field(callbacks=[pytc.freeze])  # size of input
     strides: StridesType = pytc.field(callbacks=[pytc.freeze])
@@ -1114,7 +1113,7 @@ class ConvNDLocal:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         y = jax.lax.conv_general_dilated_local(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,

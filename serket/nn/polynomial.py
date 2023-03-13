@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools as ft
 from typing import Callable
 
+import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
@@ -20,7 +21,7 @@ from serket.nn.utils import (
 class Polynomial:
     degree: int = pytc.field(callbacks=[pytc.freeze])
     linears: tuple[sk.nn.Linear, ...]
-    bias: jnp.ndarray
+    bias: jax.Array
 
     def __init__(
         self,

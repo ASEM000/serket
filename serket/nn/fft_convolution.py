@@ -5,13 +5,19 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Callable
 
 import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
+from serket.nn.callbacks import (
+    frozen_positive_int_cbs,
+    init_func_cb,
+    validate_in_features,
+    validate_spatial_in_shape,
+)
+from serket.nn.lazy_class import lazy_class
 from serket.nn.utils import (
     DilationType,
     InitFuncType,
@@ -19,20 +25,13 @@ from serket.nn.utils import (
     PaddingType,
     StridesType,
     _calculate_transpose_padding,
-    _canonicalize_init_func,
-    _canonicalize_kernel,
-    _canonicalize_kernel_dilation,
-    _canonicalize_padding,
-    _canonicalize_positive_int,
-    _canonicalize_strides,
-    _check_in_features,
-    _check_non_tracer,
-    _check_spatial_in_shape,
+    canonicalize,
+    canonicalize_padding,
 )
 
 
 @jax.jit
-def _ungrouped_matmul(x, y) -> jnp.ndarray:
+def _ungrouped_matmul(x, y) -> jax.Array:
     alpha = "abcdefghijklmnopqrstuvwx"
     lhs = "y" + alpha[: x.ndim - 1]
     rhs = "z" + alpha[: y.ndim - 1]
@@ -41,7 +40,7 @@ def _ungrouped_matmul(x, y) -> jnp.ndarray:
 
 
 @ft.partial(jax.jit, static_argnums=(2,))
-def _grouped_matmul(x, y, groups) -> jnp.ndarray:
+def _grouped_matmul(x, y, groups) -> jax.Array:
     b, c, *s = x.shape  # batch, channels, spatial
     o, i, *k = y.shape  # out_channels, in_channels, kernel
     x = x.reshape(groups, b, c // groups, *s)  # groups, batch, channels, spatial
@@ -56,8 +55,8 @@ def grouped_matmul(x, y, groups: int = 1):
 
 @ft.partial(jax.jit, static_argnums=(1, 2))
 def _intersperse_along_axis(
-    x: jnp.ndarray, dilation: int, axis: int, value: int | float = 0
-) -> jnp.ndarray:
+    x: jax.Array, dilation: int, axis: int, value: int | float = 0
+) -> jax.Array:
     if dilation == 1:
         return x
 
@@ -70,18 +69,18 @@ def _intersperse_along_axis(
 
 @ft.partial(jax.jit, static_argnums=(1, 2))
 def _general_intersperse(
-    x: jnp.ndarray,
+    x: jax.Array,
     dilation: tuple[int, ...],
     axis: tuple[int, ...],
     value: int | float = 0,
-) -> jnp.ndarray:
+) -> jax.Array:
     for di, ai in zip(dilation, axis):
         x = _intersperse_along_axis(x, di, ai)
     return x
 
 
 @ft.partial(jax.jit, static_argnums=(1,))
-def _general_pad(x: jnp.ndarray, pad_width: tuple[tuple[int, int], ...]) -> jnp.ndarray:
+def _general_pad(x: jax.Array, pad_width: tuple[tuple[int, int], ...]) -> jax.Array:
     """Pad the input with `pad_width` on each side. Negative value will lead to cropping.
     Example:
         >>> _general_pad(jnp.ones([3,3]),((0,0),(-1,1)))
@@ -105,13 +104,13 @@ def _general_pad(x: jnp.ndarray, pad_width: tuple[tuple[int, int], ...]) -> jnp.
 
 @ft.partial(jax.jit, static_argnums=(2, 3, 4, 5))
 def fft_conv_general_dilated(
-    x: jnp.ndarray,
-    w: jnp.ndarray,
+    x: jax.Array,
+    w: jax.Array,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
     groups: int,
     dilation: tuple[int, ...],
-) -> jnp.ndarray:
+) -> jax.Array:
     """General dilated convolution using FFT
     Args:
         x: input array in shape (batch, in_features, *spatial_in_shape)
@@ -150,35 +149,40 @@ def fft_conv_general_dilated(
     return jax.lax.slice(z, start, end, (1, 1, *strides))
 
 
+lazy_keywords = ["in_features"]
+infer_func = lambda _, *a, **k: (a[0].shape[0],)
+
+
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class FFTConvND:
-    weight: jnp.ndarray
-    bias: jnp.ndarray
+    weight: jax.Array
+    bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[pytc.freeze])
-    out_features: int = pytc.field(callbacks=[pytc.freeze])
-    kernel_size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    strides: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(callbacks=[pytc.freeze])  # fmt: skip
-    kernel_dilation: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
-    bias_init_func: str | Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
-    groups: int = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
+    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
+    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
+    kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
+    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
+    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
+    groups: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
 
     def __init__(
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        kernel_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
-        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
+        spatial_ndim: int = 2,
     ):
         """FFT Convolutional layer.
 
@@ -199,49 +203,23 @@ class FFTConvND:
             https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
             The implementation is tested against https://github.com/fkodom/fft-conv-pytorch
         """
-        if in_features is None:
-            for field_item in pytc.fields(self):
-                # set all fields to None to mark the class as uninitialized
-                # to the user and to avoid errors
-                setattr(self, field_item.name, None)
+        # already checked in callbacks
+        self.in_features = in_features
+        self.weight_init_func = weight_init_func
+        self.bias_init_func = bias_init_func
+        self.out_features = out_features
+        self.groups = groups
+        self.spatial_ndim = spatial_ndim
 
-            self._init = ft.partial(
-                FFTConvND.__init__,
-                self=self,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                strides=strides,
-                padding=padding,
-                kernel_dilation=kernel_dilation,
-                weight_init_func=weight_init_func,
-                bias_init_func=bias_init_func,
-                groups=groups,
-                spatial_ndim=spatial_ndim,
-                key=key,
-            )
+        # needs more info to be checked
+        self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")
+        self.strides = canonicalize(strides, spatial_ndim, name="strides")
+        self.padding = canonicalize_padding(padding, self.kernel_size)
+        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
 
-            return
-
-        if hasattr(self, "_init"):
-            delattr(self, "_init")
-
-        self.in_features = _canonicalize_positive_int(in_features, "in_features")
-        self.out_features = _canonicalize_positive_int(out_features, "out_features")
-        self.groups = _canonicalize_positive_int(groups, "groups")
-        self.spatial_ndim = _canonicalize_positive_int(spatial_ndim, "spatial_ndim")
-
-        msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
-        assert self.out_features % self.groups == 0, msg
-
-        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
-        self.strides = _canonicalize_strides(strides, spatial_ndim)
-
-        self.padding = _canonicalize_padding(padding, self.kernel_size)
-        self.kernel_dilation = _canonicalize_kernel_dilation(
-            kernel_dilation, spatial_ndim
-        )
-        self.weight_init_func = _canonicalize_init_func(weight_init_func, "weight_init_func")  # fmt: skip
-        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")  # fmt: skip
+        if self.out_features % self.groups != 0:
+            msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
+            raise ValueError(msg)
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
         self.weight = self.weight_init_func(key, weight_shape)
@@ -252,13 +230,9 @@ class FFTConvND:
             bias_shape = (out_features, *(1,) * spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        if hasattr(self, "_init"):
-            _check_non_tracer(x, name=self.__class__.__name__)
-            getattr(self, "_init")(in_features=x.shape[0])
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        _check_in_features(x, self.in_features)
-
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         y = fft_conv_general_dilated(
             jnp.expand_dims(x, axis=0),
             self.weight,
@@ -273,37 +247,39 @@ class FFTConvND:
         return y + self.bias
 
 
+# ----------------------------------------------------------------------------------------------------------------------#
+@ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
 @pytc.treeclass
 class FFTConvNDTranspose:
-    weight: jnp.ndarray
-    bias: jnp.ndarray
+    weight: jax.Array
+    bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[pytc.freeze])
-    out_features: int = pytc.field(callbacks=[pytc.freeze])
-    kernel_size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(callbacks=[pytc.freeze])  # fmt: skip
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
+    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
     output_padding: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    strides: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    kernel_dilation: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
-    bias_init_func: Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
+    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
+    kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
+    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
+    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     groups: int = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
         output_padding: int = 0,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
+        kernel_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
-        spatial_ndim: int = 2,
         key: jr.PRNGKey = jr.PRNGKey(0),
+        spatial_ndim: int = 2,
     ):
         """Convolutional Transpose Layer
 
@@ -321,49 +297,25 @@ class FFTConvNDTranspose:
             spatial_ndim : Number of dimensions
             key : PRNG key
         """
-        if in_features is None:
-            for field_item in pytc.fields(self):
-                # set all fields to None to mark the class as uninitialized
-                # to the user and to avoid errors
-                setattr(self, field_item.name, None)
-            self._init = ft.partial(
-                FFTConvNDTranspose.__init__,
-                self=self,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                strides=strides,
-                padding=padding,
-                kernel_dilation=kernel_dilation,
-                output_padding=output_padding,
-                weight_init_func=weight_init_func,
-                bias_init_func=bias_init_func,
-                groups=groups,
-                spatial_ndim=spatial_ndim,
-                key=key,
-            )
-            return
 
-        if hasattr(self, "_init"):
-            delattr(self, "_init")
+        # already checked in callbacks
+        self.in_features = in_features
+        self.out_features = out_features
+        self.groups = groups
+        self.spatial_ndim = spatial_ndim
+        self.weight_init_func = weight_init_func
+        self.bias_init_func = bias_init_func
 
-        self.in_features = _canonicalize_positive_int(in_features, "in_features")
-        self.out_features = _canonicalize_positive_int(out_features, "out_features")
-        self.groups = _canonicalize_positive_int(groups, "groups")
-        self.spatial_ndim = _canonicalize_positive_int(spatial_ndim, "spatial_ndim")
+        # needs more info to be checked
+        self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")
+        self.strides = canonicalize(strides, spatial_ndim, name="strides")
+        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
+        self.padding = canonicalize_padding(padding, self.kernel_size)
+        self.output_padding = canonicalize(output_padding, spatial_ndim, name="output_padding")  # fmt: skip
 
-        assert (
-            self.out_features % self.groups == 0
-        ), f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
-
-        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
-        self.strides = _canonicalize_strides(strides, spatial_ndim)
-        self.padding = _canonicalize_padding(padding, self.kernel_size)
-        self.kernel_dilation = _canonicalize_kernel_dilation(
-            kernel_dilation, spatial_ndim
-        )
-        self.output_padding = _canonicalize_strides(output_padding, spatial_ndim)
-        self.weight_init_func = _canonicalize_init_func(weight_init_func, "weight_init_func")  # fmt: skip
-        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")  # fmt: skip
+        if self.in_features % self.groups != 0:
+            msg = f"Expected in_features % groups == 0, got {self.in_features % self.groups}"
+            raise ValueError(msg)
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -381,13 +333,9 @@ class FFTConvNDTranspose:
             input_dilation=self.kernel_dilation,
         )
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        if hasattr(self, "_init"):
-            _check_non_tracer(x, name=self.__class__.__name__)
-            getattr(self, "_init")(in_features=x.shape[0])
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        _check_in_features(x, self.in_features)
-
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         y = fft_conv_general_dilated(
             jnp.expand_dims(x, axis=0),
             self.weight,
@@ -396,25 +344,29 @@ class FFTConvNDTranspose:
             groups=self.groups,
             dilation=self.kernel_dilation,
         )
+
         y = jnp.squeeze(y, axis=0)
+
         if self.bias is None:
             return y
         return y + self.bias
 
 
+# ----------------------------------------------------------------------------------------------------------------------#
+@ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
 @pytc.treeclass
 class DepthwiseFFTConvND:
-    weight: jnp.ndarray
-    bias: jnp.ndarray
+    weight: jax.Array
+    bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[pytc.freeze])  # number of input features
-    kernel_size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    strides: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = pytc.field(callbacks=[pytc.freeze])  # fmt: skip
-    depth_multiplier: int = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
+    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
+    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
+    depth_multiplier: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
 
-    weight_init_func: str | Callable[[jr.PRNGKey, tuple[int, ...]], jnp.ndarray]
-    bias_init_func: str | Callable[[jr.PRNGKey, tuple[int]], jnp.ndarray]
+    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
+    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
 
     def __init__(
         self,
@@ -422,12 +374,12 @@ class DepthwiseFFTConvND:
         kernel_size: int | tuple[int, ...],
         *,
         depth_multiplier: int = 1,
-        strides: int = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
-        spatial_ndim: int = 2,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
         key: jr.PRNGKey = jr.PRNGKey(0),
+        spatial_ndim: int = 2,
     ):
         """Depthwise Convolutional layer.
 
@@ -452,39 +404,21 @@ class DepthwiseFFTConvND:
                 https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
                 https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
-        if in_features is None:
-            for field_item in pytc.fields(self):
-                setattr(self, field_item.name, None)
 
-            self._init = ft.partial(
-                DepthwiseFFTConvND.__init__,
-                self=self,
-                kernel_size=kernel_size,
-                depth_multiplier=depth_multiplier,
-                strides=strides,
-                padding=padding,
-                weight_init_func=weight_init_func,
-                bias_init_func=bias_init_func,
-                spatial_ndim=spatial_ndim,
-                key=key,
-            )
-            return
+        # already checked by the callbacks
+        self.in_features = in_features
+        self.depth_multiplier = depth_multiplier
+        self.spatial_ndim = spatial_ndim
+        self.weight_init_func = weight_init_func
+        self.bias_init_func = bias_init_func
 
-        if hasattr(self, "_init"):
-            delattr(self, "_init")
+        # needs more info to be checked
+        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.input_dilation = canonicalize(1, spatial_ndim, "input_dilation")  # fmt: skip
+        self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
 
-        self.in_features = _canonicalize_positive_int(in_features, "in_features")
-        self.depth_multiplier = _canonicalize_positive_int(
-            depth_multiplier, "in_features"
-        )
-        self.spatial_ndim = _canonicalize_positive_int(spatial_ndim, "spatial_ndim")
-
-        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
-        self.strides = _canonicalize_strides(strides, spatial_ndim)
-        self.padding = _canonicalize_padding(padding, self.kernel_size)
-        self.kernel_dilation = _canonicalize_kernel_dilation(1, spatial_ndim)
-        self.weight_init_func = _canonicalize_init_func(weight_init_func, "weight_init_func")  # fmt: skip
-        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")  # fmt: skip
+        self.padding = canonicalize_padding(padding, self.kernel_size, "padding")  # fmt: skip
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -495,13 +429,9 @@ class DepthwiseFFTConvND:
             bias_shape = (depth_multiplier * in_features, *(1,) * spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        if hasattr(self, "_init"):
-            _check_non_tracer(x, name=self.__class__.__name__)
-            getattr(self, "_init")(in_features=x.shape[0])
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        _check_in_features(x, self.in_features)
-
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         y = fft_conv_general_dilated(
             jnp.expand_dims(x, axis=0),
             self.weight,
@@ -516,6 +446,10 @@ class DepthwiseFFTConvND:
         return y + self.bias
 
 
+# ----------------------------------------------------------------------------------------------------------------------#
+
+
+@ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
 @pytc.treeclass
 class SeparableFFTConvND:
     depthwise_conv: DepthwiseFFTConvND
@@ -525,16 +459,16 @@ class SeparableFFTConvND:
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
         depth_multiplier: int = 1,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
-        depthwise_weight_init_func: str | Callable = "glorot_uniform",
-        pointwise_weight_init_func: str | Callable = "glorot_uniform",
-        pointwise_bias_init_func: str | Callable = "zeros",
-        spatial_ndim: int = 2,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
+        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
+        pointwise_bias_init_func: InitFuncType = "zeros",
         key: jr.PRNGKey = jr.PRNGKey(0),
+        spatial_ndim: int = 2,
     ):
         """Separable convolutional layer.
 
@@ -557,52 +491,14 @@ class SeparableFFTConvND:
             spatial_ndim : Number of spatial dimensions.
 
         """
-        if in_features is None:
-            for field_item in pytc.fields(self):
-                setattr(self, field_item.name, None)
-            self._init = ft.partial(
-                SeparableFFTConvND.__init__,
-                self=self,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                depth_multiplier=depth_multiplier,
-                strides=strides,
-                padding=padding,
-                depthwise_weight_init_func=depthwise_weight_init_func,
-                pointwise_weight_init_func=pointwise_weight_init_func,
-                pointwise_bias_init_func=pointwise_bias_init_func,
-                spatial_ndim=spatial_ndim,
-                key=key,
-            )
-            return
-
-        if hasattr(self, "_init"):
-            delattr(self, "_init")
-
-        self.in_features = _canonicalize_positive_int(in_features, "in_features")
-        self.depth_multiplier = _canonicalize_positive_int(
-            depth_multiplier, "in_features"
-        )
-        self.out_features = _canonicalize_positive_int(out_features, "out_features")
-        self.spatial_ndim = _canonicalize_positive_int(spatial_ndim, "spatial_ndim")
-
-        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
-        self.strides = _canonicalize_strides(strides, spatial_ndim)
-        self.padding = _canonicalize_padding(padding, self.kernel_size)
-        self.depthwise_weight_init_func = _canonicalize_init_func(
-            depthwise_weight_init_func, "depthwise_weight_init_func"
-        )
-        self.pointwise_weight_init_func = _canonicalize_init_func(
-            pointwise_weight_init_func, "pointwise_weight_init_func"
-        )
-        self.pointwise_bias_init_func = _canonicalize_init_func(
-            pointwise_bias_init_func, "pointwise_bias_init_func"
-        )
+        self.in_features = in_features
+        self.depth_multiplier = canonicalize(depth_multiplier, self.in_features, "depth_multiplier")  # fmt: skip
+        self.spatial_ndim = spatial_ndim
 
         self.depthwise_conv = DepthwiseFFTConvND(
             in_features=in_features,
             depth_multiplier=depth_multiplier,
-            kernel_size=self.kernel_size,
+            kernel_size=kernel_size,
             strides=strides,
             padding=padding,
             weight_init_func=depthwise_weight_init_func,
@@ -623,13 +519,9 @@ class SeparableFFTConvND:
             spatial_ndim=spatial_ndim,
         )
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        if hasattr(self, "_init"):
-            _check_non_tracer(x, name=self.__class__.__name__)
-            getattr(self, "_init")(in_features=x.shape[0])
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        _check_in_features(x, self.in_features)
-
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x

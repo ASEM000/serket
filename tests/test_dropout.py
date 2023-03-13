@@ -37,7 +37,7 @@ def test_dropout1d():
     with pytest.raises(ValueError):
         Dropout1D(-0.1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Dropout1D(0.5, eval=1)
 
 
@@ -51,7 +51,7 @@ def test_dropout2d():
     with pytest.raises(ValueError):
         Dropout2D(-0.1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Dropout2D(0.5, eval=1)
 
 
@@ -65,7 +65,7 @@ def test_dropout3d():
     with pytest.raises(ValueError):
         Dropout3D(-0.1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Dropout3D(0.5, eval=1)
 
 

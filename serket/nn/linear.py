@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools as ft
 from typing import Callable, Sequence
 
+import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
@@ -61,8 +62,8 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
 
 @pytc.treeclass
 class Multilinear:
-    weight: jnp.ndarray
-    bias: jnp.ndarray
+    weight: jax.Array
+    bias: jax.Array
 
     in_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
     out_features: int = pytc.field(callbacks=[pytc.freeze])
@@ -144,7 +145,7 @@ class Multilinear:
         else:
             self.bias = self.bias_init_func(key, (out_features,))
 
-    def __call__(self, *x, **k) -> jnp.ndarray:
+    def __call__(self, *x, **k) -> jax.Array:
         if hasattr(self, "_init"):
             _check_non_tracer(*x, self.__class__.__name__)
             getattr(self, "_init")(in_features=tuple(xi.shape[-1] for xi in x))
@@ -237,8 +238,8 @@ class Bilinear(Multilinear):
 
 @pytc.treeclass
 class GeneralLinear:
-    weight: jnp.ndarray
-    bias: jnp.ndarray
+    weight: jax.Array
+    bias: jax.Array
 
     in_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
     out_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
@@ -326,7 +327,7 @@ class GeneralLinear:
         else:
             self.bias = self.bias_init_func(key, (self.out_features,))
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         if hasattr(self, "_init"):
             _check_non_tracer(x, self.__class__.__name__)
             getattr(self, "_init")(in_features=tuple(x.shape[i] for i in self.in_axes))
@@ -342,5 +343,5 @@ class GeneralLinear:
 class Identity:
     """Identity layer"""
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return x

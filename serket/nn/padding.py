@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
@@ -27,7 +28,7 @@ class PadND:
         self.padding = _canonicalize_padding(padding, ((1,),) * self.spatial_ndim)
         self.value = value
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         _check_spatial_in_shape(x, self.spatial_ndim)
         # do not pad the channel axis
         return jnp.pad(x, ((0, 0), *self.padding), constant_values=self.value)

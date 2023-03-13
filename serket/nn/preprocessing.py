@@ -36,7 +36,7 @@ class HistogramEqualization2D:
         self.spatial_ndim = 2
         self.bins = bins
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         _check_spatial_in_shape(x, self.spatial_ndim)
         return _histeq(x, self.bins)
 
@@ -61,7 +61,7 @@ class PixelShuffle2D:
         else:
             raise ValueError("upscale_factor must be an integer or tuple of length 2")
 
-    def __call__(self, x: jnp.ndarray, **kwargs):
+    def __call__(self, x: jax.Array, **kwargs):
         _check_spatial_in_shape(x, self.spatial_ndim)
         channels = x.shape[0]
 

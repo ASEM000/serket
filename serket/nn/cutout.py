@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import _canonicalize, _check_spatial_in_shape
+from serket.nn.callbacks import validate_spatial_in_shape
+from serket.nn.utils import _canonicalize
 
 
 @pytc.treeclass
@@ -40,10 +43,8 @@ class RandomCutout1D:
         self.fill_value = fill_value
         self.spatial_ndim = 1
 
-    def __call__(
-        self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
-    ) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, *, key: jr.PRNGKey = jr.PRNGKey(0)) -> jax.Array:
         size = self.shape[0]
         row_arange = jnp.arange(x.shape[1])
 
@@ -93,10 +94,8 @@ class RandomCutout2D:
         self.fill_value = fill_value
         self.spatial_ndim = 2
 
-    def __call__(
-        self, x: jnp.ndarray, *, key: jr.PRNGKey = jr.PRNGKey(0)
-    ) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, *, key: jr.PRNGKey = jr.PRNGKey(0)) -> jax.Array:
         height, width = self.shape
         row_arange = jnp.arange(x.shape[1])
         col_arange = jnp.arange(x.shape[2])
