@@ -13,7 +13,11 @@ import serket as sk
 @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class VGG16Block:
     def __init__(
-        self, in_features: int, *, pooling: str = "max", key: jr.PRNGKey = jr.PRNGKey(0)
+        self,
+        in_features: int,
+        *,
+        pooling: str = "max",
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """
         Args:
@@ -153,7 +157,11 @@ class VGG16Block:
 @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class VGG19Block:
     def __init__(
-        self, in_feautres: int, *, pooling: str = "max", key: jr.PRNGKey = jr.PRNGKey(0)
+        self,
+        in_feautres: int,
+        *,
+        pooling: str = "max",
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """
         Args:

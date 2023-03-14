@@ -50,7 +50,7 @@ class SimpleRNNCell(RNNCell):
         bias_init_func: str | Callable | None = "zeros",
         recurrent_weight_init_func: str | Callable = "orthogonal",
         act_func: str | None = "tanh",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Vanilla RNN cell that defines the update rule for the hidden state
         See:
@@ -146,7 +146,7 @@ class LSTMCell(RNNCell):
         recurrent_weight_init_func: str | Callable = "orthogonal",
         act_func: str | None = "tanh",
         recurrent_act_func: str | None = "sigmoid",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """LSTM cell that defines the update rule for the hidden state and cell state
         Args:
@@ -253,7 +253,7 @@ class GRUCell(RNNCell):
         recurrent_weight_init_func: str | Callable = "orthogonal",
         act_func: str | None = "tanh",
         recurrent_act_func: str | None = "sigmoid",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """GRU cell that defines the update rule for the hidden state and cell state
         Args:
@@ -362,7 +362,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
         recurrent_weight_init_func: str | Callable = "orthogonal",
         act_func: str | None = "tanh",
         recurrent_act_func: str | None = "hard_sigmoid",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
         conv_layer: ConvND | SeparableConvND = ConvND,
         spatial_ndim: int = 2,
     ):
@@ -573,7 +573,7 @@ class ConvGRUNDCell(SpatialRNNCell):
         recurrent_weight_init_func: str | Callable = "orthogonal",
         act_func: str | None = "tanh",
         recurrent_act_func: str | None = "sigmoid",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
         conv_layer: ConvND | SeparableConvND = ConvND,
         spatial_ndim: int = 2,
     ):

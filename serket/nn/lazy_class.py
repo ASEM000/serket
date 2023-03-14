@@ -8,7 +8,7 @@ import jax
 import pytreeclass as pytc
 
 _lazy_placeholder = object()
-_LAZY_KW = "_lazy_init"
+_LAZY_KW = "__lazy_init__"
 
 
 class LazyPartial(ft.partial):
@@ -49,9 +49,7 @@ def _lazy_init_wrapper(
                 # value must be in kwargs or in defaults
                 value = kwargs[param.name] if param.name in kwargs else param.default
                 is_lazy_names += [param.name in lazy_keywords and value is None]
-                masked_kwargs[param.name] = (
-                    _lazy_placeholder if is_lazy_names[-1] else value
-                )
+                masked_kwargs[param.name] = (_lazy_placeholder if is_lazy_names[-1] else value)  # fmt: skip
 
         # partialize the init function
         partial_init = LazyPartial(init_func, self, *masked_args, **masked_kwargs)
@@ -174,6 +172,8 @@ def lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
 
     ...    def __call__(self,x):
     ...        if hasattr(self, "_lazy_init"):
+    ...            # we are forwarded from the init method
+    ...            # so we need to infer the lazy arguments and call the init method again
     ...            self._lazy_init(a=x.shape[0])
     ...        return x
 
@@ -183,7 +183,7 @@ def lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
 
     ** usage **
     >>> lazy_keywords = ["kernel_size"]
-    >>> infer_func = lambda self, *args, **kwargs:(args[0].shape[-1],)
+    >>> infer_func = lambda self, *args, **kwargs:(args[0].shape[-1],)  # infer kernel_size from input last dim
     >>> @ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
     ... @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
     ... class Test:

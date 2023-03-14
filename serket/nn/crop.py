@@ -66,7 +66,7 @@ class RandomCropND:
         self.spatial_ndim = spatial_ndim
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jr.PRNGKey = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         start = tuple(
             jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)
             for i, s in enumerate(self.size)

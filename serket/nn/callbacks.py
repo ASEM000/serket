@@ -35,17 +35,6 @@ _INIT_FUNC_MAP = {
 }
 
 
-def and_cb(*callbacks):
-    """Return a function that checks if the input matches all of the callbacks."""
-
-    def wrapper(value):
-        for cb in callbacks:
-            value = cb(value)
-        return value
-
-    return wrapper
-
-
 def or_cb(*callbacks):
     """Return a function that checks if the input matches one of the callbacks."""
 

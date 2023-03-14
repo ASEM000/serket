@@ -72,7 +72,7 @@ class ConvND:
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
         spatial_ndim: int = 2,
     ):
         """Convolutional layer.
@@ -155,7 +155,7 @@ class Conv1D(ConvND):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Convolutional layer.
 
@@ -206,7 +206,7 @@ class Conv2D(ConvND):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Convolutional layer.
 
@@ -257,7 +257,7 @@ class Conv3D(ConvND):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Convolutional layer.
 
@@ -326,7 +326,7 @@ class ConvNDTranspose:
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
         spatial_ndim: int = 2,
     ):
         """Convolutional Transpose Layer
@@ -412,7 +412,7 @@ class Conv1DTranspose(ConvNDTranspose):
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Convolutional Transpose Layer
 
@@ -461,7 +461,7 @@ class Conv2DTranspose(ConvNDTranspose):
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Convolutional Transpose Layer
 
@@ -510,7 +510,7 @@ class Conv3DTranspose(ConvNDTranspose):
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable = "zeros",
         groups: int = 1,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Convolutional Transpose Layer
 
@@ -570,7 +570,7 @@ class DepthwiseConvND:
         padding: PaddingType = "SAME",
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
         spatial_ndim: int = 2,
     ):
         """Depthwise Convolutional layer.
@@ -651,7 +651,7 @@ class DepthwiseConv1D(DepthwiseConvND):
         padding: PaddingType = "SAME",
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Depthwise Convolutional layer.
 
@@ -697,7 +697,7 @@ class DepthwiseConv2D(DepthwiseConvND):
         padding: PaddingType = "SAME",
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Depthwise Convolutional layer.
 
@@ -743,7 +743,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         padding: PaddingType = "SAME",
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Depthwise Convolutional layer.
 
@@ -800,7 +800,7 @@ class SeparableConvND:
         pointwise_weight_init_func: InitFuncType = "glorot_uniform",
         pointwise_bias_init_func: InitFuncType = "zeros",
         spatial_ndim: int = 2,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Separable convolutional layer.
 
@@ -873,7 +873,7 @@ class SeparableConv1D(SeparableConvND):
         depthwise_weight_init_func: InitFuncType = "glorot_uniform",
         pointwise_weight_init_func: InitFuncType = "glorot_uniform",
         pointwise_bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Separable convolutional layer.
 
@@ -925,7 +925,7 @@ class SeparableConv2D(SeparableConvND):
         depthwise_weight_init_func: InitFuncType = "glorot_uniform",
         pointwise_weight_init_func: InitFuncType = "glorot_uniform",
         pointwise_bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Separable convolutional layer.
 
@@ -977,7 +977,7 @@ class SeparableConv3D(SeparableConvND):
         depthwise_weight_init_func: InitFuncType = "glorot_uniform",
         pointwise_weight_init_func: InitFuncType = "glorot_uniform",
         pointwise_bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Separable convolutional layer.
 
@@ -1051,7 +1051,7 @@ class ConvNDLocal:
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         spatial_ndim: int = 2,
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Local convolutional layer.
 
@@ -1144,7 +1144,7 @@ class Conv1DLocal(ConvNDLocal):
         input_dilation: DilationType = 1,
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Local convolutional layer.
 
@@ -1193,7 +1193,7 @@ class Conv2DLocal(ConvNDLocal):
         input_dilation: DilationType = 1,
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Local convolutional layer.
 
@@ -1242,7 +1242,7 @@ class Conv3DLocal(ConvNDLocal):
         input_dilation: DilationType = 1,
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Local convolutional layer.
 

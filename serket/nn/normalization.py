@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import dataclasses
 import functools as ft
 
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_non_tracer
+from serket.nn.callbacks import frozen_positive_int_cbs, non_negative_scalar_cbs
+from serket.nn.lazy_class import lazy_class
 
 
 @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
@@ -15,7 +15,7 @@ class LayerNorm:
     γ: jax.Array = None
     β: jax.Array = None
 
-    ε: float = pytc.field(callbacks=[pytc.freeze])
+    ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
     affine: bool = pytc.field(callbacks=[pytc.freeze])
     normalized_shape: int | tuple[int] = pytc.field(callbacks=[pytc.freeze])
 
@@ -60,14 +60,18 @@ class LayerNorm:
         return x̂
 
 
+infer_func = lambda self, *a, **k: (a[0].shape[0],)
+
+
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class GroupNorm:
     γ: jax.Array = None
     β: jax.Array = None
 
-    in_features: int = pytc.field(callbacks=[pytc.freeze])
-    groups: int = pytc.field(callbacks=[pytc.freeze])
-    ε: float = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    groups: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
     affine: bool = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
@@ -88,36 +92,16 @@ class GroupNorm:
             eps : a value added to the denominator for numerical stability.
             affine : a boolean value that when set to True, this module has learnable affine parameters.
         """
-        if in_features is None:
-            for field_item in pytc.fields(self):
-                setattr(self, field_item.name, None)
-            self._init = ft.partial(
-                GroupNorm.__init__,
-                self=self,
-                groups=groups,
-                eps=eps,
-                affine=affine,
-            )
-            return
-
-        if hasattr(self, "_init"):
-            delattr(self, "_init")
-
-        if in_features <= 0 or not isinstance(in_features, int):
-            raise ValueError("in_features must be a positive integer")
-
-        if groups <= 0 or not isinstance(groups, int):
-            raise ValueError("groups must be a positive integer")
-
-        if in_features % groups != 0:
-            raise ValueError(
-                f"in_features must be divisible by groups. Got {in_features} and {groups}"
-            )
-
-        self.ε = eps
-        self.affine = affine
+        # checked by callbacks
         self.in_features = in_features
         self.groups = groups
+        self.ε = eps
+        self.affine = affine
+
+        # needs more info for checking
+        if in_features % groups != 0:
+            msg = f"in_features must be divisible by groups. Got {in_features} and {groups}"
+            raise ValueError(msg)
 
         if self.affine:
             # make γ and β trainable
@@ -125,11 +109,9 @@ class GroupNorm:
             self.β = jnp.zeros(self.in_features)
 
     def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
-        if hasattr(self, "_init"):
-            _check_non_tracer(x, name=self.__class__.__name__)
-            getattr(self, "_init")(in_features=x.shape[0])
+        if len(x.shape) <= 1:
+            raise ValueError("Input must have at least 2 dimensions")
 
-        assert len(x.shape) > 1, "Input must have at least 2 dimensions"
         # split channels into groups
         xx = x.reshape(self.groups, self.in_features // self.groups, *x.shape[1:])
         dims = tuple(range(1, x.ndim + 1))
@@ -152,7 +134,6 @@ class InstanceNorm(GroupNorm):
         self,
         in_features: int,
         *,
-        groups: int = 1,
         eps: float = 1e-5,
         affine: bool = True,
     ):

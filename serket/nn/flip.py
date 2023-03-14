@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_spatial_in_shape
+from serket.nn.callbacks import validate_spatial_in_shape
 
 
 @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
@@ -31,8 +31,8 @@ class FlipLeftRight2D:
         """
         self.spatial_ndim = 2
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        _check_spatial_in_shape(x, self.spatial_ndim)
         flip = lambda x: jnp.flip(x, axis=1)
         return jax.vmap(flip)(x)
 
@@ -59,7 +59,7 @@ class FlipUpDown2D:
         """
         self.spatial_ndim = 2
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        _check_spatial_in_shape(x, self.spatial_ndim)
         flip = lambda x: jnp.flip(x, axis=0)
         return jax.vmap(flip)(x)

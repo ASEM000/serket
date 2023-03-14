@@ -52,7 +52,7 @@ class Sequential:
         """
         self.layers = layers
 
-    def __call__(self, x: jax.Array, *, key: jr.PRNGKey = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         key = jr.split(key, len(self.layers))
 
         for key, layer in zip(key, self.layers):

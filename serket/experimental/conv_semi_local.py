@@ -34,7 +34,7 @@
 #         bias_init_func: str | Callable = "zeros",
 #         spatial_groups: int = 1,
 #         ndim: int = 2,
-#         key: jr.PRNGKey = jr.PRNGKey(0),
+#         key: jr.KeyArray = jr.PRNGKey(0),
 #     ):
 #         """Split the last dimension into `spatial_groups` and apply different kernel to each group
 

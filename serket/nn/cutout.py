@@ -7,14 +7,14 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.callbacks import validate_spatial_in_shape
+from serket.nn.callbacks import frozen_positive_int_cbs, validate_spatial_in_shape
 from serket.nn.utils import _canonicalize
 
 
 @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class RandomCutout1D:
     shape: int = pytc.field(callbacks=[pytc.freeze])
-    cutout_count: int = pytc.field(callbacks=[pytc.freeze])
+    cutout_count: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     fill_value: float = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
@@ -44,23 +44,29 @@ class RandomCutout1D:
         self.spatial_ndim = 1
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jr.PRNGKey = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         size = self.shape[0]
         row_arange = jnp.arange(x.shape[1])
 
+        # split the key into subkeys, in essence, one for each cutout
         keys = jr.split(key, self.cutout_count)
 
         def scan_step(x, key):
-            start = jr.randint(
-                key, shape=(), minval=0, maxval=x.shape[1] - size
-            ).astype(jnp.int32)
+            # define the start and end of the cutout region
+            minval, maxval = 0, x.shape[1] - size
+            # sample the start of the cutout region
+            start = jnp.int32(jr.randint(key, shape=(), minval=minval, maxval=maxval))
+            # define the mask for the cutout region
             row_mask = (row_arange >= start) & (row_arange < start + size)
+            # apply the mask
             x = x * ~row_mask[None, :]
+            # return the updated array as carry, skip the scan output
             return x, None
 
         x, _ = jax.lax.scan(scan_step, x, keys)
 
         if self.fill_value != 0:
+            # avoid repeating filling the cutout region if the fill value is zero
             return jnp.where(x == 0, self.fill_value, x)
 
         return x
@@ -69,7 +75,7 @@ class RandomCutout1D:
 @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
 class RandomCutout2D:
     shape: tuple[int, int] = pytc.field(callbacks=[pytc.freeze])
-    cutout_count: int = pytc.field(callbacks=[pytc.freeze])
+    cutout_count: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     fill_value: float = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
@@ -95,29 +101,38 @@ class RandomCutout2D:
         self.spatial_ndim = 2
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jr.PRNGKey = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         height, width = self.shape
         row_arange = jnp.arange(x.shape[1])
         col_arange = jnp.arange(x.shape[2])
 
+        # split the key into `cutout_count` keys, in essence, one for each cutout
         keys = jr.split(key, self.cutout_count)
 
         def scan_step(x, key):
+            # define a subkey for each dimension
             ktop, kleft = jr.split(key, 2)
-            top = jr.randint(
-                ktop, shape=(), minval=0, maxval=x.shape[1] - self.shape[0]
-            ).astype(jnp.int32)
-            left = jr.randint(
-                kleft, shape=(), minval=0, maxval=x.shape[2] - self.shape[1]
-            ).astype(jnp.int32)
+
+            # for top define the start and end of the cutout region
+            minval, maxval = 0, x.shape[1] - self.shape[0]
+            # sample the start of the cutout region
+            top = jnp.int32(jr.randint(ktop, shape=(), minval=minval, maxval=maxval))
+
+            # for left define the start and end of the cutout region
+            minval, maxval = 0, x.shape[2] - self.shape[1]
+            left = jnp.int32(jr.randint(kleft, shape=(), minval=minval, maxval=maxval))
+
+            # define the mask for the cutout region
             row_mask = (row_arange >= top) & (row_arange < top + height)
             col_mask = (col_arange >= left) & (col_arange < left + width)
+
             x = x * (~jnp.outer(row_mask, col_mask))
             return x, None
 
         x, _ = jax.lax.scan(scan_step, x, keys)
 
         if self.fill_value != 0:
+            # avoid repeating filling the cutout region if the fill value is zero
             return jnp.where(x == 0, self.fill_value, x)
 
         return x

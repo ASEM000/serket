@@ -20,7 +20,7 @@ def random_contrast_nd(
     x: jax.Array,
     contrast_range: tuple[float, float],
     spatial_ndim: int,
-    key: jr.PRNGKey = jr.PRNGKey(0),
+    key: jr.KeyArray = jr.PRNGKey(0),
 ) -> jax.Array:
     """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
     minval, maxval = contrast_range
@@ -85,7 +85,7 @@ class RandomContrastND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(
-        self, x: jax.Array, *, key: jr.PRNGKey = jr.PRNGKey(0), **k
+        self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0), **k
     ) -> jax.Array:
         return random_contrast_nd(x, self.contrast_range, self.spatial_ndim, key=key)
 

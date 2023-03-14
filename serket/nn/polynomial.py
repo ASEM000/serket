@@ -31,7 +31,7 @@ class Polynomial:
         degree: int = 1,
         weight_init_func: str | Callable = "he_normal",
         bias_init_func: str | Callable = "ones",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Polynomial layer
         This layer is a generalization of Quadratic Residual layer https://arxiv.org/pdf/2101.08366.pdf

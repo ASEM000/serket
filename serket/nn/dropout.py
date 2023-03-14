@@ -21,7 +21,7 @@ class Dropout:
     p: float = pytc.field(default=0.5, callbacks=[*frozen_in_zero_one_cbs])
     eval: bool = pytc.field(default=None, callbacks=[bool_or_none_cb])
 
-    def __call__(self, x, *, key: jr.PRNGKey = jr.PRNGKey(0)):
+    def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
         if self.eval is True:
             return x
 

@@ -8,6 +8,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
+from serket.nn.lazy_class import lazy_class
 from serket.nn.utils import _canonicalize_init_func, _check_non_tracer
 
 
@@ -21,7 +22,9 @@ def _multilinear_einsum_string(degree: int) -> str:
         '...a,...b,abc->....c'
     """
     alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    assert 1 <= degree <= len(alpha) - 1, f"degree must be between 1 and {len(alpha)-1}"
+
+    if not (1 <= degree <= len(alpha) - 1):
+        raise ValueError(f"degree must be between 1 and {len(alpha)-1}")
 
     xs_string = [f"...{i}" for i in alpha[:degree]]
     output_string = ",".join(xs_string)
@@ -49,7 +52,9 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
         >>> _general_linear_einsum_string(-1,-3)
         '...abc,acd->...bd'
     """
-    assert all([i < 0 for i in axes]), "axes should be negative"
+    if not all([i < 0 for i in axes]):
+        raise ValueError("axes should be negative")
+
     axes = sorted(axes)
     total_axis = abs(min(axes))  # get the total number of axes
     alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -75,7 +80,7 @@ class Multilinear:
         *,
         weight_init_func: str | Callable = "he_normal",
         bias_init_func: str | Callable = "ones",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Linear layer with arbitrary number of inputs applied to last axis of each input
 
@@ -189,7 +194,7 @@ class Linear(Multilinear):
         *,
         weight_init_func: str | Callable = "he_normal",
         bias_init_func: str | Callable = "ones",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         super().__init__(
             (in_features,),
@@ -210,7 +215,7 @@ class Bilinear(Multilinear):
         *,
         weight_init_func: str | Callable = "he_normal",
         bias_init_func: str | Callable = "ones",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Bilinear layer
 
@@ -253,7 +258,7 @@ class GeneralLinear:
         in_axes: tuple[int, ...],
         weight_init_func: str | Callable = "he_normal",
         bias_init_func: str | Callable = "ones",
-        key: jr.PRNGKey = jr.PRNGKey(0),
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Apply a Linear Layer to input at in_axes
 
