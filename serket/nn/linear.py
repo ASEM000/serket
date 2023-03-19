@@ -79,7 +79,7 @@ class Multilinear:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: tuple[int, ...] | None = pytc.field(callbacks=[frozen_int_or_tuple_cb])
+    in_features: tuple[int, ...] | None = pytc.field(callbacks=[*frozen_int_or_tuple_cb])  # fmt: skip
     out_features: int = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
@@ -234,9 +234,9 @@ class GeneralLinear:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: tuple[int, ...] | None = pytc.field(callbacks=[frozen_tuple_cb])
+    in_features: tuple[int, ...] | None = pytc.field(callbacks=[*frozen_tuple_cb])
     out_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
-    in_axes: tuple[int, ...] | None = pytc.field(callbacks=[frozen_tuple_cb])
+    in_axes: tuple[int, ...] | None = pytc.field(callbacks=[*frozen_tuple_cb])
 
     def __init__(
         self,
