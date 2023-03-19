@@ -36,7 +36,7 @@ def _rename_func(func: Callable, name: str) -> Callable:
     return func
 
 
-_act_func_map = {
+_ACT_FUNC_MAP = {
     "tanh": jax.nn.tanh,
     "relu": jax.nn.relu,
     "sigmoid": jax.nn.sigmoid,
@@ -44,7 +44,8 @@ _act_func_map = {
     None: lambda x: x,
 }
 
-_init_func_dict = {
+
+_INIT_FUNC_MAP = {
     "he_normal": _rename_func(ji.he_normal(), "he_normal_init"),
     "he_uniform": _rename_func(ji.he_uniform(), "he_uniform_init"),
     "glorot_normal": _rename_func(ji.glorot_normal(), "glorot_normal_init"),
@@ -66,9 +67,9 @@ def _canonicalize_init_func(init_func: str | Callable, name: str) -> Callable | 
         return jtu.Partial(init_func)
 
     elif isinstance(init_func, str):
-        if init_func in _init_func_dict:
-            return jtu.Partial(_init_func_dict[init_func])
-        raise ValueError(f"{name} must be one of {list(_init_func_dict.keys())}")
+        if init_func in _INIT_FUNC_MAP:
+            return jtu.Partial(_INIT_FUNC_MAP[init_func])
+        raise ValueError(f"{name} must be one of {list(_INIT_FUNC_MAP.keys())}")
 
     elif init_func is None:
         return None

@@ -5,34 +5,12 @@ from types import FunctionType
 from typing import Any, Callable, Sequence
 
 import jax
-import jax.nn.initializers as ji
 import jax.numpy as jnp
 import jax.tree_util as jtu
 import numpy as np
 import pytreeclass as pytc
 
-
-def _rename_func(func: Callable, name: str) -> Callable:
-    """Rename a function."""
-    func.__name__ = name
-    return func
-
-
-_INIT_FUNC_MAP = {
-    "he_normal": _rename_func(ji.he_normal(), "he_normal_init"),
-    "he_uniform": _rename_func(ji.he_uniform(), "he_uniform_init"),
-    "glorot_normal": _rename_func(ji.glorot_normal(), "glorot_normal_init"),
-    "glorot_uniform": _rename_func(ji.glorot_uniform(), "glorot_uniform_init"),
-    "lecun_normal": _rename_func(ji.lecun_normal(), "lecun_normal_init"),
-    "lecun_uniform": _rename_func(ji.lecun_uniform(), "lecun_uniform_init"),
-    "normal": _rename_func(ji.normal(), "normal_init"),
-    "uniform": _rename_func(ji.uniform(), "uniform_init"),
-    "ones": _rename_func(ji.ones, "ones_init"),
-    "zeros": _rename_func(ji.zeros, "zeros_init"),
-    "xavier_normal": _rename_func(ji.xavier_normal(), "xavier_normal_init"),
-    "xavier_uniform": _rename_func(ji.xavier_uniform(), "xavier_uniform_init"),
-    "orthogonal": _rename_func(ji.orthogonal(), "orthogonal_init"),
-}
+from serket.nn.utils import _INIT_FUNC_MAP
 
 
 def or_cb(*callbacks):

@@ -12,12 +12,12 @@ import serket as sk
 from serket.nn.callbacks import frozen_positive_int_cbs
 from serket.nn.lazy_class import lazy_class
 from serket.nn.utils import (
+    _ACT_FUNC_MAP,
     DilationType,
     InitFuncType,
     KernelSizeType,
     PaddingType,
     StridesType,
-    _act_func_map,
 )
 
 """Defines RNN related classes."""
@@ -87,7 +87,7 @@ class SimpleRNNCell(RNNCell):
 
         self.in_features = in_features
         self.hidden_features = hidden_features
-        self.act_func = _act_func_map.get(act_func, act_func)
+        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
@@ -164,8 +164,8 @@ class LSTMCell(RNNCell):
 
         self.in_features = in_features
         self.hidden_features = hidden_features
-        self.act_func = _act_func_map.get(act_func, act_func)
-        self.recurrent_act_func = _act_func_map.get(
+        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
+        self.recurrent_act_func = _ACT_FUNC_MAP.get(
             recurrent_act_func, recurrent_act_func
         )
 
@@ -249,8 +249,8 @@ class GRUCell(RNNCell):
 
         self.in_features = in_features
         self.hidden_features = hidden_features
-        self.act_func = _act_func_map.get(act_func, act_func)
-        self.recurrent_act_func = _act_func_map[recurrent_act_func]
+        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
+        self.recurrent_act_func = _ACT_FUNC_MAP[recurrent_act_func]
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
@@ -355,8 +355,8 @@ class ConvLSTMNDCell(SpatialRNNCell):
         self.in_features = in_features
         self.out_features = out_features
         self.spatial_ndim = spatial_ndim
-        self.act_func = _act_func_map.get(act_func, act_func)
-        self.recurrent_act_func = _act_func_map.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
+        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
+        self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
 
         self.in_to_hidden = conv_layer(
             in_features,
@@ -634,8 +634,8 @@ class ConvGRUNDCell(SpatialRNNCell):
         self.in_features = in_features
         self.out_features = out_features
         self.spatial_ndim = spatial_ndim
-        self.act_func = _act_func_map.get(act_func, act_func)
-        self.recurrent_act_func = _act_func_map.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
+        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
+        self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
 
         self.in_to_hidden = conv_layer(
             in_features,

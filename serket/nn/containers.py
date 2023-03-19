@@ -21,8 +21,8 @@ class Lambda:
 
         Example:
             >>> import jax.numpy as jnp
-            >>> from serket.nn import Lambda
-            >>> layer = Lambda(lambda x: x + 1)
+            >>> import serket as sk
+            >>> layer = sk.nn.Lambda(lambda x: x + 1)
             >>> layer(jnp.array([1, 2, 3]))
             [2 3 4]
         """
@@ -45,8 +45,8 @@ class Sequential:
         Example:
             >>> import jax.numpy as jnp
             >>> import jax.random as jr
-            >>> from serket.nn import Sequential, Lambda
-            >>> layers = Sequential((Lambda(lambda x: x + 1), Lambda(lambda x: x * 2)))
+            >>> import serket as sk
+            >>> layers = sk.nn.Sequential((sk.nn.Lambda(lambda x: x + 1), sk.nn.Lambda(lambda x: x * 2)))
             >>> layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0))
         """
         self.layers = layers
