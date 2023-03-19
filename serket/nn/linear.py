@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Callable, Sequence
+from typing import Callable
 
 import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-# from serket.nn.lazy_class import lazy_class
-from serket.nn.utils import _canonicalize_init_func, _check_non_tracer
+from serket.nn.callbacks import init_func_cb, instance_cb_factory
+from serket.nn.lazy_class import LAZY_KW, lazy_class
+
+frozen_int_or_tuple_cb = [instance_cb_factory((int, tuple)), pytc.freeze]
+frozen_tuple_cb = [instance_cb_factory(tuple), pytc.freeze]
 
 
 @ft.lru_cache(maxsize=128)
@@ -24,7 +27,8 @@ def _multilinear_einsum_string(degree: int) -> str:
     alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     if not (1 <= degree <= len(alpha) - 1):
-        raise ValueError(f"degree must be between 1 and {len(alpha)-1}")
+        msg = f"degree must be between 1 and {len(alpha)-1}, got {degree}"
+        raise ValueError(msg)
 
     xs_string = [f"...{i}" for i in alpha[:degree]]
     output_string = ",".join(xs_string)
@@ -65,12 +69,17 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     return f"{input_string},{weight_string}->{result_string}"
 
 
+def infer_func(self, *a, **k):
+    return (tuple(xi.shape[-1] for xi in a),)
+
+
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class Multilinear:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
+    in_features: tuple[int, ...] | None = pytc.field(callbacks=[frozen_int_or_tuple_cb])
     out_features: int = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
@@ -109,27 +118,6 @@ class Multilinear:
             # here a trilinear layer is created with in_features=(1, 1, 1)
             # with weight shape (1, 1, 1, 10) and bias shape (10,)
         """
-        if (
-            any([i is None for i in in_features])
-            if isinstance(in_features, Sequence)
-            else (in_features is None)
-        ):
-            for field_item in pytc.fields(self):
-                setattr(self, field_item.name, None)
-
-            self._init = ft.partial(
-                Multilinear.__init__,
-                self,
-                out_features=out_features,
-                weight_init_func=weight_init_func,
-                bias_init_func=bias_init_func,
-                key=key,
-            )
-            return
-
-        if hasattr(self, "_init"):
-            delattr(self, "_init")
-
         if not isinstance(in_features, (tuple, int)):
             msg = f"Expected tuple or int for in_features, got {type(in_features)}"
             raise ValueError(msg)
@@ -137,10 +125,8 @@ class Multilinear:
         self.in_features = in_features
         self.out_features = out_features
 
-        self.weight_init_func = _canonicalize_init_func(
-            weight_init_func, "weight_init_func"
-        )
-        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")
+        self.weight_init_func = init_func_cb(weight_init_func)
+        self.bias_init_func = init_func_cb(bias_init_func)
 
         weight_shape = (*self.in_features, out_features)
         self.weight = self.weight_init_func(key, weight_shape)
@@ -151,10 +137,6 @@ class Multilinear:
             self.bias = self.bias_init_func(key, (out_features,))
 
     def __call__(self, *x, **k) -> jax.Array:
-        if hasattr(self, "_init"):
-            _check_non_tracer(*x, self.__class__.__name__)
-            getattr(self, "_init")(in_features=tuple(xi.shape[-1] for xi in x))
-
         einsum_string = _multilinear_einsum_string(len(self.in_features))
         x = jnp.einsum(einsum_string, *x, self.weight)
 
@@ -241,14 +223,20 @@ class Bilinear(Multilinear):
         )
 
 
+def infer_func(self, *a, **k):
+    in_axes = getattr(self, LAZY_KW).keywords["in_axes"]
+    return (tuple(a[0].shape[i] for i in in_axes),)
+
+
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class GeneralLinear:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
+    in_features: tuple[int, ...] | None = pytc.field(callbacks=[frozen_tuple_cb])
     out_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
-    in_axes: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
+    in_axes: tuple[int, ...] | None = pytc.field(callbacks=[frozen_tuple_cb])
 
     def __init__(
         self,
@@ -279,52 +267,18 @@ class GeneralLinear:
             This layer is similar to to flax linen's DenseGeneral, the difference is that
             this layer uses einsum to apply the linear layer to the specified axes.
         """
-        if in_axes is None:
-            raise ValueError("in_axes must be specified for GeneralLinear")
-
-        if (
-            any([i is None for i in in_features])
-            if isinstance(in_features, Sequence)
-            else (in_features is None)
-        ):
-            for field_item in pytc.fields(self):
-                setattr(self, field_item.name, None)
-            self.in_axes = in_axes
-            self._init = ft.partial(
-                GeneralLinear.__init__,
-                self,
-                in_axes=in_axes,
-                out_features=out_features,
-                weight_init_func=weight_init_func,
-                bias_init_func=bias_init_func,
-                key=key,
-            )
-            return
-
-        if hasattr(self, "_init"):
-            delattr(self, "_init")
-
-        if not isinstance(in_features, tuple):
-            raise ValueError(
-                f"Expected in_features to be tuple, got {type(in_features)}"
-            )
-
-        if not isinstance(in_axes, tuple):
-            raise ValueError(f"Expected in_axes to be tuple, got {type(in_axes)}")
-
-        if len(in_axes) != len(in_features):
-            raise ValueError(
-                f"Expected in_axes and in_features to have the same length, got {len(in_axes)} and {len(in_features)}"
-            )
 
         self.in_features = in_features
         self.out_features = out_features
         self.in_axes = in_axes
-        self.weight_init_func = _canonicalize_init_func(
-            weight_init_func, "weight_init_func"
-        )
-        self.bias_init_func = _canonicalize_init_func(bias_init_func, "bias_init_func")
 
+        if len(in_axes) != len(in_features):
+            msg = "Expected in_axes and in_features to have the same length,"
+            msg += f"got {len(in_axes)} and {len(in_features)}"
+            raise ValueError(msg)
+
+        self.weight_init_func = init_func_cb(weight_init_func)
+        self.bias_init_func = init_func_cb(bias_init_func)
         self.weight = self.weight_init_func(key, (*self.in_features, self.out_features))
 
         if self.bias_init_func is None:
@@ -333,10 +287,6 @@ class GeneralLinear:
             self.bias = self.bias_init_func(key, (self.out_features,))
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        if hasattr(self, "_init"):
-            _check_non_tracer(x, self.__class__.__name__)
-            getattr(self, "_init")(in_features=tuple(x.shape[i] for i in self.in_axes))
-
         # ensure negative axes
         axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)
         einsum_string = _general_linear_einsum_string(*axes)

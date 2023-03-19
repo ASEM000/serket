@@ -121,10 +121,10 @@ def test_general_linear():
     layer = GeneralLinear(in_features=(2, 3), in_axes=(1, -2), out_features=5)
     assert layer(x).shape == (1, 4, 5)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         GeneralLinear(in_features=2, in_axes=(1, -2), out_features=5)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         GeneralLinear(in_features=(2, 3), in_axes=2, out_features=5)
 
     with pytest.raises(ValueError):

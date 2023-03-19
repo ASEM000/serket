@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import functools as ft
 import inspect
-from typing import Callable, Sequence
+from typing import Any, Callable, Sequence
 
 import jax
 import pytreeclass as pytc
 
 _lazy_placeholder = object()
+LAZY_KW = "__lazy_init__"
 
 
 class LazyPartial(ft.partial):
@@ -63,9 +64,13 @@ def lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
     ...     ...
     """
 
-    LAZY_KW = "__lazy_init__"
     init_sig = inspect.signature(klass.__init__)
     non_self_params = list(init_sig.parameters.values())[1:]
+
+    def _is_none(item: Any) -> bool:
+        if isinstance(item, (tuple, list)):
+            return any(i is None for i in item)
+        return item is None
 
     def _check_tracer_input(args, *, name: str = None):
         msg = (
@@ -104,18 +109,18 @@ def lazy_class(klass, lazy_keywords: Sequence[str], infer_func: Callable):
                 if param.kind == param.POSITIONAL_ONLY:
                     # value must be in args or in defaults
                     value = args[i] if len(args) > i else param.default
-                    is_lazy_names += [param.name in lazy_keywords and value is None]
+                    is_lazy_names += [param.name in lazy_keywords and _is_none(value)]
                     masked_args += [_lazy_placeholder] if is_lazy_names[-1] else [value]
                 elif param.kind == param.POSITIONAL_OR_KEYWORD and len(args) > i:
                     # value might be in args or kwargs if in `POSITIONAL_OR_KEYWORD`
                     # so we double check the length of args to make sure we don't fetch from kwargs
                     value = args[i] if len(args) > i else kwargs.get(param.name, param.default)  # fmt: skip
-                    is_lazy_names += [param.name in lazy_keywords and value is None]
+                    is_lazy_names += [param.name in lazy_keywords and _is_none(value)]
                     masked_args += [_lazy_placeholder] if is_lazy_names[-1] else [value]
                 else:
                     # value must be in kwargs or in defaults
                     value = kwargs[param.name] if param.name in kwargs else param.default  # fmt: skip
-                    is_lazy_names += [param.name in lazy_keywords and value is None]
+                    is_lazy_names += [param.name in lazy_keywords and _is_none(value)]
                     masked_kwargs[param.name] = (_lazy_placeholder if is_lazy_names[-1] else value)  # fmt: skip
 
             # partialize the init function
