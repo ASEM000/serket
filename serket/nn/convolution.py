@@ -1022,7 +1022,7 @@ class SeparableConv3D(SeparableConvND):
 
 
 def infer_func(self, *a, **k):
-    return a[0].shape[1:]
+    return (a[0].shape[0], a[0].shape[1:])
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features", "in_size"], infer_func=infer_func)
