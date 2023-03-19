@@ -10,7 +10,7 @@ from serket.nn.callbacks import validate_spatial_in_shape
 from serket.nn.utils import _canonicalize, _check_spatial_in_shape
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class CropND:
     size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
     start: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze], default=0)
@@ -32,28 +32,28 @@ class CropND:
         return jax.lax.dynamic_slice(x, (0, *self.start), (x.shape[0], *self.size))
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Crop1D(CropND):
     def __init__(self, size: int | tuple[int, ...], start: int | tuple[int, ...]):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input."""
         super().__init__(size, start, spatial_ndim=1)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Crop2D(CropND):
     def __init__(self, size: int | tuple[int, ...], start: int | tuple[int, ...]):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input."""
         super().__init__(size, start, spatial_ndim=2)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Crop3D(CropND):
     def __init__(self, size: int | tuple[int, ...], start: int | tuple[int, ...]):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input."""
         super().__init__(size, start, spatial_ndim=3)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomCropND:
     def __init__(self, size, spatial_ndim):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
@@ -74,7 +74,7 @@ class RandomCropND:
         return jax.lax.dynamic_slice(x, (0, *start), (x.shape[0], *self.size))
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomCrop1D(RandomCropND):
     def __init__(self, size):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
@@ -86,7 +86,7 @@ class RandomCrop1D(RandomCropND):
         super().__init__(size, spatial_ndim=1)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomCrop2D(RandomCropND):
     def __init__(self, size):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
@@ -98,7 +98,7 @@ class RandomCrop2D(RandomCropND):
         super().__init__(size, spatial_ndim=2)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomCrop3D(RandomCropND):
     def __init__(self, size):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.

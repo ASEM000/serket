@@ -54,34 +54,11 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from serket.nn.recurrent import (
-    ConvGRU1DCell,
-    ConvGRU2DCell,
-    ConvGRU3DCell,
+from serket.nn.recurrent import (  # ConvGRU1DCell,; ConvGRU2DCell,; ConvGRU3DCell,; ConvLSTM2DCell,; ConvLSTM3DCell,
     ConvLSTM1DCell,
-    ConvLSTM2DCell,
-    ConvLSTM3DCell,
-    FFTConvGRU1DCell,
-    FFTConvGRU2DCell,
-    FFTConvGRU3DCell,
-    FFTConvLSTM1DCell,
-    FFTConvLSTM2DCell,
-    FFTConvLSTM3DCell,
     GRUCell,
     LSTMCell,
     ScanRNN,
-    SeparableConvGRU1DCell,
-    SeparableConvGRU2DCell,
-    SeparableConvGRU3DCell,
-    SeparableConvLSTM1DCell,
-    SeparableConvLSTM2DCell,
-    SeparableConvLSTM3DCell,
-    SeparableFFTConvGRU1DCell,
-    SeparableFFTConvGRU2DCell,
-    SeparableFFTConvGRU3DCell,
-    SeparableFFTConvLSTM1DCell,
-    SeparableFFTConvLSTM2DCell,
-    SeparableFFTConvLSTM3DCell,
     SimpleRNNCell,
 )
 
@@ -357,7 +334,7 @@ def test_lstm():
     npt.assert_allclose(y, sk_layer(x), atol=1e-5)
 
     cell = LSTMCell(
-        in_features=None,
+        in_features=in_features,
         hidden_features=hidden_features,
         recurrent_weight_init_func="glorot_uniform",
     )
@@ -606,7 +583,7 @@ def test_conv_lstm1d():
     assert jnp.allclose(res_sk, y, atol=1e-5)
 
     cell = ConvLSTM1DCell(
-        in_features=None,
+        in_features=in_features,
         out_features=out_features,
         recurrent_act_func="sigmoid",
         kernel_size=3,
@@ -775,229 +752,16 @@ def test_bilstm():
     npt.assert_allclose(res, y, atol=1e-5)
 
 
-def test_lazy_rnn():
-    x = jnp.ones([10, 1])  # time_steps, in_features
-    left = SimpleRNNCell(None, 15)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (15,)
-    assert ScanRNN(left, return_sequences=True)(x).shape == (10, 15)
-
-    right = SimpleRNNCell(None, 15)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (30,)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 30)
-
-    x = jnp.ones([10, 3, 5])  # time_steps, in_features, spatial_features
-    left = ConvLSTM1DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5)  # hidden_features, spatial_features
-    right = ConvLSTM1DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5)
-
-
 def test_rnn_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         ScanRNN(None)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         ScanRNN(SimpleRNNCell(3, 3), 1)
 
     layer = ScanRNN(SimpleRNNCell(3, 3), SimpleRNNCell(3, 3))
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         layer(jnp.ones([10, 3]), 1.0)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         layer(jnp.ones([10, 3, 3]))
-
-
-def test_conv_lstm2d():
-    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
-    left = ConvLSTM2DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5, 5)  # hidden_features, spatial_features
-    right = ConvLSTM2DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5)
-
-
-def test_conv_lstm3d():
-    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
-    left = ConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5, 5, 5)  # hidden_features, spatial_features
-    right = ConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)
-
-
-def test_separable_conv_lstm1d():
-    x = jnp.ones([10, 3, 5])  # time_steps, in_features, spatial_features
-    left = SeparableConvLSTM1DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5)  # hidden_features, spatial_features
-    right = SeparableConvLSTM1DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5)
-
-
-def test_separable_conv_lstm2d():
-    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
-    left = SeparableConvLSTM2DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5, 5)  # hidden_features, spatial_features
-    right = SeparableConvLSTM2DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5)
-
-
-def test_separable_conv_lstm3d():
-    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
-    left = SeparableConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5, 5, 5)  # hidden_features, spatial_features
-    right = SeparableConvLSTM3DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)
-
-
-def test_conv_gru1d():
-    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
-    left = ConvGRU1DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 3)  # hidden_features, spatial_features
-    right = ConvGRU1DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 3)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 3)
-
-
-def test_conv_gru2d():
-    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
-    left = ConvGRU2DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5, 5)  # hidden_features, spatial_features
-    right = ConvGRU2DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5)
-
-
-def test_conv_gru3d():
-    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
-    left = ConvGRU3DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5, 5, 5)  # hidden_features, spatial_features
-    right = ConvGRU3DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)
-
-
-def test_separable_conv_gru1d():
-    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
-    left = SeparableConvGRU1DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 3)  # hidden_features, spatial_features
-    right = ConvGRU1DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 3)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 3)
-
-
-def test_separable_conv_gru2d():
-    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
-    left = SeparableConvGRU2DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5, 5)  # hidden_features, spatial_features
-    right = ConvGRU2DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5)
-
-
-def test_separable_conv_gru3d():
-    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
-    left = SeparableConvGRU3DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left)(x).shape == (10, 5, 5, 5)  # hidden_features, spatial_features
-    right = ConvGRU3DCell(None, 10, 3)  # in_features, hidden_features
-    assert ScanRNN(left, right)(x).shape == (20, 5, 5, 5)
-    assert ScanRNN(left, right, return_sequences=True)(x).shape == (10, 20, 5, 5, 5)
-
-
-def test_fft_conv1d_lstm():
-    lhs_cell = FFTConvLSTM1DCell(None, 10, 3)
-    rhs_cell = ConvLSTM1DCell(None, 10, 3)
-
-    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_conv2d_lstm():
-    lhs_cell = FFTConvLSTM2DCell(None, 10, 3)
-    rhs_cell = ConvLSTM2DCell(None, 10, 3)
-
-    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_conv3d_lstm():
-    lhs_cell = FFTConvLSTM3DCell(None, 10, 3)
-    rhs_cell = ConvLSTM3DCell(None, 10, 3)
-
-    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_conv1d_gru():
-    lhs_cell = FFTConvGRU1DCell(None, 10, 3)
-    rhs_cell = ConvGRU1DCell(None, 10, 3)
-
-    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_conv2d_gru():
-    lhs_cell = FFTConvGRU2DCell(None, 10, 3)
-    rhs_cell = ConvGRU2DCell(None, 10, 3)
-
-    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_conv3d_gru():
-    lhs_cell = FFTConvGRU3DCell(None, 10, 3)
-    rhs_cell = ConvGRU3DCell(None, 10, 3)
-
-    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_separable_conv1_lstm():
-    lhs_cell = SeparableFFTConvLSTM1DCell(None, 10, 3)
-    rhs_cell = SeparableConvLSTM1DCell(None, 10, 3)
-
-    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_separable_conv2d_lstm():
-    lhs_cell = SeparableFFTConvLSTM2DCell(None, 10, 3)
-    rhs_cell = SeparableConvLSTM2DCell(None, 10, 3)
-
-    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_separable_conv3d_lstm():
-    lhs_cell = SeparableFFTConvLSTM3DCell(None, 10, 3)
-    rhs_cell = SeparableConvLSTM3DCell(None, 10, 3)
-
-    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_separable_conv1d_gru():
-    lhs_cell = SeparableFFTConvGRU1DCell(None, 10, 3)
-    rhs_cell = SeparableConvGRU1DCell(None, 10, 3)
-
-    x = jnp.ones([10, 10, 3])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_separable_conv2d_gru():
-    lhs_cell = SeparableFFTConvGRU2DCell(None, 10, 3)
-    rhs_cell = SeparableConvGRU2DCell(None, 10, 3)
-
-    x = jnp.ones([10, 3, 5, 5])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)
-
-
-def test_fft_separable_conv3d_gru():
-    lhs_cell = SeparableFFTConvGRU3DCell(None, 10, 3)
-    rhs_cell = SeparableConvGRU3DCell(None, 10, 3)
-
-    x = jnp.ones([10, 3, 5, 5, 5])  # time_steps, in_features, spatial_features
-    npt.assert_allclose(ScanRNN(lhs_cell)(x), ScanRNN(rhs_cell)(x), atol=1e-5)

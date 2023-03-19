@@ -10,7 +10,7 @@ from serket.nn.callbacks import frozen_positive_int_cbs, non_negative_scalar_cbs
 from serket.nn.lazy_class import lazy_class
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class LayerNorm:
     γ: jax.Array = None
     β: jax.Array = None
@@ -64,7 +64,7 @@ infer_func = lambda self, *a, **k: (a[0].shape[0],)
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class GroupNorm:
     γ: jax.Array = None
     β: jax.Array = None
@@ -128,7 +128,7 @@ class GroupNorm:
         return x̂
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class InstanceNorm(GroupNorm):
     def __init__(
         self,

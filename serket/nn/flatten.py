@@ -7,12 +7,10 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import frozen_positive_int_cbs
 
-
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Flatten:
-    start_dim: int = pytc.field(callbacks=[*frozen_positive_int_cbs], default=0)
+    start_dim: int = pytc.field(callbacks=[pytc.freeze], default=0)
     end_dim: int = pytc.field(callbacks=[pytc.freeze], default=-1)
 
     """
@@ -56,7 +54,7 @@ class Flatten:
         return jnp.reshape(x, shape)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Unflatten:
     dim: int = pytc.field(callbacks=[pytc.freeze], default=0)
     shape: tuple = pytc.field(callbacks=[pytc.freeze], default=None)

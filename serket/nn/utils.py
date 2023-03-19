@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import functools as ft
 from types import FunctionType
-from typing import Any, Callable, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, Sequence, Tuple, Union
 
 import jax
 import jax.nn.initializers as ji
@@ -163,7 +163,7 @@ def _canonicalize_padding(
 def _canonicalize(value, ndim, name):
     if isinstance(value, int):
         return (value,) * ndim
-    elif isinstance(value, jnp.ndarray):
+    elif isinstance(value, jax.Array):
         return jnp.repeat(value, ndim)
     elif isinstance(value, tuple):
         assert len(value) == ndim, f"{name} must be a tuple of length {ndim}"
@@ -275,13 +275,13 @@ KernelSizeType = Union[int, Sequence[int]]
 StridesType = Union[int, Sequence[int]]
 PaddingType = Union[str, int, Sequence[int], Sequence[Tuple[int, int]]]
 DilationType = Union[int, Sequence[int]]
-InitFuncType = Union[str, Callable[[jr.PRNGKey, Sequence[int]], jnp.ndarray]]
+InitFuncType = Union[str, Callable[[jr.PRNGKey, Sequence[int]], jax.Array]]
 
 
 def canonicalize(value, ndim, name: str | None = None):
     if isinstance(value, int):
         return (value,) * ndim
-    if isinstance(value, jnp.ndarray):
+    if isinstance(value, jax.Array):
         return jnp.repeat(value, ndim)
     if isinstance(value, tuple):
         if len(value) != ndim:

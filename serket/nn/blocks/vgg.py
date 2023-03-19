@@ -3,14 +3,13 @@ from __future__ import annotations
 import functools as ft
 
 import jax
-import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
 import serket as sk
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class VGG16Block:
     def __init__(
         self,
@@ -114,7 +113,7 @@ class VGG16Block:
 
         self.pooling = sk.nn.GlobalMaxPool2D() if pooling == "max" else sk.nn.GlobalAvgPool2D()  # fmt: skip
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         x = self.conv_1_1(x)
         x = jax.nn.relu(x)
         x = self.conv_1_2(x)
@@ -154,7 +153,7 @@ class VGG16Block:
         return x
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class VGG19Block:
     def __init__(
         self,
@@ -211,7 +210,7 @@ class VGG19Block:
             sk.nn.GlobalMaxPool2D() if pooling == "max" else sk.nn.GlobalAvgPool2D()
         )
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         x = self.conv_1_1(x)
         x = jax.nn.relu(x)
         x = self.conv_1_2(x)

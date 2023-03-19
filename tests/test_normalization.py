@@ -7,7 +7,6 @@ from serket.nn import GroupNorm, InstanceNorm, LayerNorm
 
 
 def test_LayerNorm():
-
     layer = LayerNorm((5, 2), affine=False)
 
     x = jnp.array(
@@ -34,7 +33,6 @@ def test_LayerNorm():
 
 
 def test_InstanceNorm():
-
     x = jnp.array(
         [
             [
@@ -91,7 +89,6 @@ def test_InstanceNorm():
 
 
 def test_group_norm():
-
     x = jnp.array(
         [
             [

@@ -11,7 +11,7 @@ from serket.nn.callbacks import frozen_positive_int_cbs, validate_spatial_in_sha
 from serket.nn.utils import _canonicalize
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomCutout1D:
     shape: int = pytc.field(callbacks=[pytc.freeze])
     cutout_count: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -72,7 +72,7 @@ class RandomCutout1D:
         return x
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomCutout2D:
     shape: tuple[int, int] = pytc.field(callbacks=[pytc.freeze])
     cutout_count: int = pytc.field(callbacks=[*frozen_positive_int_cbs])

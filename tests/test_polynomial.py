@@ -1,9 +1,9 @@
-import jax
-import jax.numpy as jnp
-import numpy.testing as npt
-import pytest
+# import jax
+# import jax.numpy as jnp
+# import numpy.testing as npt
+# import pytest
 
-from serket.nn import Polynomial
+# from serket.nn import Polynomial
 
 # def test_polynomial():
 #     t = Polynomial(1, 1, degree=2)

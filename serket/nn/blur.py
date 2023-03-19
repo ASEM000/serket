@@ -21,7 +21,7 @@ _lazy_keywords = ["in_features"]
 
 
 @ft.partial(lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class AvgBlur2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel_size: int | tuple[int, int] = pytc.field(
@@ -70,7 +70,7 @@ class AvgBlur2D:
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class GaussianBlur2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel_size: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -127,14 +127,14 @@ class GaussianBlur2D:
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    # @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    # @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x, **k) -> jax.Array:
         return self.conv1(self.conv2(x))
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Filter2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     conv: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze], repr=False)
@@ -169,7 +169,7 @@ class Filter2D:
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class FFTFilter2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel: jax.Array = pytc.field(callbacks=[pytc.freeze])

@@ -36,12 +36,8 @@ setup(
     author_email="asem00@kaist.ac.kr",
     keywords="python machine-learning pytorch jax",
     packages=find_namespace_packages(exclude=['examples", "tests","experimental']),
-    install_requires=_parse_requirements(
-        os.path.join(_CURRENT_DIR, "requirements", "requirements.txt")
-    ),
-    # tests_require=_parse_requirements(
-    #     os.path.join(_CURRENT_DIR, 'requirements', 'requirements-test.txt')),
-    zip_safe=False,  # Required for full installation.
+    install_requires=["jax>=0.4.0", "pytreeclass>=0.2.0"],
+    zip_safe=False,
     python_requires=">=3.8",
     classifiers=[
         "Development Status :: 5 - Production/Stable",

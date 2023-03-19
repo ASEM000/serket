@@ -9,7 +9,7 @@ import pytreeclass as pytc
 from serket.nn.callbacks import validate_spatial_in_shape
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class FlipLeftRight2D:
     def __init__(self):
         """Flip channels left to right.
@@ -37,7 +37,7 @@ class FlipLeftRight2D:
         return jax.vmap(flip)(x)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class FlipUpDown2D:
     def __init__(self):
         """Flip channels up to down.

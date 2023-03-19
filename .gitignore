@@ -8,8 +8,8 @@ dist
 examples
 tensorboard
 test.ipynb
-.trunk
-.vscode/settings.json
+*.trunk
+*.vscode/
 build
 serket/super_experimental
 corgi.jpeg

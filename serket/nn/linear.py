@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.lazy_class import lazy_class
+# from serket.nn.lazy_class import lazy_class
 from serket.nn.utils import _canonicalize_init_func, _check_non_tracer
 
 
@@ -65,7 +65,7 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     return f"{input_string},{weight_string}->{result_string}"
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Multilinear:
     weight: jax.Array
     bias: jax.Array
@@ -163,7 +163,7 @@ class Multilinear:
         return x + self.bias
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Linear(Multilinear):
     """Linear layer with 1 input applied to last axis of input
 
@@ -205,7 +205,7 @@ class Linear(Multilinear):
         )
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Bilinear(Multilinear):
     def __init__(
         self,
@@ -241,7 +241,7 @@ class Bilinear(Multilinear):
         )
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class GeneralLinear:
     weight: jax.Array
     bias: jax.Array
@@ -344,7 +344,7 @@ class GeneralLinear:
         return x
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Identity:
     """Identity layer"""
 

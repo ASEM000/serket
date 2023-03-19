@@ -13,16 +13,16 @@ import pytreeclass as pytc
 import serket as sk
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class ResizeAndCat:
-    def __call__(self, x1: jnp.ndarray, x2: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x1: jax.Array, x2: jax.Array) -> jax.Array:
         """resize a tensor to the same size as another tensor and concatenate x2 to x1 along the channel axis"""
         x1 = jax.image.resize(x1, shape=x2.shape, method="nearest")
         x1 = jnp.concatenate([x2, x1], axis=0)
         return x1
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class DoubleConvBlock:
     def __init__(self, in_features: int, out_features: int):
         self.conv1 = sk.nn.Conv2D(
@@ -40,7 +40,7 @@ class DoubleConvBlock:
             bias_init_func=None,
         )
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         x = self.conv1(x)
         x = jax.nn.relu(x)
         x = self.conv2(x)
@@ -48,20 +48,20 @@ class DoubleConvBlock:
         return x
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class UpscaleBlock:
     def __init__(self, in_features: int, out_features: int):
         self.conv = sk.nn.Conv2DTranspose(
             in_features=in_features, out_features=out_features, kernel_size=2, strides=2
         )
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         # x = self.upscale(x)
         x = self.conv(x)
         return x
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class UNetBlock:
     in_features: int = pytc.field(callbacks=[pytc.freeze])
     out_features: int = pytc.field(callbacks=[pytc.freeze])
@@ -182,7 +182,7 @@ class UNetBlock:
 
         self.f0_1 = sk.nn.Conv2D(init_features, out_features, kernel_size=1)
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: jax.Array) -> jax.Array:
         result = dict()
         blocks = self.blocks
 

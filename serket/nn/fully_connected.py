@@ -12,7 +12,7 @@
 # from serket.nn.linear import Linear
 
 
-# @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+# @pytc.treeclass
 # class FNN:
 #     layers: Sequence[Linear]
 #     act_func: Callable
@@ -61,7 +61,7 @@
 #         return last(x)
 
 
-# @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+# @pytc.treeclass
 # class PFNN:
 #     """Parallel fully connected neural network
 
@@ -198,7 +198,7 @@
 
 #         self.layers = list(map(list, zip(*self.layers)))
 
-#     def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+#     def __call__(self, x: jax.Array, **k) -> jax.Array:
 #         X = [x] * len(self.layers)
 #         for i, sub_network in enumerate(self.layers):
 #             *layers, last = sub_network

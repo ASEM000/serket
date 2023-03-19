@@ -9,7 +9,7 @@ import pytreeclass as pytc
 from serket.nn.utils import _canonicalize_padding, _check_spatial_in_shape
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class PadND:
     def __init__(
         self, padding: int | tuple[int, int], value: float = 0.0, spatial_ndim=1
@@ -36,19 +36,19 @@ class PadND:
         return jnp.pad(x, ((0, 0), *self.padding), constant_values=self.value)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Pad1D(PadND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Pad2D(PadND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Pad3D(PadND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3)

@@ -15,7 +15,7 @@
 # # ------------------------------ ConvNDSemiLocal Convolutional Layers ------------------------------ #
 
 
-# @ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+# @pytc.treeclass
 # class ConvNDSemiLocal:
 #     spatial_groups: int = pytc.nondiff_field()
 #     convs: tuple[ConvND]
@@ -96,7 +96,7 @@
 #             ]
 #         )
 
-#     def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+#     def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
 #         if hasattr(self, "_partial_init"):
 #             if isinstance(x, jax.core.Tracer):
 #                 raise ValueError(_TRACER_ERROR_MSG(self.__class__.__name__))

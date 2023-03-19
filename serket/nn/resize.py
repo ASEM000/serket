@@ -20,14 +20,14 @@ def _recursive_repeat(x, scale, axis):
     return _recursive_repeat(x.repeat(scale, axis=axis), scale, axis - 1)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RepeatND:
     def __init__(self, scale: int = 1, spatial_ndim: int = 1):
         """repeats input along axes 1,2,3"""
         self.scale = _canonicalize_positive_int(scale, "scale")
         self.spatial_ndim = spatial_ndim
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         _check_spatial_in_shape(x, self.spatial_ndim)
 
         kernel_size = (-1,) * (self.spatial_ndim + 1)
@@ -40,7 +40,7 @@ class RepeatND:
         return jnp.squeeze(_repeat(x), axis=tuple(range(1, self.spatial_ndim + 2)))
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class ResizeND:
     size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
     method: str = pytc.field(callbacks=[pytc.freeze])
@@ -79,7 +79,7 @@ class ResizeND:
         self.antialias = antialias
         self.spatial_ndim = spatial_ndim
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         _check_spatial_in_shape(x, self.spatial_ndim)
         assert x.ndim == self.spatial_ndim + 1, f"input must be {self.spatial_ndim}D"
 
@@ -91,7 +91,7 @@ class ResizeND:
         )
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class UpsampleND:
     scale: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze], default=1)
     method: str = pytc.field(callbacks=[pytc.freeze], default="nearest")
@@ -109,7 +109,7 @@ class UpsampleND:
         self.method = method
         self.spatial_ndim = spatial_ndim
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         _check_spatial_in_shape(x, self.spatial_ndim)
         msg = f"Input must have {self.spatial_ndim+1} dimensions, got {x.ndim}."
         assert x.ndim == self.spatial_ndim + 1, msg
@@ -122,55 +122,55 @@ class UpsampleND:
         )
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Repeat1D(RepeatND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=1, **k)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Repeat2D(RepeatND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=2, **k)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Repeat3D(RepeatND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=3, **k)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Resize1D(ResizeND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=1, **k)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Resize2D(ResizeND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=2, **k)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Resize3D(ResizeND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=3, **k)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Upsample1D(UpsampleND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=1, **k)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Upsample2D(UpsampleND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=2, **k)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Upsample3D(UpsampleND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=3, **k)

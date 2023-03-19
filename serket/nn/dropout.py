@@ -16,7 +16,7 @@ bool_or_none_cb = instance_cb_factory((bool, type(None)))
 frozen_in_zero_one_cbs = [range_cb_factory(0, 1), pytc.freeze]
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Dropout:
     p: float = pytc.field(default=0.5, callbacks=[*frozen_in_zero_one_cbs])
     eval: bool = pytc.field(default=None, callbacks=[bool_or_none_cb])
@@ -28,7 +28,7 @@ class Dropout:
         return jnp.where(jr.bernoulli(key, (1 - self.p), x.shape), x / (1 - self.p), 0)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class DropoutND:
     """Drops full feature maps along the channel axis.
 
@@ -59,7 +59,7 @@ class DropoutND:
         return jnp.where(mask, x / (1 - self.p), 0)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Dropout1D(DropoutND):
     def __init__(self, p: float = 0.5, *, eval: bool = None):
         """Drops full feature maps along the channel axis.
@@ -80,7 +80,7 @@ class Dropout1D(DropoutND):
         super().__init__(p=p, eval=eval, spatial_ndim=1)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Dropout2D(DropoutND):
     def __init__(self, p: float = 0.5, *, eval: bool = None):
         """Drops full feature maps along the channel axis.
@@ -101,7 +101,7 @@ class Dropout2D(DropoutND):
         super().__init__(p=p, eval=eval, spatial_ndim=2)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class Dropout3D(DropoutND):
     def __init__(self, p: float = 0.5, *, eval: bool = None):
         """Drops full feature maps along the channel axis.

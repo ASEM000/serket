@@ -2,20 +2,19 @@ from __future__ import annotations
 
 import functools as ft
 
-import jax.numpy as jnp
+import jax
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.callbacks import frozen_positive_int_cbs
 from serket.nn.crop import RandomCrop2D
 from serket.nn.padding import Pad2D
 from serket.nn.resize import Resize2D
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomApply:
     layer: int
-    p: float = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    p: float = pytc.field(callbacks=[pytc.freeze])
     eval: bool | None
 
     def __init__(self, layer, p: float = 0.5, ndim: int = 1, eval: bool | None = None):
@@ -50,14 +49,14 @@ class RandomApply:
         #     raise ValueError("Layer must be a `treeclass`.")
         self.layer = layer
 
-    def __call__(self, x: jnp.ndarray, key: jr.KeyArray = jr.PRNGKey(0)):
+    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):
         if self.eval is True or not jr.bernoulli(key, (self.p)):
             return x
 
         return self.layer(x)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomZoom2D:
     def __init__(
         self,
@@ -84,7 +83,7 @@ class RandomZoom2D:
         self.height_factor = height_factor
         self.width_factor = width_factor
 
-    def __call__(self, x: jnp.ndarray, key: jr.KeyArray = jr.PRNGKey(0)) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         keys = jr.split(key, 4)
 
         height_factor = jr.uniform(

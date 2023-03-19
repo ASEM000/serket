@@ -28,7 +28,7 @@ def random_contrast_nd(
     return adjust_contrast_nd(x, contrast_factor, spatial_ndim)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class AdjustContrastND:
     """Adjusts the contrast of an NDimage by scaling the pixel values by a factor.
 
@@ -53,7 +53,7 @@ class AdjustContrastND:
         return adjust_contrast_nd(x, self.contrast_factor, self.spatial_ndim)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class AdjustContrast2D(AdjustContrastND):
     def __init__(self, contrast_factor=1.0):
         """Adjusts the contrast of an image by scaling the pixel values by a factor.
@@ -63,7 +63,7 @@ class AdjustContrast2D(AdjustContrastND):
         super().__init__(contrast_factor=contrast_factor, spatial_ndim=2)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomContrastND:
     contrast_range: tuple = pytc.field(callbacks=[pytc.freeze])
 
@@ -90,7 +90,7 @@ class RandomContrastND:
         return random_contrast_nd(x, self.contrast_range, self.spatial_ndim, key=key)
 
 
-@ft.partial(pytc.treeclass, leafwise=True, indexing=True)
+@pytc.treeclass
 class RandomContrast2D(RandomContrastND):
     def __init__(self, contrast_range=(0.5, 1)):
         """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.
