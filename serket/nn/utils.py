@@ -304,11 +304,13 @@ def canonicalize_padding(
     Resolve padding to a tuple of tuples of ints.
 
     Args:
+    ----
         padding: padding to resolve
         kernel_size: kernel size to use for resolving padding
         name: name of the argument being resolved
 
     Examples:
+    --------
         >>> padding= (1, (2, 3), "same")
         >>> kernel_size = (3, 3, 3)
         >>> _canonicalize_padding(padding, kernel_size)

@@ -65,9 +65,11 @@ class Dropout1D(DropoutND):
         """Drops full feature maps along the channel axis.
 
         Args:
+
             p: fraction of an elements to be zeroed out
 
         Note:
+
             See:
                 https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
                 https://arxiv.org/abs/1411.4280
@@ -86,9 +88,11 @@ class Dropout2D(DropoutND):
         """Drops full feature maps along the channel axis.
 
         Args:
+
             p: fraction of an elements to be zeroed out
 
         Note:
+
             See:
                 https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
                 https://arxiv.org/abs/1411.4280
@@ -107,9 +111,11 @@ class Dropout3D(DropoutND):
         """Drops full feature maps along the channel axis.
 
         Args:
+
             p: fraction of an elements to be zeroed out
 
         Note:
+
             See:
                 https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
                 https://arxiv.org/abs/1411.4280

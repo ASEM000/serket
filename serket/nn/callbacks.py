@@ -75,7 +75,7 @@ def instance_cb_factory(expected_type: type | Sequence[type]):
 
 
 def scalar_like_cb(value: Any):
-    """Return a function that checks if the input is a trainable scalar"""
+    """Return a function that checks if the input is a trainable scalar."""
     if isinstance(value, (float, complex)):
         return value
     if (

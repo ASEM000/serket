@@ -16,11 +16,12 @@ from serket.nn.convolution import DepthwiseConv2D
 from serket.nn.fft_convolution import DepthwiseFFTConv2D
 from serket.nn.lazy_class import lazy_class
 
-_infer_func = lambda self, *a, **k: (a[0].shape[0],)
-_lazy_keywords = ["in_features"]
+
+def infer_func(self, *a, **k):
+    return (a[0].shape[0],)
 
 
-@ft.partial(lazy_class, lazy_keywords=_lazy_keywords, infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class AvgBlur2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -69,7 +70,7 @@ class AvgBlur2D:
         return self.conv2(self.conv1(x))
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class GaussianBlur2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -127,13 +128,11 @@ class GaussianBlur2D:
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
-    # @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    # @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x, **k) -> jax.Array:
         return self.conv1(self.conv2(x))
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class Filter2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -168,7 +167,7 @@ class Filter2D:
         return self.conv(x)
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=_infer_func)
+@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class FFTFilter2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])

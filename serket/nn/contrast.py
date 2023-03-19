@@ -57,6 +57,7 @@ class AdjustContrastND:
 class AdjustContrast2D(AdjustContrastND):
     def __init__(self, contrast_factor=1.0):
         """Adjusts the contrast of an image by scaling the pixel values by a factor.
+
         Args:
             contrast_factor: contrast factor to adjust the image by.
         """
@@ -94,6 +95,7 @@ class RandomContrastND:
 class RandomContrast2D(RandomContrastND):
     def __init__(self, contrast_range=(0.5, 1)):
         """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.
+
         Args:
             contrast_range: range of contrast factors to randomly sample from.
         """

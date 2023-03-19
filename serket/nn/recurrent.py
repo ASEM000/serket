@@ -65,7 +65,7 @@ class SimpleRNNCell(RNNCell):
     ):
         """Vanilla RNN cell that defines the update rule for the hidden state
         See:
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell
+            https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
 
         Args:
             in_features: the number of input features
@@ -441,7 +441,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            spatial_ndim: Number of spatial dimensions
+            spatial_ndim: Number of spatial dimensions.
 
         See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
@@ -498,7 +498,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            spatial_ndim: Number of spatial dimensions
+            spatial_ndim: Number of spatial dimensions.
 
         See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
@@ -555,7 +555,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            spatial_ndim: Number of spatial dimensions
+            spatial_ndim: Number of spatial dimensions.
 
         See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
@@ -626,7 +626,7 @@ class ConvGRUNDCell(SpatialRNNCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            spatial_ndim: Number of spatial dimensions
+            spatial_ndim: Number of spatial dimensions.
 
         """
         k1, k2 = jr.split(key, 2)
@@ -723,7 +723,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            spatial_ndim: Number of spatial dimensions
+            spatial_ndim: Number of spatial dimensions.
 
         """
         super().__init__(
@@ -784,7 +784,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            spatial_ndim: Number of spatial dimensions
+            spatial_ndim: Number of spatial dimensions.
 
         """
         super().__init__(
@@ -845,7 +845,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            spatial_ndim: Number of spatial dimensions
+            spatial_ndim: Number of spatial dimensions.
 
         """
         super().__init__(

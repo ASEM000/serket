@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import functools as ft
-
 import jax
 import jax.random as jr
 import pytreeclass as pytc

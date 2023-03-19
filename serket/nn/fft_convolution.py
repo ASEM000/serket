@@ -150,7 +150,10 @@ def fft_conv_general_dilated(
 
 
 lazy_keywords = ["in_features"]
-infer_func = lambda _, *a, **k: (a[0].shape[0],)
+
+
+def infer_func(_, *a, **k):
+    return (a[0].shape[0],)
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
@@ -519,7 +522,7 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """1D FFT Convolutional Transpose Layer
+        """1D FFT Convolutional Transpose Layer.
 
         Args:
             in_features : Number of input channels
@@ -568,7 +571,7 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """2D FFT Convolutional Transpose Layer
+        """2D FFT Convolutional Transpose Layer.
 
         Args:
             in_features : Number of input channels
@@ -617,7 +620,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """3D FFT Convolutional Transpose Layer
+        """3D FFT Convolutional Transpose Layer.
 
         Args:
             in_features : Number of input channels
@@ -691,7 +694,7 @@ class DepthwiseFFTConvND:
             spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
-        Examples:
+        Examples:----
             >>> l1 = DepthwiseConvND(3, 3, depth_multiplier=2, strides=2, padding="SAME")
             >>> l1(jnp.ones((3, 32, 32))).shape
             (3, 16, 16, 6)

@@ -29,7 +29,9 @@ from serket.nn.utils import (
 
 
 def test_canonicalize_init_func():
-    _check_partial = lambda f: _canonicalize_init_func(f, "test")
+    def _check_partial(f):
+        return _canonicalize_init_func(f, "test")
+
     k = jr.PRNGKey(0)
 
     assert _check_partial("he_normal")(k, (2, 2)).shape == (2, 2)

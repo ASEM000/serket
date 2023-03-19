@@ -60,7 +60,8 @@ class LayerNorm:
         return x̂
 
 
-infer_func = lambda self, *a, **k: (a[0].shape[0],)
+def infer_func(self, *a, **k):
+    return (a[0].shape[0],)
 
 
 @ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
@@ -147,5 +148,8 @@ class InstanceNorm(GroupNorm):
             affine : a boolean value that when set to True, this module has learnable affine parameters.
         """
         super().__init__(
-            in_features=in_features, groups=in_features, eps=eps, affine=affine
+            in_features=in_features,
+            groups=in_features,
+            eps=eps,
+            affine=affine,
         )

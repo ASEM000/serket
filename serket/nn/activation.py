@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import functools as ft
-
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
@@ -59,7 +57,7 @@ def snake(x: jax.Array, frequency: float = 1.0) -> jax.Array:
 
 @pytc.treeclass
 class AdaptiveLeakyReLU:
-    """Leaky ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
+    """Leaky ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf."""
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
     v: float = pytc.field(
@@ -72,7 +70,7 @@ class AdaptiveLeakyReLU:
 
 @pytc.treeclass
 class AdaptiveReLU:
-    """ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
+    """ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf."""
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
@@ -82,7 +80,7 @@ class AdaptiveReLU:
 
 @pytc.treeclass
 class AdaptiveSigmoid:
-    """Sigmoid activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
+    """Sigmoid activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf."""
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
@@ -92,7 +90,7 @@ class AdaptiveSigmoid:
 
 @pytc.treeclass
 class AdaptiveTanh:
-    """Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf"""
+    """Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf."""
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
@@ -297,7 +295,7 @@ class TanhShrink:
 
 @pytc.treeclass
 class ThresholdedReLU:
-    """Thresholded ReLU activation function"""
+    """Thresholded ReLU activation function."""
 
     theta: float = pytc.field(callbacks=[*non_negative_scalar_cbs, pytc.freeze])
 
@@ -307,7 +305,7 @@ class ThresholdedReLU:
 
 @pytc.treeclass
 class Mish:
-    """Mish activation function https://arxiv.org/pdf/1908.08681.pdf"""
+    """Mish activation function https://arxiv.org/pdf/1908.08681.pdf."""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return mish(x)
@@ -325,11 +323,9 @@ class PReLU:
 
 @pytc.treeclass
 class Snake:
-    """Snake activation function https://arxiv.org/pdf/2006.08195.pdf"""
+    """Snake activation function https://arxiv.org/pdf/2006.08195.pdf."""
 
-    a: float = pytc.field(
-        callbacks=[*non_negative_scalar_cbs, pytc.freeze], default=1.0
-    )
+    a: float = pytc.field(callbacks=[*non_negative_scalar_cbs, pytc.freeze], default=1.0)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return snake(x, self.a)
