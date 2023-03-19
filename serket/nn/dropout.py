@@ -6,25 +6,33 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.callbacks import (
-    instance_cb_factory,
-    range_cb_factory,
-    validate_spatial_in_shape,
-)
+from serket.nn.callbacks import range_cb_factory, validate_spatial_in_shape
 
-bool_or_none_cb = instance_cb_factory((bool, type(None)))
 frozen_in_zero_one_cbs = [range_cb_factory(0, 1), pytc.freeze]
 
 
 @pytc.treeclass
 class Dropout:
+    r"""Randomly zeroes some of the elements of the input
+    tensor with probability :attr:`p` using samples from a Bernoulli
+    distribution.
+
+    Args:
+        p: probability of an element to be zeroed. Default: 0.5
+
+    Example:
+        >>> import serket as sk
+        >>> import pytreeclass as pytc
+        >>> layer = sk.nn.Dropout(0.5)
+        >>> # change `p` to 0.0 to turn off dropout
+        >>> layer = layer.at["p"].set(0.0, is_leaf=pytc.is_frozen)
+    Note:
+        Use `p`= 0.0 to turn off dropout.
+    """
+
     p: float = pytc.field(default=0.5, callbacks=[*frozen_in_zero_one_cbs])
-    eval: bool = pytc.field(default=None, callbacks=[bool_or_none_cb])
 
     def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        if self.eval is True:
-            return x
-
         return jnp.where(jr.bernoulli(key, (1 - self.p), x.shape), x / (1 - self.p), 0)
 
 
@@ -48,20 +56,16 @@ class DropoutND:
 
     spatial_ndim: int = pytc.field(callbacks=[pytc.freeze])
     p: float = pytc.field(default=0.5, callbacks=[*frozen_in_zero_one_cbs])
-    eval: bool = pytc.field(default=None, callbacks=[bool_or_none_cb])
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
-        if self.eval is True:
-            return x
-
         mask = jr.bernoulli(key, 1 - self.p, shape=(x.shape[0],))
         return jnp.where(mask, x / (1 - self.p), 0)
 
 
 @pytc.treeclass
 class Dropout1D(DropoutND):
-    def __init__(self, p: float = 0.5, *, eval: bool = None):
+    def __init__(self, p: float = 0.5):
         """Drops full feature maps along the channel axis.
 
         Args:
@@ -79,12 +83,12 @@ class Dropout1D(DropoutND):
             >>> layer(jnp.ones((1, 10)))
             [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
-        super().__init__(p=p, eval=eval, spatial_ndim=1)
+        super().__init__(p=p, spatial_ndim=1)
 
 
 @pytc.treeclass
 class Dropout2D(DropoutND):
-    def __init__(self, p: float = 0.5, *, eval: bool = None):
+    def __init__(self, p: float = 0.5):
         """Drops full feature maps along the channel axis.
 
         Args:
@@ -102,12 +106,12 @@ class Dropout2D(DropoutND):
             >>> layer(jnp.ones((1, 10)))
             [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
-        super().__init__(p=p, eval=eval, spatial_ndim=2)
+        super().__init__(p=p, spatial_ndim=2)
 
 
 @pytc.treeclass
 class Dropout3D(DropoutND):
-    def __init__(self, p: float = 0.5, *, eval: bool = None):
+    def __init__(self, p: float = 0.5):
         """Drops full feature maps along the channel axis.
 
         Args:
@@ -125,4 +129,4 @@ class Dropout3D(DropoutND):
             >>> layer(jnp.ones((1, 10)))
             [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
-        super().__init__(p=p, eval=eval, spatial_ndim=3)
+        super().__init__(p=p, spatial_ndim=3)
