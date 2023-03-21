@@ -9,7 +9,6 @@ import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn.callbacks import init_func_cb, instance_cb_factory
-from serket.nn.lazy_class import LAZY_KW, lazy_class
 
 frozen_int_or_tuple_cb = [instance_cb_factory((int, tuple)), pytc.freeze]
 frozen_tuple_cb = [instance_cb_factory(tuple), pytc.freeze]
@@ -69,11 +68,6 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     return f"{input_string},{weight_string}->{result_string}"
 
 
-def infer_func(self, *a, **k):
-    return (tuple(xi.shape[-1] for xi in a),)
-
-
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class Multilinear:
     weight: jax.Array
@@ -223,12 +217,6 @@ class Bilinear(Multilinear):
         )
 
 
-def infer_func(self, *a, **k):
-    in_axes = getattr(self, LAZY_KW).keywords["in_axes"]
-    return (tuple(a[0].shape[i] for i in in_axes),)
-
-
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class GeneralLinear:
     weight: jax.Array

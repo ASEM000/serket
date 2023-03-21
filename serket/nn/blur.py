@@ -14,20 +14,12 @@ from serket.nn.callbacks import (
 )
 from serket.nn.convolution import DepthwiseConv2D
 from serket.nn.fft_convolution import DepthwiseFFTConv2D
-from serket.nn.lazy_class import lazy_class
 
 
-def infer_func(self, *a, **k):
-    return (a[0].shape[0],)
-
-
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class AvgBlur2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: int | tuple[int, int] = pytc.field(
-        callbacks=[*frozen_positive_int_cbs]
-    )
+    kernel_size: int | tuple[int, int] = pytc.field(callbacks=[*frozen_positive_int_cbs])  # fmt: skip
     conv1: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
     conv2: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
 
@@ -70,7 +62,6 @@ class AvgBlur2D:
         return self.conv2(self.conv1(x))
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class GaussianBlur2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -132,7 +123,6 @@ class GaussianBlur2D:
         return self.conv1(self.conv2(x))
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class Filter2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -167,7 +157,6 @@ class Filter2D:
         return self.conv(x)
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class FFTFilter2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])

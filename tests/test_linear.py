@@ -1,4 +1,3 @@
-import jax
 import jax.numpy as jnp
 
 # import jax.tree_util as jtu
@@ -73,32 +72,11 @@ def test_identity():
     npt.assert_allclose(x, layer(x))
 
 
-def test_lazy():
-    layer = Linear(None, 1)
-    assert layer.weight is None
-    assert layer(jnp.ones([10, 2])).shape == (10, 1)
-
-    layer = Bilinear(None, None, 1)
-    assert layer.weight is None
-    assert layer(jnp.ones([10, 2]), jnp.ones([10, 3])).shape == (10, 1)
-
-    with pytest.raises(ValueError):
-        layer = jax.jit(Linear(None, 1))
-        layer(jnp.ones([10, 2]))
-
-    with pytest.raises(ValueError):
-        layer = jax.jit(Bilinear(None, None, 1))
-        layer(jnp.ones([10, 2]), jnp.ones([10, 3]))
-
-
 def test_multi_linear():
     x = jnp.linspace(0, 1, 100)[:, None]
     lhs = Linear(1, 10)
     rhs = Multilinear((1,), 10)
     npt.assert_allclose(lhs(x), rhs(x), atol=1e-4)
-
-    lhs = Multilinear(None, 10)
-    assert lhs(x, x, x).shape == (100, 10)
 
     with pytest.raises(ValueError):
         Multilinear([1, 2], 10)
@@ -129,9 +107,3 @@ def test_general_linear():
 
     with pytest.raises(ValueError):
         GeneralLinear(in_features=(1,), in_axes=(0, -3), out_features=5)
-
-
-def test_lazy_general_linear():
-    x = jnp.ones([1, 2, 3, 4])
-    layer = GeneralLinear(None, in_axes=(0, 1), out_features=5)
-    assert layer(x).shape == (3, 4, 5)

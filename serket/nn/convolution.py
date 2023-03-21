@@ -20,24 +20,17 @@ from serket.nn.callbacks import (
     validate_in_features,
     validate_spatial_in_shape,
 )
-from serket.nn.lazy_class import lazy_class
 from serket.nn.utils import (
     DilationType,
     InitFuncType,
     KernelSizeType,
     PaddingType,
     StridesType,
-    _calculate_convolution_output_shape,
-    _calculate_transpose_padding,
+    calculate_convolution_output_shape,
+    calculate_transpose_padding,
     canonicalize,
-    canonicalize_padding,
+    delayed_canonicalize_padding,
 )
-
-lazy_keywords = ["in_features"]
-
-
-def infer_func(_, *a, **k):
-    return (a[0].shape[0],)
 
 
 @ft.lru_cache(maxsize=None)
@@ -45,7 +38,6 @@ def generate_conv_dim_numbers(spatial_ndim):
     return ConvDimensionNumbers(*((tuple(range(spatial_ndim + 2)),) * 3))
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class ConvND:
     weight: jax.Array
@@ -107,7 +99,7 @@ class ConvND:
         # needs more info to be checked
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")  # fmt: skip
         self.strides = canonicalize(strides, spatial_ndim, name="strides")
-        self.padding = canonicalize_padding(padding, self.kernel_size)
+        self.padding = padding  # delayed canonicalization
         self.input_dilation = canonicalize(input_dilation, spatial_ndim, name="input_dilation")  # fmt: skip
         self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
 
@@ -127,11 +119,18 @@ class ConvND:
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
+        padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
+            padding=self.padding,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+        )
+
         x = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             window_strides=self.strides,
-            padding=self.padding,
+            padding=padding,
             lhs_dilation=self.input_dilation,
             rhs_dilation=self.kernel_dilation,
             dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
@@ -299,7 +298,6 @@ class Conv3D(ConvND):
 # ----------------------------------------------------------------------------------------------------------------------#
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class ConvNDTranspose:
     weight: jax.Array
@@ -364,7 +362,7 @@ class ConvNDTranspose:
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
         self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
         self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, "kernel_dilation")  # fmt: skip
-        self.padding = canonicalize_padding(padding, self.kernel_size, "padding")  # fmt: skip
+        self.padding = padding  # delayed canonicalization
         self.output_padding = canonicalize(output_padding, spatial_ndim, "output_padding")  # fmt: skip
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
@@ -376,28 +374,35 @@ class ConvNDTranspose:
             bias_shape = (out_features, *(1,) * spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-        self.transposed_padding = _calculate_transpose_padding(
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
             padding=self.padding,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+        )
+
+        transposed_padding = calculate_transpose_padding(
+            padding=padding,
             extra_padding=self.output_padding,
             kernel_size=self.kernel_size,
             input_dilation=self.kernel_dilation,
         )
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
         y = jax.lax.conv_transpose(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             strides=self.strides,
-            padding=self.transposed_padding,
+            padding=transposed_padding,
             rhs_dilation=self.kernel_dilation,
             dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
         )
 
         if self.bias is None:
-            return y[0]
-        return (y + self.bias)[0]
+            return jnp.squeeze(y, 0)
+        return jnp.squeeze(y + self.bias, 0)
 
 
 @pytc.treeclass
@@ -548,7 +553,8 @@ class Conv3DTranspose(ConvNDTranspose):
 
 
 # ----------------------------------------------------------------------------------------------------------------------#
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
+
+
 @pytc.treeclass
 class DepthwiseConvND:
     weight: jax.Array
@@ -612,7 +618,7 @@ class DepthwiseConvND:
         self.input_dilation = canonicalize(1, spatial_ndim, "input_dilation")  # fmt: skip
         self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
 
-        self.padding = canonicalize_padding(padding, self.kernel_size, "padding")  # fmt: skip
+        self.padding = padding  # delayed canonicalization
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -626,11 +632,18 @@ class DepthwiseConvND:
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
+        padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
+            padding=self.padding,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+        )
+
         y = jax.lax.conv_general_dilated(
             lhs=jnp.expand_dims(x, axis=0),
             rhs=self.weight,
             window_strides=self.strides,
-            padding=self.padding,
+            padding=padding,
             lhs_dilation=self.input_dilation,
             rhs_dilation=self.kernel_dilation,
             dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
@@ -783,7 +796,6 @@ class DepthwiseConv3D(DepthwiseConvND):
 # ----------------------------------------------------------------------------------------------------------------------#
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class SeparableConvND:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -1021,11 +1033,6 @@ class SeparableConv3D(SeparableConvND):
 # ----------------------------------------------------------------------------------------------------------------------#
 
 
-def infer_func(self, *a, **k):
-    return (a[0].shape[0], a[0].shape[1:])
-
-
-@ft.partial(lazy_class, lazy_keywords=["in_features", "in_size"], infer_func=infer_func)
 @pytc.treeclass
 class ConvNDLocal:
     weight: jax.Array
@@ -1090,9 +1097,15 @@ class ConvNDLocal:
 
         self.input_dilation = canonicalize(input_dilation, spatial_ndim, "input_dilation")  # fmt: skip
         self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
-        self.padding = canonicalize_padding(padding, self.kernel_size, "padding")  # fmt: skip
 
-        self.out_size = _calculate_convolution_output_shape(
+        self.padding = delayed_canonicalize_padding(
+            self.in_size,
+            padding,
+            self.kernel_size,
+            self.strides,
+        )
+
+        self.out_size = calculate_convolution_output_shape(
             shape=self.in_size,
             kernel_size=self.kernel_size,
             padding=self.padding,

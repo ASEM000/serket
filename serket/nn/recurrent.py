@@ -10,7 +10,6 @@ import pytreeclass as pytc
 
 import serket as sk
 from serket.nn.callbacks import frozen_positive_int_cbs
-from serket.nn.lazy_class import lazy_class
 from serket.nn.utils import (
     _ACT_FUNC_MAP,
     DilationType,
@@ -40,11 +39,6 @@ class SimpleRNNState(RNNState):
     pass
 
 
-def infer_func(self, *args, **kwargs):
-    return (args[0].shape[0],)
-
-
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class SimpleRNNCell(RNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -125,7 +119,6 @@ class LSTMState(RNNState):
     cell_state: jax.Array
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class LSTMCell(RNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -211,7 +204,6 @@ class GRUState(RNNState):
     pass
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class GRUCell(RNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -304,7 +296,6 @@ class ConvLSTMNDState(RNNState):
     cell_state: jax.Array
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class ConvLSTMNDCell(SpatialRNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -584,7 +575,6 @@ class ConvGRUNDState(RNNState):
     pass
 
 
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class ConvGRUNDCell(SpatialRNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
@@ -868,10 +858,6 @@ class ConvGRU3DCell(ConvGRUNDCell):
 
 
 # =============================================== Scanning API ======================================================= #
-
-
-def infer_func(self, *args, **kwargs):
-    return (args[0].shape[1],)
 
 
 @pytc.treeclass

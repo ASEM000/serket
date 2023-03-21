@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import functools as ft
-
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
 from serket.nn.callbacks import frozen_positive_int_cbs, non_negative_scalar_cbs
-from serket.nn.lazy_class import lazy_class
 
 
 @pytc.treeclass
@@ -60,11 +57,6 @@ class LayerNorm:
         return x̂
 
 
-def infer_func(self, *a, **k):
-    return (a[0].shape[0],)
-
-
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class GroupNorm:
     γ: jax.Array = None

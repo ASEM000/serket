@@ -17,14 +17,13 @@ from serket.nn.callbacks import (
     validate_in_features,
     validate_spatial_in_shape,
 )
-from serket.nn.lazy_class import lazy_class
 from serket.nn.utils import (
     DilationType,
     InitFuncType,
     KernelSizeType,
     PaddingType,
     StridesType,
-    _calculate_transpose_padding,
+    calculate_transpose_padding,
     canonicalize,
     canonicalize_padding,
 )
@@ -149,14 +148,6 @@ def fft_conv_general_dilated(
     return jax.lax.slice(z, start, end, (1, 1, *strides))
 
 
-lazy_keywords = ["in_features"]
-
-
-def infer_func(_, *a, **k):
-    return (a[0].shape[0],)
-
-
-@ft.partial(lazy_class, lazy_keywords=["in_features"], infer_func=infer_func)
 @pytc.treeclass
 class FFTConvND:
     weight: jax.Array
@@ -401,7 +392,6 @@ class FFTConv3D(FFTConvND):
 
 
 # ----------------------------------------------------------------------------------------------------------------------#
-@ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
 @pytc.treeclass
 class FFTConvNDTranspose:
     weight: jax.Array
@@ -479,7 +469,7 @@ class FFTConvNDTranspose:
             bias_shape = (out_features, *(1,) * spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-        self.transposed_padding = _calculate_transpose_padding(
+        self.transposed_padding = calculate_transpose_padding(
             padding=self.padding,
             extra_padding=self.output_padding,
             kernel_size=self.kernel_size,
@@ -653,7 +643,6 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
 
 
 # ----------------------------------------------------------------------------------------------------------------------#
-@ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
 @pytc.treeclass
 class DepthwiseFFTConvND:
     weight: jax.Array
@@ -882,9 +871,6 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
 
 
 # ----------------------------------------------------------------------------------------------------------------------#
-
-
-@ft.partial(lazy_class, lazy_keywords=lazy_keywords, infer_func=infer_func)
 @pytc.treeclass
 class SeparableFFTConvND:
     depthwise_conv: DepthwiseFFTConvND
