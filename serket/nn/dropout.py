@@ -11,6 +11,15 @@ from serket.nn.callbacks import range_cb_factory, validate_spatial_in_shape
 frozen_in_zero_one_cbs = [range_cb_factory(0, 1), pytc.freeze]
 
 
+def dropout(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
+    return jnp.where(jr.bernoulli(key, (1 - p), x.shape), x / (1 - p), 0)
+
+
+def dropout_nd(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
+    mask = jr.bernoulli(key, 1 - p, shape=(x.shape[0],))
+    return jnp.where(mask, x / (1 - p), 0)
+
+
 @pytc.treeclass
 class Dropout:
     r"""Randomly zeroes some of the elements of the input
@@ -33,7 +42,7 @@ class Dropout:
     p: float = pytc.field(default=0.5, callbacks=[*frozen_in_zero_one_cbs])
 
     def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        return jnp.where(jr.bernoulli(key, (1 - self.p), x.shape), x / (1 - self.p), 0)
+        return dropout(x, p=self.p, key=key)
 
 
 @pytc.treeclass
@@ -59,8 +68,7 @@ class DropoutND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
-        mask = jr.bernoulli(key, 1 - self.p, shape=(x.shape[0],))
-        return jnp.where(mask, x / (1 - self.p), 0)
+        return dropout_nd(x, p=self.p, key=key)
 
 
 @pytc.treeclass

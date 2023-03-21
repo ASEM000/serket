@@ -78,7 +78,6 @@ from .laplace import Laplace2D
 from .linear import Bilinear, GeneralLinear, Identity, Linear, Multilinear
 from .normalization import GroupNorm, InstanceNorm, LayerNorm
 from .padding import Pad1D, Pad2D, Pad3D
-from .polynomial import Polynomial
 from .pooling import (
     AdaptiveAvgPool1D,
     AdaptiveAvgPool2D,

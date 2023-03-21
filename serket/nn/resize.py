@@ -1,15 +1,14 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.utils import (
-    _canonicalize,
-    _canonicalize_positive_int,
-    _check_spatial_in_shape,
-)
+from serket.nn.callbacks import frozen_positive_int_cbs, validate_spatial_in_shape
+from serket.nn.utils import canonicalize
 
 
 def _recursive_repeat(x, scale, axis):
@@ -20,14 +19,16 @@ def _recursive_repeat(x, scale, axis):
 
 @pytc.treeclass
 class RepeatND:
+    """repeats input along axes 1,2,3"""
+
+    scale: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+
     def __init__(self, scale: int = 1, spatial_ndim: int = 1):
-        """repeats input along axes 1,2,3"""
-        self.scale = _canonicalize_positive_int(scale, "scale")
+        self.scale = scale
         self.spatial_ndim = spatial_ndim
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-
         kernel_size = (-1,) * (self.spatial_ndim + 1)
         strides = (1,) * (self.spatial_ndim + 1)
 
@@ -72,15 +73,13 @@ class ResizeND:
     """
 
     def __init__(self, size, method="nearest", antialias=True, spatial_ndim=1):
-        self.size = _canonicalize(size, spatial_ndim, "size")
+        self.size = canonicalize(size, spatial_ndim, "size")
         self.method = method
         self.antialias = antialias
         self.spatial_ndim = spatial_ndim
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        assert x.ndim == self.spatial_ndim + 1, f"input must be {self.spatial_ndim}D"
-
         return jax.image.resize(
             x,
             shape=(x.shape[0], *self.size),
@@ -103,15 +102,12 @@ class UpsampleND:
         # the difference between this and ResizeND is that UpsamplingND
         # use scale instead of size
         # assert types
-        self.scale = _canonicalize(scale, spatial_ndim, "scale")
+        self.scale = canonicalize(scale, spatial_ndim, "scale")
         self.method = method
         self.spatial_ndim = spatial_ndim
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        msg = f"Input must have {self.spatial_ndim+1} dimensions, got {x.ndim}."
-        assert x.ndim == self.spatial_ndim + 1, msg
-
         resized_shape = tuple(s * x.shape[i + 1] for i, s in enumerate(self.scale))
         return jax.image.resize(
             x,

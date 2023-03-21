@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import pytreeclass as pytc
 
 from serket.nn.callbacks import validate_spatial_in_shape
-from serket.nn.utils import _canonicalize_padding
+from serket.nn.utils import delayed_canonicalize_padding
 
 
 @pytc.treeclass
@@ -31,7 +31,13 @@ class PadND:
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
         self.spatial_ndim = spatial_ndim
-        self.padding = _canonicalize_padding(padding, ((1,),) * self.spatial_ndim)
+
+        self.padding = delayed_canonicalize_padding(
+            in_dim=None,
+            padding=padding,
+            kernel_size=((1,),) * self.spatial_ndim,
+            strides=None,
+        )
         self.value = value
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")

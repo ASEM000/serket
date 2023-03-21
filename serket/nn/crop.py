@@ -7,7 +7,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn.callbacks import validate_spatial_in_shape
-from serket.nn.utils import _canonicalize, _check_spatial_in_shape
+from serket.nn.utils import canonicalize
 
 
 @pytc.treeclass
@@ -22,13 +22,12 @@ class CropND:
             size: size of the slice
             start: start of the slice
         """
-        self.size = _canonicalize(size, spatial_ndim, "size")
-        self.start = _canonicalize(start, spatial_ndim, "start")
+        self.size = canonicalize(size, spatial_ndim, "size")
+        self.start = canonicalize(start, spatial_ndim, "start")
         self.spatial_ndim = spatial_ndim
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
-        _check_spatial_in_shape(x, self.spatial_ndim)
         return jax.lax.dynamic_slice(x, (0, *self.start), (x.shape[0], *self.size))
 
 
@@ -62,7 +61,7 @@ class RandomCropND:
             size: size of the slice
             start: start of the slice
         """
-        self.size = _canonicalize(size, spatial_ndim, "size")
+        self.size = canonicalize(size, spatial_ndim, "size")
         self.spatial_ndim = spatial_ndim
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")

@@ -33,7 +33,6 @@ from serket.nn.pooling import (
 
 
 def test_MaxPool1D():
-
     layer = MaxPool1D(kernel_size=2, padding="SAME", strides=1)
     x = jnp.arange(1, 11).reshape(1, 10).astype(jnp.float32)
     npt.assert_allclose(layer(x), jnp.array([[2, 3, 4, 5, 6, 7, 8, 9, 10, 10]]))
@@ -49,7 +48,6 @@ def test_MaxPool1D():
 
 
 def test_MaxPool2D():
-
     layer = MaxPool2D(kernel_size=2, padding="SAME", strides=1)
     x = jnp.arange(1, 10).reshape(1, 3, 3).astype(jnp.float32)
     npt.assert_allclose(layer(x), jnp.array([[[5, 6, 6], [8, 9, 9], [8, 9, 9]]]))

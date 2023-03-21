@@ -25,7 +25,7 @@ from serket.nn.utils import (
     StridesType,
     calculate_transpose_padding,
     canonicalize,
-    canonicalize_padding,
+    delayed_canonicalize_padding,
 )
 
 
@@ -208,7 +208,7 @@ class FFTConvND:
         # needs more info to be checked
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")
         self.strides = canonicalize(strides, spatial_ndim, name="strides")
-        self.padding = canonicalize_padding(padding, self.kernel_size)
+        self.padding = padding
         self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
 
         if self.out_features % self.groups != 0:
@@ -227,11 +227,18 @@ class FFTConvND:
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
+        padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
+            padding=self.padding,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+        )
+
         y = fft_conv_general_dilated(
             jnp.expand_dims(x, axis=0),
             self.weight,
             strides=self.strides,
-            padding=self.padding,
+            padding=padding,
             groups=self.groups,
             dilation=self.kernel_dilation,
         )
@@ -453,7 +460,7 @@ class FFTConvNDTranspose:
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")
         self.strides = canonicalize(strides, spatial_ndim, name="strides")
         self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
-        self.padding = canonicalize_padding(padding, self.kernel_size)
+        self.padding = padding
         self.output_padding = canonicalize(output_padding, spatial_ndim, name="output_padding")  # fmt: skip
 
         if self.in_features % self.groups != 0:
@@ -469,21 +476,28 @@ class FFTConvNDTranspose:
             bias_shape = (out_features, *(1,) * spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-        self.transposed_padding = calculate_transpose_padding(
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
             padding=self.padding,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+        )
+
+        transposed_padding = calculate_transpose_padding(
+            padding=padding,
             extra_padding=self.output_padding,
             kernel_size=self.kernel_size,
             input_dilation=self.kernel_dilation,
         )
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
         y = fft_conv_general_dilated(
             jnp.expand_dims(x, axis=0),
             self.weight,
             strides=self.strides,
-            padding=self.transposed_padding,
+            padding=transposed_padding,
             groups=self.groups,
             dilation=self.kernel_dilation,
         )
@@ -707,7 +721,7 @@ class DepthwiseFFTConvND:
         self.input_dilation = canonicalize(1, spatial_ndim, "input_dilation")  # fmt: skip
         self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
 
-        self.padding = canonicalize_padding(padding, self.kernel_size, "padding")  # fmt: skip
+        self.padding = padding
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -721,11 +735,18 @@ class DepthwiseFFTConvND:
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
+        padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
+            padding=self.padding,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+        )
+
         y = fft_conv_general_dilated(
             jnp.expand_dims(x, axis=0),
             self.weight,
             strides=self.strides,
-            padding=self.padding,
+            padding=padding,
             groups=x.shape[0],
             dilation=self.kernel_dilation,
         )

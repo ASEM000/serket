@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools as ft
 from typing import Callable
 
 import jax
@@ -7,12 +8,8 @@ import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.utils import (
-    _canonicalize,
-    _canonicalize_kernel,
-    _canonicalize_strides,
-    _check_spatial_in_shape,
-)
+from serket.nn.callbacks import validate_spatial_in_shape
+from serket.nn.utils import canonicalize
 
 # Based on colab hardware benchmarks `kernex` seems to
 # be faster on CPU and on par with JAX on GPU.
@@ -44,8 +41,8 @@ class GeneralPoolND:
             spatial_ndim: number of dimensions
             func: function to apply to the kernel
         """
-        self.kernel_size = _canonicalize_kernel(kernel_size, spatial_ndim)
-        self.strides = _canonicalize_strides(strides, spatial_ndim)
+        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")
+        self.strides = canonicalize(strides, spatial_ndim, "strides")
         self.padding = padding
         self.spatial_ndim = spatial_ndim
 
@@ -57,8 +54,8 @@ class GeneralPoolND:
 
         self.func = _poolnd
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x, **kwargs):
-        _check_spatial_in_shape(x, self.spatial_ndim)
         return self.func(x)
 
 
@@ -91,8 +88,8 @@ class GlobalPoolND:
         self.spatial_ndim = spatial_ndim
         self.func = func
 
-    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
-        _check_spatial_in_shape(x, self.spatial_ndim)
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
         return self.func(x, axis=axes, keepdims=self.keepdims)
 
@@ -125,12 +122,12 @@ class AdaptivePoolND:
             * kernel_size_i = input_size_i - (output_size_i-1)*stride_i
             * padding_i = "valid"
         """
-        self.output_size = _canonicalize(output_size, spatial_ndim, "output_size")
+        self.output_size = canonicalize(output_size, spatial_ndim, "output_size")
         self.spatial_ndim = spatial_ndim
         self.func = func
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x, **kwargs):
-        _check_spatial_in_shape(x, self.spatial_ndim)
         input_size = x.shape[1:]
         output_size = self.output_size
         strides = tuple(i // o for i, o in zip(input_size, output_size))
@@ -160,46 +157,117 @@ class AdaptiveConcatPoolND:
             output_size, func=jnp.max, spatial_ndim=spatial_ndim
         )
 
-    def __call__(self, x, **kwargs):
-        _check_spatial_in_shape(x, self.spatial_ndim)
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    def __call__(self, x, **k):
         return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
 
 
 @pytc.treeclass
 class MaxPool1D(GeneralPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1, func=jnp.max)
+    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+        """1D Max Pooling layer
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel (valid, same) or tuple of ints
+        """
+        super().__init__(
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            spatial_ndim=1,
+            func=jnp.max,
+        )
 
 
-# write all the other pooling layers here
 @pytc.treeclass
 class MaxPool2D(GeneralPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2, func=jnp.max)
+    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+        """2D Max Pooling layer
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel (valid, same) or tuple of ints
+        """
+        super().__init__(
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            spatial_ndim=2,
+            func=jnp.max,
+        )
 
 
 @pytc.treeclass
 class MaxPool3D(GeneralPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3, func=jnp.max)
+    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+        """3D Max Pooling layer
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel (valid, same) or tuple of ints
+        """
+        super().__init__(
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            spatial_ndim=3,
+            func=jnp.max,
+        )
 
 
 @pytc.treeclass
 class AvgPool1D(GeneralPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1, func=jnp.mean)
+    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+        """1D Average Pooling layer
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel (valid, same) or tuple of ints
+        """
+        super().__init__(
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            spatial_ndim=1,
+            func=jnp.mean,
+        )
 
 
 @pytc.treeclass
 class AvgPool2D(GeneralPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2, func=jnp.mean)
+    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+        """2D Average Pooling layer
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel (valid, same) or tuple of ints
+        """
+        super().__init__(
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            spatial_ndim=2,
+            func=jnp.mean,
+        )
 
 
 @pytc.treeclass
 class AvgPool3D(GeneralPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3, func=jnp.mean)
+    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+        """3D Average Pooling layer
+        Args:
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel (valid, same) or tuple of ints
+        """
+        super().__init__(
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            spatial_ndim=3,
+            func=jnp.mean,
+        )
 
 
 @pytc.treeclass

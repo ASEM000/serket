@@ -7,6 +7,76 @@ import pytreeclass as pytc
 from serket.nn.callbacks import frozen_positive_int_cbs, non_negative_scalar_cbs
 
 
+def layer_norm(
+    x: jax.Array,
+    *,
+    γ: jax.Array,
+    β: jax.Array,
+    ε: float,
+    normalized_shape: int | tuple[int],
+) -> jax.Array:
+    """Layer Normalization
+    See: https://nn.labml.ai/normalization/layer_norm/index.html
+    transform the input by scaling and shifting to have zero mean and unit variance.
+
+    Args:
+        x: input array
+        γ: scale
+        β: shift
+        ε: a value added to the denominator for numerical stability.
+        normalized_shape: the shape of the input to be normalized.
+    """
+    dims = tuple(range(len(x.shape) - len(normalized_shape), len(x.shape)))
+
+    μ = jnp.mean(x, axis=dims, keepdims=True)
+    σ_2 = jnp.var(x, axis=dims, keepdims=True)
+    x̂ = (x - μ) * jax.lax.rsqrt((σ_2 + ε))
+
+    if γ is not None and β is not None:
+        return x̂ * γ + β
+    return x̂
+
+
+def group_norm(
+    x: jax.Array,
+    *,
+    γ: jax.Array,
+    β: jax.Array,
+    ε: float,
+    in_features: int,
+    groups: int,
+) -> jax.Array:
+    """Group Normalization
+    See: https://nn.labml.ai/normalization/group_norm/index.html
+    transform the input by scaling and shifting to have zero mean and unit variance.
+
+    Args:
+        x: input array
+        γ: scale
+        β: shift
+        ε: a value added to the denominator for numerical stability.
+        in_features: number of input features
+        groups: number of groups to separate the channels into
+    """
+    if len(x.shape) <= 1:
+        raise ValueError("Input must have at least 2 dimensions")
+
+    # split channels into groups
+    xx = x.reshape(groups, in_features // groups, *x.shape[1:])
+    dims = tuple(range(1, x.ndim + 1))
+
+    μ = jnp.mean(xx, axis=dims, keepdims=True)
+    σ_2 = jnp.var(xx, axis=dims, keepdims=True)
+    x̂ = (xx - μ) * jax.lax.rsqrt((σ_2 + ε))
+    x̂ = x̂.reshape(*x.shape)
+
+    if γ is not None and β is not None:
+        γ = jnp.expand_dims(γ, axis=(dims[:-1]))
+        β = jnp.expand_dims(β, axis=(dims[:-1]))
+        x̂ = x̂ * γ + β
+    return x̂
+
+
 @pytc.treeclass
 class LayerNorm:
     γ: jax.Array = None
@@ -40,21 +110,18 @@ class LayerNorm:
         self.ε = eps
         self.affine = affine
 
-        if self.affine:
-            # make γ and β trainable
-            self.γ = jnp.ones(normalized_shape)
-            self.β = jnp.zeros(normalized_shape)
+        # make γ and β trainable
+        self.γ = jnp.ones(normalized_shape) if self.affine else None
+        self.β = jnp.zeros(normalized_shape) if self.affine else None
 
     def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
-        dims = tuple(range(len(x.shape) - len(self.normalized_shape), len(x.shape)))
-
-        μ = jnp.mean(x, axis=dims, keepdims=True)
-        σ_2 = jnp.var(x, axis=dims, keepdims=True)
-        x̂ = (x - μ) * jax.lax.rsqrt((σ_2 + self.ε))
-
-        x̂ = (x̂ * self.γ + self.β) if self.affine else x̂
-
-        return x̂
+        return layer_norm(
+            x,
+            γ=self.γ,
+            β=self.β,
+            ε=self.ε,
+            normalized_shape=self.normalized_shape,
+        )
 
 
 @pytc.treeclass
@@ -96,29 +163,19 @@ class GroupNorm:
             msg = f"in_features must be divisible by groups. Got {in_features} and {groups}"
             raise ValueError(msg)
 
-        if self.affine:
-            # make γ and β trainable
-            self.γ = jnp.ones(self.in_features)
-            self.β = jnp.zeros(self.in_features)
+        # make γ and β trainable
+        self.γ = jnp.ones(self.in_features) if self.affine else None
+        self.β = jnp.zeros(self.in_features) if self.affine else None
 
     def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
-        if len(x.shape) <= 1:
-            raise ValueError("Input must have at least 2 dimensions")
-
-        # split channels into groups
-        xx = x.reshape(self.groups, self.in_features // self.groups, *x.shape[1:])
-        dims = tuple(range(1, x.ndim + 1))
-
-        μ = jnp.mean(xx, axis=dims, keepdims=True)
-        σ_2 = jnp.var(xx, axis=dims, keepdims=True)
-        x̂ = (xx - μ) * jax.lax.rsqrt((σ_2 + self.ε))
-        x̂ = x̂.reshape(*x.shape)
-
-        if self.affine:
-            γ = jnp.expand_dims(self.γ, axis=(dims[:-1]))
-            β = jnp.expand_dims(self.β, axis=(dims[:-1]))
-            x̂ = x̂ * γ + β
-        return x̂
+        return group_norm(
+            x=x,
+            γ=self.γ,
+            β=self.β,
+            ε=self.ε,
+            in_features=self.in_features,
+            groups=self.groups,
+        )
 
 
 @pytc.treeclass

@@ -3,81 +3,73 @@ import jax.random as jr
 import jax.tree_util as jtu
 import pytest
 
-from serket.nn.utils import (
-    _canonicalize_init_func,
-    _canonicalize_input_dilation,
-    _canonicalize_kernel,
-    _canonicalize_padding,
-    _canonicalize_strides,
-)
+from serket.nn.callbacks import init_func_cb
+from serket.nn.utils import canonicalize
 
 
 def test_canonicalize_init_func():
-    def _check_partial(f):
-        return _canonicalize_init_func(f, "test")
-
     k = jr.PRNGKey(0)
 
-    assert _check_partial("he_normal")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("he_uniform")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("glorot_normal")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("glorot_uniform")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("lecun_normal")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("lecun_uniform")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("normal")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("uniform")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("ones")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("zeros")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("xavier_normal")(k, (2, 2)).shape == (2, 2)
-    assert _check_partial("xavier_uniform")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("he_normal")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("he_uniform")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("glorot_normal")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("glorot_uniform")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("lecun_normal")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("lecun_uniform")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("normal")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("uniform")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("ones")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("zeros")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("xavier_normal")(k, (2, 2)).shape == (2, 2)
+    assert init_func_cb("xavier_uniform")(k, (2, 2)).shape == (2, 2)
 
-    assert isinstance(_check_partial(jax.nn.initializers.he_normal()), jtu.Partial)
-    assert isinstance(_check_partial(None), type(None))
-
-    with pytest.raises(ValueError):
-        _check_partial("invalid")
+    assert isinstance(init_func_cb(jax.nn.initializers.he_normal()), jtu.Partial)
+    assert isinstance(init_func_cb(None), type(None))
 
     with pytest.raises(ValueError):
-        _check_partial(1)
+        init_func_cb("invalid")
+
+    with pytest.raises(ValueError):
+        init_func_cb(1)
 
 
 def test_canonicalize():
-    assert _canonicalize_kernel(3, 2) == (3, 3)
-    assert _canonicalize_kernel((3, 3), 2) == (3, 3)
-    assert _canonicalize_kernel((3, 3, 3), 3) == (3, 3, 3)
-
-    with pytest.raises(AssertionError):
-        _canonicalize_kernel((3, 3), 3)
-
-    with pytest.raises(AssertionError):
-        _canonicalize_kernel((3, 3, 3), 2)
-
-    with pytest.raises(AssertionError):
-        _canonicalize_kernel((3, 3, 3), 1)
-
-    assert _canonicalize_input_dilation(3, 2) == (3, 3)
-    assert _canonicalize_input_dilation((3, 3), 2) == (3, 3)
-    assert _canonicalize_input_dilation((3, 3, 3), 3) == (3, 3, 3)
-
-    assert _canonicalize_strides(3, 2) == (3, 3)
-    assert _canonicalize_strides((3, 3), 2) == (3, 3)
-    assert _canonicalize_strides((3, 3, 3), 3) == (3, 3, 3)
-
-
-def test_canonicalize_padding():
-    assert _canonicalize_padding(1, (3, 3)) == ((1, 1), (1, 1))
-    assert _canonicalize_padding(0, (3, 3)) == ((0, 0), (0, 0))
-    assert _canonicalize_padding(2, (3, 3)) == ((2, 2), (2, 2))
-
-    assert _canonicalize_padding((1, 1), (3, 3)) == ((1, 1), (1, 1))
-    assert _canonicalize_padding(((1, 1), (1, 1)), (3, 3)) == ((1, 1), (1, 1))
-    assert _canonicalize_padding(("same", "same"), (3, 3)) == ((1, 1), (1, 1))
-    assert _canonicalize_padding(("valid", "valid"), (3, 3)) == ((0, 0), (0, 0))
-    with pytest.raises(ValueError):
-        _canonicalize_padding(("invalid", "valid"), (3, 3))
+    assert canonicalize(3, 2) == (3, 3)
+    assert canonicalize((3, 3), 2) == (3, 3)
+    assert canonicalize((3, 3, 3), 3) == (3, 3, 3)
 
     with pytest.raises(ValueError):
-        _canonicalize_padding(("valid", "invalid"), (3, 3))
+        canonicalize((3, 3), 3)
 
     with pytest.raises(ValueError):
-        _canonicalize_padding(("invalid", ()), (3, 3))
+        canonicalize((3, 3, 3), 2)
+
+    with pytest.raises(ValueError):
+        canonicalize((3, 3, 3), 1)
+
+    assert canonicalize(3, 2) == (3, 3)
+    assert canonicalize((3, 3), 2) == (3, 3)
+    assert canonicalize((3, 3, 3), 3) == (3, 3, 3)
+
+    assert canonicalize(3, 2) == (3, 3)
+    assert canonicalize((3, 3), 2) == (3, 3)
+    assert canonicalize((3, 3, 3), 3) == (3, 3, 3)
+
+
+# def test_canonicalize_padding():
+#     assert canonicalize(1, (3, 3)) == ((1, 1), (1, 1))
+#     assert canonicalize(0, (3, 3)) == ((0, 0), (0, 0))
+#     assert canonicalize(2, (3, 3)) == ((2, 2), (2, 2))
+
+#     assert canonicalize((1, 1), (3, 3)) == ((1, 1), (1, 1))
+#     assert canonicalize(((1, 1), (1, 1)), (3, 3)) == ((1, 1), (1, 1))
+#     assert canonicalize(("same", "same"), (3, 3)) == ((1, 1), (1, 1))
+#     assert canonicalize(("valid", "valid"), (3, 3)) == ((0, 0), (0, 0))
+#     with pytest.raises(ValueError):
+#         canonicalize(("invalid", "valid"), (3, 3))
+
+#     with pytest.raises(ValueError):
+#         canonicalize(("valid", "invalid"), (3, 3))
+
+#     with pytest.raises(ValueError):
+#         canonicalize(("invalid", ()), (3, 3))

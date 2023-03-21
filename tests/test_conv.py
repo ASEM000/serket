@@ -30,7 +30,7 @@ def test_convnd_tf(tf_layer, sk_layer, ndim):
     spatial_dim = (10,) * ndim
     batch_size = 1
 
-    for di, do, ki, si, di, gi, pi in product(
+    for di, do, ki, si, ddi, gi, pi in product(
         in_features,
         out_features,
         kernel_size,
@@ -44,7 +44,7 @@ def test_convnd_tf(tf_layer, sk_layer, ndim):
             kernel_size=ki,
             strides=si,
             padding=pi,
-            dilation_rate=di,
+            dilation_rate=ddi,
             groups=gi,
         )
         tf_conv.build((batch_size, *spatial_dim, di * gi))
@@ -55,7 +55,7 @@ def test_convnd_tf(tf_layer, sk_layer, ndim):
             kernel_size=ki,
             strides=si,
             padding=pi,
-            kernel_dilation=di,
+            kernel_dilation=ddi,
             groups=gi,
         )
 
@@ -105,7 +105,7 @@ def test_convnd_torch(nn_layer, sk_layer, ndim):
     spatial_dim = (10,) * ndim
     batch_size = 1
 
-    for di, do, ki, si, di, gi, pi in product(
+    for di, do, ki, si, ddi, gi, pi in product(
         in_features,
         out_features,
         kernel_size,
@@ -120,7 +120,7 @@ def test_convnd_torch(nn_layer, sk_layer, ndim):
             kernel_size=ki,
             stride=si,
             padding=pi,
-            dilation=di,
+            dilation=ddi,
             groups=gi,
         )
 
@@ -130,7 +130,7 @@ def test_convnd_torch(nn_layer, sk_layer, ndim):
             kernel_size=ki,
             strides=si,
             padding=pi,
-            kernel_dilation=di,
+            kernel_dilation=ddi,
             groups=gi,
         )
 
@@ -153,3 +153,65 @@ def test_convnd_torch(nn_layer, sk_layer, ndim):
         y_sk = sk_conv(x_sk)
 
         npt.assert_allclose(y_nn, y_sk, atol=1e-6)
+
+
+@pytest.mark.parametrize(
+    "tf_layer,sk_layer,ndim",
+    [
+        (tfk.layers.DepthwiseConv1D, sk.nn.DepthwiseConv1D, 1),
+        (tfk.layers.DepthwiseConv2D, sk.nn.DepthwiseConv2D, 2),
+    ],
+)
+def test_depthwise_convnd_tf(tf_layer, sk_layer, ndim):
+    in_features = [5]
+    padding_choice = ["same", "valid"]
+    kernel_size = [1, 2, 3]
+    stride = [1, 2, 3]
+    spatial_dim = (10,) * ndim
+    batch_size = 1
+
+    for di, ki, si, pi in product(
+        in_features,
+        kernel_size,
+        stride,
+        padding_choice,
+    ):
+        tf_conv = tf_layer(
+            kernel_size=ki,
+            strides=si,
+            padding=pi,
+        )
+        tf_conv.build((batch_size, *spatial_dim, di))
+
+        sk_conv = sk_layer(
+            di,
+            kernel_size=ki,
+            strides=si,
+            padding=pi,
+        )
+
+        tf_bias = tf_conv.bias.numpy().reshape(-1, *(1,) * ndim)
+        tf_weight = tf_conv.weights[0].numpy()
+
+        # transform the weights
+        # (kernel_sizes, in_dim, out_dim) -> (out_dim, in_dim, kernel_sizes)
+        tf_weight = jnp.transpose(tf_weight, (-2, -1, *range(ndim)))
+
+        # set the weights to the serket layer
+        sk_conv = sk_conv.at["weight"].set(tf_weight)
+        sk_conv = sk_conv.at["bias"].set(tf_bias)
+
+        # create a random input
+        x_tf = tf.random.normal((batch_size, *spatial_dim, di))
+
+        # convert the output to numpy channels first
+        y_tf = tf_conv(x_tf)[0].numpy()
+        y_tf = jnp.transpose(y_tf, (-1, *range(ndim)))
+
+        # remove the batch dimension
+        x_sk = x_tf.numpy()[0]
+        # convert the input to channels first input
+        x_sk = jnp.transpose(x_sk, (-1, *range(ndim)))
+        y_sk = sk_conv(x_sk)
+
+        npt.assert_allclose(y_tf, y_sk, atol=1e-6)
