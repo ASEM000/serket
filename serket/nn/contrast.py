@@ -53,7 +53,6 @@ class AdjustContrastND:
         return adjust_contrast_nd(x, self.contrast_factor, self.spatial_ndim)
 
 
-@pytc.treeclass
 class AdjustContrast2D(AdjustContrastND):
     def __init__(self, contrast_factor=1.0):
         """Adjusts the contrast of an image by scaling the pixel values by a factor.
@@ -92,7 +91,6 @@ class RandomContrastND:
         return random_contrast_nd(x, self.contrast_range, self.spatial_ndim, key=key)
 
 
-@pytc.treeclass
 class RandomContrast2D(RandomContrastND):
     def __init__(self, contrast_range=(0.5, 1)):
         """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.

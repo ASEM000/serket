@@ -31,21 +31,18 @@ class CropND:
         return jax.lax.dynamic_slice(x, (0, *self.start), (x.shape[0], *self.size))
 
 
-@pytc.treeclass
 class Crop1D(CropND):
     def __init__(self, size: int | tuple[int, ...], start: int | tuple[int, ...]):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input."""
         super().__init__(size, start, spatial_ndim=1)
 
 
-@pytc.treeclass
 class Crop2D(CropND):
     def __init__(self, size: int | tuple[int, ...], start: int | tuple[int, ...]):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input."""
         super().__init__(size, start, spatial_ndim=2)
 
 
-@pytc.treeclass
 class Crop3D(CropND):
     def __init__(self, size: int | tuple[int, ...], start: int | tuple[int, ...]):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input."""
@@ -73,7 +70,6 @@ class RandomCropND:
         return jax.lax.dynamic_slice(x, (0, *start), (x.shape[0], *self.size))
 
 
-@pytc.treeclass
 class RandomCrop1D(RandomCropND):
     def __init__(self, size):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
@@ -85,7 +81,6 @@ class RandomCrop1D(RandomCropND):
         super().__init__(size, spatial_ndim=1)
 
 
-@pytc.treeclass
 class RandomCrop2D(RandomCropND):
     def __init__(self, size):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
@@ -97,7 +92,6 @@ class RandomCrop2D(RandomCropND):
         super().__init__(size, spatial_ndim=2)
 
 
-@pytc.treeclass
 class RandomCrop3D(RandomCropND):
     def __init__(self, size):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.

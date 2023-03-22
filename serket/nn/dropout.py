@@ -71,7 +71,6 @@ class DropoutND:
         return dropout_nd(x, p=self.p, key=key)
 
 
-@pytc.treeclass
 class Dropout1D(DropoutND):
     def __init__(self, p: float = 0.5):
         """Drops full feature maps along the channel axis.
@@ -94,7 +93,6 @@ class Dropout1D(DropoutND):
         super().__init__(p=p, spatial_ndim=1)
 
 
-@pytc.treeclass
 class Dropout2D(DropoutND):
     def __init__(self, p: float = 0.5):
         """Drops full feature maps along the channel axis.
@@ -117,7 +115,6 @@ class Dropout2D(DropoutND):
         super().__init__(p=p, spatial_ndim=2)
 
 
-@pytc.treeclass
 class Dropout3D(DropoutND):
     def __init__(self, p: float = 0.5):
         """Drops full feature maps along the channel axis.

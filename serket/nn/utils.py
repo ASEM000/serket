@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import functools as ft
-from types import FunctionType
 from typing import Callable, Sequence, Tuple, Union
 
 import jax
-import jax.nn.initializers as ji
 import jax.numpy as jnp
 import jax.random as jr
-import jax.tree_util as jtu
 
 
 @ft.lru_cache(maxsize=128)
@@ -30,12 +27,6 @@ def calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padd
     )
 
 
-def _rename_func(func: Callable, name: str) -> Callable:
-    """Rename a function."""
-    func.__name__ = name
-    return func
-
-
 _ACT_FUNC_MAP = {
     "tanh": jax.nn.tanh,
     "relu": jax.nn.relu,
@@ -43,38 +34,6 @@ _ACT_FUNC_MAP = {
     "hard_sigmoid": jax.nn.hard_sigmoid,
     None: lambda x: x,
 }
-
-
-_INIT_FUNC_MAP = {
-    "he_normal": _rename_func(ji.he_normal(), "he_normal_init"),
-    "he_uniform": _rename_func(ji.he_uniform(), "he_uniform_init"),
-    "glorot_normal": _rename_func(ji.glorot_normal(), "glorot_normal_init"),
-    "glorot_uniform": _rename_func(ji.glorot_uniform(), "glorot_uniform_init"),
-    "lecun_normal": _rename_func(ji.lecun_normal(), "lecun_normal_init"),
-    "lecun_uniform": _rename_func(ji.lecun_uniform(), "lecun_uniform_init"),
-    "normal": _rename_func(ji.normal(), "normal_init"),
-    "uniform": _rename_func(ji.uniform(), "uniform_init"),
-    "ones": _rename_func(ji.ones, "ones_init"),
-    "zeros": _rename_func(ji.zeros, "zeros_init"),
-    "xavier_normal": _rename_func(ji.xavier_normal(), "xavier_normal_init"),
-    "xavier_uniform": _rename_func(ji.xavier_uniform(), "xavier_uniform_init"),
-    "orthogonal": _rename_func(ji.orthogonal(), "orthogonal_init"),
-}
-
-
-def _canonicalize_init_func(init_func: str | Callable, name: str) -> Callable | None:
-    if isinstance(init_func, FunctionType):
-        return jtu.Partial(init_func)
-
-    elif isinstance(init_func, str):
-        if init_func in _INIT_FUNC_MAP:
-            return jtu.Partial(_INIT_FUNC_MAP[init_func])
-        raise ValueError(f"{name} must be one of {list(_INIT_FUNC_MAP.keys())}")
-
-    elif init_func is None:
-        return None
-
-    raise ValueError(f"`{name}` must be a string or a function.")
 
 
 def calculate_convolution_output_shape(shape, kernel_size, padding, strides):

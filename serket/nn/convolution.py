@@ -142,7 +142,6 @@ class ConvND:
         return jnp.squeeze((x + self.bias), 0)
 
 
-@pytc.treeclass
 class Conv1D(ConvND):
     def __init__(
         self,
@@ -193,7 +192,6 @@ class Conv1D(ConvND):
         )
 
 
-@pytc.treeclass
 class Conv2D(ConvND):
     def __init__(
         self,
@@ -244,7 +242,6 @@ class Conv2D(ConvND):
         )
 
 
-@pytc.treeclass
 class Conv3D(ConvND):
     def __init__(
         self,
@@ -405,7 +402,6 @@ class ConvNDTranspose:
         return jnp.squeeze(y + self.bias, 0)
 
 
-@pytc.treeclass
 class Conv1DTranspose(ConvNDTranspose):
     def __init__(
         self,
@@ -454,7 +450,6 @@ class Conv1DTranspose(ConvNDTranspose):
         )
 
 
-@pytc.treeclass
 class Conv2DTranspose(ConvNDTranspose):
     def __init__(
         self,
@@ -503,7 +498,6 @@ class Conv2DTranspose(ConvNDTranspose):
         )
 
 
-@pytc.treeclass
 class Conv3DTranspose(ConvNDTranspose):
     def __init__(
         self,
@@ -655,7 +649,6 @@ class DepthwiseConvND:
         return jnp.squeeze((y + self.bias), 0)
 
 
-@pytc.treeclass
 class DepthwiseConv1D(DepthwiseConvND):
     def __init__(
         self,
@@ -701,7 +694,6 @@ class DepthwiseConv1D(DepthwiseConvND):
         )
 
 
-@pytc.treeclass
 class DepthwiseConv2D(DepthwiseConvND):
     def __init__(
         self,
@@ -747,7 +739,6 @@ class DepthwiseConv2D(DepthwiseConvND):
         )
 
 
-@pytc.treeclass
 class DepthwiseConv3D(DepthwiseConvND):
     def __init__(
         self,
@@ -874,7 +865,6 @@ class SeparableConvND:
         return x
 
 
-@pytc.treeclass
 class SeparableConv1D(SeparableConvND):
     def __init__(
         self,
@@ -926,7 +916,6 @@ class SeparableConv1D(SeparableConvND):
         )
 
 
-@pytc.treeclass
 class SeparableConv2D(SeparableConvND):
     def __init__(
         self,
@@ -978,7 +967,6 @@ class SeparableConv2D(SeparableConvND):
         )
 
 
-@pytc.treeclass
 class SeparableConv3D(SeparableConvND):
     def __init__(
         self,
@@ -1147,7 +1135,6 @@ class ConvNDLocal:
         return jnp.squeeze((y + self.bias), 0)
 
 
-@pytc.treeclass
 class Conv1DLocal(ConvNDLocal):
     def __init__(
         self,
@@ -1196,7 +1183,6 @@ class Conv1DLocal(ConvNDLocal):
         )
 
 
-@pytc.treeclass
 class Conv2DLocal(ConvNDLocal):
     def __init__(
         self,
@@ -1245,7 +1231,6 @@ class Conv2DLocal(ConvNDLocal):
         )
 
 
-@pytc.treeclass
 class Conv3DLocal(ConvNDLocal):
     def __init__(
         self,

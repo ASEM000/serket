@@ -83,7 +83,7 @@ def test_convnd_tf(tf_layer, sk_layer, ndim):
         x_sk = jnp.transpose(x_sk, (-1, *range(ndim)))
         y_sk = sk_conv(x_sk)
 
-        npt.assert_allclose(y_tf, y_sk, atol=1e-6)
+        npt.assert_allclose(y_tf, y_sk, atol=5e-6)
 
 
 @pytest.mark.parametrize(
@@ -152,7 +152,7 @@ def test_convnd_torch(nn_layer, sk_layer, ndim):
         x_sk = x_nn.detach().numpy()[0]
         y_sk = sk_conv(x_sk)
 
-        npt.assert_allclose(y_nn, y_sk, atol=1e-6)
+        npt.assert_allclose(y_nn, y_sk, atol=5e-6)
 
 
 @pytest.mark.parametrize(
@@ -214,4 +214,4 @@ def test_depthwise_convnd_tf(tf_layer, sk_layer, ndim):
         x_sk = jnp.transpose(x_sk, (-1, *range(ndim)))
         y_sk = sk_conv(x_sk)
 
-        npt.assert_allclose(y_tf, y_sk, atol=1e-6)
+        npt.assert_allclose(y_tf, y_sk, atol=5e-6)

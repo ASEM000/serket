@@ -162,7 +162,6 @@ class AdaptiveConcatPoolND:
         return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
 
 
-@pytc.treeclass
 class MaxPool1D(GeneralPoolND):
     def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
         """1D Max Pooling layer
@@ -180,7 +179,6 @@ class MaxPool1D(GeneralPoolND):
         )
 
 
-@pytc.treeclass
 class MaxPool2D(GeneralPoolND):
     def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
         """2D Max Pooling layer
@@ -198,7 +196,6 @@ class MaxPool2D(GeneralPoolND):
         )
 
 
-@pytc.treeclass
 class MaxPool3D(GeneralPoolND):
     def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
         """3D Max Pooling layer
@@ -216,7 +213,6 @@ class MaxPool3D(GeneralPoolND):
         )
 
 
-@pytc.treeclass
 class AvgPool1D(GeneralPoolND):
     def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
         """1D Average Pooling layer
@@ -234,7 +230,6 @@ class AvgPool1D(GeneralPoolND):
         )
 
 
-@pytc.treeclass
 class AvgPool2D(GeneralPoolND):
     def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
         """2D Average Pooling layer
@@ -252,7 +247,6 @@ class AvgPool2D(GeneralPoolND):
         )
 
 
-@pytc.treeclass
 class AvgPool3D(GeneralPoolND):
     def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
         """3D Average Pooling layer
@@ -270,109 +264,91 @@ class AvgPool3D(GeneralPoolND):
         )
 
 
-@pytc.treeclass
 class LPPool1D(LPPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1)
 
 
-@pytc.treeclass
 class LPPool2D(LPPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2)
 
 
-@pytc.treeclass
 class LPPool3D(LPPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3)
 
 
-@pytc.treeclass
 class GlobalAvgPool1D(GlobalPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, func=jnp.mean)
 
 
-@pytc.treeclass
 class GlobalAvgPool2D(GlobalPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, func=jnp.mean)
 
 
-@pytc.treeclass
 class GlobalAvgPool3D(GlobalPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, func=jnp.mean)
 
 
-@pytc.treeclass
 class GlobalMaxPool1D(GlobalPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, func=jnp.max)
 
 
-@pytc.treeclass
 class GlobalMaxPool2D(GlobalPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, func=jnp.max)
 
 
-@pytc.treeclass
 class GlobalMaxPool3D(GlobalPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, func=jnp.max)
 
 
-@pytc.treeclass
 class AdaptiveAvgPool1D(AdaptivePoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, func=jnp.mean)
 
 
-@pytc.treeclass
 class AdaptiveAvgPool2D(AdaptivePoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, func=jnp.mean)
 
 
-@pytc.treeclass
 class AdaptiveAvgPool3D(AdaptivePoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, func=jnp.mean)
 
 
-@pytc.treeclass
 class AdaptiveMaxPool1D(AdaptivePoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1, func=jnp.max)
 
 
-@pytc.treeclass
 class AdaptiveMaxPool2D(AdaptivePoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2, func=jnp.max)
 
 
-@pytc.treeclass
 class AdaptiveMaxPool3D(AdaptivePoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3, func=jnp.max)
 
 
-@pytc.treeclass
 class AdaptiveConcatPool1D(AdaptiveConcatPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=1)
 
 
-@pytc.treeclass
 class AdaptiveConcatPool2D(AdaptiveConcatPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=2)
 
 
-@pytc.treeclass
 class AdaptiveConcatPool3D(AdaptiveConcatPoolND):
     def __init__(self, *a, **k):
         super().__init__(*a, **k, spatial_ndim=3)

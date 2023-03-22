@@ -116,55 +116,46 @@ class UpsampleND:
         )
 
 
-@pytc.treeclass
 class Repeat1D(RepeatND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=1, **k)
 
 
-@pytc.treeclass
 class Repeat2D(RepeatND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=2, **k)
 
 
-@pytc.treeclass
 class Repeat3D(RepeatND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=3, **k)
 
 
-@pytc.treeclass
 class Resize1D(ResizeND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=1, **k)
 
 
-@pytc.treeclass
 class Resize2D(ResizeND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=2, **k)
 
 
-@pytc.treeclass
 class Resize3D(ResizeND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=3, **k)
 
 
-@pytc.treeclass
 class Upsample1D(UpsampleND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=1, **k)
 
 
-@pytc.treeclass
 class Upsample2D(UpsampleND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=2, **k)
 
 
-@pytc.treeclass
 class Upsample3D(UpsampleND):
     def __init__(self, *a, **k):
         super().__init__(*a, spatial_ndim=3, **k)

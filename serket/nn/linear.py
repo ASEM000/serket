@@ -139,7 +139,6 @@ class Multilinear:
         return x + self.bias
 
 
-@pytc.treeclass
 class Linear(Multilinear):
     """Linear layer with 1 input applied to last axis of input
 
@@ -181,7 +180,6 @@ class Linear(Multilinear):
         )
 
 
-@pytc.treeclass
 class Bilinear(Multilinear):
     def __init__(
         self,

@@ -178,7 +178,6 @@ class GroupNorm:
         )
 
 
-@pytc.treeclass
 class InstanceNorm(GroupNorm):
     def __init__(
         self,
