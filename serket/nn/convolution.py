@@ -158,7 +158,7 @@ class Conv1D(ConvND):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Convolutional layer.
+        """1D Convolutional layer.
 
         Args:
             in_features: number of input features

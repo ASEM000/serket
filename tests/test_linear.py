@@ -1,41 +1,40 @@
+import jax
 import jax.numpy as jnp
-
-# import jax.tree_util as jtu
+import jax.tree_util as jtu
 import numpy.testing as npt
 import pytest
+import pytreeclass as pytc
 
-from serket.nn import Bilinear, GeneralLinear, Identity, Linear, Multilinear  # , FNN
-
-# import pytreeclass as pytc
+from serket.nn import FNN, Bilinear, GeneralLinear, Identity, Linear, Multilinear
 
 
-# def test_linear():
-#     x = jnp.linspace(0, 1, 100)[:, None]
-#     y = x**3 + jax.random.uniform(jax.random.PRNGKey(0), (100, 1)) * 0.01
+def test_linear():
+    x = jnp.linspace(0, 1, 100)[:, None]
+    y = x**3 + jax.random.uniform(jax.random.PRNGKey(0), (100, 1)) * 0.01
 
-#     @jax.value_and_grad
-#     def loss_func(model, x, y):
-#         return jnp.mean((model(x) - y) ** 2)
+    @jax.value_and_grad
+    def loss_func(NN, x, y):
+        return jnp.mean((NN(x) - y) ** 2)
 
-#     @jax.jit
-#     def update(model, x, y):
-#         value, grad = loss_func(model, x, y)
-#         return value, model - 1e-3 * grad
+    @jax.jit
+    def update(NN, x, y):
+        value, grad = loss_func(NN, x, y)
+        return value, jtu.tree_map(lambda x, g: x - 1e-3 * g, NN, grad)
 
-#     model = FNN([1, 128, 128, 1])
+    NN = FNN([1, 128, 128, 1])
 
-#     model = jtu.tree_map(lambda x: pytc.freeze(x) if pytc.is_nondiff(x) else x, model)
-#     print(pytc.tree_diagram(model))
-#     for _ in range(20_000):
-#         value, model = update(model, x, y)
+    NN = jtu.tree_map(lambda x: pytc.freeze(x) if pytc.is_nondiff(x) else x, NN)
+    # print(pytc.tree_diagram(NN))
+    for _ in range(20_000):
+        value, NN = update(NN, x, y)
 
-#     npt.assert_allclose(jnp.array(4.933563e-05), value, atol=1e-3)
+    npt.assert_allclose(jnp.array(4.933563e-05), value, atol=1e-3)
 
-#     layer = Linear(1, 1, bias_init_func=None)
-#     w = jnp.array([[-0.31568417]])
-#     layer = layer.at["weight"].set(w)
-#     y = jnp.array([[-0.31568417]])
-#     npt.assert_allclose(layer(jnp.array([[1.0]])), y)
+    layer = Linear(1, 1, bias_init_func=None)
+    w = jnp.array([[-0.31568417]])
+    layer = layer.at["weight"].set(w)
+    y = jnp.array([[-0.31568417]])
+    npt.assert_allclose(layer(jnp.array([[1.0]])), y)
 
 
 def test_bilinear():
