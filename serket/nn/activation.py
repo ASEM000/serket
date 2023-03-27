@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import non_negative_scalar_cbs
+from serket.nn.callbacks import non_negative_scalar_cbs, scalar_like_cb
 
 
 def adaptive_leaky_relu(x: jax.Array, a: float = 1.0, v: float = 1.0) -> jax.Array:
@@ -31,12 +31,20 @@ def parametric_relu(x: jax.Array, a: float = 0.25) -> jax.Array:
     return jnp.where(x >= 0, x, x * a)
 
 
+def self_scalable_tanh(x: jax.Array, beta: float = 1.0) -> jax.Array:
+    return jnp.tanh(x) * (1.0 + beta * x)
+
+
 def soft_shrink(x: jax.Array, alpha: float = 0.5) -> jax.Array:
     return jnp.where(
         x < -alpha,
         x + alpha,
         jnp.where(x > alpha, x - alpha, 0.0),
     )
+
+
+def square_plus(x: jax.Array) -> jax.Array:
+    return 0.5 * (x + jnp.sqrt(x * x + 4))
 
 
 def soft_sign(x: jax.Array) -> jax.Array:
@@ -363,6 +371,24 @@ class SoftShrink:
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return soft_shrink(x, self.alpha)
+
+
+@pytc.treeclass
+class Stan:
+    """Stan activation function"""
+
+    beta: float = pytc.field(callbacks=[scalar_like_cb], default=1.0)
+
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        return self_scalable_tanh(x, self.beta)
+
+
+@pytc.treeclass
+class SquarePlus:
+    """SquarePlus activation function"""
+
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        return square_plus(x)
 
 
 @pytc.treeclass
