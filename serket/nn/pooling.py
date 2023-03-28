@@ -363,7 +363,11 @@ class GlobalAvgPool1D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(spatial_ndim=1, func=jnp.mean, keepdims=keepdims)
+        super().__init__(
+            spatial_ndim=1,
+            func=jnp.mean,
+            keepdims=keepdims,
+        )
 
 
 class GlobalAvgPool2D(GlobalPoolND):
@@ -372,7 +376,11 @@ class GlobalAvgPool2D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(spatial_ndim=2, func=jnp.mean, keepdims=keepdims)
+        super().__init__(
+            spatial_ndim=2,
+            func=jnp.mean,
+            keepdims=keepdims,
+        )
 
 
 class GlobalAvgPool3D(GlobalPoolND):
@@ -381,7 +389,11 @@ class GlobalAvgPool3D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(spatial_ndim=3, func=jnp.mean, keepdims=keepdims)
+        super().__init__(
+            spatial_ndim=3,
+            func=jnp.mean,
+            keepdims=keepdims,
+        )
 
 
 class GlobalMaxPool1D(GlobalPoolND):
@@ -390,7 +402,11 @@ class GlobalMaxPool1D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(spatial_ndim=1, func=jnp.max, keepdims=keepdims)
+        super().__init__(
+            spatial_ndim=1,
+            func=jnp.max,
+            keepdims=keepdims,
+        )
 
 
 class GlobalMaxPool2D(GlobalPoolND):
@@ -399,7 +415,11 @@ class GlobalMaxPool2D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(spatial_ndim=2, func=jnp.max, keepdims=keepdims)
+        super().__init__(
+            spatial_ndim=2,
+            func=jnp.max,
+            keepdims=keepdims,
+        )
 
 
 class GlobalMaxPool3D(GlobalPoolND):
@@ -408,7 +428,11 @@ class GlobalMaxPool3D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(spatial_ndim=3, func=jnp.max, keepdims=keepdims)
+        super().__init__(
+            spatial_ndim=3,
+            func=jnp.max,
+            keepdims=keepdims,
+        )
 
 
 class AdaptiveAvgPool1D(AdaptivePoolND):
@@ -417,7 +441,11 @@ class AdaptiveAvgPool1D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(output_size=output_size, spatial_ndim=1, func=jnp.mean)
+        super().__init__(
+            output_size=output_size,
+            spatial_ndim=1,
+            func=jnp.mean,
+        )
 
 
 class AdaptiveAvgPool2D(AdaptivePoolND):
@@ -426,7 +454,11 @@ class AdaptiveAvgPool2D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(output_size=output_size, spatial_ndim=2, func=jnp.mean)
+        super().__init__(
+            output_size=output_size,
+            spatial_ndim=2,
+            func=jnp.mean,
+        )
 
 
 class AdaptiveAvgPool3D(AdaptivePoolND):
@@ -435,7 +467,11 @@ class AdaptiveAvgPool3D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(output_size=output_size, spatial_ndim=3, func=jnp.mean)
+        super().__init__(
+            output_size=output_size,
+            spatial_ndim=3,
+            func=jnp.mean,
+        )
 
 
 class AdaptiveMaxPool1D(AdaptivePoolND):
@@ -444,7 +480,11 @@ class AdaptiveMaxPool1D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(output_size=output_size, spatial_ndim=1, func=jnp.max)
+        super().__init__(
+            output_size=output_size,
+            spatial_ndim=1,
+            func=jnp.max,
+        )
 
 
 class AdaptiveMaxPool2D(AdaptivePoolND):
@@ -453,7 +493,11 @@ class AdaptiveMaxPool2D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(output_size=output_size, spatial_ndim=2, func=jnp.max)
+        super().__init__(
+            output_size=output_size,
+            spatial_ndim=2,
+            func=jnp.max,
+        )
 
 
 class AdaptiveMaxPool3D(AdaptivePoolND):
@@ -462,4 +506,8 @@ class AdaptiveMaxPool3D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(output_size=output_size, spatial_ndim=3, func=jnp.max)
+        super().__init__(
+            output_size=output_size,
+            spatial_ndim=3,
+            func=jnp.max,
+        )

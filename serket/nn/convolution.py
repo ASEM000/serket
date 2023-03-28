@@ -173,6 +173,14 @@ class Conv1D(ConvND):
             groups: number of groups to use for grouped convolution
             key: key to use for initializing the weights
 
+        Example:
+            >>> import jax.numpy as jnp
+            >>> import serket as sk
+            >>> layer = sk.nn.Conv1D(in_features=1, out_features=2, kernel_size=3)
+            >>> x = jnp.ones((1, 5))
+            >>> print(layer(x).shape)
+            (2, 5)
+
         See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
 
@@ -223,6 +231,14 @@ class Conv2D(ConvND):
             groups: number of groups to use for grouped convolution
             key: key to use for initializing the weights
 
+        Example:
+            >>> import jax.numpy as jnp
+            >>> import serket as sk
+            >>> layer = sk.nn.Conv2D(in_features=1, out_features=2, kernel_size=3)
+            >>> x = jnp.ones((1, 5, 5))
+            >>> print(layer(x).shape)
+            (2, 5, 5)
+
         See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
 
@@ -272,6 +288,15 @@ class Conv3D(ConvND):
             bias_init_func: function to use for initializing the bias
             groups: number of groups to use for grouped convolution
             key: key to use for initializing the weights
+
+        Example:
+            >>> import jax.numpy as jnp
+            >>> import serket as sk
+            >>> layer = sk.nn.Conv3D(in_features=1, out_features=2, kernel_size=3)
+            >>> x = jnp.ones((1, 5, 5, 5))
+            >>> print(layer(x).shape)
+            (2, 5, 5, 5)
+
 
         See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
@@ -589,11 +614,6 @@ class DepthwiseConvND:
             spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
-        Examples:----
-            >>> l1 = DepthwiseConvND(3, 3, depth_multiplier=2, strides=2, padding="SAME")
-            >>> l1(jnp.ones((3, 32, 32))).shape
-            (3, 16, 16, 6)
-
         Note:
             See :
                 https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
@@ -675,10 +695,14 @@ class DepthwiseConv1D(DepthwiseConvND):
             spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
+        Example:
+            >>> l1 = DepthwiseConv1D(3, 3, depth_multiplier=2, strides=2, padding="SAME")
+            >>> l1(jnp.ones((3, 32))).shape
+            (6, 16)
+
         Note:
-            See :
-                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-                https://github.com/google/flax/blob/main/flax/linen/linear.py
+            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+            https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
 
         super().__init__(
@@ -720,10 +744,14 @@ class DepthwiseConv2D(DepthwiseConvND):
             spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
+        Example:
+            >>> l1 = DepthwiseConv2D(3, 3, depth_multiplier=2, strides=2, padding="SAME")
+            >>> l1(jnp.ones((3, 32, 32))).shape
+            (6, 16, 16)
+
         Note:
-            See :
-                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-                https://github.com/google/flax/blob/main/flax/linen/linear.py
+            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+            https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
 
         super().__init__(
@@ -765,10 +793,14 @@ class DepthwiseConv3D(DepthwiseConvND):
             spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
+        Example:
+            >>> l1 = DepthwiseConv3D(3, 3, depth_multiplier=2, strides=2, padding="SAME")
+            >>> l1(jnp.ones((3, 32, 32, 32))).shape
+            (6, 16, 16, 16)
+
         Note:
-            See :
-                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-                https://github.com/google/flax/blob/main/flax/linen/linear.py
+            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+            https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
 
         super().__init__(

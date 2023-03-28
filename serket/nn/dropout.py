@@ -53,9 +53,8 @@ class DropoutND:
         p: fraction of an elements to be zeroed out
 
     Note:
-        See:
-            https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
-            https://arxiv.org/abs/1411.4280
+        https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
+        https://arxiv.org/abs/1411.4280
 
     Example:
         >>> layer = DropoutND(0.5, spatial_ndim=1)
@@ -80,10 +79,8 @@ class Dropout1D(DropoutND):
             p: fraction of an elements to be zeroed out
 
         Note:
-
-            See:
-                https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
-                https://arxiv.org/abs/1411.4280
+            https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
+            https://arxiv.org/abs/1411.4280
 
         Example:
             >>> layer = DropoutND(0.5, spatial_ndim=1)
@@ -102,10 +99,8 @@ class Dropout2D(DropoutND):
             p: fraction of an elements to be zeroed out
 
         Note:
-
-            See:
-                https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
-                https://arxiv.org/abs/1411.4280
+            https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
+            https://arxiv.org/abs/1411.4280
 
         Example:
             >>> layer = DropoutND(0.5, spatial_ndim=1)
@@ -124,10 +119,8 @@ class Dropout3D(DropoutND):
             p: fraction of an elements to be zeroed out
 
         Note:
-
-            See:
-                https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
-                https://arxiv.org/abs/1411.4280
+            https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
+            https://arxiv.org/abs/1411.4280
 
         Example:
             >>> layer = DropoutND(0.5, spatial_ndim=1)

@@ -23,7 +23,7 @@ class Lambda:
             >>> import jax.numpy as jnp
             >>> import serket as sk
             >>> layer = sk.nn.Lambda(lambda x: x + 1)
-            >>> layer(jnp.array([1, 2, 3]))
+            >>> print(layer(jnp.array([1, 2, 3])))
             [2 3 4]
         """
         self.func = func
@@ -47,7 +47,8 @@ class Sequential:
             >>> import jax.random as jr
             >>> import serket as sk
             >>> layers = sk.nn.Sequential((sk.nn.Lambda(lambda x: x + 1), sk.nn.Lambda(lambda x: x * 2)))
-            >>> layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0))
+            >>> print(layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0)))
+            [4 6 8]
         """
         self.layers = layers
 
@@ -58,13 +59,13 @@ class Sequential:
             x = layer(x, key=key)
         return x
 
-    def __getitem__(self, i: int | slice):
-        if isinstance(i, slice):
+    def __getitem__(self, key: int | slice):
+        if isinstance(key, slice):
             # return a new Sequential object with the sliced layers
-            return self.__class__(self.layers[i])
-        if isinstance(i, int):
-            return self.layers[i]
-        raise TypeError(f"Invalid index type: {type(i)}")
+            return self.__class__(self.layers[key])
+        if isinstance(key, int):
+            return self.layers[key]
+        raise TypeError(f"Invalid index type: {type(key)}")
 
     def __len__(self):
         return len(self.layers)

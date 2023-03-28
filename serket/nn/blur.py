@@ -20,14 +20,26 @@ from serket.nn.fft_convolution import DepthwiseFFTConv2D
 class AvgBlur2D:
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     kernel_size: int | tuple[int, int] = pytc.field(callbacks=[*frozen_positive_int_cbs])  # fmt: skip
-    conv1: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
-    conv2: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
+    conv1: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze], repr=False)
+    conv2: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze], repr=False)
 
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
         """Average blur 2D layer
         Args:
             in_features: number of input channels
             kernel_size: size of the convolving kernel
+
+        Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.nn.AvgBlur2D(in_features=1, kernel_size=3)
+        >>> print(layer(jnp.ones((1,5,5))))
+        [[[0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]
+          [0.6666667  1.         1.         1.         0.6666667 ]
+          [0.6666667  1.         1.         1.         0.6666667 ]
+          [0.6666667  1.         1.         1.         0.6666667 ]
+          [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
+
         """
         self.in_features = in_features
         self.kernel_size = kernel_size
@@ -83,6 +95,18 @@ class GaussianBlur2D:
             in_features: number of input features
             kernel_size: kernel size
             sigma: sigma. Defaults to 1.
+
+        Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.nn.GaussianBlur2D(in_features=1, kernel_size=3)
+        >>> print(layer(jnp.ones((1,5,5))))
+        [[[0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]
+          [0.7259314 1.        1.        1.        0.7259314]
+          [0.7259314 1.        1.        1.        0.7259314]
+          [0.7259314 1.        1.        1.        0.7259314]
+          [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
+
         """
 
         self.in_features = in_features
@@ -134,6 +158,18 @@ class Filter2D:
         Args:
             in_features: number of input channels
             kernel: kernel array
+
+        Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.nn.Filter2D(in_features=1, kernel=jnp.ones((3,3)))
+        >>> print(layer(jnp.ones((1,5,5))))
+        [[[4. 6. 6. 6. 4.]
+          [6. 9. 9. 9. 6.]
+          [6. 9. 9. 9. 6.]
+          [6. 9. 9. 9. 6.]
+          [4. 6. 6. 6. 4.]]]
+
         """
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
@@ -164,12 +200,23 @@ class FFTFilter2D:
     conv: DepthwiseFFTConv2D = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(self, in_features: int, kernel: jax.Array):
-        """Apply 2D filter for each channel using FFT , faster for large kernels.
-
+        """Apply 2D filter for each channel using FFT
         Args:
             in_features: number of input channels
             kernel: kernel array
+
+        Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.nn.FFTFilter2D(in_features=1, kernel=jnp.ones((3,3)))
+        >>> print(layer(jnp.ones((1,5,5))))
+        [[[4.0000005 6.0000005 6.000001  6.0000005 4.0000005]
+          [6.0000005 9.        9.        9.        6.0000005]
+          [6.0000005 9.        9.        9.        6.0000005]
+          [6.0000005 9.        9.        9.        6.0000005]
+          [4.        6.0000005 6.0000005 6.0000005 4.       ]]]
         """
+
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 

@@ -98,13 +98,13 @@ def random_cutout_2d(
 
 @pytc.treeclass
 class RandomCutout1D:
-    shape: int = pytc.field(callbacks=[pytc.freeze])
+    shape: int | tuple[int] = pytc.field(callbacks=[pytc.freeze])
     cutout_count: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     fill_value: float = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
-        shape: tuple[int, ...],
+        shape: tuple[int],
         cutout_count: int = 1,
         fill_value: int | float = 0,
     ):
@@ -135,13 +135,13 @@ class RandomCutout1D:
 
 @pytc.treeclass
 class RandomCutout2D:
-    shape: tuple[int, int] = pytc.field(callbacks=[pytc.freeze])
+    shape: int | tuple[int, int] = pytc.field(callbacks=[pytc.freeze])
     cutout_count: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     fill_value: float = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
-        shape: int | tuple[int, ...],
+        shape: int | tuple[int, int],
         cutout_count: int = 1,
         fill_value: int | float = 0,
     ):
