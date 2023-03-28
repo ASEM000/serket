@@ -27,6 +27,8 @@ from .activation import (
     SoftPlus,
     SoftShrink,
     SoftSign,
+    SquarePlus,
+    Stan,
     Swish,
     Tanh,
     TanhShrink,
@@ -80,9 +82,6 @@ from .pooling import (
     AdaptiveAvgPool1D,
     AdaptiveAvgPool2D,
     AdaptiveAvgPool3D,
-    AdaptiveConcatPool1D,
-    AdaptiveConcatPool2D,
-    AdaptiveConcatPool3D,
     AdaptiveMaxPool1D,
     AdaptiveMaxPool2D,
     AdaptiveMaxPool3D,
@@ -116,17 +115,7 @@ from .recurrent import (
     ScanRNN,
     SimpleRNNCell,
 )
-from .resize import (
-    Repeat1D,
-    Repeat2D,
-    Repeat3D,
-    Resize1D,
-    Resize2D,
-    Resize3D,
-    Upsample1D,
-    Upsample2D,
-    Upsample3D,
-)
+from .resize import Resize1D, Resize2D, Resize3D, Upsample1D, Upsample2D, Upsample3D
 
 __all__ = (
     "blocks",
@@ -168,9 +157,6 @@ __all__ = (
     "AdaptiveMaxPool1D",
     "AdaptiveMaxPool2D",
     "AdaptiveMaxPool3D",
-    "AdaptiveConcatPool1D",
-    "AdaptiveConcatPool2D",
-    "AdaptiveConcatPool3D",
     # Convolution
     "Conv1D",
     "Conv2D",
@@ -203,12 +189,6 @@ __all__ = (
     "SeparableFFTConv1D",
     "SeparableFFTConv2D",
     "SeparableFFTConv3D",
-    # Flattening
-    "Flatten",
-    "Unflatten",
-    "Repeat1D",
-    "Repeat2D",
-    "Repeat3D",
     # Normalization
     "LayerNorm",
     "InstanceNorm",
@@ -277,6 +257,8 @@ __all__ = (
     "SoftPlus",
     "SoftShrink",
     "SoftSign",
+    "Stan",
+    "SquarePlus",
     "Swish",
     "Snake",
     "Tanh",

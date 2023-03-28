@@ -70,6 +70,16 @@ class LPPoolND(GeneralPoolND):
         padding: tuple[tuple[int, int], ...] | str = "valid",
         spatial_ndim: int = 1,
     ):
+        """Apply Lp pooling to the input.
+
+        Args:
+            norm_type: norm type
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel
+            spatial_ndim: number of dimensions
+        """
+
         super().__init__(
             kernel_size=kernel_size,
             strides=strides or kernel_size,
@@ -84,6 +94,12 @@ class GlobalPoolND:
     def __init__(
         self, keepdims: bool = True, spatial_ndim: int = 1, func: Callable = jnp.mean
     ):
+        """Apply global pooling to the input with function `func` applied to the kernel.
+        Args:
+            keepdims: keep the spatial dimensions
+            spatial_ndim: number of spatial dimensions
+            func: function to apply to the kernel
+        """
         self.keepdims = keepdims
         self.spatial_ndim = spatial_ndim
         self.func = func
@@ -116,8 +132,7 @@ class AdaptivePoolND:
             func: function to apply to the kernel
 
         Note:
-            this is different from the PyTorch implementation
-            the strides and kernel_size are calculated from the output_size as follows:
+            The strides and kernel_size are calculated from the output_size as follows:
             * stride_i = (input_size_i//output_size_i)
             * kernel_size_i = input_size_i - (output_size_i-1)*stride_i
             * padding_i = "valid"
@@ -265,90 +280,186 @@ class AvgPool3D(GeneralPoolND):
 
 
 class LPPool1D(LPPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1)
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = None,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+    ):
+        """1D Lp pooling to the input.
+
+        Args:
+            norm_type: norm type
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel
+        """
+        super().__init__(
+            norm_type=norm_type,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            spatial_ndim=1,
+        )
 
 
 class LPPool2D(LPPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2)
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = None,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+    ):
+        """2D Lp pooling to the input.
+
+        Args:
+            norm_type: norm type
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel
+        """
+        super().__init__(
+            norm_type=norm_type,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            spatial_ndim=2,
+        )
 
 
 class LPPool3D(LPPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3)
+    def __init__(
+        self,
+        norm_type: float,
+        kernel_size: tuple[int, ...] | int,
+        strides: tuple[int, ...] | int = None,
+        *,
+        padding: tuple[tuple[int, int], ...] | str = "valid",
+    ):
+        """3D Lp pooling to the input.
+
+        Args:
+            norm_type: norm type
+            kernel_size: size of the kernel
+            strides: strides of the kernel
+            padding: padding of the kernel
+        """
+        super().__init__(
+            norm_type=norm_type,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            spatial_ndim=3,
+        )
 
 
 class GlobalAvgPool1D(GlobalPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1, func=jnp.mean)
+    def __init__(self, keepdims: bool = True):
+        """1D Global Average Pooling layer
+        Args:
+            keepdims: whether to keep the dimensions or not
+        """
+        super().__init__(spatial_ndim=1, func=jnp.mean, keepdims=keepdims)
 
 
 class GlobalAvgPool2D(GlobalPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2, func=jnp.mean)
+    def __init__(self, keepdims: bool = True):
+        """2D Global Average Pooling layer
+        Args:
+            keepdims: whether to keep the dimensions or not
+        """
+        super().__init__(spatial_ndim=2, func=jnp.mean, keepdims=keepdims)
 
 
 class GlobalAvgPool3D(GlobalPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3, func=jnp.mean)
+    def __init__(self, keepdims: bool = True):
+        """3D Global Average Pooling layer
+        Args:
+            keepdims: whether to keep the dimensions or not
+        """
+        super().__init__(spatial_ndim=3, func=jnp.mean, keepdims=keepdims)
 
 
 class GlobalMaxPool1D(GlobalPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1, func=jnp.max)
+    def __init__(self, keepdims: bool = True):
+        """1D Global Max Pooling layer
+        Args:
+            keepdims: whether to keep the dimensions or not
+        """
+        super().__init__(spatial_ndim=1, func=jnp.max, keepdims=keepdims)
 
 
 class GlobalMaxPool2D(GlobalPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2, func=jnp.max)
+    def __init__(self, keepdims: bool = True):
+        """2D Global Max Pooling layer
+        Args:
+            keepdims: whether to keep the dimensions or not
+        """
+        super().__init__(spatial_ndim=2, func=jnp.max, keepdims=keepdims)
 
 
 class GlobalMaxPool3D(GlobalPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3, func=jnp.max)
+    def __init__(self, keepdims: bool = True):
+        """3D Global Max Pooling layer
+        Args:
+            keepdims: whether to keep the dimensions or not
+        """
+        super().__init__(spatial_ndim=3, func=jnp.max, keepdims=keepdims)
 
 
 class AdaptiveAvgPool1D(AdaptivePoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1, func=jnp.mean)
+    def __init__(self, output_size: tuple[int, ...]):
+        """1D Adaptive Average Pooling layer
+        Args:
+            output_size: size of the output
+        """
+        super().__init__(output_size=output_size, spatial_ndim=1, func=jnp.mean)
 
 
 class AdaptiveAvgPool2D(AdaptivePoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2, func=jnp.mean)
+    def __init__(self, output_size: tuple[int, ...]):
+        """2D Adaptive Average Pooling layer
+        Args:
+            output_size: size of the output
+        """
+        super().__init__(output_size=output_size, spatial_ndim=2, func=jnp.mean)
 
 
 class AdaptiveAvgPool3D(AdaptivePoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3, func=jnp.mean)
+    def __init__(self, output_size: tuple[int, ...]):
+        """3D Adaptive Average Pooling layer
+        Args:
+            output_size: size of the output
+        """
+        super().__init__(output_size=output_size, spatial_ndim=3, func=jnp.mean)
 
 
 class AdaptiveMaxPool1D(AdaptivePoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1, func=jnp.max)
+    def __init__(self, output_size: tuple[int, ...]):
+        """1D Adaptive Max Pooling layer
+        Args:
+            output_size: size of the output
+        """
+        super().__init__(output_size=output_size, spatial_ndim=1, func=jnp.max)
 
 
 class AdaptiveMaxPool2D(AdaptivePoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2, func=jnp.max)
+    def __init__(self, output_size: tuple[int, ...]):
+        """2D Adaptive Max Pooling layer
+        Args:
+            output_size: size of the output
+        """
+        super().__init__(output_size=output_size, spatial_ndim=2, func=jnp.max)
 
 
 class AdaptiveMaxPool3D(AdaptivePoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3, func=jnp.max)
-
-
-class AdaptiveConcatPool1D(AdaptiveConcatPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=1)
-
-
-class AdaptiveConcatPool2D(AdaptiveConcatPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=2)
-
-
-class AdaptiveConcatPool3D(AdaptiveConcatPoolND):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k, spatial_ndim=3)
+    def __init__(self, output_size: tuple[int, ...]):
+        """3D Adaptive Max Pooling layer
+        Args:
+            output_size: size of the output
+        """
+        super().__init__(output_size=output_size, spatial_ndim=3, func=jnp.max)
