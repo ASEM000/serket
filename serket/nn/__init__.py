@@ -72,6 +72,7 @@ from .fft_convolution import (
     SeparableFFTConv2D,
     SeparableFFTConv3D,
 )
+from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN  # , PFNN
 from .laplace import Laplace2D
@@ -280,4 +281,7 @@ __all__ = (
     "ScanRNN",
     # Polynomial
     "Polynomial",
+    # Flatten
+    "Flatten",
+    "Unflatten",
 )
