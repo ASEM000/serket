@@ -24,7 +24,7 @@ class PadND:
             value: value to pad with. Defaults to 0.0.
             spatial_ndim: number of spatial dimensions. Defaults to 1.
 
-        see:
+        Note:
             https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
@@ -47,11 +47,7 @@ class PadND:
 
 
 class Pad1D(PadND):
-    def __init__(
-        self,
-        padding: int | tuple[int, int],
-        value: float = 0.0,
-    ):
+    def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
         """
         Pad a 1D tensor.
 
@@ -59,7 +55,7 @@ class Pad1D(PadND):
             padding: padding to apply to each side of the input.
             value: value to pad with. Defaults to 0.0.
 
-        see:
+        Note:
             https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
@@ -85,7 +81,7 @@ class Pad2D(PadND):
             padding: padding to apply to each side of the input.
             value: value to pad with. Defaults to 0.0.
 
-        see:
+        Note:
             https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
@@ -111,7 +107,7 @@ class Pad3D(PadND):
             padding: padding to apply to each side of the input.
             value: value to pad with. Defaults to 0.0.
 
-        see:
+        Note:
             https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D

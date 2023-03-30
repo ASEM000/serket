@@ -11,22 +11,20 @@ from serket.nn.callbacks import instance_cb_factory
 
 @pytc.treeclass
 class Lambda:
+    """A layer that applies a function to its input.
+
+    Args:
+        func: a function that takes a single argument and returns a jax.numpy.ndarray.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.Lambda(lambda x: x + 1)
+        >>> print(layer(jnp.array([1, 2, 3])))
+        [2 3 4]
+    """
+
     func: Callable[[Any], Any] = pytc.field(callbacks=[pytc.freeze])
-
-    def __init__(self, func: Callable[[Any], Any]):
-        """A layer that applies a function to its input.
-
-        Args:
-            func: a function that takes a single argument and returns a jax.numpy.ndarray.
-
-        Example:
-            >>> import jax.numpy as jnp
-            >>> import serket as sk
-            >>> layer = sk.nn.Lambda(lambda x: x + 1)
-            >>> print(layer(jnp.array([1, 2, 3])))
-            [2 3 4]
-        """
-        self.func = func
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -34,23 +32,21 @@ class Lambda:
 
 @pytc.treeclass
 class Sequential:
+    """A sequential container for layers.
+
+    Args:
+        layers: a tuple of layers.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import serket as sk
+        >>> layers = sk.nn.Sequential((sk.nn.Lambda(lambda x: x + 1), sk.nn.Lambda(lambda x: x * 2)))
+        >>> print(layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0)))
+        [4 6 8]
+    """
+
     layers: tuple[Any, ...] = pytc.field(callbacks=[instance_cb_factory(tuple)])
-
-    def __init__(self, layers: tuple[Any, ...]):
-        """A sequential container for layers.
-
-        Args:
-            layers: a tuple of layers.
-
-        Example:
-            >>> import jax.numpy as jnp
-            >>> import jax.random as jr
-            >>> import serket as sk
-            >>> layers = sk.nn.Sequential((sk.nn.Lambda(lambda x: x + 1), sk.nn.Lambda(lambda x: x * 2)))
-            >>> print(layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0)))
-            [4 6 8]
-        """
-        self.layers = layers
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         for key, layer in zip(jr.split(key, len(self.layers)), self.layers):

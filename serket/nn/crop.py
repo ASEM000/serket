@@ -56,7 +56,7 @@ class Crop2D(CropND):
 
         Example:
             >>> # start = (2, 0) and size = (3, 3)
-            >>> # i.e. the 3x3 square in the bottom left corner
+            >>> # i.e. start at index 2 along the first axis and index 0 along the second axis
             >>> import jax.numpy as jnp
             >>> import serket as sk
             >>> x = jnp.arange(1, 26).reshape((1, 5, 5))

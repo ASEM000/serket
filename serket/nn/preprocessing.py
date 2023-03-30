@@ -27,7 +27,6 @@ class HistogramEqualization2D:
             bins: number of bins. Defaults to 256.
 
         Note:
-            See:
             https://en.wikipedia.org/wiki/Histogram_equalization
             http://www.janeriksolem.net/histogram-equalization-with-python-and.html
             https://scikit-image.org/docs/stable/api/skimage.exposure.html#skimage.exposure.equalize_hist

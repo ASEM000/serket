@@ -81,8 +81,8 @@ def group_norm(
 class LayerNorm:
     γ: jax.Array = None
     β: jax.Array = None
-
     ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
+
     affine: bool = pytc.field(callbacks=[pytc.freeze])
     normalized_shape: int | tuple[int] = pytc.field(callbacks=[pytc.freeze])
 
@@ -128,10 +128,10 @@ class LayerNorm:
 class GroupNorm:
     γ: jax.Array = None
     β: jax.Array = None
+    ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
 
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     groups: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
     affine: bool = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(

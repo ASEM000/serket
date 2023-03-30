@@ -10,7 +10,7 @@ import pytreeclass as pytc
 from serket.nn.callbacks import validate_spatial_in_shape
 
 
-def adjust_contrast_nd(x: jax.Array, contrast_factor: float, spatial_ndim: int):
+def adjust_contrast_nd(x: jax.Array, contrast_factor: float):
     """Adjusts the contrast of an image by scaling the pixel values by a factor."""
     μ = jnp.mean(x, axis=tuple(range(1, x.ndim)), keepdims=True)
     return (contrast_factor * (x - μ) + μ).astype(x.dtype)
@@ -19,13 +19,12 @@ def adjust_contrast_nd(x: jax.Array, contrast_factor: float, spatial_ndim: int):
 def random_contrast_nd(
     x: jax.Array,
     contrast_range: tuple[float, float],
-    spatial_ndim: int,
     key: jr.KeyArray = jr.PRNGKey(0),
 ) -> jax.Array:
     """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
     minval, maxval = contrast_range
     contrast_factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
-    return adjust_contrast_nd(x, contrast_factor, spatial_ndim)
+    return adjust_contrast_nd(x, contrast_factor)
 
 
 @pytc.treeclass
@@ -50,7 +49,7 @@ class AdjustContrastND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return adjust_contrast_nd(x, self.contrast_factor, self.spatial_ndim)
+        return adjust_contrast_nd(x, self.contrast_factor)
 
 
 class AdjustContrast2D(AdjustContrastND):
@@ -88,7 +87,7 @@ class RandomContrastND:
     def __call__(
         self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0), **k
     ) -> jax.Array:
-        return random_contrast_nd(x, self.contrast_range, self.spatial_ndim, key=key)
+        return random_contrast_nd(x, self.contrast_range, key=key)
 
 
 class RandomContrast2D(RandomContrastND):

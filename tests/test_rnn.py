@@ -7,18 +7,18 @@
 # batch_size = 1
 # time_steps = 2
 # in_features = 3
-# hidden_features=2
+# out_features=2
 
 # inputs = np.ones([batch_size,time_steps, in_features]).astype(np.float32)
 # inp = tf.keras.Input(shape=(time_steps, in_features))
-# rnn = (tf.keras.layers.LSTM(hidden_features, return_sequences=True, return_state=False))(inp)
+# rnn = (tf.keras.layers.LSTM(out_features, return_sequences=True, return_state=False))(inp)
 # rnn = tf.keras.Model(inputs=inp, outputs=rnn)
 # # rnn(inputs)
 # w_in_to_hidden = jnp.array(rnn.weights[0].numpy())
 # w_hidden_to_hidden = jnp.array(rnn.weights[1].numpy())
 # b_hidden_to_hidden = jnp.array(rnn.weights[2].numpy())
 # x = jnp.ones([time_steps, in_features])
-# cell = LSTMCell(in_features, hidden_features, recurrent_weight_init_func="glorot_uniform", bias_init_func="zeros",
+# cell = LSTMCell(in_features, out_features, recurrent_weight_init_func="glorot_uniform", bias_init_func="zeros",
 #  weight_init_func="glorot_uniform")
 # cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
 # cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
@@ -28,14 +28,14 @@
 # testing with keras
 # inputs = np.ones([batch_size,time_steps, in_features]).astype(np.float32)
 # inp = tf.keras.Input(shape=(time_steps, in_features))
-# rnn = tfk.layers.Bidirectional(tf.keras.layers.LSTM(hidden_features, return_sequences=False))(inp)
+# rnn = tfk.layers.Bidirectional(tf.keras.layers.LSTM(out_features, return_sequences=False))(inp)
 # rnn = tf.keras.Model(inputs=inp, outputs=rnn)
 # # rnn(inputs)
 # w_in_to_hidden = jnp.array(rnn.weights[0].numpy())
 # w_hidden_to_hidden = jnp.array(rnn.weights[1].numpy())
 # b_hidden_to_hidden = jnp.array(rnn.weights[2].numpy())
 # x = jnp.ones([time_steps, in_features])
-# cell = LSTMCell(in_features, hidden_features)
+# cell = LSTMCell(in_features, out_features)
 # cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
 # cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
 # cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
@@ -43,7 +43,7 @@
 # w_in_to_hidden_reverse = jnp.array(rnn.weights[3].numpy())
 # w_hidden_to_hidden_reverse = jnp.array(rnn.weights[4].numpy())
 # b_hidden_to_hidden_reverse = jnp.array(rnn.weights[5].numpy())
-# reverse_cell = LSTMCell(in_features, hidden_features)
+# reverse_cell = LSTMCell(in_features, out_features)
 
 # reverse_cell = reverse_cell.at["in_to_hidden.weight"].set(w_in_to_hidden_reverse)
 # reverse_cell = reverse_cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden_reverse)
@@ -67,7 +67,7 @@ from serket.nn.recurrent import (  # ConvGRU1DCell,; ConvGRU2DCell,; ConvGRU3DCe
 
 def test_vanilla_rnn():
     in_features = 2
-    hidden_features = 3
+    out_features = 3
     # batch_size = 1
     time_steps = 10
 
@@ -75,7 +75,7 @@ def test_vanilla_rnn():
     # copy weights from keras to serket and compare outputs
     # inputs = np.ones([batch_size,time_steps, in_features]).astype(np.float32)
     # inp = tf.keras.Input(shape=(time_steps, in_features))
-    # rnn = (tf.keras.layers.SimpleRNN(hidden_features, return_sequences=False, return_state=False))(inp)
+    # rnn = (tf.keras.layers.SimpleRNN(out_features, return_sequences=False, return_state=False))(inp)
     # rnn = tf.keras.Model(inputs=inp, outputs=rnn)
 
     x = jnp.ones([time_steps, in_features]).astype(jnp.float32)
@@ -94,7 +94,7 @@ def test_vanilla_rnn():
 
     cell = SimpleRNNCell(
         in_features=in_features,
-        hidden_features=hidden_features,
+        out_features=out_features,
         recurrent_weight_init_func="glorot_uniform",
     )
 
@@ -109,13 +109,13 @@ def test_vanilla_rnn():
 def test_lstm():
     # tensorflow
     in_features = 2
-    hidden_features = 3
+    out_features = 3
     # batch_size = 1
     time_steps = 10
 
     # inputs = np.ones([batch_size,time_steps, in_features]).astype(np.float32)
     # inp = tf.keras.Input(shape=(time_steps, in_features))
-    # rnn = (tf.keras.layers.LSTM(hidden_features, return_sequences=False, return_state=False))(inp)
+    # rnn = (tf.keras.layers.LSTM(out_features, return_sequences=False, return_state=False))(inp)
     # rnn = tf.keras.Model(inputs=inp, outputs=rnn)
 
     # w_in_to_hidden = jnp.array(rnn.weights[0].numpy())
@@ -210,7 +210,7 @@ def test_lstm():
 
     cell = LSTMCell(
         in_features=in_features,
-        hidden_features=hidden_features,
+        out_features=out_features,
         recurrent_weight_init_func="glorot_uniform",
     )
     cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
@@ -307,7 +307,7 @@ def test_lstm():
 
     cell = LSTMCell(
         in_features=in_features,
-        hidden_features=hidden_features,
+        out_features=out_features,
         recurrent_weight_init_func="glorot_uniform",
     )
     cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
@@ -335,7 +335,7 @@ def test_lstm():
 
     cell = LSTMCell(
         in_features=in_features,
-        hidden_features=hidden_features,
+        out_features=out_features,
         recurrent_weight_init_func="glorot_uniform",
     )
 
@@ -601,11 +601,11 @@ def test_bilstm():
     # batch_size = 1
     time_steps = 2
     in_features = 3
-    hidden_features = 2
+    out_features = 2
 
     x = jnp.ones([time_steps, in_features])
-    cell = LSTMCell(in_features, hidden_features)
-    reverse_cell = LSTMCell(in_features, hidden_features)
+    cell = LSTMCell(in_features, out_features)
+    reverse_cell = LSTMCell(in_features, out_features)
 
     w_in_to_hidden = jnp.array(
         [

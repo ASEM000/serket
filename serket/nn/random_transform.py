@@ -28,7 +28,7 @@ class RandomApply:
         (1, 5, 5)
 
     Note:
-        See: https://pytorch.org/vision/main/_modules/torchvision/transforms/transforms.html#RandomApply
+        https://pytorch.org/vision/main/_modules/torchvision/transforms/transforms.html#RandomApply
         Use sk.nn.Sequential to apply multiple layers.
     """
 
@@ -55,7 +55,7 @@ class RandomZoom2D:
             width_factor: (min, max)
 
         Note:
-            See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
+            https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
             Positive values are zoom in, negative values are zoom out.
         """
         assert (

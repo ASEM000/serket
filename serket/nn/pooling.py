@@ -166,10 +166,14 @@ class AdaptiveConcatPoolND:
         """
         self.spatial_ndim = spatial_ndim
         self.avg_pool = AdaptivePoolND(
-            output_size, func=jnp.mean, spatial_ndim=spatial_ndim
+            output_size,
+            func=jnp.mean,
+            spatial_ndim=spatial_ndim,
         )
         self.max_pool = AdaptivePoolND(
-            output_size, func=jnp.max, spatial_ndim=spatial_ndim
+            output_size,
+            func=jnp.max,
+            spatial_ndim=spatial_ndim,
         )
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")

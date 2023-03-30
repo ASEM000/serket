@@ -42,14 +42,14 @@ class SimpleRNNState(RNNState):
 @pytc.treeclass
 class SimpleRNNCell(RNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    hidden_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     in_to_hidden: sk.nn.Linear
     hidden_to_hidden: sk.nn.Linear
 
     def __init__(
         self,
         in_features: int,
-        hidden_features: int,
+        out_features: int,
         *,
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
@@ -58,12 +58,10 @@ class SimpleRNNCell(RNNCell):
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Vanilla RNN cell that defines the update rule for the hidden state
-        See:
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
 
         Args:
             in_features: the number of input features
-            hidden_features: the number of hidden features
+            out_features: the number of hidden features
             weight_init_func: the function to use to initialize the weights
             bias_init_func: the function to use to initialize the bias
             recurrent_weight_init_func: the function to use to initialize the recurrent weights
@@ -76,24 +74,27 @@ class SimpleRNNCell(RNNCell):
             >>> x = jnp.ones((10,)) # 10 features
             >>> result = cell(x, rnn_state)
             >>> result.hidden_state.shape  # 20 features
+
+        Note:
+            https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
         """
         k1, k2 = jr.split(key, 2)
 
         self.in_features = in_features
-        self.hidden_features = hidden_features
+        self.out_features = out_features
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
-            hidden_features,
+            out_features,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
         )
 
         self.hidden_to_hidden = sk.nn.Linear(
-            hidden_features,
-            hidden_features,
+            out_features,
+            out_features,
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
             key=k2,
@@ -110,7 +111,7 @@ class SimpleRNNCell(RNNCell):
         return SimpleRNNState(h)
 
     def init_state(self) -> SimpleRNNState:
-        shape = (self.hidden_features,)
+        shape = (self.out_features,)
         return SimpleRNNState(jnp.zeros(shape))
 
 
@@ -122,14 +123,14 @@ class LSTMState(RNNState):
 @pytc.treeclass
 class LSTMCell(RNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    hidden_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     in_to_hidden: sk.nn.Linear
     hidden_to_hidden: sk.nn.Linear
 
     def __init__(
         self,
         in_features: int,
-        hidden_features: int,
+        out_features: int,
         *,
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable | None = "zeros",
@@ -141,7 +142,7 @@ class LSTMCell(RNNCell):
         """LSTM cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: the number of input features
-            hidden_features: the number of hidden features
+            out_features: the number of hidden features
             weight_init_func: the function to use to initialize the weights
             bias_init_func: the function to use to initialize the bias
             recurrent_weight_init_func: the function to use to initialize the recurrent weights
@@ -149,14 +150,14 @@ class LSTMCell(RNNCell):
             recurrent_act_func: the activation function to use for the cell state update
             key: the key to use to initialize the weights
 
-        See:
+        Note:
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTMCell
             https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
         """
         k1, k2 = jr.split(key, 2)
 
         self.in_features = in_features
-        self.hidden_features = hidden_features
+        self.out_features = out_features
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP.get(
             recurrent_act_func, recurrent_act_func
@@ -164,15 +165,15 @@ class LSTMCell(RNNCell):
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
-            hidden_features * 4,
+            out_features * 4,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
         )
 
         self.hidden_to_hidden = sk.nn.Linear(
-            hidden_features,
-            hidden_features * 4,
+            out_features,
+            out_features * 4,
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
             key=k2,
@@ -196,7 +197,7 @@ class LSTMCell(RNNCell):
         return LSTMState(h, c)
 
     def init_state(self) -> LSTMState:
-        shape = (self.hidden_features,)
+        shape = (self.out_features,)
         return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
@@ -207,14 +208,14 @@ class GRUState(RNNState):
 @pytc.treeclass
 class GRUCell(RNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    hidden_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     in_to_hidden: sk.nn.Linear
     hidden_to_hidden: sk.nn.Linear
 
     def __init__(
         self,
         in_features: int,
-        hidden_features: int,
+        out_features: int,
         *,
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
@@ -226,7 +227,7 @@ class GRUCell(RNNCell):
         """GRU cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: the number of input features
-            hidden_features: the number of hidden features
+            out_features: the number of hidden features
             weight_init_func: the function to use to initialize the weights
             bias_init_func: the function to use to initialize the bias
             recurrent_weight_init_func: the function to use to initialize the recurrent weights
@@ -240,21 +241,21 @@ class GRUCell(RNNCell):
         k1, k2 = jr.split(key, 2)
 
         self.in_features = in_features
-        self.hidden_features = hidden_features
+        self.out_features = out_features
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP[recurrent_act_func]
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
-            hidden_features * 3,
+            out_features * 3,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
         )
 
         self.hidden_to_hidden = sk.nn.Linear(
-            hidden_features,
-            hidden_features * 3,
+            out_features,
+            out_features * 3,
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
             key=k2,
@@ -276,7 +277,7 @@ class GRUCell(RNNCell):
         return GRUState(hidden_state=h)
 
     def init_state(self) -> GRUState:
-        shape = (self.hidden_features,)
+        shape = (self.out_features,)
         return GRUState(jnp.zeros(shape, dtype=jnp.float32))
 
 
@@ -434,7 +435,8 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
             key: PRNG key
             spatial_ndim: Number of spatial dimensions.
 
-        See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+        Note:
+            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
         super().__init__(
             in_features=in_features,
@@ -491,7 +493,8 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
             key: PRNG key
             spatial_ndim: Number of spatial dimensions.
 
-        See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+        Note:
+            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
         super().__init__(
             in_features=in_features,
@@ -548,7 +551,8 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
             key: PRNG key
             spatial_ndim: Number of spatial dimensions.
 
-        See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+        Note:
+            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
         super().__init__(
             in_features=in_features,

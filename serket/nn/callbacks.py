@@ -12,20 +12,6 @@ import numpy as np
 import pytreeclass as pytc
 
 
-def or_cb(*callbacks):
-    """Return a function that checks if the input matches one of the callbacks."""
-
-    def wrapper(value):
-        for cb in callbacks:
-            try:
-                return cb(value)
-            except Exception:
-                pass
-        raise ValueError(f"Expected value to match one of {callbacks}, got {value}")
-
-    return wrapper
-
-
 def range_cb_factory(min_val: float = -float("inf"), max_val: float = float("inf")):
     """Return a function that checks if the input is in the range [min_val, max_val]."""
 

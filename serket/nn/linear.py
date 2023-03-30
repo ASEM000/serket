@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Callable
 
 import jax
 import jax.numpy as jnp
@@ -9,6 +8,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn.callbacks import init_func_cb, instance_cb_factory
+from serket.nn.utils import InitFuncType
 
 frozen_int_or_tuple_cb = [instance_cb_factory((int, tuple)), pytc.freeze]
 frozen_tuple_cb = [instance_cb_factory(tuple), pytc.freeze]
@@ -81,8 +81,8 @@ class Multilinear:
         in_features: int | tuple[int, ...] | None,
         out_features: int,
         *,
-        weight_init_func: str | Callable = "he_normal",
-        bias_init_func: str | Callable = "ones",
+        weight_init_func: InitFuncType = "he_normal",
+        bias_init_func: InitFuncType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Linear layer with arbitrary number of inputs applied to last axis of each input
@@ -167,8 +167,8 @@ class Linear(Multilinear):
         in_features: int | None,
         out_features: int,
         *,
-        weight_init_func: str | Callable = "he_normal",
-        bias_init_func: str | Callable = "ones",
+        weight_init_func: InitFuncType = "he_normal",
+        bias_init_func: InitFuncType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         super().__init__(
@@ -187,8 +187,8 @@ class Bilinear(Multilinear):
         in2_features: int | None,
         out_features: int,
         *,
-        weight_init_func: str | Callable = "he_normal",
-        bias_init_func: str | Callable = "ones",
+        weight_init_func: InitFuncType = "he_normal",
+        bias_init_func: InitFuncType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Bilinear layer
@@ -230,8 +230,8 @@ class GeneralLinear:
         out_features: int,
         *,
         in_axes: tuple[int, ...],
-        weight_init_func: str | Callable = "he_normal",
-        bias_init_func: str | Callable = "ones",
+        weight_init_func: InitFuncType = "he_normal",
+        bias_init_func: InitFuncType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Apply a Linear Layer to input at in_axes
