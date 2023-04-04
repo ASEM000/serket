@@ -4,6 +4,7 @@ from typing import Any, Callable
 
 import jax
 import jax.random as jr
+import jax.tree_util as jtu
 import pytreeclass as pytc
 
 from serket.nn.callbacks import instance_cb_factory
@@ -24,7 +25,7 @@ class Lambda:
         [2 3 4]
     """
 
-    func: Callable[[Any], Any] = pytc.field(callbacks=[pytc.freeze])
+    func: Callable[..., Any] = pytc.field(callbacks=[jtu.Partial])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)

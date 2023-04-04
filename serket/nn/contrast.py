@@ -85,7 +85,11 @@ class RandomContrastND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(
-        self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0), **k
+        self,
+        x: jax.Array,
+        *,
+        key: jr.KeyArray = jr.PRNGKey(0),
+        **k,
     ) -> jax.Array:
         return random_contrast_nd(x, self.contrast_range, key=key)
 

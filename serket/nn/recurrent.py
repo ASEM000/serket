@@ -32,15 +32,19 @@ class RNNState:
 
 @pytc.treeclass
 class RNNCell:
-    pass
+    ...
+
+
+class NonSpatialRNNCell(RNNCell):
+    ...
 
 
 class SimpleRNNState(RNNState):
-    pass
+    ...
 
 
 @pytc.treeclass
-class SimpleRNNCell(RNNCell):
+class SimpleRNNCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     in_to_hidden: sk.nn.Linear
@@ -121,7 +125,7 @@ class LSTMState(RNNState):
 
 
 @pytc.treeclass
-class LSTMCell(RNNCell):
+class LSTMCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     in_to_hidden: sk.nn.Linear
@@ -202,11 +206,11 @@ class LSTMCell(RNNCell):
 
 
 class GRUState(RNNState):
-    pass
+    ...
 
 
 @pytc.treeclass
-class GRUCell(RNNCell):
+class GRUCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
     in_to_hidden: sk.nn.Linear
@@ -284,9 +288,8 @@ class GRUCell(RNNCell):
 # =============================================== Spatial RNN ======================================================= #
 
 
-@pytc.treeclass
-class SpatialRNNCell:
-    pass
+class SpatialRNNCell(RNNCell):
+    ...
 
 
 # ------------------------------------------------- ConvLSTM RNN ----------------------------------------------------- #
@@ -576,7 +579,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
 # ------------------------------------------------- ConvGRU RNN ------------------------------------------------------ #
 @pytc.treeclass
 class ConvGRUNDState(RNNState):
-    pass
+    ...
 
 
 @pytc.treeclass
@@ -889,11 +892,11 @@ class ScanRNN:
             >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
             >>> result = rnn(x)  # 20 features
         """
-        if not isinstance(cell, (RNNCell, SpatialRNNCell)):
+        if not isinstance(cell, RNNCell):
             msg = f"Expected `cell` to be an instance of RNNCell got {type(cell)}"
             raise TypeError(msg)
 
-        if not isinstance(backward_cell, (RNNCell, SpatialRNNCell, type(None))):
+        if not isinstance(backward_cell, (RNNCell, type(None))):
             msg = f"Expected `backward_cell` to be an instance of RNNCell, got {type(backward_cell)}"
             raise TypeError(msg)
 
@@ -914,9 +917,8 @@ class ScanRNN:
             msg += f"got {type(state).__name__}"
             raise TypeError(msg)
 
-        if isinstance(self.cell, RNNCell):
-            # non-spatial RNN
-            # (time steps, in_features)
+        if isinstance(self.cell, NonSpatialRNNCell):
+            # non-spatial RNN : (time steps, in_features)
             if x.ndim != 2:
                 msg = "Expected x to have 2 dimensions corresponds "
                 msg += f"to (timesteps, in_features), got {x.ndim}"
@@ -934,8 +936,7 @@ class ScanRNN:
                 backward_state = backward_state or self.backward_cell.init_state()
 
         else:
-            # spatial RNN
-            # (time steps, in_features, *spatial_dims)
+            # spatial RNN : (time steps, in_features, *spatial_dims)
             if x.ndim != self.cell.spatial_ndim + 2:
                 msg = f"Expected x to have {self.cell.spatial_ndim + 2}"  # account for time and in_features
                 msg += f" dimensions corresponds to (timesteps, in_features, *spatial_dims), got {x.ndim}"

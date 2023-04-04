@@ -38,12 +38,10 @@ class Flatten:
     end_dim: int = pytc.field(default=-1, callbacks=[pytc.freeze])
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        start_dim = self.start_dim + (
-            0 if self.start_dim >= 0 else x.ndim
-        )  # normalize start_dim
-        end_dim = (
-            self.end_dim + 1 + (0 if self.end_dim >= 0 else x.ndim)
-        )  # normalize end_dim
+        # normalize start_dim
+        start_dim = self.start_dim + (0 if self.start_dim >= 0 else x.ndim)
+        # normalize end_dim
+        end_dim = self.end_dim + 1 + (0 if self.end_dim >= 0 else x.ndim)
         return jax.lax.collapse(x, start_dim, end_dim)
 
 

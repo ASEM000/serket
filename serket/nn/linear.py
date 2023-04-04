@@ -16,13 +16,13 @@ frozen_tuple_cb = [instance_cb_factory(tuple), pytc.freeze]
 
 @ft.lru_cache(maxsize=128)
 def _multilinear_einsum_string(degree: int) -> str:
-    """Generate einsum string for a linear layer of degree n
-    Example:
-        >>> _multilinear_einsum_string(1)
-        '...a,ab->....b'
-        >>> _multilinear_einsum_string(2)
-        '...a,...b,abc->....c'
-    """
+    # Generate einsum string for a linear layer of degree n
+    # Example:
+    #     >>> _multilinear_einsum_string(1)
+    #     '...a,ab->....b'
+    #     >>> _multilinear_einsum_string(2)
+    #     '...a,...b,abc->....c'
+
     alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     if not (1 <= degree <= len(alpha) - 1):
@@ -37,24 +37,24 @@ def _multilinear_einsum_string(degree: int) -> str:
 
 @ft.lru_cache(maxsize=128)
 def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
-    """Return the einsum string for a general linear layer.
-    Example:
-        # apply linear layer to last axis
-        >>> _general_linear_einsum_string(-1)
-        '...a,ab->...b'
+    # Return the einsum string for a general linear layer.
+    # Example:
+    #     # apply linear layer to last axis
+    #     >>> _general_linear_einsum_string(-1)
+    #     '...a,ab->...b'
 
-        # apply linear layer to last two axes
-        >>> _general_linear_einsum_string(-1,-2)
-        '...ab,abc->...c'
+    #     # apply linear layer to last two axes
+    #     >>> _general_linear_einsum_string(-1,-2)
+    #     '...ab,abc->...c'
 
-        # apply linear layer to second last axis
-        >>> _general_linear_einsum_string(-2)
-        '...ab,ac->...bc'
+    #     # apply linear layer to second last axis
+    #     >>> _general_linear_einsum_string(-2)
+    #     '...ab,ac->...bc'
 
-        # apply linear layer to last and third last axis
-        >>> _general_linear_einsum_string(-1,-3)
-        '...abc,acd->...bd'
-    """
+    #     # apply linear layer to last and third last axis
+    #     >>> _general_linear_einsum_string(-1,-3)
+    #     '...abc,acd->...bd'
+
     if not all([i < 0 for i in axes]):
         raise ValueError("axes should be negative")
 
@@ -95,22 +95,15 @@ class Multilinear:
             key: key for the random number generator
 
         Example:
-            # Bilinear layer
+            >>> # Bilinear layer
             >>> layer = Multilinear((5,6), 7)
             >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
             (1, 7)
 
-            # Trilinear layer
+            >>> # Trilinear layer
             >>> layer = Multilinear((5,6,7), 8)
             >>> layer(jnp.ones((1,5)), jnp.ones((1,6)), jnp.ones((1,7))).shape
             (1, 8)
-
-            * Use with lazy initialization
-            >>> x = jnp.linspace(0, 1, 100)[:, None]
-            >>> lhs = Multilinear(None, 10)
-            >>> assert lhs(x, x, x).shape == (100, 10)
-            # here a trilinear layer is created with in_features=(1, 1, 1)
-            # with weight shape (1, 1, 1, 10) and bias shape (10,)
         """
         if not isinstance(in_features, (tuple, int)):
             msg = f"Expected tuple or int for in_features, got {type(in_features)}"
@@ -153,13 +146,6 @@ class Linear(Multilinear):
         >>> layer = Linear(5, 6)
         >>> layer(jnp.ones((1,5))).shape
         (1, 6)
-
-        * Use with lazy initialization
-        >>> x = jnp.linspace(0, 1, 100)[:, None]
-        >>> lhs = Linear(None, 10)
-        >>> assert lhs(x).shape == (100, 10)
-        # here a linear layer is created with in_features=1
-        # with weight shape (1, 10) and bias shape (10,)
     """
 
     def __init__(
