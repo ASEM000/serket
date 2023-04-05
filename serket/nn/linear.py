@@ -14,7 +14,7 @@ frozen_int_or_tuple_cb = [instance_cb_factory((int, tuple)), pytc.freeze]
 frozen_tuple_cb = [instance_cb_factory(tuple), pytc.freeze]
 
 
-@ft.lru_cache(maxsize=128)
+@ft.lru_cache(maxsize=None)
 def _multilinear_einsum_string(degree: int) -> str:
     # Generate einsum string for a linear layer of degree n
     # Example:
@@ -150,7 +150,7 @@ class Linear(Multilinear):
 
     def __init__(
         self,
-        in_features: int | None,
+        in_features: int,
         out_features: int,
         *,
         weight_init_func: InitFuncType = "he_normal",
@@ -169,8 +169,8 @@ class Linear(Multilinear):
 class Bilinear(Multilinear):
     def __init__(
         self,
-        in1_features: int | None,
-        in2_features: int | None,
+        in1_features: int,
+        in2_features: int,
         out_features: int,
         *,
         weight_init_func: InitFuncType = "he_normal",
@@ -206,13 +206,13 @@ class GeneralLinear:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: tuple[int, ...] | None = pytc.field(callbacks=[*frozen_tuple_cb])
-    out_features: tuple[int, ...] | None = pytc.field(callbacks=[pytc.freeze])
-    in_axes: tuple[int, ...] | None = pytc.field(callbacks=[*frozen_tuple_cb])
+    in_features: tuple[int, ...] = pytc.field(callbacks=[*frozen_tuple_cb])
+    out_features: tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    in_axes: tuple[int, ...] = pytc.field(callbacks=[*frozen_tuple_cb])
 
     def __init__(
         self,
-        in_features: tuple[int, ...] | None,
+        in_features: tuple[int, ...],
         out_features: int,
         *,
         in_axes: tuple[int, ...],

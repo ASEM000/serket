@@ -53,15 +53,10 @@ def grouped_matmul(x, y, groups: int = 1):
 
 
 @ft.partial(jax.jit, static_argnums=(1, 2))
-def _intersperse_along_axis(
-    x: jax.Array, dilation: int, axis: int, value: int | float = 0
-) -> jax.Array:
-    if dilation == 1:
-        return x
-
+def _intersperse_along_axis(x: jax.Array, dilation: int, axis: int) -> jax.Array:
     shape = list(x.shape)
     shape[axis] = (dilation) * shape[axis] - (dilation - 1)
-    z = jnp.ones(shape) * value
+    z = jnp.zeros(shape)
     z = z.at[(slice(None),) * axis + (slice(None, None, (dilation)),)].set(x)
     return z
 
@@ -71,10 +66,9 @@ def _general_intersperse(
     x: jax.Array,
     dilation: tuple[int, ...],
     axis: tuple[int, ...],
-    value: int | float = 0,
 ) -> jax.Array:
     for di, ai in zip(dilation, axis):
-        x = _intersperse_along_axis(x, di, ai)
+        x = _intersperse_along_axis(x, di, ai) if di > 1 else x
     return x
 
 
@@ -87,18 +81,16 @@ def _general_pad(x: jax.Array, pad_width: tuple[tuple[int, int], ...]) -> jax.Ar
         [1., 1., 0.],
         [1., 1., 0.]]
     """
-    pad_width = list(pad_width)
 
-    for i, (l, r) in enumerate(pad_width):
-        if l < 0:
-            x = jax.lax.dynamic_slice_in_dim(x, -l, x.shape[i] + l, i)
-            pad_width[i] = (0, r)
+    for axis, (lhs, rhs) in enumerate(pad_width := list(pad_width)):
+        if lhs < 0 and rhs < 0:
+            x = jax.lax.dynamic_slice_in_dim(x, -lhs, x.shape[axis] + lhs + rhs, axis)
+        elif lhs < 0:
+            x = jax.lax.dynamic_slice_in_dim(x, -lhs, x.shape[axis] + lhs, axis)
+        elif rhs < 0:
+            x = jax.lax.dynamic_slice_in_dim(x, 0, x.shape[axis] + rhs, axis)
 
-        if r < 0:
-            x = jax.lax.dynamic_slice_in_dim(x, 0, x.shape[i] + r, i)
-            pad_width[i] = (l, 0)
-
-    return jnp.pad(x, pad_width)
+    return jnp.pad(x, [(max(lhs, 0), max(rhs, 0)) for (lhs, rhs) in (pad_width)])
 
 
 @ft.partial(jax.jit, static_argnums=(2, 3, 4, 5))
@@ -132,6 +124,7 @@ def fft_conv_general_dilated(
     kernel_padding = ((0, x.shape[i] - w.shape[i]) for i in range(2, spatial_ndim + 2))
     w = _general_pad(w, ((0, 0), (0, 0), *kernel_padding))
 
+    # for real-valued input
     x_fft = jnp.fft.rfftn(x, axes=range(2, spatial_ndim + 2))
     w_fft = jnp.conjugate(jnp.fft.rfftn(w, axes=range(2, spatial_ndim + 2)))
     z_fft = grouped_matmul(x_fft, w_fft, groups)
