@@ -9,7 +9,7 @@ import kernex as kex
 import pytreeclass as pytc
 
 from serket.nn.callbacks import validate_spatial_in_shape
-from serket.nn.utils import canonicalize
+from serket.nn.utils import KernelSizeType, PaddingType, StridesType, canonicalize
 
 # Based on colab hardware benchmarks `kernex` seems to
 # be faster on CPU and on par with JAX on GPU.
@@ -17,11 +17,9 @@ from serket.nn.utils import canonicalize
 
 @pytc.treeclass
 class GeneralPoolND:
-    kernel_size: tuple[int, ...] | int = pytc.field(callbacks=[pytc.freeze])
-    strides: tuple[int, ...] | int = pytc.field(callbacks=[pytc.freeze])
-    padding: tuple[tuple[int, int], ...] | int | str = pytc.field(
-        callbacks=[pytc.freeze]
-    )
+    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
+    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
+    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
 
     def __init__(
         self,
@@ -43,7 +41,7 @@ class GeneralPoolND:
         """
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")
         self.strides = canonicalize(strides, spatial_ndim, "strides")
-        self.padding = padding
+        self.padding = padding  # gets canonicalized in kmap
         self.spatial_ndim = spatial_ndim
 
         @jax.jit
@@ -55,7 +53,7 @@ class GeneralPoolND:
         self.func = _poolnd
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    def __call__(self, x, **kwargs):
+    def __call__(self, x, **k):
         return self.func(x)
 
 
@@ -64,10 +62,10 @@ class LPPoolND(GeneralPoolND):
     def __init__(
         self,
         norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
+        kernel_size: KernelSizeType,
+        strides: StridesType | None = None,
         *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
+        padding: PaddingType = "valid",
         spatial_ndim: int = 1,
     ):
         """Apply Lp pooling to the input.
