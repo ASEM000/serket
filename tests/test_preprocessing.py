@@ -20,7 +20,7 @@ def test_pixel_shuffle():
 
     npt.assert_allclose(ps(x)[0, 0], y, atol=1e-5)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         PixelShuffle2D(3)(jnp.ones([6, 4, 4]))
 
     with pytest.raises(ValueError):

@@ -27,6 +27,8 @@ from .activation import (
     SoftPlus,
     SoftShrink,
     SoftSign,
+    SquarePlus,
+    Stan,
     Swish,
     Tanh,
     TanhShrink,
@@ -36,7 +38,7 @@ from .blocks import UNetBlock, VGG16Block, VGG19Block
 from .blur import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
 from .containers import Lambda, Sequential
 from .contrast import AdjustContrast2D, RandomContrast2D
-from .convolution import (  # Conv1DSemiLocal,; Conv2DSemiLocal,; Conv3DSemiLocal,
+from .convolution import (
     Conv1D,
     Conv1DLocal,
     Conv1DTranspose,
@@ -72,19 +74,15 @@ from .fft_convolution import (
 )
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
-from .fully_connected import FNN, PFNN
+from .fully_connected import FNN  # , PFNN
 from .laplace import Laplace2D
 from .linear import Bilinear, GeneralLinear, Identity, Linear, Multilinear
 from .normalization import GroupNorm, InstanceNorm, LayerNorm
 from .padding import Pad1D, Pad2D, Pad3D
-from .polynomial import Polynomial
 from .pooling import (
     AdaptiveAvgPool1D,
     AdaptiveAvgPool2D,
     AdaptiveAvgPool3D,
-    AdaptiveConcatPool1D,
-    AdaptiveConcatPool2D,
-    AdaptiveConcatPool3D,
     AdaptiveMaxPool1D,
     AdaptiveMaxPool2D,
     AdaptiveMaxPool3D,
@@ -113,46 +111,17 @@ from .recurrent import (
     ConvLSTM1DCell,
     ConvLSTM2DCell,
     ConvLSTM3DCell,
-    FFTConvGRU1DCell,
-    FFTConvGRU2DCell,
-    FFTConvGRU3DCell,
-    FFTConvLSTM1DCell,
-    FFTConvLSTM2DCell,
-    FFTConvLSTM3DCell,
     GRUCell,
     LSTMCell,
     ScanRNN,
-    SeparableConvGRU1DCell,
-    SeparableConvGRU2DCell,
-    SeparableConvGRU3DCell,
-    SeparableConvLSTM1DCell,
-    SeparableConvLSTM2DCell,
-    SeparableConvLSTM3DCell,
-    SeparableFFTConvGRU1DCell,
-    SeparableFFTConvGRU2DCell,
-    SeparableFFTConvGRU3DCell,
-    SeparableFFTConvLSTM1DCell,
-    SeparableFFTConvLSTM2DCell,
-    SeparableFFTConvLSTM3DCell,
     SimpleRNNCell,
 )
-from .resize import (
-    Repeat1D,
-    Repeat2D,
-    Repeat3D,
-    Resize1D,
-    Resize2D,
-    Resize3D,
-    Upsample1D,
-    Upsample2D,
-    Upsample3D,
-)
+from .resize import Resize1D, Resize2D, Resize3D, Upsample1D, Upsample2D, Upsample3D
 
 __all__ = (
     "blocks",
     # Fully connected
     "FNN",
-    "PFNN",
     # Linear
     "Linear",
     "Bilinear",
@@ -189,9 +158,6 @@ __all__ = (
     "AdaptiveMaxPool1D",
     "AdaptiveMaxPool2D",
     "AdaptiveMaxPool3D",
-    "AdaptiveConcatPool1D",
-    "AdaptiveConcatPool2D",
-    "AdaptiveConcatPool3D",
     # Convolution
     "Conv1D",
     "Conv2D",
@@ -224,12 +190,6 @@ __all__ = (
     "SeparableFFTConv1D",
     "SeparableFFTConv2D",
     "SeparableFFTConv3D",
-    # Flattening
-    "Flatten",
-    "Unflatten",
-    "Repeat1D",
-    "Repeat2D",
-    "Repeat3D",
     # Normalization
     "LayerNorm",
     "InstanceNorm",
@@ -298,6 +258,8 @@ __all__ = (
     "SoftPlus",
     "SoftShrink",
     "SoftSign",
+    "Stan",
+    "SquarePlus",
     "Swish",
     "Snake",
     "Tanh",
@@ -310,31 +272,16 @@ __all__ = (
     "LSTMCell",
     "GRUCell",
     "SimpleRNNCell",
-    "ScanRNN",
     "ConvLSTM1DCell",
     "ConvLSTM2DCell",
     "ConvLSTM3DCell",
-    "SeparableConvLSTM1DCell",
-    "SeparableConvLSTM2DCell",
-    "SeparableConvLSTM3DCell",
     "ConvGRU1DCell",
     "ConvGRU2DCell",
     "ConvGRU3DCell",
-    "SeparableConvGRU1DCell",
-    "SeparableConvGRU2DCell",
-    "SeparableConvGRU3DCell",
-    "FFTConvGRU1DCell",
-    "FFTConvGRU2DCell",
-    "FFTConvGRU3DCell",
-    "FFTConvLSTM1DCell",
-    "FFTConvLSTM2DCell",
-    "FFTConvLSTM3DCell",
-    "SeparableFFTConvGRU1DCell",
-    "SeparableFFTConvGRU2DCell",
-    "SeparableFFTConvGRU3DCell",
-    "SeparableFFTConvLSTM1DCell",
-    "SeparableFFTConvLSTM2DCell",
-    "SeparableFFTConvLSTM3DCell",
+    "ScanRNN",
     # Polynomial
     "Polynomial",
+    # Flatten
+    "Flatten",
+    "Unflatten",
 )

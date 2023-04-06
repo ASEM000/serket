@@ -1,3 +1,3 @@
-# from .conv_semi_local import Conv1DSemiLocal, Conv2DSemiLocal, Conv3DSemiLocal
+from .lazy_class import lazy_class
 
-# __all__ = ("Conv1DSemiLocal", "Conv2DSemiLocal", "Conv3DSemiLocal")
+__all__ = ["lazy_class"]

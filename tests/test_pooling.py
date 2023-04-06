@@ -9,9 +9,6 @@ from serket.nn.pooling import (
     AdaptiveAvgPool1D,
     AdaptiveAvgPool2D,
     AdaptiveAvgPool3D,
-    AdaptiveConcatPool1D,
-    AdaptiveConcatPool2D,
-    AdaptiveConcatPool3D,
     AdaptiveMaxPool1D,
     AdaptiveMaxPool2D,
     AdaptiveMaxPool3D,
@@ -33,7 +30,6 @@ from serket.nn.pooling import (
 
 
 def test_MaxPool1D():
-
     layer = MaxPool1D(kernel_size=2, padding="SAME", strides=1)
     x = jnp.arange(1, 11).reshape(1, 10).astype(jnp.float32)
     npt.assert_allclose(layer(x), jnp.array([[2, 3, 4, 5, 6, 7, 8, 9, 10, 10]]))
@@ -49,7 +45,6 @@ def test_MaxPool1D():
 
 
 def test_MaxPool2D():
-
     layer = MaxPool2D(kernel_size=2, padding="SAME", strides=1)
     x = jnp.arange(1, 10).reshape(1, 3, 3).astype(jnp.float32)
     npt.assert_allclose(layer(x), jnp.array([[[5, 6, 6], [8, 9, 9], [8, 9, 9]]]))
@@ -203,49 +198,39 @@ def test_llpool2d():
 def test_adaptive_pool1d():
     layer_avg = AdaptiveAvgPool1D(2)
     layer_max = AdaptiveMaxPool1D(2)
-    layer_concat = AdaptiveConcatPool1D(2)
     for input_shape in [2, 3, 4, 5, 10, 13, 14]:
         x = jnp.ones([1, input_shape])
         assert layer_avg(x).shape == (1, 2)
         assert layer_max(x).shape == (1, 2)
-        assert layer_concat(x).shape == (2, 2)
 
 
 def test_adaptive_pool2d():
     layer_avg = AdaptiveAvgPool2D((2, 3))
     layer_max = AdaptiveMaxPool2D((2, 3))
-    layer_concat = AdaptiveConcatPool2D((2, 3))
     for input_size in product([2, 3, 4, 5], [3, 4]):
         x = jnp.ones([1, *input_size])
         assert layer_avg(x).shape == (1, 2, 3)
         assert layer_max(x).shape == (1, 2, 3)
-        assert layer_concat(x).shape == (2, 2, 3)
 
     layer_avg = AdaptiveAvgPool2D((4, 7))
     layer_max = AdaptiveMaxPool2D((4, 7))
-    layer_concat = AdaptiveConcatPool2D((4, 7))
     for input_size in product([4, 5], [7, 8, 9, 16, 18]):
         x = jnp.ones([1, *input_size])
         assert layer_avg(x).shape == (1, 4, 7)
         assert layer_max(x).shape == (1, 4, 7)
-        assert layer_concat(x).shape == (2, 4, 7)
 
 
 def test_adaptive_pool3d():
     layer_avg = AdaptiveAvgPool3D((2, 3, 4))
     layer_max = AdaptiveMaxPool3D((2, 3, 4))
-    layer_concat = AdaptiveConcatPool3D((2, 3, 4))
     for input_size in product([2, 3, 4, 5], [3, 4, 5], [4, 5]):
         x = jnp.ones([1, *input_size])
         assert layer_avg(x).shape == (1, 2, 3, 4)
         assert layer_max(x).shape == (1, 2, 3, 4)
-        assert layer_concat(x).shape == (2, 2, 3, 4)
 
     layer_avg = AdaptiveAvgPool3D((4, 7, 8))
     layer_max = AdaptiveMaxPool3D((4, 7, 8))
-    layer_concat = AdaptiveConcatPool3D((4, 7, 8))
     for input_size in product([4, 5], [7, 8, 9, 16, 18], [8, 9]):
         x = jnp.ones([1, *input_size])
         assert layer_avg(x).shape == (1, 4, 7, 8)
         assert layer_max(x).shape == (1, 4, 7, 8)
-        assert layer_concat(x).shape == (2, 4, 7, 8)

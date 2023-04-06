@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import jax.tree_util as jtu
 import numpy.testing as npt
 import pytest
 import pytreeclass as pytc
@@ -12,20 +13,20 @@ def test_linear():
     y = x**3 + jax.random.uniform(jax.random.PRNGKey(0), (100, 1)) * 0.01
 
     @jax.value_and_grad
-    def loss_func(model, x, y):
-        return jnp.mean((model(x) - y) ** 2)
+    def loss_func(NN, x, y):
+        return jnp.mean((NN(x) - y) ** 2)
 
     @jax.jit
-    def update(model, x, y):
-        value, grad = loss_func(model, x, y)
-        return value, model - 1e-3 * grad
+    def update(NN, x, y):
+        value, grad = loss_func(NN, x, y)
+        return value, jtu.tree_map(lambda x, g: x - 1e-3 * g, NN, grad)
 
-    model = FNN([1, 128, 128, 1])
+    NN = FNN([1, 128, 128, 1])
 
-    model = pytc.filter_nondiff(model)
-    print(model.tree_diagram())
+    NN = jtu.tree_map(lambda x: pytc.freeze(x) if pytc.is_nondiff(x) else x, NN)
+    # print(pytc.tree_diagram(NN))
     for _ in range(20_000):
-        value, model = update(model, x, y)
+        value, NN = update(NN, x, y)
 
     npt.assert_allclose(jnp.array(4.933563e-05), value, atol=1e-3)
 
@@ -70,33 +71,11 @@ def test_identity():
     npt.assert_allclose(x, layer(x))
 
 
-def test_lazy():
-
-    layer = Linear(None, 1)
-    assert layer.weight is None
-    assert layer(jnp.ones([10, 2])).shape == (10, 1)
-
-    layer = Bilinear(None, None, 1)
-    assert layer.weight is None
-    assert layer(jnp.ones([10, 2]), jnp.ones([10, 3])).shape == (10, 1)
-
-    with pytest.raises(ValueError):
-        layer = jax.jit(Linear(None, 1))
-        layer(jnp.ones([10, 2]))
-
-    with pytest.raises(ValueError):
-        layer = jax.jit(Bilinear(None, None, 1))
-        layer(jnp.ones([10, 2]), jnp.ones([10, 3]))
-
-
 def test_multi_linear():
     x = jnp.linspace(0, 1, 100)[:, None]
     lhs = Linear(1, 10)
     rhs = Multilinear((1,), 10)
     npt.assert_allclose(lhs(x), rhs(x), atol=1e-4)
-
-    lhs = Multilinear(None, 10)
-    assert lhs(x, x, x).shape == (100, 10)
 
     with pytest.raises(ValueError):
         Multilinear([1, 2], 10)
@@ -119,17 +98,11 @@ def test_general_linear():
     layer = GeneralLinear(in_features=(2, 3), in_axes=(1, -2), out_features=5)
     assert layer(x).shape == (1, 4, 5)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         GeneralLinear(in_features=2, in_axes=(1, -2), out_features=5)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         GeneralLinear(in_features=(2, 3), in_axes=2, out_features=5)
 
     with pytest.raises(ValueError):
         GeneralLinear(in_features=(1,), in_axes=(0, -3), out_features=5)
-
-
-def test_lazy_general_linear():
-    x = jnp.ones([1, 2, 3, 4])
-    layer = GeneralLinear(None, in_axes=(0, 1), out_features=5)
-    assert layer(x).shape == (3, 4, 5)

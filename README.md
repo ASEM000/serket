@@ -1,16 +1,14 @@
-
 <div align="center">
-<img width="350px" src="assets/serketLogo.svg"></div>
+<img width="350px" src="assets/logo.svg"></div>
 
 <h2 align="center">The ✨Magical✨ JAX Scientific ML Library.</h2>
-<h5 align = "center"> *Serket is the goddess of magic in Egyptian mythology 
+<h5 align = "center"> *Serket is the goddess of magic in Egyptian mythology
 
 [**Installation**](#Installation)
 |[**Description**](#Description)
 |[**Quick Example**](#QuickExample)
 |[**Freezing/Fine tuning**](#Freezing)
 |[**Filtering**](#Filtering)
-
 
 ![Tests](https://github.com/ASEM000/serket/actions/workflows/tests.yml/badge.svg)
 ![pyver](https://img.shields.io/badge/python-3.7%203.8%203.9%203.10-red)
@@ -22,19 +20,20 @@
 
 </h5>
 
-
 ## 🛠️ Installation<a id="Installation"></a>
 
 ```python
 pip install serket
 ```
+
 **Install development version**
+
 ```python
 pip install git+https://github.com/ASEM000/serket
 ```
 
-
 ## 📖 Description and motivation<a id="Description"></a>
+
 - `serket` aims to be the most intuitive and easy-to-use physics-based Neural network library in JAX.
 - `serket` is fully transparent to `jax` transformation (e.g. `vmap`,`grad`,`jit`,...)
 - `serket` current aim to facilitate the integration of numerical methods in a NN setting (see examples for more)
@@ -43,135 +42,31 @@ pip install git+https://github.com/ASEM000/serket
 
 `serket` is built on top of [`PyTreeClass`](https://github.com/ASEM000/pytreeclass), this means that layers are represented as a [PyTree](https://jax.readthedocs.io/en/latest/pytrees.html) whose leaves are the layer parameters.
 
-```python
-import serket as sk 
-import jax.tree_util as jtu
-
-""" define a linear layer of in_features=1, out_features=1 """
-l = sk.nn.Linear(1,1)
-
-""" print tree structure """
-print(l.tree_diagram())
-# `*`denotes non-differentiable leaf
-# Linear
-#     ├── weight=f32[1,1]
-#     ├── bias=f32[1]
-#     ├*─ in_features=(1,)
-#     └*─ out_features=1 
-
-""" print tree values """
-print(l)
-# Linear(
-#   weight=[[-0.31568417]],
-#   bias=[1.],
-#   *in_features=(1),
-#   *out_features=1
-# )
-```
-
-
-<details> 
-<summary> 1) Traverse and apply function using `jax.tree_util.tree_map`</summary>
-
-```python
-""" add 10 to all leaves """
-print(jtu.tree_map(lambda x:x+10, l))
-# Linear(
-#   weight=[[9.684316]],
-#   bias=[11.],
-#   *in_features=(1),
-#   *out_features=1
-# )
-```
-
-</details>
-
-<details>
-<summary> 2) Flatten using `jax.tree_util.tree_flatten` </summary>
-
-```python
-""" flatten all params(leaves) """
-print(jtu.tree_leaves(l))
-# [DeviceArray([[-0.31568417]], dtype=float32), DeviceArray([1.], dtype=float32)]
-
-```
-</details>
-
-<details>
-<summary> 3) Filter using `.at[]` methods </summary>
-
-```python
-""" set 100 to all positive values of l (i.e. only to bias) """
-print(l.at[l>0].set(100))
-# Linear(
-#   weight=[[-0.31568417]],
-#   bias=[100.],
-#   *in_features=(1),
-#   *out_features=1
-# )
-
-```
-</details>
-
-<details> <summary>
-4) Apply operations on tree leaves 
-</summary>
-
-```python
-""" same layers can be added,subtracted,divided,... """
-print(l + l + 100 )
-# Linear(
-#   weight=[[99.36863]],
-#   bias=[102.],
-#   *in_features=(1),
-#   *out_features=1
-# )
-```
-</details>
-
-
 <div align="center">
 
-### ➖➕Finite difference package: `serket.fd`➕➖
-
-| Group| Function/Layer|
-| ------------- | ------------- |
-|Finite difference layer| - `Difference`: apply finite difference to input array to any derivative order and accuracy|
-|Finite difference functions| - `difference`: finite difference of array with any accuracy and derivative order  <br> - `generate_finitediff_coeffs` : generate coeffs using sample points and derivative order <br> - `fgrad`: differentiate _functions_ (similar to `jax.grad`) with custom accuracy and derivative order|
-|Vector operator layers|- `Curl`, `Divergence`, `Gradient`, `Laplacian`, `Jacobian`, `Hessian`|
-|Vector operator function| - `curl`, `divergence`, `gradient`, `laplacian`, `jacobian`, `hessian`|
-
-### #️⃣ Stencil decorators #️⃣
-|Name|description|
-| ------------- | ------------- |
-|`serket.kmap`| Differentiable vectorized stencil decorator using `jax.vmap`. somehow similar to `numba.stencil`|
-|`serket.kscan`|Differentiable stecil decorator that scans the stencil kernel along array while carrying along state. uses `jax.lax.scan`|
 ### 🧠 Neural network package: `serket.nn` 🧠
-| Group | Layers |
-| ------------- | ------------- |
-| Linear  | - `Linear`, `Bilinear`, `Multilinear`, `GeneralLinear`, `Identity`  |
-|Densely connected| - `FNN` (Fully connected network), <br> - `PFNN` (Parallel fully connected network)|
-| Convolution | - `{Conv,FFTConv}{1D,2D,3D}` <br> - `{Conv,FFTConv}{1D,2D,3D}Transpose` <br> - `{Depthwise,Separable}{Conv,FFTConv}{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local`|
-| Containers| - `Sequential`, `Lambda` |
-|Pooling <br> (`kernex` backend)|- `{Avg,Max,LP}Pool{1D,2D,3D}`  <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `Adaptive{Avg,Max,Concat}Pool{1D,2D,3D}` |
-|Reshaping|- `Flatten`, `Unflatten`, <br> - `FlipLeftRight2D`, `FlipUpDown2D` <br> - `Repeat{1D,2D,3D}` <br> - `Resize{1D,2D,3D}` <br> - `Upsample{1D,2D,3D}` <br> - `Pad{1D,2D,3D}` |
-|Crop| - `Crop{1D,2D}` |
-|Normalization|- `{Layer,Instance,Group}Norm`|
-|Blurring| - `{Avg,Gaussian}Blur2D`|
-|Dropout|- `Dropout`<br> - `Dropout{1D,2D,3D}`|
-|Random transforms| - `RandomCrop{1D,2D}` <br> - `RandomApply`, <br> - `RandomCutout{1D,2D}` <br> - `RandomZoom2D`, <br> - `RandomContrast2D` |
-|Misc| - `HistogramEqualization2D`, `AdjustContrast2D`, `Filter2D`, `PixelShuffle2D`|
-|Activations|- `Adaptive{LeakyReLU,ReLU,Sigmoid,Tanh}`,<br> - `CeLU`,`ELU`,`GELU`,`GLU`<br>- `Hard{SILU,Shrink,Sigmoid,Swish,Tanh}`, <br> - `Soft{Plus,Sign,Shrink}` <br> - `LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> - `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid` <br> - `Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake`|
-|Recurrent cells| - `{SimpleRNN,LSTM,GRU}Cell` <br> - `{Conv,FFTConv}{LSTM,GRU}{1D,2D,3D}Cell` <br> - `Separable{Conv,FFTConv}{LSTM,GRU}{1D,2D,3D}Cell`|
-|Blocks|- `VGG{16,19}Block`, `UNetBlock`|
 
-
-
+| Group                           | Layers                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Linear                          | - `Linear`, `Bilinear`, `Multilinear`, `GeneralLinear`, `Identity`                                                                                                                                                                                                                                                                                     |
+| Densely connected               | - `FNN` (Fully connected network),                                                                                                                                                                                                                                                                                                                     |
+| Convolution                     | - `{Conv,FFTConv}{1D,2D,3D}` <br> - `{Conv,FFTConv}{1D,2D,3D}Transpose` <br> - `{Depthwise,Separable}{Conv,FFTConv}{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local`                                                                                                                                                                                            |
+| Containers                      | - `Sequential`, `Lambda`                                                                                                                                                                                                                                                                                                                               |
+| Pooling <br> (`kernex` backend) | - `{Avg,Max,LP}Pool{1D,2D,3D}` <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `Adaptive{Avg,Max}Pool{1D,2D,3D}`                                                                                                                                                                                                                                         |
+| Reshaping                       | - `Flatten`, `Unflatten`, <br> - `FlipLeftRight2D`, `FlipUpDown2D` <br> - `Resize{1D,2D,3D}` <br> - `Upsample{1D,2D,3D}` <br> - `Pad{1D,2D,3D}`                                                                                                                                                                                                        |
+| Crop                            | - `Crop{1D,2D}`                                                                                                                                                                                                                                                                                                                                        |
+| Normalization                   | - `{Layer,Instance,Group}Norm`                                                                                                                                                                                                                                                                                                                         |
+| Blurring                        | - `{Avg,Gaussian}Blur2D`                                                                                                                                                                                                                                                                                                                               |
+| Dropout                         | - `Dropout`<br> - `Dropout{1D,2D,3D}`                                                                                                                                                                                                                                                                                                                  |
+| Random transforms               | - `RandomCrop{1D,2D}` <br> - `RandomApply`, <br> - `RandomCutout{1D,2D}` <br> - `RandomZoom2D`, <br> - `RandomContrast2D`                                                                                                                                                                                                                              |
+| Misc                            | - `HistogramEqualization2D`, `AdjustContrast2D`, `Filter2D`, `PixelShuffle2D`                                                                                                                                                                                                                                                                          |
+| Activations                     | - `Adaptive{LeakyReLU,ReLU,Sigmoid,Tanh}`,<br> - `CeLU`,`ELU`,`GELU`,`GLU`<br>- `Hard{SILU,Shrink,Sigmoid,Swish,Tanh}`, <br> - `Soft{Plus,Sign,Shrink}` <br> - `LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> - `ReLU`,`ReLU6`,`SILU`,`SeLU`,`Sigmoid` <br> - `Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake`, `Stan`, `SquarePlus` |
+| Recurrent cells                 | - `{SimpleRNN,LSTM,GRU}Cell` <br> - `Conv{LSTM,GRU}{1D,2D,3D}Cell`                                                                                                                                                                                                                                                                                     |
+| Blocks                          | - `VGG{16,19}Block`, `UNetBlock`                                                                                                                                                                                                                                                                                                                       |
 
 </div>
 
 ## ⏩ Examples: <a id="QuickExample">
-
 
 <details>
 <summary> Linear layers examples</summary>
@@ -202,8 +97,8 @@ x = jnp.ones([4, 5, 6, 7])
 l4 = sk.nn.GeneralLinear((5, 6, 7), 5, in_axes=(1, 2, 3))
 print(l4(x).shape)  # (4, 5)
 ```
-</details>
 
+</details>
 
 <details>
 <summary>
@@ -307,19 +202,17 @@ plt.legend()
 
 </details>
 
-
 <details>
 
 <summary>Lazy initialization</summary>
 
-In cases where `in_features` needs to be inferred from input, use `None` instead of `in_features` to infer the value at runtime. 
-However, since the lazy module initialize it's state after the first call (i.e. mutate it's state)  `jax` transformation ex: `vmap, grad ...` is not allowed before initialization. Using any `jax` transformation before initialization will throw a `ValueError`.
-
+In cases where `in_features` needs to be inferred from input, use `None` instead of `in_features` to infer the value at runtime.
+However, since the lazy module initialize it's state after the first call (i.e. mutate it's state) `jax` transformation ex: `vmap, grad ...` is not allowed before initialization. Using any `jax` transformation before initialization will throw a `ValueError`.
 
 ```python
-import serket as sk 
+import serket as sk
 import jax
-import jax.numpy as jnp 
+import jax.numpy as jnp
 
 model = sk.nn.Sequential(
     [
@@ -381,7 +274,6 @@ print(model[0].__repr__())
 
 </details>
 
-
 <details>
 
 <summary>Train MNIST</summary>
@@ -397,7 +289,7 @@ import tensorflow_datasets as tfds
 import tensorflow.experimental.numpy as tnp
 import jax
 import jax.numpy as jnp
-import jax.random as jr 
+import jax.random as jr
 import optax  # for gradient optimization
 import serket as sk
 import matplotlib.pyplot as plt
@@ -432,7 +324,7 @@ ds_test = ds_test.map(preprocess_data).prefetch(tf.data.AUTOTUNE)
 ### 🏗️ Model definition
 
 We will use `jax.vmap(model)` to apply `model` on batches.
-    
+
 ```python
 @sk.treeclass
 class CNN:
@@ -463,7 +355,7 @@ model = CNN()
 ```
 
 ### 🎨 Visualize model
-    
+
 <details><summary>Model summary</summary>
     
 ```python
@@ -566,15 +458,15 @@ CNN
 test_model = model.at[model == "eval"].set(True, is_leaf=lambda x: x is None)
 
 def show_images_with_predictions(model, images, one_hot_labels):
-    logits = jax.vmap(model)(images)
-    predictions = jnp.argmax(logits, axis=-1)
-    fig, axes = plt.subplots(5, 5, figsize=(10, 10))
-    for i, ax in enumerate(axes.flat):
-        ax.imshow(images[i].reshape(28, 28), cmap="binary")
-        ax.set(title=f"Prediction: {predictions[i]}\nLabel: {jnp.argmax(one_hot_labels[i], axis=-1)}")
-        ax.set_xticks([])
-        ax.set_yticks([])
-    plt.show()
+logits = jax.vmap(model)(images)
+predictions = jnp.argmax(logits, axis=-1)
+fig, axes = plt.subplots(5, 5, figsize=(10, 10))
+for i, ax in enumerate(axes.flat):
+ax.imshow(images[i].reshape(28, 28), cmap="binary")
+ax.set(title=f"Prediction: {predictions[i]}\nLabel: {jnp.argmax(one_hot_labels[i], axis=-1)}")
+ax.set_xticks([])
+ax.set_yticks([])
+plt.show()
 
 example = ds_test.take(25).as_numpy_iterator()
 example = list(example)
@@ -582,11 +474,12 @@ sample_test_images = jnp.stack([x["image"] for x in example])
 sample_test_labels = jnp.stack([x["label"] for x in example])
 
 show_images_with_predictions(test_model, sample_test_images, sample_test_labels)
-```
+
+````
 ![image](assets/before_training.svg)
- 
+
 </details>
-    
+
 ### 🏃 Train the model
 
 ```python
@@ -627,15 +520,14 @@ for i in range(epochs):
     epoch_accuracy = jnp.mean(jnp.array(epoch_accuracy))
 
     print(f"epoch:{i+1:00d}\tloss:{epoch_loss:.4f}\taccuracy:{epoch_accuracy:.4f}")
-    
+
 # epoch:1	loss:0.2706	accuracy:0.9268
 # epoch:2	loss:0.0725	accuracy:0.9784
 # epoch:3	loss:0.0533	accuracy:0.9836
 # epoch:4	loss:0.0442	accuracy:0.9868
 # epoch:5	loss:0.0368	accuracy:0.9889
-```
-    
-    
+````
+
 ### 🎨 Visualize After training
 
 ```python
@@ -654,7 +546,6 @@ show_images_with_predictions(test_model, sample_test_images, sample_test_labels)
 <br>
 
 ![image](https://img.shields.io/badge/-physics%20examples-blue)
-
 
 <details>
 
@@ -753,8 +644,6 @@ npt.assert_allclose(JF, JF_exact, atol=1e-7)
 
 </details>
 
-
-
 <details> 
 <summary> 
 PINN with Finite difference
@@ -852,14 +741,13 @@ plt.plot(x, y_fd, label="fd pred")
 plt.plot(x, y_ad, label="ad pred")
 plt.legend()
 
-# Loss_fd 0.0012 
+# Loss_fd 0.0012
 # Loss_ad 0.0235
 ```
+
 ![image](assets/fd_vs_ad.png)
 
-
 </details>
-
 
 <details>
 <summary> 
@@ -898,10 +786,10 @@ optim = optax.adam(1e-3)
 @jax.value_and_grad
 def loss_func(NN, F):
     F_pred = NN(F)
-    div = sk.fd.divergence(F_pred, accuracy=5, step_size=(dx, dy))  
+    div = sk.fd.divergence(F_pred, accuracy=5, step_size=(dx, dy))
     loss = jnp.mean(div**2)  # divergence free condition
     curl = sk.fd.curl(F_pred, accuracy=2, step_size=(dx, dy))
-    loss += jnp.mean((curl-jnp.ones_like(curl)*2)**2)  # curl condition 
+    loss += jnp.mean((curl-jnp.ones_like(curl)*2)**2)  # curl condition
     return loss
 
 
@@ -935,7 +823,6 @@ plt.legend()
 
 ![image](assets/nn_div_free.svg)
 
-
 </details>
 
 <details>
@@ -946,6 +833,7 @@ Vectorized differentiable stencil computation with `serket.kmap`
 Serket uses `kernex.kmap` decorator that applies a user-defined stencil kernel. `kmap` uses `jax.vmap` as it's backend to vectorized the operation, this means that the decorator is transparent to `jax` transformation.
 
 #### Example
+
 ```python
 @sk.kmap(
      # a kernel size applied to 2D input with size =3x3
@@ -957,7 +845,7 @@ Serket uses `kernex.kmap` decorator that applies a user-defined stencil kernel. 
     # padding can be among the following options
     # 1) a single integer for each dimension -> ex: (1,) pads zeros before and after axis=0
     # 2) a tuple of two integer for each dimension -> ex: ((1,2),) pads one zero on left and 2 zeros on right of axis=0
-    # 3) "same"/"valid" 
+    # 3) "same"/"valid"
     # 4) "same"/"valid" tuple for each dimension -> ex: ("same",) same padding for axis=0
     padding = "valid",
 
@@ -979,7 +867,6 @@ avg_blur(jnp.arange(1,26).reshape(5,5))
 #  [17 18 19]]
 ```
 
-
 </details>
 
 <details>
@@ -987,10 +874,6 @@ avg_blur(jnp.arange(1,26).reshape(5,5))
 <summary>
 Scan a stencil kernel to solve linear convection using `serket.kscan`
 </summary>
-
-
-
-
 
 <div align ="center">
 
@@ -1017,7 +900,6 @@ $\Large u_i^{n} = u_i^{n-1} - c \frac{\Delta t}{\Delta x}(u_i^{n-1}-u_{i-1}^{n-1
 </div>
 
 By using `serket.kscan`, the stencil kernel can be scanned carrying along state, in a way similar to how RNN works. This enables BPTT algorithm that is useful for some problems (ex. time-dependent PDEs) .
-
 
 ```python
 import jax
@@ -1078,16 +960,12 @@ for line in kx_solution[::20]:
 
 ![image](assets/linear_convection.svg)
 
-
-
-
-
 </details>
-
 
 ## 🥶 Freezing parameters /Fine tuning<a id="Freezing" >
 
 ✨[See here for more about freezing](https://github.com/ASEM000/PyTreeClass#%EF%B8%8F-model-surgery)✨
 
 ## 🔘 Filtering by masking<a id="Filtering" >
+
 ✨[See here for more about filterning ](https://github.com/ASEM000/PyTreeClass#%EF%B8%8F-filtering-with-at-)✨

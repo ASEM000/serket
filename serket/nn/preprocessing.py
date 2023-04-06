@@ -6,11 +6,11 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_spatial_in_shape
+from serket.nn.callbacks import frozen_positive_int_cbs, validate_spatial_in_shape
 
 
 @ft.partial(jax.jit, static_argnums=(1,))
-def _histeq(x, bins_count: int = 256):
+def histeq(x, bins_count: int = 256):
     hist, bins = jnp.histogram(x.flatten(), bins_count, density=True)
     cdf = hist.cumsum()
     cdf = (bins_count - 1) * cdf / cdf[-1]
@@ -19,7 +19,7 @@ def _histeq(x, bins_count: int = 256):
 
 @pytc.treeclass
 class HistogramEqualization2D:
-    bins: int = pytc.nondiff_field()
+    bins: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
 
     def __init__(self, bins: int = 256):
         """Apply histogram equalization to 2D spatial array channel wise
@@ -27,7 +27,6 @@ class HistogramEqualization2D:
             bins: number of bins. Defaults to 256.
 
         Note:
-            See:
             https://en.wikipedia.org/wiki/Histogram_equalization
             http://www.janeriksolem.net/histogram-equalization-with-python-and.html
             https://scikit-image.org/docs/stable/api/skimage.exposure.html#skimage.exposure.equalize_hist
@@ -36,15 +35,14 @@ class HistogramEqualization2D:
         self.spatial_ndim = 2
         self.bins = bins
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
-        return _histeq(x, self.bins)
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        return histeq(x, self.bins)
 
 
 @pytc.treeclass
 class PixelShuffle2D:
     def __init__(self, upscale_factor: int | tuple[int, int] = 1):
-
         self.spatial_ndim = 2
         if isinstance(upscale_factor, int):
             if upscale_factor < 1:
@@ -62,15 +60,16 @@ class PixelShuffle2D:
         else:
             raise ValueError("upscale_factor must be an integer or tuple of length 2")
 
-    def __call__(self, x: jnp.ndarray, **kwargs):
-        _check_spatial_in_shape(x, self.spatial_ndim)
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k):
         channels = x.shape[0]
 
         sr, sw = self.upscale_factor
         oc = channels // (sr * sw)
 
-        msg = f"Input channels must be divisible by {sr*sw}, got {channels}."
-        assert channels % (sr * sw) == 0, msg
+        if not (channels % (sr * sw)) == 0:
+            msg = f"Input channels must be divisible by {sr*sw}, got {channels}."
+            raise ValueError(msg)
 
         ih, iw = x.shape[1], x.shape[2]
         x = jnp.reshape(x, (sr, sw, oc, ih, iw))

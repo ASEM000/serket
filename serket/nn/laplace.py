@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import functools as ft
+
 import jax
-import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.utils import _check_spatial_in_shape
+from serket.nn.callbacks import validate_spatial_in_shape
 
 
 @pytc.treeclass
@@ -20,6 +21,6 @@ class Laplace2D:
         self._func = op
         self.spatial_ndim = 2
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
-        _check_spatial_in_shape(x, self.spatial_ndim)
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self._func(x)

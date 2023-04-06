@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import jax
-import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
@@ -11,7 +10,11 @@ import serket as sk
 @pytc.treeclass
 class VGG16Block:
     def __init__(
-        self, in_features: int, *, pooling: str = "max", key: jr.PRNGKey = jr.PRNGKey(0)
+        self,
+        in_features: int,
+        *,
+        pooling: str = "max",
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """
         Args:
@@ -108,7 +111,7 @@ class VGG16Block:
 
         self.pooling = sk.nn.GlobalMaxPool2D() if pooling == "max" else sk.nn.GlobalAvgPool2D()  # fmt: skip
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         x = self.conv_1_1(x)
         x = jax.nn.relu(x)
         x = self.conv_1_2(x)
@@ -151,7 +154,11 @@ class VGG16Block:
 @pytc.treeclass
 class VGG19Block:
     def __init__(
-        self, in_feautres: int, *, pooling: str = "max", key: jr.PRNGKey = jr.PRNGKey(0)
+        self,
+        in_feautres: int,
+        *,
+        pooling: str = "max",
+        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """
         Args:
@@ -201,7 +208,7 @@ class VGG19Block:
             sk.nn.GlobalMaxPool2D() if pooling == "max" else sk.nn.GlobalAvgPool2D()
         )
 
-    def __call__(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
+    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
         x = self.conv_1_1(x)
         x = jax.nn.relu(x)
         x = self.conv_1_2(x)

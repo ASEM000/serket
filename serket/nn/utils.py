@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-import dataclasses
 import functools as ft
-from types import FunctionType
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Literal, Sequence, Tuple, Union
 
 import jax
-import jax.nn.initializers as ji
 import jax.numpy as jnp
-import jax.tree_util as jtu
+import jax.random as jr
 
 
-def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padding):
+@ft.lru_cache(maxsize=128)
+def calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padding):
     """
     Transpose padding to get the padding for the transpose convolution.
 
@@ -29,13 +27,10 @@ def _calculate_transpose_padding(padding, kernel_size, input_dilation, extra_pad
     )
 
 
-def _rename_func(func: Callable, name: str) -> Callable:
-    """Rename a function."""
-    func.__name__ = name
-    return func
+ActivationLiteral = Literal["tanh", "relu", "sigmoid", "hard_sigmoid"]
+ActivationType = Union[ActivationLiteral, Callable[[Any], Any]]
 
-
-_act_func_map = {
+_ACT_FUNC_MAP = {
     "tanh": jax.nn.tanh,
     "relu": jax.nn.relu,
     "sigmoid": jax.nn.sigmoid,
@@ -43,41 +38,8 @@ _act_func_map = {
     None: lambda x: x,
 }
 
-_init_func_dict = {
-    "he_normal": _rename_func(ji.he_normal(), "he_normal_init"),
-    "he_uniform": _rename_func(ji.he_uniform(), "he_uniform_init"),
-    "glorot_normal": _rename_func(ji.glorot_normal(), "glorot_normal_init"),
-    "glorot_uniform": _rename_func(ji.glorot_uniform(), "glorot_uniform_init"),
-    "lecun_normal": _rename_func(ji.lecun_normal(), "lecun_normal_init"),
-    "lecun_uniform": _rename_func(ji.lecun_uniform(), "lecun_uniform_init"),
-    "normal": _rename_func(ji.normal(), "normal_init"),
-    "uniform": _rename_func(ji.uniform(), "uniform_init"),
-    "ones": _rename_func(ji.ones, "ones_init"),
-    "zeros": _rename_func(ji.zeros, "zeros_init"),
-    "xavier_normal": _rename_func(ji.xavier_normal(), "xavier_normal_init"),
-    "xavier_uniform": _rename_func(ji.xavier_uniform(), "xavier_uniform_init"),
-    "orthogonal": _rename_func(ji.orthogonal(), "orthogonal_init"),
-}
 
-
-def _check_and_return_init_func(
-    init_func: str | Callable, name: str
-) -> Callable | None:
-    if isinstance(init_func, FunctionType):
-        return jtu.Partial(init_func)
-
-    elif isinstance(init_func, str):
-        if init_func in _init_func_dict:
-            return jtu.Partial(_init_func_dict[init_func])
-        raise ValueError(f"{name} must be one of {list(_init_func_dict.keys())}")
-
-    elif init_func is None:
-        return None
-
-    raise ValueError(f"`{name}` must be a string or a function.")
-
-
-def _calculate_convolution_output_shape(shape, kernel_size, padding, strides):
+def calculate_convolution_output_shape(shape, kernel_size, padding, strides):
     """Compute the shape of the output of a convolutional layer."""
     return tuple(
         (xi + (li + ri) - ki) // si + 1
@@ -85,27 +47,32 @@ def _calculate_convolution_output_shape(shape, kernel_size, padding, strides):
     )
 
 
-def _check_and_return_padding(
+@ft.lru_cache(maxsize=128)
+def delayed_canonicalize_padding(
+    in_dim: tuple[int, ...],
     padding: tuple[int | tuple[int, int] | str, ...] | int | str,
     kernel_size: tuple[int, ...],
+    strides: tuple[int, ...],
 ):
-    """
-    Resolve padding to a tuple of tuples of ints.
+    # in case of `str` padding, we need to know the input dimension
+    # to calculate the padding thus we need to delay the canonicalization
+    # until the call
+    def same_padding_along_dim(di: int, ki: int, si: int):
+        # https://www.tensorflow.org/api_docs/python/tf/nn#notes_on_padding_2
+        # di: input dimension
+        # ki: kernel size
+        # si: stride
+        if di % si == 0:
+            pad = max(ki - si, 0)
+        else:
+            pad = max(ki - (di % si), 0)
 
-    Args:
-        padding: padding to resolve
-        kernel_size: kernel size to use for resolving padding
+        return (pad // 2, pad - pad // 2)
 
-    Examples:
-        >>> padding= (1, (2, 3), "same")
-        >>> kernel_size = (3, 3, 3)
-        >>> _check_and_return_padding(padding, kernel_size)
-        ((1, 1), (2, 3), (1, 1))
-    """
-
-    def _resolve_tuple_padding(padding, kernel_size):
-        msg = f"Expected padding to be of length {len(kernel_size)}, got {len(padding)}"
-        assert len(padding) == len(kernel_size), msg
+    def resolve_tuple_padding(padding, kernel_size):
+        if len(padding) != len(kernel_size):
+            msg = f"Expected padding to be of length {len(kernel_size)}, got {len(padding)}"
+            raise ValueError(msg)
 
         resolved_padding = [[]] * len(kernel_size)
 
@@ -116,15 +83,16 @@ def _check_and_return_padding(
 
             elif isinstance(item, tuple):
                 # ex: padding = ((1, 2), (3, 4), (5, 6))
-                assert len(item) == 2, f"Expected tuple of length 2, got {len(item)}"
+                if len(item) != 2:
+                    msg = f"Expected tuple of length 2, got {len(item)}"
+                    raise ValueError(msg)
                 resolved_padding[i] = item
 
             elif isinstance(item, str):
                 # ex: padding = ("same", "valid", "same")
                 if item.lower() == "same":
-                    resolved_padding[i] = ((kernel_size[i] - 1) // 2), (
-                        kernel_size[i] // 2
-                    )
+                    di, ki, si = in_dim[i], kernel_size[i], strides[i]
+                    resolved_padding[i] = same_padding_along_dim(di, ki, si)
 
                 elif item.lower() == "valid":
                     resolved_padding[i] = (0, 0)
@@ -135,12 +103,15 @@ def _check_and_return_padding(
 
         return tuple(resolved_padding)
 
-    def _resolve_int_padding(padding, kernel_size):
+    def resolve_int_padding(padding, kernel_size):
         return ((padding, padding),) * len(kernel_size)
 
-    def _resolve_string_padding(padding, kernel_size):
+    def resolve_string_padding(padding, kernel_size):
         if padding.lower() == "same":
-            return tuple(((wi - 1) // 2, wi // 2) for wi in kernel_size)
+            return tuple(
+                same_padding_along_dim(di, ki, si)
+                for di, ki, si in zip(in_dim, kernel_size, strides)
+            )
 
         elif padding.lower() == "valid":
             return ((0, 0),) * len(kernel_size)
@@ -148,100 +119,36 @@ def _check_and_return_padding(
         raise ValueError(f'string argument must be in ["same","valid"].Found {padding}')
 
     if isinstance(padding, int):
-        return _resolve_int_padding(padding, kernel_size)
+        return resolve_int_padding(padding, kernel_size)
 
-    elif isinstance(padding, str):
-        return _resolve_string_padding(padding, kernel_size)
+    if isinstance(padding, str):
+        return resolve_string_padding(padding, kernel_size)
 
-    elif isinstance(padding, tuple):
-        return _resolve_tuple_padding(padding, kernel_size)
+    if isinstance(padding, tuple):
+        return resolve_tuple_padding(padding, kernel_size)
 
     msg = f"Expected padding to be of type int, str or tuple, got {type(padding)}"
     raise ValueError(msg)
 
 
-def _check_and_return(value, ndim, name):
+KernelSizeType = Union[int, Sequence[int]]
+StridesType = Union[int, Sequence[int]]
+PaddingType = Union[str, int, Sequence[int], Sequence[Tuple[int, int]]]
+DilationType = Union[int, Sequence[int]]
+InitFuncType = Union[str, Callable[[jr.PRNGKey, Sequence[int]], jax.Array]]
+
+
+def canonicalize(value, ndim, name: str | None = None):
     if isinstance(value, int):
         return (value,) * ndim
-    elif isinstance(value, jnp.ndarray):
+    if isinstance(value, jax.Array):
         return jnp.repeat(value, ndim)
-    elif isinstance(value, tuple):
-        assert len(value) == ndim, f"{name} must be a tuple of length {ndim}"
+    if isinstance(value, tuple):
+        if len(value) != ndim:
+            msg = f"Expected tuple of length {ndim}, got {len(value)}: {value}"
+            msg += f" for {name}" if name is not None else ""
+            raise ValueError(msg)
         return tuple(value)
-    raise ValueError(f"Expected int or tuple for {name}, got {value}.")
-
-
-def _check_and_return_positive_int(value, name):
-    """Return if value is a positive integer, otherwise raise an error."""
-    if not isinstance(value, int):
-        raise ValueError(f"{name} must be an integer, got {type(value)}")
-    if value <= 0:
-        raise ValueError(f"{name} must be positive, got {value}")
-    return value
-
-
-def _check_spatial_in_shape(x, spatial_ndim: int) -> None:
-    spatial_tuple = ("rows", "cols", "depths")
-    if x.ndim != spatial_ndim + 1:
-        msg = f"Input must be a {spatial_ndim+1}D tensor in shape of "
-        msg += f"(in_features, {', '.join(spatial_tuple[:spatial_ndim])}), "
-        msg += f"but got {x.shape}."
-        raise ValueError(msg)
-
-
-def _check_in_features(x, in_features: int, axis: int = 0) -> None:
-    if x.shape[axis] != in_features:
-        msg = f"Specified input_features={in_features} ,"
-        msg += f"but got input with input_features={x.shape[axis]}."
-        raise ValueError(msg)
-
-
-_check_and_return_kernel = ft.partial(_check_and_return, name="kernel_size")
-_check_and_return_strides = ft.partial(_check_and_return, name="strides")
-_check_and_return_input_dilation = ft.partial(_check_and_return, name="input_dilation")
-_check_and_return_kernel_dilation = ft.partial(_check_and_return, name="kernel_dilation")  # fmt: skip
-_check_and_return_input_size = ft.partial(_check_and_return, name="input_size")  # fmt: skip
-
-
-def _create_fields_from_container(items: Sequence[Any]) -> dict:
-    return_map = {}
-    for i, item in enumerate(items):
-        field_item = dataclasses.field(repr=True)
-        field_name = f"{(item.__class__.__name__)}_{i}"
-        object.__setattr__(field_item, "name", field_name)
-        object.__setattr__(field_item, "type", type(item))
-        return_map[field_name] = field_item
-    return return_map
-
-
-def _create_fields_from_mapping(items: dict[str, Any]) -> dict:
-    return_map = {}
-    for field_name, item in items.items():
-        field_item = dataclasses.field(repr=True)
-        object.__setattr__(field_item, "name", field_name)
-        object.__setattr__(field_item, "type", type(item))
-        return_map[field_name] = field_item
-    return return_map
-
-
-def _check_non_tracer(*x, name: str = "Class"):
-    if any(isinstance(xi, jax.core.Tracer) for xi in x):
-        _TRACER_ERROR_MSG = (
-            f"Using Tracers as input to a lazy layer is not supported. "
-            "Use non-Tracer input to initialize the layer.\n"
-            "This error can occur if jax transformations are applied to a layer before "
-            "calling it with a non Tracer input.\n"
-            "Example: \n"
-            "# This will fail\n"
-            ">>> x = jax.numpy.ones(...)\n"
-            f">>> layer = {name}(None, ...)\n"
-            ">>> layer = jax.jit(layer)\n"
-            ">>> layer(x) \n"
-            "# Instead, first initialize the layer with a non Tracer input\n"
-            "# and then apply jax transformations\n"
-            f">>> layer = {name}(None, ...)\n"
-            ">>> layer(x) # dry run to initialize the layer\n"
-            ">>> layer = jax.jit(layer)\n"
-        )
-
-        raise ValueError(_TRACER_ERROR_MSG)
+    msg = f"Expected int or tuple for , got {value}."
+    msg += f" for {name}" if name is not None else ""
+    raise ValueError(msg)

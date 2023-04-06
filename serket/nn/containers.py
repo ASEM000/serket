@@ -2,87 +2,73 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-import jax.numpy as jnp
+import jax
 import jax.random as jr
+import jax.tree_util as jtu
 import pytreeclass as pytc
 
-from serket.nn.utils import _create_fields_from_container, _create_fields_from_mapping
+from serket.nn.callbacks import instance_cb_factory
 
 
 @pytc.treeclass
 class Lambda:
-    func: Callable[[Any], jnp.ndarray] = pytc.field(nondiff=True)
+    """A layer that applies a function to its input.
 
-    def __call__(self, x: jnp.ndarray, **k) -> jnp.ndarray:
+    Args:
+        func: a function that takes a single argument and returns a jax.numpy.ndarray.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.Lambda(lambda x: x + 1)
+        >>> print(layer(jnp.array([1, 2, 3])))
+        [2 3 4]
+    """
+
+    func: Callable[..., Any] = pytc.field(callbacks=[jtu.Partial])
+
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
 
 
 @pytc.treeclass
 class Sequential:
-    def __init__(self, layers: list[Any] | tuple[Any] | dict[[str], Any]):
-        """Register layers in a sequential container.
+    """A sequential container for layers.
 
-        Args:
-            layers: list of layers or dict of layers
-        """
-        if isinstance(layers, (list, tuple)):
-            field_mapping = _create_fields_from_container(layers)
+    Args:
+        layers: a tuple of layers.
 
-        elif isinstance(layers, dict):
-            field_mapping = _create_fields_from_mapping(layers)
-            layers = layers.values()
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import serket as sk
+        >>> layers = sk.nn.Sequential((sk.nn.Lambda(lambda x: x + 1), sk.nn.Lambda(lambda x: x * 2)))
+        >>> print(layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0)))
+        [4 6 8]
+    """
 
-        else:
-            raise ValueError(
-                f"Layers must be list, tuple or dict, but got {type(layers)}"
-                "\n>>> # List/Tuple example"
-                "\n>>> layers = [Linear(10, 10), Linear(10, 10)]"
-                "\n>>> model = Sequential(layers)"
-                "\n>>> # Dict example"
-                "\n>>> layers = {'linear1': Linear(10, 10), 'linear2': Linear(10, 10)}"
-                "\n>>> model = Sequential(layers)"
-            )
+    layers: tuple[Any, ...] = pytc.field(callbacks=[instance_cb_factory(tuple)])
 
-        self._keys = tuple(field_mapping.keys())
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
+        for key, layer in zip(jr.split(key, len(self.layers)), self.layers):
+            # assume that layer is a callable object
+            # that takes x and key as arguments
+            x = layer(x, key=key)
+        return x
 
-        for name, layer in zip(self._keys, layers):
-            setattr(self, name, layer)
-
-        field_mapping = {**dict(self.__treeclass_fields__), **field_mapping}
-        setattr(self, "__treeclass_fields__", field_mapping)
-
-    def __getitem__(self, key: str | int | slice):
-        if isinstance(key, str):
-            return getattr(self, key)
-        elif isinstance(key, int):
-            return getattr(self, self._keys[key])
-        elif isinstance(key, slice):
-            return Sequential({name: getattr(self, name) for name in self._keys[key]})
-        raise ValueError(f"key must be str or int, but got {type(key)}")
+    def __getitem__(self, key: int | slice):
+        if isinstance(key, slice):
+            # return a new Sequential object with the sliced layers
+            return self.__class__(self.layers[key])
+        if isinstance(key, int):
+            return self.layers[key]
+        raise TypeError(f"Invalid index type: {type(key)}")
 
     def __len__(self):
-        return len(self._keys)
+        return len(self.layers)
 
     def __iter__(self):
-        return iter((getattr(self, name) for name in self._keys))
+        return iter(self.layers)
 
     def __reversed__(self):
-        return (getattr(self, name) for name in reversed(self._keys))
-
-    def items(self):
-        return {name: getattr(self, name) for name in self._keys}
-
-    def __contains__(self, item):
-        return item in self.items()
-
-    def __call__(
-        self, x: jnp.ndarray, *, key: jr.PRNGKey | None = jr.PRNGKey(0)
-    ) -> jnp.ndarray:
-        keys = (
-            jr.split(key, len(self.items()))
-            if key is not None
-            else [None] * len(self.items())
-        )
-        for ki, layer in zip(keys, self.items().values()):
-            x = layer(x, key=ki)
-        return x
+        return reversed(self.layers)
