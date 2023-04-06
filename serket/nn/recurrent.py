@@ -12,6 +12,7 @@ import serket as sk
 from serket.nn.callbacks import frozen_positive_int_cbs
 from serket.nn.utils import (
     _ACT_FUNC_MAP,
+    ActivationType,
     DilationType,
     InitFuncType,
     KernelSizeType,
@@ -58,7 +59,7 @@ class SimpleRNNCell(NonSpatialRNNCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = jax.nn.tanh,
+        act_func: ActivationType = jax.nn.tanh,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Vanilla RNN cell that defines the update rule for the hidden state
@@ -140,7 +141,7 @@ class LSTMCell(NonSpatialRNNCell):
         bias_init_func: str | Callable | None = "zeros",
         recurrent_weight_init_func: str | Callable = "orthogonal",
         act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "sigmoid",
+        recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """LSTM cell that defines the update rule for the hidden state and cell state
@@ -224,8 +225,8 @@ class GRUCell(NonSpatialRNNCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "sigmoid",
+        act_func: ActivationType | None = "tanh",
+        recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """GRU cell that defines the update rule for the hidden state and cell state
@@ -320,8 +321,8 @@ class ConvLSTMNDCell(SpatialRNNCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "hard_sigmoid",
+        act_func: ActivationType | None = "tanh",
+        recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
         conv_layer: Any = None,
         spatial_ndim: int = 1,
@@ -417,8 +418,8 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "hard_sigmoid",
+        act_func: ActivationType | None = "tanh",
+        recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Convolution LSTM cell that defines the update rule for the hidden state and cell state
@@ -475,8 +476,8 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "hard_sigmoid",
+        act_func: ActivationType | None = "tanh",
+        recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Convolution LSTM cell that defines the update rule for the hidden state and cell state
@@ -533,8 +534,8 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "hard_sigmoid",
+        act_func: ActivationType | None = "tanh",
+        recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Convolution LSTM cell that defines the update rule for the hidden state and cell state
@@ -602,8 +603,8 @@ class ConvGRUNDCell(SpatialRNNCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "sigmoid",
+        act_func: ActivationType | None = "tanh",
+        recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
         conv_layer: Any = None,
         spatial_ndim: int = 1,
@@ -701,8 +702,8 @@ class ConvGRU1DCell(ConvGRUNDCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "sigmoid",
+        act_func: ActivationType | None = "tanh",
+        recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Convolution GRU cell that defines the update rule for the hidden state and cell state
@@ -762,8 +763,8 @@ class ConvGRU2DCell(ConvGRUNDCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "sigmoid",
+        act_func: ActivationType | None = "tanh",
+        recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Convolution GRU cell that defines the update rule for the hidden state and cell state
@@ -823,8 +824,8 @@ class ConvGRU3DCell(ConvGRUNDCell):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         recurrent_weight_init_func: InitFuncType = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: str | Callable[[Any], Any] | None = "sigmoid",
+        act_func: ActivationType | None = "tanh",
+        recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Convolution GRU cell that defines the update rule for the hidden state and cell state

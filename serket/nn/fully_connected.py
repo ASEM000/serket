@@ -38,10 +38,10 @@ class FNN:
             (3, 2)
         """
 
-        keys = jr.split(key, len(layers))
+        keys = jr.split(key, len(layers) - 1)
         self.act_func = act_func
 
-        self.layers = [
+        self.layers = tuple(
             Linear(
                 in_features=in_dim,
                 out_features=out_dim,
@@ -50,7 +50,7 @@ class FNN:
                 bias_init_func=bias_init_func,
             )
             for (ki, in_dim, out_dim) in (zip(keys, layers[:-1], layers[1:]))
-        ]
+        )
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         *layers, last = self.layers

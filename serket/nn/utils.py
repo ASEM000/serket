@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Callable, Sequence, Tuple, Union
+from typing import Any, Callable, Literal, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
@@ -26,6 +26,9 @@ def calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padd
         )
     )
 
+
+ActivationLiteral = Literal["tanh", "relu", "sigmoid", "hard_sigmoid"]
+ActivationType = Union[ActivationLiteral, Callable[[Any], Any]]
 
 _ACT_FUNC_MAP = {
     "tanh": jax.nn.tanh,

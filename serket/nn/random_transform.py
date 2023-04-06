@@ -58,13 +58,11 @@ class RandomZoom2D:
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
             Positive values are zoom in, negative values are zoom out.
         """
-        assert (
-            isinstance(height_factor, tuple) and len(height_factor) == 2
-        ), "height_factor must be a tuple of length 2"
+        if not (isinstance(height_factor, tuple) and len(height_factor) == 2):
+            raise ValueError("height_factor must be a tuple of length 2")
 
-        assert (
-            isinstance(width_factor, tuple) and len(width_factor) == 2
-        ), "width_factor must be a tuple of length 2"
+        if not (isinstance(width_factor, tuple) and len(width_factor) == 2):
+            raise ValueError("width_factor must be a tuple of length 2")
 
         self.height_factor = height_factor
         self.width_factor = width_factor
@@ -79,7 +77,10 @@ class RandomZoom2D:
             maxval=self.height_factor[1],
         )
         width_factor = jr.uniform(
-            keys[1], shape=(), minval=self.width_factor[0], maxval=self.width_factor[1]
+            keys[1],
+            shape=(),
+            minval=self.width_factor[0],
+            maxval=self.width_factor[1],
         )
 
         R, C = x.shape[1:3]  # R = rows, C = cols

@@ -23,10 +23,10 @@ class GeneralPoolND:
 
     def __init__(
         self,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = 1,
+        kernel_size: KernelSizeType,
+        strides: StridesType = 1,
         *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
+        padding: PaddingType = "valid",
         spatial_ndim: int = 1,
         func: Callable = None,
     ):
@@ -285,10 +285,10 @@ class LPPool1D(LPPoolND):
     def __init__(
         self,
         norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
+        kernel_size: KernelSizeType,
+        strides: StridesType | None = None,
         *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
+        padding: PaddingType = "valid",
     ):
         """1D Lp pooling to the input.
 
@@ -311,8 +311,8 @@ class LPPool2D(LPPoolND):
     def __init__(
         self,
         norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
+        kernel_size: KernelSizeType,
+        strides: StridesType | None = None,
         *,
         padding: tuple[tuple[int, int], ...] | str = "valid",
     ):
@@ -337,10 +337,10 @@ class LPPool3D(LPPoolND):
     def __init__(
         self,
         norm_type: float,
-        kernel_size: tuple[int, ...] | int,
-        strides: tuple[int, ...] | int = None,
+        kernel_size: KernelSizeType,
+        strides: StridesType = None,
         *,
-        padding: tuple[tuple[int, int], ...] | str = "valid",
+        padding: PaddingType = "valid",
     ):
         """3D Lp pooling to the input.
 
