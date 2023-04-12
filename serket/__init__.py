@@ -1,13 +1,19 @@
-from pytreeclass._src.tree_base import is_tree_equal, treeclass
-from pytreeclass._src.tree_decorator import field, fields, is_treeclass
-from pytreeclass._src.tree_freeze import freeze, is_frozen, is_nondiff, unfreeze
-from pytreeclass._src.tree_pprint import (
+from pytreeclass import (
+    field,
+    fields,
+    freeze,
+    is_frozen,
+    is_nondiff,
+    is_tree_equal,
+    is_treeclass,
     tree_diagram,
     tree_indent,
     tree_mermaid,
     tree_repr,
     tree_str,
     tree_summary,
+    treeclass,
+    unfreeze,
 )
 
 from . import nn

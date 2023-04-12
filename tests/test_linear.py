@@ -5,7 +5,24 @@ import numpy.testing as npt
 import pytest
 import pytreeclass as pytc
 
-from serket.nn import FNN, Bilinear, GeneralLinear, Identity, Linear, Multilinear
+from serket.nn import (
+    FNN,
+    Bilinear,
+    Embedding,
+    GeneralLinear,
+    Identity,
+    Linear,
+    Multilinear,
+)
+
+
+def test_embed():
+    table = Embedding(10, 3)
+    x = jnp.array([9])
+    npt.assert_allclose(table(x), jnp.array([[-0.15576515, -0.38321444, -1.1144515]]))
+
+    with pytest.raises(TypeError):
+        table(jnp.array([9.0]))
 
 
 def test_linear():

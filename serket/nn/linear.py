@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.callbacks import init_func_cb, instance_cb_factory
+from serket.nn.callbacks import init_func_cb, instance_cb_factory, positive_int_cb
 from serket.nn.utils import InitFuncType
 
 frozen_int_or_tuple_cb = [instance_cb_factory((int, tuple)), pytc.freeze]
@@ -35,7 +35,7 @@ def _multilinear_einsum_string(degree: int) -> str:
     return output_string
 
 
-@ft.lru_cache(maxsize=128)
+@ft.lru_cache(maxsize=None)
 def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     # Return the einsum string for a general linear layer.
     # Example:
@@ -272,3 +272,50 @@ class Identity:
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return x
+
+
+@pytc.treeclass
+class Embedding:
+    in_features: int = pytc.field(callbacks=[positive_int_cb, pytc.freeze])
+    out_features: int = pytc.field(callbacks=[positive_int_cb, pytc.freeze])
+    weight: jax.Array
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        key: jr.KeyArray = jr.PRNGKey(0),
+    ):
+        """Defines an embedding layer.
+
+        Args:
+            in_features: vocabulary size.
+            out_features: embedding size.
+            key: random key to initialize the weights.
+
+        Example:
+            >>> import serket as sk
+            >>> # 10 words in the vocabulary, each word is represented by a 3 dimensional vector
+            >>> table = sk.nn.Embedding(10,3)
+            >>> # take the last word in the vocab
+            >>> table(jnp.array([9]))
+            Array([[-0.15576515, -0.38321444, -1.1144515 ]], dtype=float32)
+        """
+        self.in_features = in_features
+        self.out_features = out_features
+        self.weight = jr.normal(key, (self.in_features, self.out_features))
+
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        """Embeds the input.
+
+        Args:
+            x: integer index array of subdtype integer.
+
+        Returns:
+            Embedding of the input.
+
+        """
+        if not jnp.issubdtype(x.dtype, jnp.integer):
+            raise TypeError("Input must be an integer array.")
+
+        return jnp.take(self.weight, x, axis=0)
