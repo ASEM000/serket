@@ -19,7 +19,7 @@ from serket.nn import (
 def test_embed():
     table = Embedding(10, 3)
     x = jnp.array([9])
-    npt.assert_allclose(table(x), jnp.array([[-0.15576515, -0.38321444, -1.1144515]]))
+    npt.assert_allclose(table(x), jnp.array([[0.43810904, 0.35078037, 0.13254273]]))
 
     with pytest.raises(TypeError):
         table(jnp.array([9.0]))

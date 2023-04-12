@@ -41,26 +41,26 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     # Example:
     #     # apply linear layer to last axis
     #     >>> _general_linear_einsum_string(-1)
-    #     '...a,ab->...b'
+    #     '...0,01->...1'
 
     #     # apply linear layer to last two axes
     #     >>> _general_linear_einsum_string(-1,-2)
-    #     '...ab,abc->...c'
+    #     '...01,012->...2'
 
     #     # apply linear layer to second last axis
     #     >>> _general_linear_einsum_string(-2)
-    #     '...ab,ac->...bc'
+    #     '...01,02->...12'
 
     #     # apply linear layer to last and third last axis
     #     >>> _general_linear_einsum_string(-1,-3)
-    #     '...abc,acd->...bd'
+    #     '...012,023->...13'
 
     if not all([i < 0 for i in axes]):
         raise ValueError("axes should be negative")
 
     axes = sorted(axes)
     total_axis = abs(min(axes))  # get the total number of axes
-    alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    alpha = "".join(map(str, range(total_axis + 1)))
     input_string = "..." + alpha[:total_axis]
     weight_string = "".join([input_string[axis] for axis in axes]) + alpha[total_axis]
     result_string = "".join([ai for ai in input_string if ai not in weight_string])
@@ -299,11 +299,11 @@ class Embedding:
             >>> table = sk.nn.Embedding(10,3)
             >>> # take the last word in the vocab
             >>> table(jnp.array([9]))
-            Array([[-0.15576515, -0.38321444, -1.1144515 ]], dtype=float32)
+            Array([[0.43810904, 0.35078037, 0.13254273]], dtype=float32)
         """
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = jr.normal(key, (self.in_features, self.out_features))
+        self.weight = jr.uniform(key, (self.in_features, self.out_features))
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         """Embeds the input.
