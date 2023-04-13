@@ -12,8 +12,8 @@ import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn.callbacks import (
-    frozen_positive_int_cbs,
     init_func_cb,
+    positive_int_cb,
     validate_in_features,
     validate_spatial_in_shape,
 )
@@ -146,15 +146,15 @@ class FFTConvND:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
-    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
-    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
-    kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel_size: KernelSizeType
+    strides: StridesType
+    padding: PaddingType
+    kernel_dilation: DilationType
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    groups: int = pytc.field(callbacks=[positive_int_cb])
 
     def __init__(
         self,
@@ -394,16 +394,16 @@ class FFTConvNDTranspose:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
-    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
-    output_padding: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
-    kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel_size: KernelSizeType
+    padding: PaddingType
+    output_padding: int | tuple[int, ...]
+    strides: StridesType
+    kernel_dilation: DilationType
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int = pytc.field(callbacks=[pytc.freeze])
+    groups: int
 
     def __init__(
         self,
@@ -649,11 +649,11 @@ class DepthwiseFFTConvND:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
-    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
-    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
-    depth_multiplier: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel_size: KernelSizeType
+    strides: StridesType
+    padding: PaddingType
+    depth_multiplier: int = pytc.field(callbacks=[positive_int_cb])
 
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])

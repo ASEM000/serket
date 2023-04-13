@@ -9,7 +9,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 import serket as sk
-from serket.nn.callbacks import frozen_positive_int_cbs
+from serket.nn.callbacks import positive_int_cb
 from serket.nn.utils import (
     _ACT_FUNC_MAP,
     ActivationType,
@@ -46,8 +46,8 @@ class SimpleRNNState(RNNState):
 
 @pytc.treeclass
 class SimpleRNNCell(NonSpatialRNNCell):
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
     in_to_hidden: sk.nn.Linear
     hidden_to_hidden: sk.nn.Linear
 
@@ -127,8 +127,8 @@ class LSTMState(RNNState):
 
 @pytc.treeclass
 class LSTMCell(NonSpatialRNNCell):
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
     in_to_hidden: sk.nn.Linear
     hidden_to_hidden: sk.nn.Linear
 
@@ -212,8 +212,8 @@ class GRUState(RNNState):
 
 @pytc.treeclass
 class GRUCell(NonSpatialRNNCell):
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
     in_to_hidden: sk.nn.Linear
     hidden_to_hidden: sk.nn.Linear
 
@@ -303,8 +303,8 @@ class ConvLSTMNDState(RNNState):
 
 @pytc.treeclass
 class ConvLSTMNDCell(SpatialRNNCell):
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
     in_to_hidden: Any
     hidden_to_hidden: Any
 
@@ -585,8 +585,8 @@ class ConvGRUNDState(RNNState):
 
 @pytc.treeclass
 class ConvGRUNDCell(SpatialRNNCell):
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
     in_to_hidden: Any
     hidden_to_hidden: Any
 
@@ -684,8 +684,8 @@ class ConvGRUNDCell(SpatialRNNCell):
 
 @pytc.treeclass
 class ConvGRU1DCell(ConvGRUNDCell):
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
     in_to_hidden: Any
     hidden_to_hidden: Any
 
@@ -745,8 +745,8 @@ class ConvGRU1DCell(ConvGRUNDCell):
 
 @pytc.treeclass
 class ConvGRU2DCell(ConvGRUNDCell):
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
     in_to_hidden: Any
     hidden_to_hidden: Any
 
@@ -806,8 +806,8 @@ class ConvGRU2DCell(ConvGRUNDCell):
 
 @pytc.treeclass
 class ConvGRU3DCell(ConvGRUNDCell):
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
     in_to_hidden: Any
     hidden_to_hidden: Any
 

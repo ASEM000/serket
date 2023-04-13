@@ -3,6 +3,7 @@ from __future__ import annotations
 import jax
 import jax.random as jr
 import pytreeclass as pytc
+from jax.lax import stop_gradient
 
 from serket.nn.callbacks import range_cb_factory
 from serket.nn.crop import RandomCrop2D
@@ -33,10 +34,10 @@ class RandomApply:
     """
 
     layer: int
-    p: float = pytc.field(default=0.5, callbacks=[pytc.freeze, range_cb_factory(0, 1)])
+    p: float = pytc.field(default=0.5, callbacks=[range_cb_factory(0, 1)])
 
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):
-        if not jr.bernoulli(key, (self.p)):
+        if not jr.bernoulli(key, stop_gradient(self.p)):
             return x
 
         return self.layer(x)

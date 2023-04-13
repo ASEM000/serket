@@ -6,8 +6,9 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
+from jax.lax import stop_gradient
 
-from serket.nn.callbacks import frozen_positive_int_cbs, validate_spatial_in_shape
+from serket.nn.callbacks import positive_int_cb, validate_spatial_in_shape
 from serket.nn.utils import canonicalize
 
 
@@ -98,9 +99,9 @@ def random_cutout_2d(
 
 @pytc.treeclass
 class RandomCutout1D:
-    shape: int | tuple[int] = pytc.field(callbacks=[pytc.freeze])
-    cutout_count: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    fill_value: float = pytc.field(callbacks=[pytc.freeze])
+    shape: int | tuple[int]
+    cutout_count: int = pytc.field(callbacks=[positive_int_cb])
+    fill_value: float
 
     def __init__(
         self,
@@ -130,14 +131,22 @@ class RandomCutout1D:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        return random_cutout_1d(x, self.shape, self.cutout_count, self.fill_value, key)
+        return stop_gradient(
+            random_cutout_1d(
+                x,
+                self.shape,
+                self.cutout_count,
+                self.fill_value,
+                key,
+            )
+        )
 
 
 @pytc.treeclass
 class RandomCutout2D:
-    shape: int | tuple[int, int] = pytc.field(callbacks=[pytc.freeze])
-    cutout_count: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    fill_value: float = pytc.field(callbacks=[pytc.freeze])
+    shape: int | tuple[int, int]
+    cutout_count: int = pytc.field(callbacks=[positive_int_cb])
+    fill_value: float
 
     def __init__(
         self,
@@ -163,4 +172,12 @@ class RandomCutout2D:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        return random_cutout_2d(x, self.shape, self.cutout_count, self.fill_value, key)
+        return stop_gradient(
+            random_cutout_2d(
+                x,
+                self.shape,
+                self.cutout_count,
+                self.fill_value,
+                key,
+            )
+        )

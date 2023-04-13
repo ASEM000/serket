@@ -31,6 +31,7 @@ def test_linear():
 
     @jax.value_and_grad
     def loss_func(NN, x, y):
+        NN = NN.at[...].apply(pytc.unfreeze, is_leaf=pytc.is_frozen)
         return jnp.mean((NN(x) - y) ** 2)
 
     @jax.jit
@@ -40,7 +41,9 @@ def test_linear():
 
     NN = FNN([1, 128, 128, 1])
 
-    NN = jtu.tree_map(lambda x: pytc.freeze(x) if pytc.is_nondiff(x) else x, NN)
+    # NN = jtu.tree_map(lambda x: pytc.freeze(x) if pytc.is_nondiff(x) else x, NN)
+    NN = NN.at[pytc.bcmap(pytc.is_nondiff)(NN)].apply(pytc.freeze)
+
     # print(pytc.tree_diagram(NN))
     for _ in range(20_000):
         value, NN = update(NN, x, y)

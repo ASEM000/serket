@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import functools as ft
 import operator as op
-from typing import Callable, Sequence
+from typing import Sequence
 
 import jax
 import jax.numpy as jnp
@@ -15,8 +15,8 @@ import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
 from serket.nn.callbacks import (
-    frozen_positive_int_cbs,
     init_func_cb,
+    positive_int_cb,
     validate_in_features,
     validate_spatial_in_shape,
 )
@@ -43,16 +43,16 @@ class ConvND:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
-    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
-    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
-    input_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
-    kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel_size: KernelSizeType
+    strides: StridesType
+    padding: PaddingType
+    input_dilation: DilationType
+    kernel_dilation: DilationType
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    groups: int = pytc.field(callbacks=[positive_int_cb])
 
     def __init__(
         self,
@@ -147,7 +147,7 @@ class Conv1D(ConvND):
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
@@ -205,7 +205,7 @@ class Conv2D(ConvND):
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
@@ -263,7 +263,7 @@ class Conv3D(ConvND):
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
@@ -325,29 +325,29 @@ class ConvNDTranspose:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
-    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
-    output_padding: DilationType = pytc.field(callbacks=[pytc.freeze])
-    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
-    kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel_size: KernelSizeType
+    padding: PaddingType
+    output_padding: DilationType
+    strides: StridesType
+    kernel_dilation: DilationType
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    groups: int = pytc.field(callbacks=[positive_int_cb])
 
     def __init__(
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
         output_padding: int = 0,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
+        kernel_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
         spatial_ndim: int = 2,
@@ -432,14 +432,14 @@ class Conv1DTranspose(ConvNDTranspose):
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
         output_padding: int = 0,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
+        kernel_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -480,14 +480,14 @@ class Conv2DTranspose(ConvNDTranspose):
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
         output_padding: int = 0,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
+        kernel_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -528,14 +528,14 @@ class Conv3DTranspose(ConvNDTranspose):
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
-        strides: int | tuple[int, ...] = 1,
-        padding: str | int | tuple[int, ...] | tuple[tuple[int, int], ...] = "SAME",
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
         output_padding: int = 0,
-        kernel_dilation: int | tuple[int, ...] = 1,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable = "zeros",
+        kernel_dilation: DilationType = 1,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -579,11 +579,11 @@ class DepthwiseConvND:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
-    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
-    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
-    depth_multiplier: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel_size: KernelSizeType
+    strides: StridesType
+    padding: PaddingType
+    depth_multiplier: int = pytc.field(callbacks=[positive_int_cb])
 
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
@@ -821,7 +821,7 @@ class DepthwiseConv3D(DepthwiseConvND):
 
 @pytc.treeclass
 class SeparableConvND:
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
     depthwise_conv: DepthwiseConvND
     pointwise_conv: DepthwiseConvND
 
@@ -1058,14 +1058,14 @@ class ConvNDLocal:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    out_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
-    in_size: Sequence[int] = pytc.field(callbacks=[pytc.freeze])  # size of input
-    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
-    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
-    input_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
-    kernel_dilation: DilationType = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel_size: KernelSizeType
+    in_size: Sequence[int]  # size of input
+    strides: StridesType
+    padding: PaddingType
+    input_dilation: DilationType
+    kernel_dilation: DilationType
     weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
     bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
 

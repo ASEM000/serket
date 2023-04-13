@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 import jax.tree_util as jtu
 import pytreeclass as pytc
+from jax.lax import stop_gradient
 
 from serket.nn.callbacks import non_negative_scalar_cbs, scalar_like_cb
 
@@ -81,11 +82,11 @@ class AdaptiveLeakyReLU:
     """
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
-    v: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs, pytc.freeze])  # fmt: skip
-    func: ActivationType = pytc.field(default=adaptive_leaky_relu, callbacks=[jtu.Partial])  # fmt: skip
+    v: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])  # fmt: skip
+    func: ActivationType = pytc.field(default=adaptive_leaky_relu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.a, self.v)
+        return self.func(x, self.a, stop_gradient(self.v))
 
 
 @pytc.treeclass
@@ -142,22 +143,22 @@ class CeLU:
 
     """
 
-    alpha: float = pytc.field(callbacks=[pytc.freeze], default=1.0)
+    alpha: float = pytc.field(default=1.0)
     func: ActivationType = pytc.field(default=jax.nn.celu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, alpha=self.alpha)
+        return self.func(x, alpha=stop_gradient(self.alpha))
 
 
 @pytc.treeclass
 class ELU:
     r"""Exponential linear unit"""
 
-    alpha: float = pytc.field(callbacks=[pytc.freeze], default=1.0)
+    alpha: float = pytc.field(default=1.0)
     func: ActivationType = pytc.field(default=jax.nn.elu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, alpha=self.alpha)
+        return self.func(x, alpha=stop_gradient(self.alpha))
 
 
 @pytc.treeclass
@@ -169,11 +170,11 @@ class GELU:
         \frac{x}{\sqrt{2}} \right) \right)
     """
 
-    approximate: bool = pytc.field(callbacks=[pytc.freeze], default=True)
+    approximate: bool = pytc.field(default=True)
     func: ActivationType = pytc.field(default=jax.nn.gelu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, approximate=self.approximate)
+        return self.func(x, approximate=stop_gradient(self.approximate))
 
 
 @pytc.treeclass
@@ -215,11 +216,11 @@ class HardShrink:
         \end{cases}
     """
 
-    alpha: float = pytc.field(callbacks=[pytc.freeze], default=0.5)
+    alpha: float = pytc.field(default=0.5)
     func: ActivationType = pytc.field(default=hard_shrink, callbacks=[jtu.Partial], repr=False)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.alpha)
+        return self.func(x, stop_gradient(self.alpha))
 
 
 @pytc.treeclass
@@ -303,11 +304,11 @@ class LeakyReLU:
         \alpha x, & x < 0
         \end{cases}
     """
-    negative_slope: float = pytc.field(callbacks=[pytc.freeze], default=0.01)
+    negative_slope: float = pytc.field(default=0.01)
     func: ActivationType = pytc.field(default=jax.nn.leaky_relu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, negative_slope=self.negative_slope)
+        return self.func(x, negative_slope=stop_gradient(self.negative_slope))
 
 
 @pytc.treeclass
@@ -382,7 +383,7 @@ class SoftPlus:
     .. math::
         \mathrm{softplus}(x) = \log(1 + e^x)
     """
-    func: ActivationType = pytc.field(default=jax.nn.softplus, callbacks=[pytc.freeze])  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.softplus, callbacks=[jtu.Partial])  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -402,11 +403,11 @@ class SoftSign:
 class SoftShrink:
     """SoftShrink activation function"""
 
-    alpha: float = pytc.field(callbacks=[pytc.freeze], default=0.5)
+    alpha: float = pytc.field(default=0.5)
     func: ActivationType = pytc.field(default=soft_shrink, callbacks=[jtu.Partial], repr=False)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.alpha)
+        return self.func(x, stop_gradient(self.alpha))
 
 
 @pytc.treeclass
@@ -462,11 +463,11 @@ class TanhShrink:
 class ThresholdedReLU:
     """Thresholded ReLU activation function."""
 
-    theta: float = pytc.field(callbacks=[*non_negative_scalar_cbs, pytc.freeze])
+    theta: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
     func: ActivationType = pytc.field(default=thresholded_relu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.theta)
+        return self.func(x, stop_gradient(self.theta))
 
 
 @pytc.treeclass
@@ -494,8 +495,8 @@ class PReLU:
 class Snake:
     r"""Snake activation function https://arxiv.org/pdf/2006.08195.pdf."""
 
-    a: float = pytc.field(callbacks=[*non_negative_scalar_cbs, pytc.freeze], default=1.0)  # fmt: skip
+    a: float = pytc.field(callbacks=[*non_negative_scalar_cbs], default=1.0)  # fmt: skip
     func: ActivationType = pytc.field(default=snake, callbacks=[jtu.Partial], repr=False)  # fmt: skip
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.a)
+        return self.func(x, stop_gradient(self.a))

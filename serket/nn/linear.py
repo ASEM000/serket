@@ -10,9 +10,6 @@ import pytreeclass as pytc
 from serket.nn.callbacks import init_func_cb, instance_cb_factory, positive_int_cb
 from serket.nn.utils import InitFuncType
 
-frozen_int_or_tuple_cb = [instance_cb_factory((int, tuple)), pytc.freeze]
-frozen_tuple_cb = [instance_cb_factory(tuple), pytc.freeze]
-
 
 @ft.lru_cache(maxsize=None)
 def _multilinear_einsum_string(degree: int) -> str:
@@ -73,8 +70,8 @@ class Multilinear:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: tuple[int, ...] | None = pytc.field(callbacks=[*frozen_int_or_tuple_cb])  # fmt: skip
-    out_features: int = pytc.field(callbacks=[pytc.freeze])
+    in_features: tuple[int, ...] | None = pytc.field(callbacks=[instance_cb_factory((int, tuple))])  # fmt: skip
+    out_features: int
 
     def __init__(
         self,
@@ -206,9 +203,9 @@ class GeneralLinear:
     weight: jax.Array
     bias: jax.Array
 
-    in_features: tuple[int, ...] = pytc.field(callbacks=[*frozen_tuple_cb])
-    out_features: tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    in_axes: tuple[int, ...] = pytc.field(callbacks=[*frozen_tuple_cb])
+    in_features: tuple[int, ...] = pytc.field(callbacks=[instance_cb_factory(tuple)])
+    out_features: tuple[int, ...]
+    in_axes: tuple[int, ...] = pytc.field(callbacks=[instance_cb_factory(tuple)])
 
     def __init__(
         self,
@@ -276,8 +273,8 @@ class Identity:
 
 @pytc.treeclass
 class Embedding:
-    in_features: int = pytc.field(callbacks=[positive_int_cb, pytc.freeze])
-    out_features: int = pytc.field(callbacks=[positive_int_cb, pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    out_features: int = pytc.field(callbacks=[positive_int_cb])
     weight: jax.Array
 
     def __init__(
