@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import frozen_positive_int_cbs, non_negative_scalar_cbs
+from serket.nn.callbacks import non_negative_scalar_cbs, positive_int_cb
 
 
 def layer_norm(
@@ -83,8 +83,8 @@ class LayerNorm:
     β: jax.Array = None
     ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
 
-    affine: bool = pytc.field(callbacks=[pytc.freeze])
-    normalized_shape: int | tuple[int] = pytc.field(callbacks=[pytc.freeze])
+    affine: bool
+    normalized_shape: int | tuple[int]
 
     def __init__(
         self,
@@ -130,9 +130,9 @@ class GroupNorm:
     β: jax.Array = None
     ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
 
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    groups: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    affine: bool = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    groups: int = pytc.field(callbacks=[positive_int_cb])
+    affine: bool
 
     def __init__(
         self,
@@ -167,7 +167,7 @@ class GroupNorm:
         self.γ = jnp.ones(self.in_features) if self.affine else None
         self.β = jnp.zeros(self.in_features) if self.affine else None
 
-    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return group_norm(
             x=x,
             γ=self.γ,

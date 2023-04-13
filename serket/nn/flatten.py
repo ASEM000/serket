@@ -34,8 +34,8 @@ class Flatten:
         https://pytorch.org/docs/stable/generated/torch.nn.Flatten.html?highlight=flatten#torch.nn.Flatten
     """
 
-    start_dim: int = pytc.field(default=0, callbacks=[pytc.freeze])
-    end_dim: int = pytc.field(default=-1, callbacks=[pytc.freeze])
+    start_dim: int = pytc.field(default=0)
+    end_dim: int = pytc.field(default=-1)
 
     def __call__(self, x: jax.Array) -> jax.Array:
         # normalize start_dim
@@ -47,8 +47,8 @@ class Flatten:
 
 @pytc.treeclass
 class Unflatten:
-    dim: int = pytc.field(default=0, callbacks=[pytc.freeze])
-    shape: tuple = pytc.field(default=None, callbacks=[pytc.freeze])
+    dim: int = pytc.field(default=0)
+    shape: tuple = pytc.field(default=None)
 
     """
     

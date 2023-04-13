@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import frozen_positive_int_cbs, validate_spatial_in_shape
+from serket.nn.callbacks import positive_int_cb, validate_spatial_in_shape
 
 
 @ft.partial(jax.jit, static_argnums=(1,))
@@ -19,7 +19,7 @@ def histeq(x, bins_count: int = 256):
 
 @pytc.treeclass
 class HistogramEqualization2D:
-    bins: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
+    bins: int = pytc.field(callbacks=[positive_int_cb])
 
     def __init__(self, bins: int = 256):
         """Apply histogram equalization to 2D spatial array channel wise

@@ -17,9 +17,9 @@ from serket.nn.utils import KernelSizeType, PaddingType, StridesType, canonicali
 
 @pytc.treeclass
 class GeneralPoolND:
-    kernel_size: KernelSizeType = pytc.field(callbacks=[pytc.freeze])
-    strides: StridesType = pytc.field(callbacks=[pytc.freeze])
-    padding: PaddingType = pytc.field(callbacks=[pytc.freeze])
+    kernel_size: KernelSizeType
+    strides: StridesType
+    padding: PaddingType
 
     def __init__(
         self,
@@ -110,7 +110,7 @@ class GlobalPoolND:
 
 @pytc.treeclass
 class AdaptivePoolND:
-    output_size: tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
+    output_size: tuple[int, ...]
 
     def __init__(
         self,

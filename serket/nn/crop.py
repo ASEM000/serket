@@ -12,8 +12,8 @@ from serket.nn.utils import canonicalize
 
 @pytc.treeclass
 class CropND:
-    size: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze])
-    start: int | tuple[int, ...] = pytc.field(callbacks=[pytc.freeze], default=0)
+    size: int | tuple[int, ...]
+    start: int | tuple[int, ...] = pytc.field(default=0)
 
     def __init__(self, size, start, spatial_ndim):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
@@ -27,7 +27,7 @@ class CropND:
         self.spatial_ndim = spatial_ndim
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.lax.dynamic_slice(x, (0, *self.start), (x.shape[0], *self.size))
 
 

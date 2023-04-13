@@ -6,9 +6,10 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
+from jax.lax import stop_gradient
 
 from serket.nn.callbacks import (
-    frozen_positive_int_cbs,
+    positive_int_cb,
     validate_in_features,
     validate_spatial_in_shape,
 )
@@ -18,10 +19,10 @@ from serket.nn.fft_convolution import DepthwiseFFTConv2D
 
 @pytc.treeclass
 class AvgBlur2D:
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: int | tuple[int, int] = pytc.field(callbacks=[*frozen_positive_int_cbs])  # fmt: skip
-    conv1: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze], repr=False)
-    conv2: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze], repr=False)
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel_size: int | tuple[int, int] = pytc.field(callbacks=[positive_int_cb])
+    conv1: DepthwiseConv2D = pytc.field(repr=False)
+    conv2: DepthwiseConv2D = pytc.field(repr=False)
 
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
         """Average blur 2D layer
@@ -71,16 +72,16 @@ class AvgBlur2D:
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x, **k) -> jax.Array:
-        return self.conv2(self.conv1(x))
+        return stop_gradient(self.conv2(self.conv1(x)))
 
 
 @pytc.treeclass
 class GaussianBlur2D:
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel_size: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    sigma: float = pytc.field(callbacks=[pytc.freeze])
-    conv1: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
-    conv2: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel_size: int = pytc.field(callbacks=[positive_int_cb])
+    sigma: float
+    conv1: DepthwiseConv2D
+    conv2: DepthwiseConv2D
 
     def __init__(
         self,
@@ -144,14 +145,14 @@ class GaussianBlur2D:
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
     def __call__(self, x, **k) -> jax.Array:
-        return self.conv1(self.conv2(x))
+        return stop_gradient(self.conv1(self.conv2(x)))
 
 
 @pytc.treeclass
 class Filter2D:
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    conv: DepthwiseConv2D = pytc.field(callbacks=[pytc.freeze], repr=False)
-    kernel: jax.Array = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    conv: DepthwiseConv2D
+    kernel: jax.Array
 
     def __init__(self, in_features: int, kernel: jax.Array):
         """Apply 2D filter for each channel
@@ -190,14 +191,14 @@ class Filter2D:
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x, **k) -> jax.Array:
-        return self.conv(x)
+        return stop_gradient(self.conv(x))
 
 
 @pytc.treeclass
 class FFTFilter2D:
-    in_features: int = pytc.field(callbacks=[*frozen_positive_int_cbs])
-    kernel: jax.Array = pytc.field(callbacks=[pytc.freeze])
-    conv: DepthwiseFFTConv2D = pytc.field(callbacks=[pytc.freeze])
+    in_features: int = pytc.field(callbacks=[positive_int_cb])
+    kernel: jax.Array
+    conv: DepthwiseFFTConv2D
 
     def __init__(self, in_features: int, kernel: jax.Array):
         """Apply 2D filter for each channel using FFT
@@ -236,4 +237,4 @@ class FFTFilter2D:
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x, **k) -> jax.Array:
-        return self.conv(x)
+        return stop_gradient(self.conv(x))

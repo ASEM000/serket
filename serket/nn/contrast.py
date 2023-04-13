@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
+from jax.lax import stop_gradient
 
 from serket.nn.callbacks import validate_spatial_in_shape
 
@@ -36,7 +37,7 @@ class AdjustContrastND:
         https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
-    contrast_factor: float = pytc.field(callbacks=[pytc.freeze])
+    contrast_factor: float
 
     def __init__(self, contrast_factor=1.0, spatial_ndim=1):
         """
@@ -49,7 +50,7 @@ class AdjustContrastND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return adjust_contrast_nd(x, self.contrast_factor)
+        return stop_gradient(adjust_contrast_nd(x, self.contrast_factor))
 
 
 class AdjustContrast2D(AdjustContrastND):
@@ -64,7 +65,7 @@ class AdjustContrast2D(AdjustContrastND):
 
 @pytc.treeclass
 class RandomContrastND:
-    contrast_range: tuple = pytc.field(callbacks=[pytc.freeze])
+    contrast_range: tuple
 
     def __init__(self, contrast_range=(0.5, 1), spatial_ndim=1):
         """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.
@@ -91,7 +92,7 @@ class RandomContrastND:
         key: jr.KeyArray = jr.PRNGKey(0),
         **k,
     ) -> jax.Array:
-        return random_contrast_nd(x, self.contrast_range, key=key)
+        return stop_gradient(random_contrast_nd(x, self.contrast_range, key=key))
 
 
 class RandomContrast2D(RandomContrastND):

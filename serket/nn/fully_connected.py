@@ -7,7 +7,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn.linear import Linear
-from serket.nn.utils import InitFuncType
+from serket.nn.utils import ActivationType, InitFuncType
 
 
 @pytc.treeclass
@@ -19,7 +19,7 @@ class FNN:
         self,
         layers: Sequence[int],
         *,
-        act_func: Callable = jax.nn.relu,
+        act_func: ActivationType = jax.nn.relu,
         weight_init_func: InitFuncType = "he_normal",
         bias_init_func: InitFuncType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
