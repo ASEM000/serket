@@ -9,7 +9,6 @@ import jax.nn.initializers as ji
 import jax.numpy as jnp
 import jax.tree_util as jtu
 import numpy as np
-import pytreeclass as pytc
 
 
 def range_cb_factory(min_val: float = -float("inf"), max_val: float = float("inf")):
@@ -128,7 +127,8 @@ def validate_spatial_in_shape(call_wrapper, *, attribute_name: str):
         if x.ndim != spatial_ndim + 1:
             msg = f"Input must be a {spatial_ndim+1}D tensor in shape of "
             msg += f"(in_features, {', '.join(spatial_tuple[:spatial_ndim])}), "
-            msg += f"but got {x.shape}."
+            msg += f"but got {x.shape}.\n"
+            msg += "To apply on batched input, use `jax.vmap(model)(input)`."
             raise ValueError(msg)
         return x
 
@@ -159,4 +159,3 @@ def validate_in_features(call_wrapper, *, attribute_name: str, axis: int = 0):
 
 
 non_negative_scalar_cbs = [range_cb_factory(0), scalar_like_cb]
-frozen_positive_int_cbs = [positive_int_cb, pytc.freeze]
