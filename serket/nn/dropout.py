@@ -66,7 +66,7 @@ class DropoutND:
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
-        return dropout_nd(x, p=self.p, key=key)
+        return dropout_nd(x, p=stop_gradient(self.p), key=key)
 
 
 class Dropout1D(DropoutND):

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import jax
 import jax.random as jr
 import pytreeclass as pytc
@@ -17,6 +19,7 @@ class RandomApply:
     Randomly applies a layer with probability p.
 
     Args:
+        layer: layer to apply.
         p: probability of applying the layer
 
     Example:
@@ -33,7 +36,7 @@ class RandomApply:
         Use sk.nn.Sequential to apply multiple layers.
     """
 
-    layer: int
+    layer: Any
     p: float = pytc.field(default=0.5, callbacks=[range_cb_factory(0, 1)])
 
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):

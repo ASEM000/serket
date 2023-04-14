@@ -71,13 +71,10 @@ def canonicalize_cb(value, ndim, name: str | None = None):
 
 def positive_int_cb(value):
     """Return if value is a positive integer, otherwise raise an error."""
-    if value is None:
-        # prolly lazy
-        return value
     if not isinstance(value, int):
-        raise ValueError(f"value must be an integer, got {type(value)}")
+        raise ValueError(f"value must be an integer, got {type(value).__name__}")
     if value <= 0:
-        raise ValueError(f"value must be positive, got {value}")
+        raise ValueError(f"value must be positive, got {value!r}")
     return value
 
 

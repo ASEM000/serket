@@ -4,6 +4,8 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
+from serket.nn.callbacks import instance_cb_factory
+
 
 @pytc.treeclass
 class Flatten:
@@ -34,8 +36,8 @@ class Flatten:
         https://pytorch.org/docs/stable/generated/torch.nn.Flatten.html?highlight=flatten#torch.nn.Flatten
     """
 
-    start_dim: int = pytc.field(default=0)
-    end_dim: int = pytc.field(default=-1)
+    start_dim: int = pytc.field(default=0, callbacks=[instance_cb_factory(int)])
+    end_dim: int = pytc.field(default=-1, callbacks=[instance_cb_factory(int)])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         # normalize start_dim
@@ -47,8 +49,8 @@ class Flatten:
 
 @pytc.treeclass
 class Unflatten:
-    dim: int = pytc.field(default=0)
-    shape: tuple = pytc.field(default=None)
+    dim: int = pytc.field(default=0, callbacks=[instance_cb_factory(int)])
+    shape: tuple = pytc.field(default=None, callbacks=[instance_cb_factory(tuple)])
 
     """
     

@@ -73,6 +73,9 @@ def snake(x: jax.Array, frequency: float = 1.0) -> jax.Array:
     return x + (1 - jnp.cos(2 * frequency * x)) / (2 * frequency)
 
 
+fkwargs = dict(repr=False, callbacks=[jtu.Partial])
+
+
 @pytc.treeclass
 class AdaptiveLeakyReLU:
     r"""Leaky ReLU activation function with learnable `a` parameter https://arxiv.org/pdf/1906.01170.pdf.
@@ -82,8 +85,8 @@ class AdaptiveLeakyReLU:
     """
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
-    v: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])  # fmt: skip
-    func: ActivationType = pytc.field(default=adaptive_leaky_relu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    v: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
+    func: ActivationType = pytc.field(default=adaptive_leaky_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, self.a, stop_gradient(self.v))
@@ -98,7 +101,7 @@ class AdaptiveReLU:
     """
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
-    func: ActivationType = pytc.field(default=adaptive_relu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=adaptive_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, self.a)
@@ -113,7 +116,7 @@ class AdaptiveSigmoid:
     """
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
-    func: ActivationType = pytc.field(default=adaptive_sigmoid, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=adaptive_sigmoid, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, self.a)
@@ -128,7 +131,7 @@ class AdaptiveTanh:
     """
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
-    func: ActivationType = pytc.field(default=adaptive_tanh, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=adaptive_tanh, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, self.a)
@@ -144,7 +147,7 @@ class CeLU:
     """
 
     alpha: float = pytc.field(default=1.0)
-    func: ActivationType = pytc.field(default=jax.nn.celu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.celu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, alpha=stop_gradient(self.alpha))
@@ -155,7 +158,7 @@ class ELU:
     r"""Exponential linear unit"""
 
     alpha: float = pytc.field(default=1.0)
-    func: ActivationType = pytc.field(default=jax.nn.elu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.elu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, alpha=stop_gradient(self.alpha))
@@ -171,7 +174,7 @@ class GELU:
     """
 
     approximate: bool = pytc.field(default=True)
-    func: ActivationType = pytc.field(default=jax.nn.gelu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.gelu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, approximate=stop_gradient(self.approximate))
@@ -184,7 +187,7 @@ class GLU:
     .. math::
         \mathrm{glu}(x) = x_1 \odot \sigma(x_2)
     """
-    func: ActivationType = pytc.field(default=jax.nn.glu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.glu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -197,7 +200,7 @@ class HardSILU:
     .. math::
         \mathrm{hard\_silu}(x) = x \cdot \mathrm{hard\_sigmoid}(x)
     """
-    func: ActivationType = pytc.field(default=jax.nn.hard_silu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.hard_silu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -217,7 +220,7 @@ class HardShrink:
     """
 
     alpha: float = pytc.field(default=0.5)
-    func: ActivationType = pytc.field(default=hard_shrink, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=hard_shrink, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, stop_gradient(self.alpha))
@@ -230,7 +233,7 @@ class HardSigmoid:
     .. math::
         \mathrm{hard\_sigmoid}(x) = \frac{\mathrm{relu6}(x + 3)}{6}
     """
-    func: ActivationType = pytc.field(default=jax.nn.hard_sigmoid, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.hard_sigmoid, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -243,7 +246,7 @@ class HardSwish:
     .. math::
         \mathrm{hard\_silu}(x) = x \cdot \mathrm{hard\_sigmoid}(x)
     """
-    func: ActivationType = pytc.field(default=jax.nn.hard_swish, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.hard_swish, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -260,7 +263,7 @@ class HardTanh:
       1, & 1 < x
     \end{cases}
     """
-    func: ActivationType = pytc.field(default=jax.nn.hard_tanh, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.hard_tanh, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -274,7 +277,7 @@ class LogSigmoid:
         \mathrm{log\_sigmoid}(x) = \log(\mathrm{sigmoid}(x)) = -\log(1 + e^{-x})
 
     """
-    func: ActivationType = pytc.field(default=jax.nn.log_sigmoid, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.log_sigmoid, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -288,7 +291,7 @@ class LogSoftmax:
         \mathrm{log\_softmax}(x) = \log \left( \frac{\exp(x_i)}{\sum_j \exp(x_j)}
         \right)
     """
-    func: ActivationType = pytc.field(default=jax.nn.log_softmax, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.log_softmax, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -305,7 +308,7 @@ class LeakyReLU:
         \end{cases}
     """
     negative_slope: float = pytc.field(default=0.01)
-    func: ActivationType = pytc.field(default=jax.nn.leaky_relu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.leaky_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, negative_slope=stop_gradient(self.negative_slope))
@@ -318,7 +321,7 @@ class ReLU:
     .. math::
         \mathrm{relu}(x) = \max(x, 0)
     """
-    func: ActivationType = pytc.field(default=jax.nn.relu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -328,7 +331,7 @@ class ReLU:
 class ReLU6:
     """ReLU activation function"""
 
-    func: ActivationType = pytc.field(default=jax.nn.relu6, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.relu6, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -347,7 +350,7 @@ class SeLU:
     where :math:`\lambda = 1.0507009873554804934193349852946` and
     :math:`\alpha = 1.6732632423543772848170429916717`.
     """
-    func: ActivationType = pytc.field(default=jax.nn.selu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.selu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -357,7 +360,7 @@ class SeLU:
 class SILU:
     """SILU activation function"""
 
-    func: ActivationType = pytc.field(default=silu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=silu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -370,7 +373,7 @@ class Sigmoid:
     .. math::
         \mathrm{sigmoid}(x) = \frac{1}{1 + e^{-x}}
     """
-    func: ActivationType = pytc.field(default=jax.nn.sigmoid, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.sigmoid, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -383,7 +386,7 @@ class SoftPlus:
     .. math::
         \mathrm{softplus}(x) = \log(1 + e^x)
     """
-    func: ActivationType = pytc.field(default=jax.nn.softplus, callbacks=[jtu.Partial])  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.softplus, callbacks=[jtu.Partial])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -393,7 +396,7 @@ class SoftPlus:
 class SoftSign:
     """SoftSign activation function"""
 
-    func: ActivationType = pytc.field(default=soft_sign, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=soft_sign, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -404,7 +407,7 @@ class SoftShrink:
     """SoftShrink activation function"""
 
     alpha: float = pytc.field(default=0.5)
-    func: ActivationType = pytc.field(default=soft_shrink, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=soft_shrink, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, stop_gradient(self.alpha))
@@ -415,7 +418,7 @@ class Stan:
     """Stan activation function"""
 
     beta: float = pytc.field(callbacks=[scalar_like_cb], default=1.0)
-    func: ActivationType = pytc.field(default=self_scalable_tanh, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=self_scalable_tanh, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, self.beta)
@@ -425,7 +428,7 @@ class Stan:
 class SquarePlus:
     """SquarePlus activation function"""
 
-    func: ActivationType = pytc.field(default=square_plus, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=square_plus, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -435,7 +438,7 @@ class SquarePlus:
 class Swish:
     """Swish activation function"""
 
-    func: ActivationType = pytc.field(default=jax.nn.swish, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.swish, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -445,7 +448,7 @@ class Swish:
 class Tanh:
     """Tanh activation function"""
 
-    func: ActivationType = pytc.field(default=jax.nn.tanh, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=jax.nn.tanh, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -464,7 +467,7 @@ class ThresholdedReLU:
     """Thresholded ReLU activation function."""
 
     theta: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
-    func: ActivationType = pytc.field(default=thresholded_relu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=thresholded_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, stop_gradient(self.theta))
@@ -474,7 +477,7 @@ class ThresholdedReLU:
 class Mish:
     """Mish activation function https://arxiv.org/pdf/1908.08681.pdf."""
 
-    func: ActivationType = pytc.field(default=mish, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=mish, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x)
@@ -485,7 +488,7 @@ class PReLU:
     """Parametric ReLU activation function"""
 
     a: float = 0.25
-    func: ActivationType = pytc.field(default=parametric_relu, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    func: ActivationType = pytc.field(default=parametric_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, self.a)
@@ -495,8 +498,8 @@ class PReLU:
 class Snake:
     r"""Snake activation function https://arxiv.org/pdf/2006.08195.pdf."""
 
-    a: float = pytc.field(callbacks=[*non_negative_scalar_cbs], default=1.0)  # fmt: skip
-    func: ActivationType = pytc.field(default=snake, callbacks=[jtu.Partial], repr=False)  # fmt: skip
+    a: float = pytc.field(callbacks=[*non_negative_scalar_cbs], default=1.0)
+    func: ActivationType = pytc.field(default=snake, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self.func(x, stop_gradient(self.a))
