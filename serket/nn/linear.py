@@ -316,3 +316,45 @@ class Embedding:
             raise TypeError("Input must be an integer array.")
 
         return jnp.take(self.weight, x, axis=0)
+
+
+@pytc.treeclass
+class MergeLinear:
+    weight: jax.Array
+    bias: jax.Array
+
+    def __init__(self, *layers: tuple[Linear, ...]):
+        """Merge multiple linear layers with the same `out_features`.
+
+        Args:
+            layers: linear layers to merge
+
+        Example:
+            >>> import serket as sk
+            >>> import numpy.testing as npt
+            >>> layer1 = sk.nn.Linear(5, 6)  # 5 input features, 6 output features
+            >>> layer2 = sk.nn.Linear(7, 6)  # 7 input features, 6 output features
+            >>> merged_layer = sk.nn.MergeLinear(layer1, layer2)  # 12 input features, 6 output features
+            >>> x1 = jnp.ones([1, 5])  # 1 sample, 5 features
+            >>> x2 = jnp.ones([1, 7])  # 1 sample, 7 features
+            >>> y = merged_layer(x1, x2)  # one matrix multiplication
+            >>> z = layer1(x1) + layer2(x2)  # two matrix multiplications
+            >>> npt.assert_allclose(y, z, atol=1e-6)
+
+        Note:
+            Use this layer to reduce the matrix multiplication operations in the forward pass.
+        """
+        out_dim0 = layers[0].out_features
+
+        for layer in layers[1:]:
+            if layer.out_features != out_dim0:
+                msg = "All layers must have the same output dimension."
+                msg += f" Got {out_dim0} and {layer.out_features}"
+                raise ValueError(msg)
+
+        self.weight = jnp.concatenate([L.weight for L in layers], axis=0)
+        self.bias = sum([L.bias for L in layers if L.bias_init_func])
+
+    def __call__(self, *xs: jax.Array, **k) -> jax.Array:
+        xs = jnp.concatenate(xs, axis=-1)
+        return xs @ self.weight + self.bias
