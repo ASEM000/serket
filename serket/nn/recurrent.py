@@ -102,7 +102,7 @@ class SimpleRNNCell(NonSpatialRNNCell):
         self.hidden_features = hidden_features
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
 
-        self.in_to_hidden = sk.nn.Linear(
+        in_to_hidden = sk.nn.Linear(
             in_features,
             hidden_features,
             weight_init_func=weight_init_func,
@@ -110,13 +110,15 @@ class SimpleRNNCell(NonSpatialRNNCell):
             key=k1,
         )
 
-        self.hidden_to_hidden = sk.nn.Linear(
+        hidden_to_hidden = sk.nn.Linear(
             hidden_features,
             hidden_features,
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
             key=k2,
         )
+
+        self.in_and_hidden_to_hidden = sk.nn.MergeLinear(in_to_hidden, hidden_to_hidden)
         self.spatial_ndim = 0
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -127,8 +129,7 @@ class SimpleRNNCell(NonSpatialRNNCell):
             msg += f", got {type(state).__name__}"
             raise TypeError(msg)
 
-        h = state.hidden_state
-        h = self.act_func(self.in_to_hidden(x) + self.hidden_to_hidden(h))
+        h = self.act_func(self.in_and_hidden_to_hidden(x, state.hidden_state))
         return SimpleRNNState(h)
 
     def init_state(self) -> SimpleRNNState:
@@ -183,7 +184,7 @@ class LSTMCell(NonSpatialRNNCell):
             recurrent_act_func, recurrent_act_func
         )
 
-        self.in_to_hidden = sk.nn.Linear(
+        in_to_hidden = sk.nn.Linear(
             in_features,
             hidden_features * 4,
             weight_init_func=weight_init_func,
@@ -191,7 +192,7 @@ class LSTMCell(NonSpatialRNNCell):
             key=k1,
         )
 
-        self.hidden_to_hidden = sk.nn.Linear(
+        hidden_to_hidden = sk.nn.Linear(
             hidden_features,
             hidden_features * 4,
             weight_init_func=recurrent_weight_init_func,
@@ -199,6 +200,7 @@ class LSTMCell(NonSpatialRNNCell):
             key=k2,
         )
 
+        self.in_and_hidden_to_hidden = sk.nn.MergeLinear(in_to_hidden, hidden_to_hidden)
         self.spatial_ndim = 0
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -210,7 +212,7 @@ class LSTMCell(NonSpatialRNNCell):
             raise TypeError(msg)
 
         h, c = state.hidden_state, state.cell_state
-        h = self.in_to_hidden(x) + self.hidden_to_hidden(h)
+        h = self.in_and_hidden_to_hidden(x, h)
         i, f, g, o = jnp.split(h, 4, axis=-1)
         i = self.recurrent_act_func(i)
         f = self.recurrent_act_func(f)

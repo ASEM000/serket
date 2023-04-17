@@ -358,6 +358,6 @@ class MergeLinear:
         self.weight = jnp.concatenate([L.weight for L in layers], axis=0)
         self.bias = sum([L.bias for L in layers if L.bias_init_func])
 
-    def __call__(self, *xs: jax.Array, **k) -> jax.Array:
+    def __call__(self, *xs: tuple[jax.Array, ...], **k) -> jax.Array:
         xs = jnp.concatenate(xs, axis=-1)
         return xs @ self.weight + self.bias
