@@ -1,6 +1,5 @@
 from pytreeclass import (
     field,
-    fields,
     freeze,
     is_frozen,
     is_nondiff,
@@ -25,7 +24,6 @@ __all__ = (
     "is_treeclass",
     "is_tree_equal",
     "field",
-    "fields",
     # pprint utils
     "tree_diagram",
     "tree_mermaid",

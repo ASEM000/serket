@@ -9,7 +9,7 @@ from jax.core import concrete_or_error
 
 T = TypeVar("T")
 LAZY = object()
-LAZY_KW = "__lazy_init__"
+LAZY_KW = "_lazy_init"
 
 
 class LazyPartial(ft.partial):
@@ -19,6 +19,10 @@ class LazyPartial(ft.partial):
         iargs = iter(args)
         args = (next(iargs) if arg is LAZY else arg for arg in self.args)  # type: ignore
         return self.func(*args, *iargs, **keywords)
+
+
+def is_lazy(x: Any) -> bool:
+    return hasattr(x, LAZY_KW)
 
 
 def lazy_class(
