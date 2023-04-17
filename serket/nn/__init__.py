@@ -76,7 +76,15 @@ from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN  # , PFNN
 from .laplace import Laplace2D
-from .linear import Bilinear, Embedding, GeneralLinear, Identity, Linear, Multilinear
+from .linear import (
+    Bilinear,
+    Embedding,
+    GeneralLinear,
+    Identity,
+    Linear,
+    MergeLinear,
+    Multilinear,
+)
 from .normalization import GroupNorm, InstanceNorm, LayerNorm
 from .padding import Pad1D, Pad2D, Pad3D
 from .pooling import (
@@ -129,6 +137,7 @@ __all__ = (
     "Multilinear",
     "GeneralLinear",
     "Embedding",
+    "MergeLinear",
     # Dropout
     "Dropout",
     "Dropout1D",
