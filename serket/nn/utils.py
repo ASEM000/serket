@@ -131,11 +131,13 @@ def delayed_canonicalize_padding(
     raise ValueError(msg)
 
 
+Shape = Any
+Dtype = Any
 KernelSizeType = Union[int, Sequence[int]]
 StridesType = Union[int, Sequence[int]]
 PaddingType = Union[str, int, Sequence[int], Sequence[Tuple[int, int]]]
 DilationType = Union[int, Sequence[int]]
-InitFuncType = Union[str, Callable[[jr.PRNGKey, Sequence[int]], jax.Array]]
+InitFuncType = Union[str, Callable[[jr.PRNGKey, Shape, Dtype], jax.Array]]
 
 
 def canonicalize(value, ndim, name: str | None = None):

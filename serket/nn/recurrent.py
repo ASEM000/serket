@@ -403,7 +403,6 @@ class ConvLSTMNDCell(SpatialRNNCell):
         return ConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
 
 
-@pytc.treeclass
 class ConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(
         self,
@@ -461,7 +460,6 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         )
 
 
-@pytc.treeclass
 class ConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(
         self,
@@ -519,7 +517,6 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         )
 
 
-@pytc.treeclass
 class ConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(
         self,
@@ -682,13 +679,7 @@ class ConvGRUNDCell(SpatialRNNCell):
         return ConvGRUNDState(hidden_state=jnp.zeros(shape))
 
 
-@pytc.treeclass
 class ConvGRU1DCell(ConvGRUNDCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
-
     def __init__(
         self,
         in_features: int,
@@ -743,13 +734,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         )
 
 
-@pytc.treeclass
 class ConvGRU2DCell(ConvGRUNDCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
-
     def __init__(
         self,
         in_features: int,
@@ -804,13 +789,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         )
 
 
-@pytc.treeclass
 class ConvGRU3DCell(ConvGRUNDCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
-
     def __init__(
         self,
         in_features: int,
@@ -898,7 +877,8 @@ class ScanRNN:
             raise TypeError(msg)
 
         if not isinstance(backward_cell, (RNNCell, type(None))):
-            msg = f"Expected `backward_cell` to be an instance of RNNCell, got {type(backward_cell)}"
+            msg = "Expected `backward_cell` to be an instance of RNNCell, "
+            msg += f"got {type(backward_cell).__name__}"
             raise TypeError(msg)
 
         self.cell = cell

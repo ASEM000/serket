@@ -11,6 +11,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
+from serket.experimental.lazy_class import lazy_in_features
 from serket.nn.callbacks import (
     init_func_cb,
     positive_int_cb,
@@ -141,6 +142,7 @@ def fft_conv_general_dilated(
     return jax.lax.slice(z, start, end, (1, 1, *strides))
 
 
+@lazy_in_features
 @pytc.treeclass
 class FFTConvND:
     weight: jax.Array
@@ -389,6 +391,7 @@ class FFTConv3D(FFTConvND):
 
 
 # ----------------------------------------------------------------------------------------------------------------------#
+@lazy_in_features
 @pytc.treeclass
 class FFTConvNDTranspose:
     weight: jax.Array
@@ -644,6 +647,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
 
 
 # ----------------------------------------------------------------------------------------------------------------------#
+@lazy_in_features
 @pytc.treeclass
 class DepthwiseFFTConvND:
     weight: jax.Array
@@ -876,6 +880,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
 
 
 # ----------------------------------------------------------------------------------------------------------------------#
+@lazy_in_features
 @pytc.treeclass
 class SeparableFFTConvND:
     depthwise_conv: DepthwiseFFTConvND

@@ -1,6 +1,8 @@
+import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
+from jax.core import ConcretizationTypeError
 
 from serket.nn.convolution import (  # Conv3DLocal,; Conv1DSemiLocal,; Conv2DSemiLocal,; Conv3DSemiLocal,
     Conv1D,
@@ -995,100 +997,75 @@ def test_groups_error():
         Conv3DTranspose(1, 1, 3, groups=0)
 
 
-# def test_lazy_conv():
-# layer = Conv1D(None, 1, 3)
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3])).shape == (1, 3)
+def test_lazy_conv():
+    layer = Conv1D(None, 1, 3)
+    assert layer(jnp.ones([10, 3])).shape == (1, 3)
 
-# layer = Conv2D(None, 1, 3)
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
+    layer = Conv2D(None, 1, 3)
+    assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
 
-# layer = Conv3D(None, 1, 3)
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3, 3, 3])).shape == (1, 3, 3, 3)
+    layer = Conv3D(None, 1, 3)
+    assert layer(jnp.ones([10, 3, 3, 3])).shape == (1, 3, 3, 3)
 
-# layer = Conv1DTranspose(None, 1, 3)
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3])).shape == (1, 3)
+    layer = Conv1DTranspose(None, 1, 3)
+    assert layer(jnp.ones([10, 3])).shape == (1, 3)
 
-# layer = Conv2DTranspose(None, 1, 3)
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
+    layer = Conv2DTranspose(None, 1, 3)
+    assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
 
-# layer = Conv3DTranspose(None, 1, 3)
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3, 3, 3])).shape == (1, 3, 3, 3)
+    layer = Conv3DTranspose(None, 1, 3)
+    assert layer(jnp.ones([10, 3, 3, 3])).shape == (1, 3, 3, 3)
 
-# layer = DepthwiseConv1D(None, 3)
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3])).shape == (10, 3)
+    layer = DepthwiseConv1D(None, 3)
+    assert layer(jnp.ones([10, 3])).shape == (10, 3)
 
-# layer = DepthwiseConv2D(None, 3)
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3, 3])).shape == (10, 3, 3)
+    layer = DepthwiseConv2D(None, 3)
+    assert layer(jnp.ones([10, 3, 3])).shape == (10, 3, 3)
 
-# layer = Conv1DLocal(None, 1, 3, in_size=(3,))
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3])).shape == (1, 3)
+    layer = Conv1DLocal(None, 1, 3, in_size=(3,))
+    assert layer(jnp.ones([10, 3])).shape == (1, 3)
 
-# layer = Conv2DLocal(None, 1, 3, in_size=(3, 3))
-# assert layer.weight is None
-# assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
+    layer = Conv2DLocal(None, 1, 3, in_size=(3, 3))
+    assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
 
-# layer = SeparableConv1D(None, 1, 3)
-# assert layer(jnp.ones([10, 3])).shape == (1, 3)
+    layer = SeparableConv1D(None, 1, 3)
+    assert layer(jnp.ones([10, 3])).shape == (1, 3)
 
-# layer = SeparableConv2D(None, 1, 3)
-# assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
+    layer = SeparableConv2D(None, 1, 3)
+    assert layer(jnp.ones([10, 3, 3])).shape == (1, 3, 3)
 
-# with pytest.raises(ValueError):
-#     jax.jit(Conv1D(None, 1, 3))(jnp.ones([10, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(Conv1D(None, 1, 3))(jnp.ones([10, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(Conv2D(None, 1, 3))(jnp.ones([10, 3, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(Conv2D(None, 1, 3))(jnp.ones([10, 3, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(Conv3D(None, 1, 3))(jnp.ones([10, 3, 3, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(Conv3D(None, 1, 3))(jnp.ones([10, 3, 3, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(Conv1DTranspose(None, 1, 3))(jnp.ones([10, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(Conv1DTranspose(None, 1, 3))(jnp.ones([10, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(Conv2DTranspose(None, 1, 3))(jnp.ones([10, 3, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(Conv2DTranspose(None, 1, 3))(jnp.ones([10, 3, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(Conv3DTranspose(None, 1, 3))(jnp.ones([10, 3, 3, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(Conv3DTranspose(None, 1, 3))(jnp.ones([10, 3, 3, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(DepthwiseConv1D(None, 3))(jnp.ones([10, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(DepthwiseConv1D(None, 3))(jnp.ones([10, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(DepthwiseConv2D(None, 3))(jnp.ones([10, 3, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(DepthwiseConv2D(None, 3))(jnp.ones([10, 3, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(Conv1DLocal(None, 1, 3, in_size=(3,)))(jnp.ones([10, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(Conv1DLocal(None, 1, 3, in_size=(3,)))(jnp.ones([10, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(Conv2DLocal(None, 1, 3, in_size=(3, 3)))(jnp.ones([10, 3, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(Conv2DLocal(None, 1, 3, in_size=(3, 3)))(jnp.ones([10, 3, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(SeparableConv1D(None, 1, 3))(jnp.ones([10, 3]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(SeparableConv1D(None, 1, 3))(jnp.ones([10, 3]))
 
-# with pytest.raises(ValueError):
-#     jax.jit(SeparableConv2D(None, 1, 3))(jnp.ones([10, 3, 3]))
-
-
-# def test_conv1d_semilocal():
-#     layer = Conv1DSemiLocal(1, 3, 3)
-#     assert layer(jnp.ones([1, 3])).shape == (3, 3)
-
-
-# def test_conv2d_semilocal():
-#     layer = Conv2DSemiLocal(1, 3, 3)
-#     assert layer(jnp.ones([1, 3, 3])).shape == (3, 3, 3)
-
-
-# def test_conv3d_semilocal():
-#     layer = Conv3DSemiLocal(1, 3, 3)
-#     assert layer(jnp.ones([1, 3, 3, 3])).shape == (3, 3, 3, 3)
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(SeparableConv2D(None, 1, 3))(jnp.ones([10, 3, 3]))
