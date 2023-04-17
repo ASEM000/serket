@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
+from serket.experimental.lazy_class import lazy_in_features
 from serket.nn.callbacks import non_negative_scalar_cbs, positive_int_cb
 
 
@@ -124,6 +125,7 @@ class LayerNorm:
         )
 
 
+@lazy_in_features
 @pytc.treeclass
 class GroupNorm:
     γ: jax.Array = None

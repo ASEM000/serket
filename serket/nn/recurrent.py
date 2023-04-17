@@ -9,7 +9,12 @@ import jax.random as jr
 import pytreeclass as pytc
 
 import serket as sk
-from serket.nn.callbacks import positive_int_cb
+from serket.experimental.lazy_class import lazy_class
+from serket.nn.callbacks import (
+    positive_int_cb,
+    validate_in_features,
+    validate_spatial_in_shape,
+)
 from serket.nn.utils import (
     _ACT_FUNC_MAP,
     ActivationType,
@@ -24,6 +29,15 @@ from serket.nn.utils import (
 
 
 # =============================================== Non Spatial RNN ==================================================== #
+
+
+lazy_in_features = ft.partial(
+    lazy_class,
+    lazy_keywords=["in_features"],
+    infer_func=lambda _, x, __: (x.shape[0],),
+    infer_method_name="__call__",
+    lazy_marker=None,
+)
 
 
 @pytc.treeclass
@@ -44,17 +58,16 @@ class SimpleRNNState(RNNState):
     ...
 
 
+@lazy_in_features
 @pytc.treeclass
 class SimpleRNNCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: sk.nn.Linear
-    hidden_to_hidden: sk.nn.Linear
+    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         *,
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
@@ -66,7 +79,7 @@ class SimpleRNNCell(NonSpatialRNNCell):
 
         Args:
             in_features: the number of input features
-            out_features: the number of hidden features
+            hidden_features: the number of hidden features
             weight_init_func: the function to use to initialize the weights
             bias_init_func: the function to use to initialize the bias
             recurrent_weight_init_func: the function to use to initialize the recurrent weights
@@ -75,7 +88,7 @@ class SimpleRNNCell(NonSpatialRNNCell):
 
         Example:
             >>> cell = SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
-            >>> rnn_state = cell.init_state()
+            >>> rnn_state = cell.init_state()  # 20-dimensional hidden state
             >>> x = jnp.ones((10,)) # 10 features
             >>> result = cell(x, rnn_state)
             >>> result.hidden_state.shape  # 20 features
@@ -86,25 +99,28 @@ class SimpleRNNCell(NonSpatialRNNCell):
         k1, k2 = jr.split(key, 2)
 
         self.in_features = in_features
-        self.out_features = out_features
+        self.hidden_features = hidden_features
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
-            out_features,
+            hidden_features,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
         )
 
         self.hidden_to_hidden = sk.nn.Linear(
-            out_features,
-            out_features,
+            hidden_features,
+            hidden_features,
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
             key=k2,
         )
+        self.spatial_ndim = 0
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, state: SimpleRNNState, **k) -> SimpleRNNState:
         if not isinstance(state, SimpleRNNState):
             msg = "Expected state to be an instance of `SimpleRNNState`"
@@ -116,7 +132,7 @@ class SimpleRNNCell(NonSpatialRNNCell):
         return SimpleRNNState(h)
 
     def init_state(self) -> SimpleRNNState:
-        shape = (self.out_features,)
+        shape = (self.hidden_features,)
         return SimpleRNNState(jnp.zeros(shape))
 
 
@@ -125,17 +141,16 @@ class LSTMState(RNNState):
     cell_state: jax.Array
 
 
+@lazy_in_features
 @pytc.treeclass
 class LSTMCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: sk.nn.Linear
-    hidden_to_hidden: sk.nn.Linear
+    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         *,
         weight_init_func: str | Callable = "glorot_uniform",
         bias_init_func: str | Callable | None = "zeros",
@@ -147,7 +162,7 @@ class LSTMCell(NonSpatialRNNCell):
         """LSTM cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: the number of input features
-            out_features: the number of hidden features
+            hidden_features: the number of hidden features
             weight_init_func: the function to use to initialize the weights
             bias_init_func: the function to use to initialize the bias
             recurrent_weight_init_func: the function to use to initialize the recurrent weights
@@ -162,7 +177,7 @@ class LSTMCell(NonSpatialRNNCell):
         k1, k2 = jr.split(key, 2)
 
         self.in_features = in_features
-        self.out_features = out_features
+        self.hidden_features = hidden_features
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP.get(
             recurrent_act_func, recurrent_act_func
@@ -170,20 +185,24 @@ class LSTMCell(NonSpatialRNNCell):
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
-            out_features * 4,
+            hidden_features * 4,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
         )
 
         self.hidden_to_hidden = sk.nn.Linear(
-            out_features,
-            out_features * 4,
+            hidden_features,
+            hidden_features * 4,
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
             key=k2,
         )
 
+        self.spatial_ndim = 0
+
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, state: LSTMState, **k) -> LSTMState:
         if not isinstance(state, LSTMState):
             msg = "Expected state to be an instance of `LSTMState`"
@@ -202,7 +221,7 @@ class LSTMCell(NonSpatialRNNCell):
         return LSTMState(h, c)
 
     def init_state(self) -> LSTMState:
-        shape = (self.out_features,)
+        shape = (self.hidden_features,)
         return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
@@ -210,17 +229,16 @@ class GRUState(RNNState):
     ...
 
 
+@lazy_in_features
 @pytc.treeclass
 class GRUCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: sk.nn.Linear
-    hidden_to_hidden: sk.nn.Linear
+    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         *,
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
@@ -232,7 +250,7 @@ class GRUCell(NonSpatialRNNCell):
         """GRU cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: the number of input features
-            out_features: the number of hidden features
+            hidden_features: the number of hidden features
             weight_init_func: the function to use to initialize the weights
             bias_init_func: the function to use to initialize the bias
             recurrent_weight_init_func: the function to use to initialize the recurrent weights
@@ -246,26 +264,30 @@ class GRUCell(NonSpatialRNNCell):
         k1, k2 = jr.split(key, 2)
 
         self.in_features = in_features
-        self.out_features = out_features
+        self.hidden_features = hidden_features
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP[recurrent_act_func]
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
-            out_features * 3,
+            hidden_features * 3,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
         )
 
         self.hidden_to_hidden = sk.nn.Linear(
-            out_features,
-            out_features * 3,
+            hidden_features,
+            hidden_features * 3,
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
             key=k2,
         )
 
+        self.spatial_ndim = 0
+
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, state: GRUState, **k) -> GRUState:
         if not isinstance(state, GRUState):
             msg = "Expected state to be an instance of `GRUState`"
@@ -282,7 +304,7 @@ class GRUCell(NonSpatialRNNCell):
         return GRUState(hidden_state=h)
 
     def init_state(self) -> GRUState:
-        shape = (self.out_features,)
+        shape = (self.hidden_features,)
         return GRUState(jnp.zeros(shape, dtype=jnp.float32))
 
 
@@ -301,17 +323,16 @@ class ConvLSTMNDState(RNNState):
     cell_state: jax.Array
 
 
+@lazy_in_features
 @pytc.treeclass
 class ConvLSTMNDCell(SpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
+    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
@@ -330,7 +351,7 @@ class ConvLSTMNDCell(SpatialRNNCell):
         """Convolution LSTM cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: Number of input features
-            out_features: Number of output features
+            hidden_features: Number of output features
             kernel_size: Size of the convolutional kernel
             strides: Stride of the convolution
             padding: Padding of the convolution
@@ -349,14 +370,14 @@ class ConvLSTMNDCell(SpatialRNNCell):
         k1, k2 = jr.split(key, 2)
 
         self.in_features = in_features
-        self.out_features = out_features
+        self.hidden_features = hidden_features
         self.spatial_ndim = spatial_ndim
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
 
         self.in_to_hidden = conv_layer(
             in_features,
-            out_features * 4,
+            hidden_features * 4,
             kernel_size,
             strides=strides,
             padding=padding,
@@ -368,8 +389,8 @@ class ConvLSTMNDCell(SpatialRNNCell):
         )
 
         self.hidden_to_hidden = conv_layer(
-            out_features,
-            out_features * 4,
+            hidden_features,
+            hidden_features * 4,
             kernel_size,
             strides=strides,
             padding=padding,
@@ -380,6 +401,8 @@ class ConvLSTMNDCell(SpatialRNNCell):
             key=k2,
         )
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, state: ConvLSTMNDState, **k) -> ConvLSTMNDState:
         if not isinstance(state, ConvLSTMNDState):
             msg = f"Expected state to be an instance of ConvLSTMNDState, got {type(state)}"
@@ -399,16 +422,15 @@ class ConvLSTMNDCell(SpatialRNNCell):
     def init_state(self, spatial_dim: tuple[int, ...]) -> ConvLSTMNDState:
         msg = f"Expected spatial_dim to be a tuple of length {self.spatial_ndim}, got {spatial_dim}"
         assert len(spatial_dim) == self.spatial_ndim, msg
-        shape = (self.out_features, *spatial_dim)
+        shape = (self.hidden_features, *spatial_dim)
         return ConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
 
 
-@pytc.treeclass
 class ConvLSTM1DCell(ConvLSTMNDCell):
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
@@ -425,7 +447,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         """1D Convolution LSTM cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: Number of input features
-            out_features: Number of output features
+            hidden_features: Number of output features
             kernel_size: Size of the convolutional kernel
             strides: Stride of the convolution
             padding: Padding of the convolution
@@ -444,7 +466,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         """
         super().__init__(
             in_features=in_features,
-            out_features=out_features,
+            hidden_features=hidden_features,
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
@@ -461,12 +483,11 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         )
 
 
-@pytc.treeclass
 class ConvLSTM2DCell(ConvLSTMNDCell):
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
@@ -483,7 +504,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         """2D Convolution LSTM cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: Number of input features
-            out_features: Number of output features
+            hidden_features: Number of output features
             kernel_size: Size of the convolutional kernel
             strides: Stride of the convolution
             padding: Padding of the convolution
@@ -502,7 +523,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         """
         super().__init__(
             in_features=in_features,
-            out_features=out_features,
+            hidden_features=hidden_features,
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
@@ -519,12 +540,11 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         )
 
 
-@pytc.treeclass
 class ConvLSTM3DCell(ConvLSTMNDCell):
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
@@ -541,7 +561,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         """3D Convolution LSTM cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: Number of input features
-            out_features: Number of output features
+            hidden_features: Number of output features
             kernel_size: Size of the convolutional kernel
             strides: Stride of the convolution
             padding: Padding of the convolution
@@ -560,7 +580,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         """
         super().__init__(
             in_features=in_features,
-            out_features=out_features,
+            hidden_features=hidden_features,
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
@@ -583,17 +603,16 @@ class ConvGRUNDState(RNNState):
     ...
 
 
+@lazy_in_features
 @pytc.treeclass
 class ConvGRUNDCell(SpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
+    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         kernel_size: int | tuple[int, ...],
         *,
         strides: StridesType = 1,
@@ -612,7 +631,7 @@ class ConvGRUNDCell(SpatialRNNCell):
         """Convolution GRU cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: Number of input features
-            out_features: Number of output features
+            hidden_features: Number of output features
             kernel_size: Size of the convolutional kernel
             strides: Stride of the convolution
             padding: Padding of the convolution
@@ -630,14 +649,14 @@ class ConvGRUNDCell(SpatialRNNCell):
         k1, k2 = jr.split(key, 2)
 
         self.in_features = in_features
-        self.out_features = out_features
+        self.hidden_features = hidden_features
         self.spatial_ndim = spatial_ndim
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
 
         self.in_to_hidden = conv_layer(
             in_features,
-            out_features * 3,
+            hidden_features * 3,
             kernel_size,
             strides=strides,
             padding=padding,
@@ -649,8 +668,8 @@ class ConvGRUNDCell(SpatialRNNCell):
         )
 
         self.hidden_to_hidden = conv_layer(
-            out_features,
-            out_features * 3,
+            hidden_features,
+            hidden_features * 3,
             kernel_size,
             strides=strides,
             padding=padding,
@@ -661,6 +680,7 @@ class ConvGRUNDCell(SpatialRNNCell):
             key=k2,
         )
 
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, state: ConvGRUNDState, **k) -> ConvGRUNDState:
         if not isinstance(state, ConvGRUNDState):
             msg = f"Expected state to be an instance of GRUState, got {type(state)}"
@@ -678,21 +698,15 @@ class ConvGRUNDCell(SpatialRNNCell):
     def init_state(self, spatial_dim: tuple[int, ...]) -> ConvGRUNDState:
         msg = f"Expected spatial_dim to be a tuple of length {self.spatial_ndim}, got {spatial_dim}"
         assert len(spatial_dim) == self.spatial_ndim, msg
-        shape = (self.out_features, *spatial_dim)
+        shape = (self.hidden_features, *spatial_dim)
         return ConvGRUNDState(hidden_state=jnp.zeros(shape))
 
 
-@pytc.treeclass
 class ConvGRU1DCell(ConvGRUNDCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
-
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         kernel_size: int | tuple[int, ...],
         *,
         strides: StridesType = 1,
@@ -709,7 +723,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         """1D Convolution GRU cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: Number of input features
-            out_features: Number of output features
+            hidden_features: Number of output features
             kernel_size: Size of the convolutional kernel
             strides: Stride of the convolution
             padding: Padding of the convolution
@@ -726,7 +740,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         """
         super().__init__(
             in_features=in_features,
-            out_features=out_features,
+            hidden_features=hidden_features,
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
@@ -743,17 +757,11 @@ class ConvGRU1DCell(ConvGRUNDCell):
         )
 
 
-@pytc.treeclass
 class ConvGRU2DCell(ConvGRUNDCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
-
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         kernel_size: int | tuple[int, ...],
         *,
         strides: StridesType = 1,
@@ -770,7 +778,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         """2D Convolution GRU cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: Number of input features
-            out_features: Number of output features
+            hidden_features: Number of output features
             kernel_size: Size of the convolutional kernel
             strides: Stride of the convolution
             padding: Padding of the convolution
@@ -787,7 +795,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         """
         super().__init__(
             in_features=in_features,
-            out_features=out_features,
+            hidden_features=hidden_features,
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
@@ -804,17 +812,11 @@ class ConvGRU2DCell(ConvGRUNDCell):
         )
 
 
-@pytc.treeclass
 class ConvGRU3DCell(ConvGRUNDCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
-
     def __init__(
         self,
         in_features: int,
-        out_features: int,
+        hidden_features: int,
         kernel_size: int | tuple[int, ...],
         *,
         strides: StridesType = 1,
@@ -831,7 +833,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         """3D Convolution GRU cell that defines the update rule for the hidden state and cell state
         Args:
             in_features: Number of input features
-            out_features: Number of output features
+            hidden_features: Number of output features
             kernel_size: Size of the convolutional kernel
             strides: Stride of the convolution
             padding: Padding of the convolution
@@ -848,7 +850,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         """
         super().__init__(
             in_features=in_features,
-            out_features=out_features,
+            hidden_features=hidden_features,
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
@@ -898,12 +900,14 @@ class ScanRNN:
             raise TypeError(msg)
 
         if not isinstance(backward_cell, (RNNCell, type(None))):
-            msg = f"Expected `backward_cell` to be an instance of RNNCell, got {type(backward_cell)}"
+            msg = "Expected `backward_cell` to be an instance of RNNCell, "
+            msg += f"got {type(backward_cell).__name__}"
             raise TypeError(msg)
 
         self.cell = cell
         self.backward_cell = backward_cell
         self.return_sequences = return_sequences
+        self.spatial_ndim = cell.spatial_ndim
 
     def __call__(
         self,
@@ -912,12 +916,13 @@ class ScanRNN:
         backward_state: SpatialRNNCell | None = None,
         **k,
     ) -> jax.Array:
-        # check input shape
+        # check state
         if not isinstance(state, (RNNState, type(None))):
             msg = "Expected state to be an instance of RNNState, "
             msg += f"got {type(state).__name__}"
             raise TypeError(msg)
 
+        # check shape
         if isinstance(self.cell, NonSpatialRNNCell):
             # non-spatial RNN : (time steps, in_features)
             if x.ndim != 2:

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
+from jax.core import ConcretizationTypeError
 
 from serket.nn import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
 
@@ -56,24 +58,24 @@ def test_GaussBlur2D():
         GaussianBlur2D(0, 1, sigma=1.0)
 
 
-# def test_lazy_blur():
-#     layer = GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0)
-#     assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
+def test_lazy_blur():
+    layer = GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0)
+    assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
 
-#     layer = AvgBlur2D(None, 3)
-#     assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
+    layer = AvgBlur2D(None, 3)
+    assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
 
-#     layer = Filter2D(None, jnp.ones([3, 3]))
-#     assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
+    layer = Filter2D(None, jnp.ones([3, 3]))
+    assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
 
-#     with pytest.raises(ValueError):
-#         jax.jit(GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0))(jnp.ones([10, 5, 5]))  # fmt: skip
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0))(jnp.ones([10, 5, 5]))  # fmt: skip
 
-#     with pytest.raises(ValueError):
-#         jax.jit(AvgBlur2D(in_features=None, kernel_size=3))(jnp.ones([10, 5, 5]))
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(AvgBlur2D(in_features=None, kernel_size=3))(jnp.ones([10, 5, 5]))
 
-#     with pytest.raises(ValueError):
-#         jax.jit(Filter2D(in_features=None, kernel=jnp.ones([4, 4])))(jnp.ones([10, 5, 5]))  # fmt: skip
+    with pytest.raises(ConcretizationTypeError):
+        jax.jit(Filter2D(in_features=None, kernel=jnp.ones([4, 4])))(jnp.ones([10, 5, 5]))  # fmt: skip
 
 
 def test_filter2d():

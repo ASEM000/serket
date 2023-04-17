@@ -7,6 +7,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
+from serket.experimental.lazy_class import lazy_in_features
 from serket.nn.callbacks import init_func_cb, instance_cb_factory, positive_int_cb
 from serket.nn.utils import InitFuncType
 
@@ -129,6 +130,7 @@ class Multilinear:
         return x + self.bias
 
 
+@lazy_in_features
 class Linear(Multilinear):
     """Linear layer with 1 input applied to last axis of input
 
@@ -271,6 +273,7 @@ class Identity:
         return x
 
 
+@lazy_in_features
 @pytc.treeclass
 class Embedding:
     in_features: int = pytc.field(callbacks=[positive_int_cb])

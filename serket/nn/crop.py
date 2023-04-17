@@ -13,7 +13,7 @@ from serket.nn.utils import canonicalize
 @pytc.treeclass
 class CropND:
     size: int | tuple[int, ...]
-    start: int | tuple[int, ...] = pytc.field(default=0)
+    start: int | tuple[int, ...]
 
     def __init__(self, size, start, spatial_ndim):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
