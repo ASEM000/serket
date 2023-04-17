@@ -63,8 +63,6 @@ class SimpleRNNState(RNNState):
 class SimpleRNNCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: sk.nn.Linear
-    hidden_to_hidden: sk.nn.Linear
 
     def __init__(
         self,
@@ -148,8 +146,6 @@ class LSTMState(RNNState):
 class LSTMCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: sk.nn.Linear
-    hidden_to_hidden: sk.nn.Linear
 
     def __init__(
         self,
@@ -238,8 +234,6 @@ class GRUState(RNNState):
 class GRUCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: sk.nn.Linear
-    hidden_to_hidden: sk.nn.Linear
 
     def __init__(
         self,
@@ -334,8 +328,6 @@ class ConvLSTMNDState(RNNState):
 class ConvLSTMNDCell(SpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
 
     def __init__(
         self,
@@ -616,8 +608,6 @@ class ConvGRUNDState(RNNState):
 class ConvGRUNDCell(SpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-    in_to_hidden: Any
-    hidden_to_hidden: Any
 
     def __init__(
         self,
