@@ -8,7 +8,6 @@ import jax.numpy as jnp
 import pytreeclass as pytc
 from jax.lax import stop_gradient
 
-from serket.experimental.lazy_class import lazy_in_features
 from serket.nn.callbacks import (
     positive_int_cb,
     validate_in_features,
@@ -18,9 +17,7 @@ from serket.nn.convolution import DepthwiseConv2D
 from serket.nn.fft_convolution import DepthwiseFFTConv2D
 
 
-@lazy_in_features
-@pytc.treeclass
-class AvgBlur2D:
+class AvgBlur2D(pytc.TreeClass):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     kernel_size: int | tuple[int, int] = pytc.field(callbacks=[positive_int_cb])
     conv1: DepthwiseConv2D = pytc.field(repr=False)
@@ -77,9 +74,7 @@ class AvgBlur2D:
         return stop_gradient(self.conv2(self.conv1(x)))
 
 
-@lazy_in_features
-@pytc.treeclass
-class GaussianBlur2D:
+class GaussianBlur2D(pytc.TreeClass):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     kernel_size: int = pytc.field(callbacks=[positive_int_cb])
     sigma: float
@@ -151,9 +146,7 @@ class GaussianBlur2D:
         return stop_gradient(self.conv1(self.conv2(x)))
 
 
-@lazy_in_features
-@pytc.treeclass
-class Filter2D:
+class Filter2D(pytc.TreeClass):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     conv: DepthwiseConv2D
     kernel: jax.Array
@@ -198,9 +191,7 @@ class Filter2D:
         return stop_gradient(self.conv(x))
 
 
-@lazy_in_features
-@pytc.treeclass
-class FFTFilter2D:
+class FFTFilter2D(pytc.TreeClass):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     kernel: jax.Array
     conv: DepthwiseFFTConv2D

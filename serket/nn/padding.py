@@ -10,8 +10,7 @@ from serket.nn.callbacks import validate_spatial_in_shape
 from serket.nn.utils import delayed_canonicalize_padding
 
 
-@pytc.treeclass
-class PadND:
+class PadND(pytc.TreeClass):
     def __init__(
         self,
         padding: int | tuple[int, int],

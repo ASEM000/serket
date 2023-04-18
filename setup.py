@@ -36,7 +36,7 @@ setup(
     author_email="asem00@kaist.ac.kr",
     keywords="python machine-learning pytorch jax",
     packages=find_namespace_packages(exclude=['examples", "tests","experimental']),
-    install_requires=["jax>=0.4.0", "pytreeclass>=0.2.0", "kernex"],
+    install_requires=["jax>=0.4.0", "pytreeclass>=0.3.0", "kernex"],
     zip_safe=False,
     python_requires=">=3.8",
     classifiers=[

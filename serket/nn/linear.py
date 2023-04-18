@@ -7,8 +7,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.experimental.lazy_class import lazy_in_features
-from serket.nn.callbacks import init_func_cb, instance_cb_factory, positive_int_cb
+from serket.nn.callbacks import init_func_cb, isinstance_factory, positive_int_cb
 from serket.nn.utils import InitFuncType
 
 
@@ -66,12 +65,11 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     return f"{input_string},{weight_string}->{result_string}"
 
 
-@pytc.treeclass
-class Multilinear:
+class Multilinear(pytc.TreeClass):
     weight: jax.Array
     bias: jax.Array
 
-    in_features: tuple[int, ...] | None = pytc.field(callbacks=[instance_cb_factory((int, tuple))])  # fmt: skip
+    in_features: tuple[int, ...] | None = pytc.field(callbacks=[isinstance_factory((int, tuple))])  # fmt: skip
     out_features: int
 
     def __init__(
@@ -130,7 +128,6 @@ class Multilinear:
         return x + self.bias
 
 
-@lazy_in_features
 class Linear(Multilinear):
     """Linear layer with 1 input applied to last axis of input
 
@@ -200,14 +197,13 @@ class Bilinear(Multilinear):
         )
 
 
-@pytc.treeclass
-class GeneralLinear:
+class GeneralLinear(pytc.TreeClass):
     weight: jax.Array
     bias: jax.Array
 
-    in_features: tuple[int, ...] = pytc.field(callbacks=[instance_cb_factory(tuple)])
+    in_features: tuple[int, ...] = pytc.field(callbacks=[isinstance_factory(tuple)])
     out_features: tuple[int, ...]
-    in_axes: tuple[int, ...] = pytc.field(callbacks=[instance_cb_factory(tuple)])
+    in_axes: tuple[int, ...] = pytc.field(callbacks=[isinstance_factory(tuple)])
 
     def __init__(
         self,
@@ -265,17 +261,14 @@ class GeneralLinear:
         return x
 
 
-@pytc.treeclass
-class Identity:
+class Identity(pytc.TreeClass):
     """Identity layer"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return x
 
 
-@lazy_in_features
-@pytc.treeclass
-class Embedding:
+class Embedding(pytc.TreeClass):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     out_features: int = pytc.field(callbacks=[positive_int_cb])
     weight: jax.Array
@@ -321,8 +314,7 @@ class Embedding:
         return jnp.take(self.weight, x, axis=0)
 
 
-@pytc.treeclass
-class MergeLinear:
+class MergeLinear(pytc.TreeClass):
     weight: jax.Array
     bias: jax.Array
 

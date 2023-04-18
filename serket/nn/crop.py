@@ -10,8 +10,7 @@ from serket.nn.callbacks import validate_spatial_in_shape
 from serket.nn.utils import canonicalize
 
 
-@pytc.treeclass
-class CropND:
+class CropND(pytc.TreeClass):
     size: int | tuple[int, ...]
     start: int | tuple[int, ...]
 
@@ -88,8 +87,7 @@ class Crop3D(CropND):
         super().__init__(size, start, spatial_ndim=3)
 
 
-@pytc.treeclass
-class RandomCropND:
+class RandomCropND(pytc.TreeClass):
     def __init__(self, size: int | tuple[int, ...], spatial_ndim: int):
         """Applies jax.lax.dynamic_slice_in_dim with a random start along each axis
 

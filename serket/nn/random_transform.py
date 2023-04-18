@@ -13,8 +13,7 @@ from serket.nn.padding import Pad2D
 from serket.nn.resize import Resize2D
 
 
-@pytc.treeclass
-class RandomApply:
+class RandomApply(pytc.TreeClass):
     """
     Randomly applies a layer with probability p.
 
@@ -46,8 +45,7 @@ class RandomApply:
         return self.layer(x)
 
 
-@pytc.treeclass
-class RandomZoom2D:
+class RandomZoom2D(pytc.TreeClass):
     def __init__(
         self,
         height_factor: tuple[float, float] = (0.0, 1.0),

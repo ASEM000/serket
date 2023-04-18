@@ -4,7 +4,6 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.experimental.lazy_class import lazy_in_features
 from serket.nn.callbacks import non_negative_scalar_cbs, positive_int_cb
 
 
@@ -78,8 +77,7 @@ def group_norm(
     return x̂
 
 
-@pytc.treeclass
-class LayerNorm:
+class LayerNorm(pytc.TreeClass):
     γ: jax.Array = None
     β: jax.Array = None
     ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
@@ -125,9 +123,7 @@ class LayerNorm:
         )
 
 
-@lazy_in_features
-@pytc.treeclass
-class GroupNorm:
+class GroupNorm(pytc.TreeClass):
     γ: jax.Array = None
     β: jax.Array = None
     ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])

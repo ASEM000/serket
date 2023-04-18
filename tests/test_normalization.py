@@ -1,8 +1,6 @@
-import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
-from jax.core import ConcretizationTypeError
 
 from serket.nn import GroupNorm, InstanceNorm, LayerNorm
 
@@ -198,10 +196,10 @@ def test_group_norm():
         layer = GroupNorm(in_features=-1, groups=0)
 
 
-def test_lazy_normalization():
-    layer = GroupNorm(None, groups=1)
-    assert layer(jnp.ones([1, 2, 3, 4])).shape == (1, 2, 3, 4)
+# def test_lazy_normalization():
+#     layer = GroupNorm(None, groups=1)
+#     assert layer(jnp.ones([1, 2, 3, 4])).shape == (1, 2, 3, 4)
 
-    with pytest.raises(ConcretizationTypeError):
-        layer = jax.jit(GroupNorm(None, groups=1))
-        layer(jnp.ones([1, 2, 3, 4]))
+#     with pytest.raises(ConcretizationTypeError):
+#         layer = jax.jit(GroupNorm(None, groups=1))
+#         layer(jnp.ones([1, 2, 3, 4]))

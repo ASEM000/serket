@@ -9,8 +9,7 @@ import pytreeclass as pytc
 from serket.nn.callbacks import validate_spatial_in_shape
 
 
-@pytc.treeclass
-class Laplace2D:
+class Laplace2D(pytc.TreeClass):
     def __init__(self):
         # apply laplace operator on channel axis
         @jax.vmap

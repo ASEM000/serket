@@ -14,7 +14,6 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
-from serket.experimental.lazy_class import lazy_in_features
 from serket.nn.callbacks import (
     init_func_cb,
     positive_int_cb,
@@ -39,9 +38,7 @@ def generate_conv_dim_numbers(spatial_ndim):
     return ConvDimensionNumbers(*((tuple(range(spatial_ndim + 2)),) * 3))
 
 
-@lazy_in_features
-@pytc.treeclass
-class ConvND:
+class ConvND(pytc.TreeClass):
     weight: jax.Array
     bias: jax.Array
 
@@ -322,9 +319,7 @@ class Conv3D(ConvND):
 # ----------------------------------------------------------------------------------------------------------------------#
 
 
-@lazy_in_features
-@pytc.treeclass
-class ConvNDTranspose:
+class ConvNDTranspose(pytc.TreeClass):
     weight: jax.Array
     bias: jax.Array
 
@@ -577,9 +572,7 @@ class Conv3DTranspose(ConvNDTranspose):
 # ----------------------------------------------------------------------------------------------------------------------#
 
 
-@lazy_in_features
-@pytc.treeclass
-class DepthwiseConvND:
+class DepthwiseConvND(pytc.TreeClass):
     weight: jax.Array
     bias: jax.Array
 
@@ -823,9 +816,7 @@ class DepthwiseConv3D(DepthwiseConvND):
 # ----------------------------------------------------------------------------------------------------------------------#
 
 
-@lazy_in_features
-@pytc.treeclass
-class SeparableConvND:
+class SeparableConvND(pytc.TreeClass):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     depthwise_conv: DepthwiseConvND
     pointwise_conv: DepthwiseConvND
@@ -1058,9 +1049,7 @@ class SeparableConv3D(SeparableConvND):
 # ----------------------------------------------------------------------------------------------------------------------#
 
 
-@lazy_in_features
-@pytc.treeclass
-class ConvNDLocal:
+class ConvNDLocal(pytc.TreeClass):
     weight: jax.Array
     bias: jax.Array
 

@@ -1,17 +1,16 @@
 from pytreeclass import (
+    TreeClass,
     field,
     freeze,
     is_frozen,
     is_nondiff,
     is_tree_equal,
-    is_treeclass,
     tree_diagram,
     tree_indent,
     tree_mermaid,
     tree_repr,
     tree_str,
     tree_summary,
-    treeclass,
     unfreeze,
 )
 
@@ -21,7 +20,7 @@ from .operators import diff, value_and_diff
 __all__ = (
     # general utils
     "treeclass",
-    "is_treeclass",
+    "TreeClass",
     "is_tree_equal",
     "field",
     # pprint utils
@@ -45,4 +44,4 @@ __all__ = (
 )
 
 
-__version__ = "0.2.0b1"
+__version__ = "0.2.0b2"

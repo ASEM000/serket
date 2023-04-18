@@ -16,8 +16,7 @@ def test_lazy_class():
         infer_method_name="__call__",  # -> `infer_func` is applied to `__call__` method
         lazy_marker=None,  # -> `None` is used to indicate a lazy argument
     )
-    @pytc.treeclass
-    class LazyLinear:
+    class LazyLinear(pytc.TreeClass):
         weight: jax.Array
         bias: jax.Array
 

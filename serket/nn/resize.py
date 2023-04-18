@@ -6,14 +6,13 @@ from typing import Literal
 import jax
 import pytreeclass as pytc
 
-from serket.nn.callbacks import instance_cb_factory, validate_spatial_in_shape
+from serket.nn.callbacks import isinstance_factory, validate_spatial_in_shape
 from serket.nn.utils import canonicalize
 
 MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 
 
-@pytc.treeclass
-class ResizeND:
+class ResizeND(pytc.TreeClass):
     size: int | tuple[int, ...]
     method: MethodKind
     antialias: bool
@@ -61,10 +60,9 @@ class ResizeND:
         )
 
 
-@pytc.treeclass
-class UpsampleND:
+class UpsampleND(pytc.TreeClass):
     scale: int | tuple[int, ...] = pytc.field(
-        callbacks=[instance_cb_factory((int, tuple))]
+        callbacks=[isinstance_factory((int, tuple))]
     )
     method: MethodKind
 

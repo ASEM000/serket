@@ -7,8 +7,7 @@ import pytreeclass as pytc
 import serket as sk
 
 
-@pytc.treeclass
-class VGG16Block:
+class VGG16Block(pytc.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -151,8 +150,7 @@ class VGG16Block:
         return x
 
 
-@pytc.treeclass
-class VGG19Block:
+class VGG19Block(pytc.TreeClass):
     def __init__(
         self,
         in_feautres: int,

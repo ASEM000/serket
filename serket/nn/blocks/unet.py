@@ -11,8 +11,7 @@ import pytreeclass as pytc
 import serket as sk
 
 
-@pytc.treeclass
-class ResizeAndCat:
+class ResizeAndCat(pytc.TreeClass):
     def __call__(self, x1: jax.Array, x2: jax.Array) -> jax.Array:
         """resize a tensor to the same size as another tensor and concatenate x2 to x1 along the channel axis"""
         x1 = jax.image.resize(x1, shape=x2.shape, method="nearest")
@@ -20,8 +19,7 @@ class ResizeAndCat:
         return x1
 
 
-@pytc.treeclass
-class DoubleConvBlock:
+class DoubleConvBlock(pytc.TreeClass):
     def __init__(self, in_features: int, out_features: int):
         self.conv1 = sk.nn.Conv2D(
             in_features=in_features,
@@ -46,8 +44,7 @@ class DoubleConvBlock:
         return x
 
 
-@pytc.treeclass
-class UpscaleBlock:
+class UpscaleBlock(pytc.TreeClass):
     def __init__(self, in_features: int, out_features: int):
         self.conv = sk.nn.Conv2DTranspose(
             in_features=in_features, out_features=out_features, kernel_size=2, strides=2
@@ -59,8 +56,7 @@ class UpscaleBlock:
         return x
 
 
-@pytc.treeclass
-class UNetBlock:
+class UNetBlock(pytc.TreeClass):
     in_features: int = pytc.field(callbacks=[pytc.freeze])
     out_features: int = pytc.field(callbacks=[pytc.freeze])
     blocks: int = pytc.field(callbacks=[pytc.freeze])

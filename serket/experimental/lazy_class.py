@@ -2,14 +2,24 @@ from __future__ import annotations
 
 import functools as ft
 import inspect
-from typing import Any, Callable, Sequence, TypeVar
+from typing import Any, Callable, TypeVar
 
 import jax.tree_util as jtu
 from jax.core import concrete_or_error
+from pytreeclass._src.tree_indexer import _mutable_context
 
 T = TypeVar("T")
-LAZY = object()
+
+
+class Lazy:
+    def __repr__(self):
+        return "Lazy"
+
+
+LAZY = Lazy()
+
 LAZY_KW = "_lazy_init"
+_lazy_init_registry: dict[int, Callable] = {}
 
 
 class LazyPartial(ft.partial):
@@ -22,16 +32,19 @@ class LazyPartial(ft.partial):
 
 
 def is_lazy(x: Any) -> bool:
-    return hasattr(x, LAZY_KW)
+    return id(x) in _lazy_init_registry
+
+
+def get_lazy_init_entry(id: Any) -> Callable:
+    return _lazy_init_registry.get(id, None)
 
 
 def lazy_class(
     klass: type[T],
     *,
-    lazy_keywords: Sequence[str],
+    is_lazy: Callable[[str, Any], bool],
     infer_func: Callable,
-    infer_method_name: str = "__call__",
-    lazy_marker: Any = None,
+    hook_name: str = "__call__",
 ) -> type[T]:
     """a decorator that allows for lazy initialization of a class by wrapping the init method
     to allow for partialization of the lazy arguments, and wrapping the call method to allow for
@@ -39,14 +52,14 @@ def lazy_class(
 
     Args:
         klass: the class to wrap
-        lazy_keywords: the keywords that are lazy evaluated
+        is_lazy: a function that takes the name of the argument and the value of the argument and
+            returns True if the argument is lazy
         infer_func: the function that is applied to the input of `infer_method` to infer the lazy arguments
             should return a tuple of the same length as `lazy_keywords`
-        infer_method_name: the method name in which `infer_func` is applied to infer the lazy arguments
-        lazy_marker: the marker that is used to indicate a lazy argument. e.x. `None`
+        hook_name: the method name in which `infer_func` is applied to infer the lazy arguments
     """
     # in essence we are trying to infer some value from the input of the call method to fully initialize the class
-    # till then, we store the partialized init function in the instance and call it in the call method once we have
+    # till then, we store the partialized init function and call it in the call method once we have
     # the input to infer the lazy arguments. However, this apporach must respect the jax transformations, so we
     # make sure that the initialized class does not undergo any transformations before the the class is fully
     # initialized. This is done by checking that the input to the call method is not a Tracer.
@@ -54,16 +67,10 @@ def lazy_class(
     init_sig = inspect.signature(klass.__init__)
     params = list(init_sig.parameters.values())[1:]  # skip self
 
-    def is_marked(item: Any) -> bool:
-        if isinstance(item, (tuple, list)):
-            return any(i is lazy_marker for i in item)
-        return item is lazy_marker
-
     def lazy_init(init_func: Callable) -> Callable:
         @ft.wraps(init_func)
         def wrapper(self, *args, **kwargs):
-            # process masked args and kwargs
-            margs, mkwargs = [], {}
+            margs, mkwargs = list(), dict()
 
             for i, param in enumerate(params):
                 # mask args and kwargs for partialization of the init function
@@ -71,23 +78,23 @@ def lazy_class(
 
                 if kind == param.POSITIONAL_ONLY:
                     value = args[i] if len(args) > i else default
-                    is_lazy = name in lazy_keywords and is_marked(value)
-                    margs += [LAZY] if is_lazy else [value]
+                    margs += [LAZY] if is_lazy(name, value) else [value]
                 elif kind == param.POSITIONAL_OR_KEYWORD and len(args) > i:
                     value = args[i] if len(args) > i else kwargs.get(name, default)
-                    is_lazy = name in lazy_keywords and is_marked(value)
-                    margs += [LAZY] if is_lazy else [value]
+                    margs += [LAZY] if is_lazy(name, value) else [value]
                 else:
-                    # value must be in kwargs or in defaults
                     value = kwargs.get(name, default)
-                    is_lazy = name in lazy_keywords and is_marked(value)
-                    mkwargs[name] = LAZY if is_lazy else value
-
-            # partialize the init function
+                    mkwargs[name] = LAZY if is_lazy(name, value) else value
 
             if LAZY in margs or LAZY in mkwargs.values():
-                vars(self)[LAZY_KW] = LazyPartial(init_func, self, *margs, **mkwargs)
-                return  # finish partialization
+                for key in self._fields:
+                    # temporarily populate missing fields to the instance to
+                    # avoid AttributeError: Uninitialized fields
+                    vars(self)[key] = LAZY
+
+                partial_init = LazyPartial(init_func, self, *margs, **mkwargs)
+                _lazy_init_registry[id(self)] = partial_init
+                return
 
             return init_func(self, *args, **kwargs)
 
@@ -96,7 +103,7 @@ def lazy_class(
     def lazy_call(call_func):
         @ft.wraps(call_func)
         def wrapper(self, *args, **kwargs):
-            if LAZY_KW not in vars(self):
+            if id(self) not in _lazy_init_registry:
                 return call_func(self, *args, **kwargs)
 
             msg = (
@@ -126,7 +133,7 @@ def lazy_class(
             # we are forwarded from the init method, so we need
             # to infer the lazy arguments and call the init method
             # the self input here is the self path
-            partial_func = vars(self).pop(LAZY_KW)
+            partial_func = _lazy_init_registry.pop(id(self))
 
             # get the inferred arguments
             output = infer_func(self, *args, **kwargs)
@@ -147,35 +154,28 @@ def lazy_class(
                 elif (index := i - len(lazy_args)) < len(keys):
                     lazy_kwargs[keys[index]] = item  # handle kwargs next
 
-            partial_func(*lazy_args, **lazy_kwargs)
+            with _mutable_context(self):
+                # since we are calling the init method, we need to be within the mutable context
+                # to allow the init method to mutate the instance
+                partial_func(*lazy_args, **lazy_kwargs)
             return call_func(self, *args, **kwargs)
 
         return wrapper
 
-    def wrap_method(method: Callable):
-        @ft.wraps(method)
-        def wrapper(self, *args, **kwargs):
-            if hasattr(self, LAZY_KW):
-                return f"Unintialized {type(self).__name__}(...)"
-            return method(self, *args, **kwargs)
-
-        return wrapper
-
-    for name, wrapper in (
-        ("__init__", lazy_init),
-        (infer_method_name, lazy_call),
-        ("__repr__", wrap_method),
-        ("__str__", wrap_method),
-    ):
+    for name, wrapper in (("__init__", lazy_init), (hook_name, lazy_call)):
         setattr(klass, name, wrapper(getattr(klass, name)))
 
     return klass
 
 
-lazy_in_features = ft.partial(
-    lazy_class,
-    lazy_keywords=["in_features"],
-    infer_func=lambda _, x: (x.shape[0],),
-    infer_method_name="__call__",
-    lazy_marker=None,
-)
+class LazyInFeatures:
+    """A lazy layer that infers the in_features argument from the input shape at call time"""
+
+    def __init_subclass__(klass: type[T]) -> None:
+        super().__init_subclass__()
+        lazy_class(
+            klass,
+            hook_name="__call__",
+            infer_func=lambda _, x, *a, **k: (x.shape[0],),
+            is_lazy=lambda name, value: (name == "in_features" and value is None),
+        )

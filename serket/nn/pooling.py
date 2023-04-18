@@ -15,8 +15,7 @@ from serket.nn.utils import KernelSizeType, PaddingType, StridesType, canonicali
 # be faster on CPU and on par with JAX on GPU.
 
 
-@pytc.treeclass
-class GeneralPoolND:
+class GeneralPoolND(pytc.TreeClass):
     kernel_size: KernelSizeType
     strides: StridesType
     padding: PaddingType
@@ -57,7 +56,6 @@ class GeneralPoolND:
         return self.func(x)
 
 
-@pytc.treeclass
 class LPPoolND(GeneralPoolND):
     def __init__(
         self,
@@ -87,8 +85,7 @@ class LPPoolND(GeneralPoolND):
         )
 
 
-@pytc.treeclass
-class GlobalPoolND:
+class GlobalPoolND(pytc.TreeClass):
     def __init__(
         self, keepdims: bool = True, spatial_ndim: int = 1, func: Callable = jnp.mean
     ):
@@ -108,8 +105,7 @@ class GlobalPoolND:
         return self.func(x, axis=axes, keepdims=self.keepdims)
 
 
-@pytc.treeclass
-class AdaptivePoolND:
+class AdaptivePoolND(pytc.TreeClass):
     output_size: tuple[int, ...]
 
     def __init__(
@@ -156,8 +152,7 @@ class AdaptivePoolND:
         return _adaptive_pool(x)
 
 
-@pytc.treeclass
-class AdaptiveConcatPoolND:
+class AdaptiveConcatPoolND(pytc.TreeClass):
     def __init__(self, output_size: tuple[int, ...], spatial_ndim: int):
         """Concatenate AdaptiveAvgPool1D and AdaptiveMaxPool1D
         See: https://github.com/fastai/fastai/blob/master/fastai/layers.py#L110

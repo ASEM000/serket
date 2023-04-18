@@ -19,8 +19,7 @@ def dropout_nd(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
     return jnp.where(mask, x / (1 - p), 0)
 
 
-@pytc.treeclass
-class Dropout:
+class Dropout(pytc.TreeClass):
     r"""Randomly zeroes some of the elements of the input
     tensor with probability :attr:`p` using samples from a Bernoulli
     distribution.
@@ -44,8 +43,7 @@ class Dropout:
         return dropout(x, p=stop_gradient(self.p), key=key)
 
 
-@pytc.treeclass
-class DropoutND:
+class DropoutND(pytc.TreeClass):
     """Drops full feature maps along the channel axis.
 
     Args:

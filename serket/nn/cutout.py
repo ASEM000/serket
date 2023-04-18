@@ -97,8 +97,7 @@ def random_cutout_2d(
     return x
 
 
-@pytc.treeclass
-class RandomCutout1D:
+class RandomCutout1D(pytc.TreeClass):
     shape: int | tuple[int]
     cutout_count: int = pytc.field(callbacks=[positive_int_cb])
     fill_value: float
@@ -142,8 +141,7 @@ class RandomCutout1D:
         )
 
 
-@pytc.treeclass
-class RandomCutout2D:
+class RandomCutout2D(pytc.TreeClass):
     shape: int | tuple[int, int]
     cutout_count: int = pytc.field(callbacks=[positive_int_cb])
     fill_value: float

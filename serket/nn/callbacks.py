@@ -22,7 +22,7 @@ def range_cb_factory(min_val: float = -float("inf"), max_val: float = float("inf
     return range_check
 
 
-def instance_cb_factory(expected_type: type | Sequence[type]):
+def isinstance_factory(expected_type: type | Sequence[type]):
     """Return a function that checks if the input is an instance of expected_type."""
 
     def instance_check(value: Any):

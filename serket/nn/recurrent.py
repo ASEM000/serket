@@ -9,7 +9,6 @@ import jax.random as jr
 import pytreeclass as pytc
 
 import serket as sk
-from serket.experimental.lazy_class import LAZY_KW, is_lazy, lazy_class
 from serket.nn.callbacks import (
     positive_int_cb,
     validate_in_features,
@@ -31,22 +30,11 @@ from serket.nn.utils import (
 # =============================================== Non Spatial RNN ==================================================== #
 
 
-lazy_in_features = ft.partial(
-    lazy_class,
-    lazy_keywords=["in_features"],
-    infer_func=lambda _, x, *a, **k: (x.shape[0],),
-    infer_method_name="__call__",
-    lazy_marker=None,
-)
-
-
-@pytc.treeclass
-class RNNState:
+class RNNState(pytc.TreeClass):
     hidden_state: jax.Array
 
 
-@pytc.treeclass
-class RNNCell:
+class RNNCell(pytc.TreeClass):
     ...
 
 
@@ -58,8 +46,6 @@ class SimpleRNNState(RNNState):
     ...
 
 
-@lazy_in_features
-@pytc.treeclass
 class SimpleRNNCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
@@ -137,13 +123,10 @@ class SimpleRNNCell(NonSpatialRNNCell):
         return SimpleRNNState(jnp.zeros(shape))
 
 
-@pytc.treeclass
 class LSTMState(RNNState):
     cell_state: jax.Array
 
 
-@lazy_in_features
-@pytc.treeclass
 class LSTMCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
@@ -231,8 +214,6 @@ class GRUState(RNNState):
     ...
 
 
-@lazy_in_features
-@pytc.treeclass
 class GRUCell(NonSpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
@@ -320,13 +301,10 @@ class SpatialRNNCell(RNNCell):
 # ------------------------------------------------- ConvLSTM RNN ----------------------------------------------------- #
 
 
-@pytc.treeclass
 class ConvLSTMNDState(RNNState):
     cell_state: jax.Array
 
 
-@lazy_in_features
-@pytc.treeclass
 class ConvLSTMNDCell(SpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
@@ -600,13 +578,12 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
 
 
 # ------------------------------------------------- ConvGRU RNN ------------------------------------------------------ #
-@pytc.treeclass
+
+
 class ConvGRUNDState(RNNState):
     ...
 
 
-@lazy_in_features
-@pytc.treeclass
 class ConvGRUNDCell(SpatialRNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
@@ -872,8 +849,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
 # =============================================== Scanning API ======================================================= #
 
 
-@pytc.treeclass
-class ScanRNN:
+class ScanRNN(pytc.TreeClass):
     cell: RNNCell
     backward_cell: RNNCell
 
@@ -925,12 +901,6 @@ class ScanRNN:
 
         if isinstance(self.cell, NonSpatialRNNCell):
             # non-spatial RNN : (time steps, in_features)
-            if is_lazy(self.cell):
-                # supply in_features to partial init
-                getattr(self.cell, LAZY_KW)(x.shape[1])
-                # call cell to finish partialization
-                self.cell(x[0], self.cell.init_state())
-
             if x.ndim != 2:
                 msg = "Expected x to have 2 dimensions corresponds "
                 msg += f"to (timesteps, in_features), got {x.ndim}"
@@ -945,22 +915,10 @@ class ScanRNN:
             state = state or self.cell.init_state()
 
             if self.backward_cell is not None:
-                if is_lazy(self.backward_cell):
-                    # supply in_features to partial init
-                    getattr(self.backward_cell, LAZY_KW)(x.shape[1])
-                    # call cell to finish partialization
-                    self.backward_cell(x[0], self.backward_cell.init_state())
-
                 backward_state = backward_state or self.backward_cell.init_state()
 
         else:
             # spatial RNN : (time steps, in_features, *spatial_dims)
-
-            if is_lazy(self.cell):
-                # supply in_features to partial init
-                getattr(self.cell, LAZY_KW)(x.shape[1])
-                # call cell to finish partialization
-                self.cell(x[0], self.cell.init_state(spatial_dim=x.shape[2:]))
 
             if x.ndim != self.cell.spatial_ndim + 2:
                 msg = f"Expected x to have {self.cell.spatial_ndim + 2}"  # account for time and in_features
@@ -976,12 +934,6 @@ class ScanRNN:
             state = state or self.cell.init_state(spatial_dim=x.shape[2:])
 
             if self.backward_cell is not None:
-                if is_lazy(self.backward_cell):
-                    # supply in_features to partial init
-                    getattr(self.backward_cell, LAZY_KW)(x.shape[1])
-                    # call cell to finish partialization
-                    self.backward_cell(x[0], self.backward_cell.init_state(x.shape[2:]))
-
                 backward_state = backward_state or self.backward_cell.init_state(x.shape[2:])  # fmt: skip
 
         # scan over the time axis

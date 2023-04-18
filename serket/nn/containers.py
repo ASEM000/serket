@@ -7,11 +7,10 @@ import jax.random as jr
 import jax.tree_util as jtu
 import pytreeclass as pytc
 
-from serket.nn.callbacks import instance_cb_factory
+from serket.nn.callbacks import isinstance_factory
 
 
-@pytc.treeclass
-class Lambda:
+class Lambda(pytc.TreeClass):
     """A layer that applies a function to its input.
 
     Args:
@@ -31,8 +30,7 @@ class Lambda:
         return self.func(x)
 
 
-@pytc.treeclass
-class Sequential:
+class Sequential(pytc.TreeClass):
     """A sequential container for layers.
 
     Args:
@@ -47,7 +45,7 @@ class Sequential:
         [4 6 8]
     """
 
-    layers: tuple[Any, ...] = pytc.field(callbacks=[instance_cb_factory(tuple)])
+    layers: tuple[Any, ...] = pytc.field(callbacks=[isinstance_factory(tuple)])
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         for key, layer in zip(jr.split(key, len(self.layers)), self.layers):

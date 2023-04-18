@@ -10,8 +10,7 @@ from serket.nn.linear import Linear
 from serket.nn.utils import ActivationType, InitFuncType
 
 
-@pytc.treeclass
-class FNN:
+class FNN(pytc.TreeClass):
     layers: Sequence[Linear]
     act_func: Callable
 
