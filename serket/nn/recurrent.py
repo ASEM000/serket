@@ -9,7 +9,7 @@ import jax.random as jr
 import pytreeclass as pytc
 
 import serket as sk
-from serket.experimental.lazy_class import lazy_class
+from serket.experimental.lazy_class import LAZY_KW, is_lazy, lazy_class
 from serket.nn.callbacks import (
     positive_int_cb,
     validate_in_features,
@@ -34,7 +34,7 @@ from serket.nn.utils import (
 lazy_in_features = ft.partial(
     lazy_class,
     lazy_keywords=["in_features"],
-    infer_func=lambda _, x, __: (x.shape[0],),
+    infer_func=lambda _, x, *a, **k: (x.shape[0],),
     infer_method_name="__call__",
     lazy_marker=None,
 )
@@ -909,13 +909,12 @@ class ScanRNN:
         self.cell = cell
         self.backward_cell = backward_cell
         self.return_sequences = return_sequences
-        self.spatial_ndim = cell.spatial_ndim
 
     def __call__(
         self,
         x: jax.Array,
-        state: SpatialRNNCell | None = None,
-        backward_state: SpatialRNNCell | None = None,
+        state: RNNCell | None = None,
+        backward_state: RNNState | None = None,
         **k,
     ) -> jax.Array:
         # check state
@@ -924,9 +923,14 @@ class ScanRNN:
             msg += f"got {type(state).__name__}"
             raise TypeError(msg)
 
-        # check shape
         if isinstance(self.cell, NonSpatialRNNCell):
             # non-spatial RNN : (time steps, in_features)
+            if is_lazy(self.cell):
+                # supply in_features to partial init
+                getattr(self.cell, LAZY_KW)(x.shape[1])
+                # call cell to finish partialization
+                self.cell(x[0], self.cell.init_state())
+
             if x.ndim != 2:
                 msg = "Expected x to have 2 dimensions corresponds "
                 msg += f"to (timesteps, in_features), got {x.ndim}"
@@ -941,10 +945,23 @@ class ScanRNN:
             state = state or self.cell.init_state()
 
             if self.backward_cell is not None:
+                if is_lazy(self.backward_cell):
+                    # supply in_features to partial init
+                    getattr(self.backward_cell, LAZY_KW)(x.shape[1])
+                    # call cell to finish partialization
+                    self.backward_cell(x[0], self.backward_cell.init_state())
+
                 backward_state = backward_state or self.backward_cell.init_state()
 
         else:
             # spatial RNN : (time steps, in_features, *spatial_dims)
+
+            if is_lazy(self.cell):
+                # supply in_features to partial init
+                getattr(self.cell, LAZY_KW)(x.shape[1])
+                # call cell to finish partialization
+                self.cell(x[0], self.cell.init_state(spatial_dim=x.shape[2:]))
+
             if x.ndim != self.cell.spatial_ndim + 2:
                 msg = f"Expected x to have {self.cell.spatial_ndim + 2}"  # account for time and in_features
                 msg += f" dimensions corresponds to (timesteps, in_features, *spatial_dims), got {x.ndim}"
@@ -959,11 +976,17 @@ class ScanRNN:
             state = state or self.cell.init_state(spatial_dim=x.shape[2:])
 
             if self.backward_cell is not None:
-                backward_state = backward_state or self.backward_cell.init_state(spatial_dim=x.shape[2:])  # fmt: skip
+                if is_lazy(self.backward_cell):
+                    # supply in_features to partial init
+                    getattr(self.backward_cell, LAZY_KW)(x.shape[1])
+                    # call cell to finish partialization
+                    self.backward_cell(x[0], self.backward_cell.init_state(x.shape[2:]))
 
-        # computation
+                backward_state = backward_state or self.backward_cell.init_state(x.shape[2:])  # fmt: skip
 
-        if self.return_sequences is True:
+        # scan over the time axis
+
+        if self.return_sequences:
             # accumulate the hidden state for each timestep
             # in essence, this means return a state along with the carry
             # in `jax.lax.scan`
@@ -981,10 +1004,10 @@ class ScanRNN:
                 # reverse once again over the accumulated time axis
                 back_result = jnp.flip(back_result, axis=-1)
                 result = jnp.concatenate([result, back_result], axis=1)
+
         else:
-            # no return sequences case
+            # no return sequences case, return carry only
             # (i.e. only return the hidden state for the last timestep)
-            # return carry only
             def general_scan_func(cell, carry, x):
                 state = cell(x, state=carry)
                 return state, None
