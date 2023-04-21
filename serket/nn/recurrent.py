@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import functools as ft
 from typing import Any, Callable
 
@@ -34,8 +35,23 @@ class RNNState(pytc.TreeClass):
     hidden_state: jax.Array
 
 
-class RNNCell(pytc.TreeClass):
-    ...
+class RNNCell(pytc.TreeClass, abc.ABC):
+    @abc.abstractclassmethod
+    def __call__(self, x: jax.Array, state: RNNState, **k) -> RNNState:
+        ...
+
+    @abc.abstractclassmethod
+    def init_state(self, spatial_shape: tuple[int, ...]) -> RNNState:
+        # return the initial state of the RNN for a given input
+        # for non-spatial RNNs, output shape is (hidden_features,)
+        # for spatial RNNs, output shape is (hidden_features, *spatial_shape)
+        ...
+
+    @property
+    @abc.abstractclassmethod
+    def spatial_ndim(self) -> int:
+        # 0 for non-spatial, 1 for 1D, 2 for 2D, 3 for 3D etc.
+        ...
 
 
 class NonSpatialRNNCell(RNNCell):
@@ -105,7 +121,10 @@ class SimpleRNNCell(NonSpatialRNNCell):
         )
 
         self.in_and_hidden_to_hidden = sk.nn.MergeLinear(in_to_hidden, hidden_to_hidden)
-        self.spatial_ndim = 0
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 0
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
@@ -118,7 +137,8 @@ class SimpleRNNCell(NonSpatialRNNCell):
         h = self.act_func(self.in_and_hidden_to_hidden(x, state.hidden_state))
         return SimpleRNNState(h)
 
-    def init_state(self) -> SimpleRNNState:
+    def init_state(self, spatial_dim: tuple[int, ...] = ()) -> SimpleRNNState:
+        del spatial_dim
         shape = (self.hidden_features,)
         return SimpleRNNState(jnp.zeros(shape))
 
@@ -184,7 +204,6 @@ class LSTMCell(NonSpatialRNNCell):
         )
 
         self.in_and_hidden_to_hidden = sk.nn.MergeLinear(in_to_hidden, hidden_to_hidden)
-        self.spatial_ndim = 0
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
@@ -205,9 +224,14 @@ class LSTMCell(NonSpatialRNNCell):
         h = o * self.act_func(c)
         return LSTMState(h, c)
 
-    def init_state(self) -> LSTMState:
+    def init_state(self, spatial_dim: tuple[int, ...]) -> LSTMState:
+        del spatial_dim
         shape = (self.hidden_features,)
         return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 0
 
 
 class GRUState(RNNState):
@@ -267,7 +291,9 @@ class GRUCell(NonSpatialRNNCell):
             key=k2,
         )
 
-        self.spatial_ndim = 0
+    @property
+    def spatial_ndim(self) -> int:
+        return 0
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
@@ -286,7 +312,8 @@ class GRUCell(NonSpatialRNNCell):
         h = (1 - u) * o + u * h
         return GRUState(hidden_state=h)
 
-    def init_state(self) -> GRUState:
+    def init_state(self, spatial_dim: tuple[int, ...]) -> GRUState:
+        del spatial_dim
         shape = (self.hidden_features,)
         return GRUState(jnp.zeros(shape, dtype=jnp.float32))
 
@@ -326,7 +353,6 @@ class ConvLSTMNDCell(SpatialRNNCell):
         recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
         conv_layer: Any = None,
-        spatial_ndim: int = 1,
     ):
         """Convolution LSTM cell that defines the update rule for the hidden state and cell state
         Args:
@@ -343,7 +369,6 @@ class ConvLSTMNDCell(SpatialRNNCell):
             act_func: Activation function
             recurrent_act_func: Recurrent activation function
             key: PRNG key
-            spatial_ndim: Number of spatial dimensions
 
         See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
         """
@@ -351,7 +376,6 @@ class ConvLSTMNDCell(SpatialRNNCell):
 
         self.in_features = in_features
         self.hidden_features = hidden_features
-        self.spatial_ndim = spatial_ndim
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
 
@@ -459,8 +483,11 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
             recurrent_act_func=recurrent_act_func,
             key=key,
             conv_layer=sk.nn.Conv1D,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class ConvLSTM2DCell(ConvLSTMNDCell):
@@ -516,8 +543,11 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
             recurrent_act_func=recurrent_act_func,
             key=key,
             conv_layer=sk.nn.Conv2D,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class ConvLSTM3DCell(ConvLSTMNDCell):
@@ -573,8 +603,11 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
             recurrent_act_func=recurrent_act_func,
             key=key,
             conv_layer=sk.nn.Conv3D,
-            spatial_ndim=3,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 # ------------------------------------------------- ConvGRU RNN ------------------------------------------------------ #
@@ -605,7 +638,6 @@ class ConvGRUNDCell(SpatialRNNCell):
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
         conv_layer: Any = None,
-        spatial_ndim: int = 1,
     ):
         """Convolution GRU cell that defines the update rule for the hidden state and cell state
         Args:
@@ -629,7 +661,6 @@ class ConvGRUNDCell(SpatialRNNCell):
 
         self.in_features = in_features
         self.hidden_features = hidden_features
-        self.spatial_ndim = spatial_ndim
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
 
@@ -732,8 +763,11 @@ class ConvGRU1DCell(ConvGRUNDCell):
             recurrent_act_func=recurrent_act_func,
             key=key,
             conv_layer=sk.nn.Conv1D,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class ConvGRU2DCell(ConvGRUNDCell):
@@ -787,8 +821,11 @@ class ConvGRU2DCell(ConvGRUNDCell):
             recurrent_act_func=recurrent_act_func,
             key=key,
             conv_layer=sk.nn.Conv2D,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class ConvGRU3DCell(ConvGRUNDCell):
@@ -845,6 +882,10 @@ class ConvGRU3DCell(ConvGRUNDCell):
             spatial_ndim=3,
         )
 
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
 
 # =============================================== Scanning API ======================================================= #
 
@@ -893,85 +934,63 @@ class ScanRNN(pytc.TreeClass):
         backward_state: RNNState | None = None,
         **k,
     ) -> jax.Array:
-        # check state
         if not isinstance(state, (RNNState, type(None))):
             msg = "Expected state to be an instance of RNNState, "
             msg += f"got {type(state).__name__}"
             raise TypeError(msg)
 
-        if isinstance(self.cell, NonSpatialRNNCell):
-            # non-spatial RNN : (time steps, in_features)
-            if x.ndim != 2:
-                msg = "Expected x to have 2 dimensions corresponds "
-                msg += f"to (timesteps, in_features), got {x.ndim}"
-                raise ValueError(msg)
+        # non-spatial RNN : (time steps, in_features)
+        # spatial RNN : (time steps, in_features, *spatial_dims)
 
-            if self.cell.in_features != x.shape[1]:
-                # check input shape
-                msg = f"Expected x to have shape (timesteps, {self.cell.in_features})"
-                msg += f", got {x.shape}"
-                raise ValueError(msg)
+        if x.ndim != self.cell.spatial_ndim + 2:
+            msg = f"Expected x to have {self.cell.spatial_ndim + 2}"  # account for time and in_features
+            msg += f" dimensions corresponds to (timesteps, in_features, {'*'*self.cell.spatial_ndim}), got {x.ndim}"
+            raise ValueError(msg)
 
-            state = state or self.cell.init_state()
+        if self.cell.in_features != x.shape[1]:
+            msg = f"Expected x to have shape (timesteps, {self.cell.in_features}, {'*'*self.cell.spatial_ndim})"
+            msg += f", got {x.shape}"
+            raise ValueError(msg)
 
-            if self.backward_cell is not None:
-                backward_state = backward_state or self.backward_cell.init_state()
+        state = state or self.cell.init_state(x.shape[2:])
 
-        else:
-            # spatial RNN : (time steps, in_features, *spatial_dims)
+        if self.backward_cell is not None and backward_state is None:
+            backward_state = self.backward_cell.init_state(x.shape[2:])
 
-            if x.ndim != self.cell.spatial_ndim + 2:
-                msg = f"Expected x to have {self.cell.spatial_ndim + 2}"  # account for time and in_features
-                msg += f" dimensions corresponds to (timesteps, in_features, *spatial_dims), got {x.ndim}"
-                raise ValueError(msg)
+        scan_func = _accumulate_scan if self.return_sequences else _no_accumulate_scan
+        result = scan_func(x, self.cell, state)
 
-            if self.cell.in_features != x.shape[1]:
-                # check input shape
-                msg = f"Expected x to have shape (timesteps, {self.cell.in_features}, *spatial_dims)"
-                msg += f", got {x.shape}"
-                raise ValueError(msg)
-
-            state = state or self.cell.init_state(spatial_dim=x.shape[2:])
-
-            if self.backward_cell is not None:
-                backward_state = backward_state or self.backward_cell.init_state(x.shape[2:])  # fmt: skip
-
-        # scan over the time axis
-
-        if self.return_sequences:
-            # accumulate the hidden state for each timestep
-            # in essence, this means return a state along with the carry
-            # in `jax.lax.scan`
-            def general_scan_func(cell, carry, x):
-                state = cell(x, state=carry)
-                return state, state
-
-            scan_func = ft.partial(general_scan_func, self.cell)
-            result = jax.lax.scan(scan_func, state, x)[1].hidden_state
-
-            if self.backward_cell:
-                scan_func = ft.partial(general_scan_func, self.backward_cell)
-                x = jnp.flip(x, axis=0)  # reverse the time axis
-                back_result = jax.lax.scan(scan_func, backward_state, x)[1].hidden_state
-                # reverse once again over the accumulated time axis
-                back_result = jnp.flip(back_result, axis=-1)
-                result = jnp.concatenate([result, back_result], axis=1)
-
-        else:
-            # no return sequences case, return carry only
-            # (i.e. only return the hidden state for the last timestep)
-            def general_scan_func(cell, carry, x):
-                state = cell(x, state=carry)
-                return state, None
-
-            scan_func = ft.partial(general_scan_func, self.cell)
-            result = jax.lax.scan(scan_func, state, x)[0].hidden_state
-
-            # backward cell
-            if self.backward_cell is not None:
-                scan_func = ft.partial(general_scan_func, self.backward_cell)
-                x = jnp.flip(x, axis=0)
-                back_result = jax.lax.scan(scan_func, backward_state, x)[0].hidden_state
-                result = jnp.concatenate([result, back_result], axis=0)
-
+        if self.backward_cell is not None:
+            back_result = scan_func(x, self.backward_cell, backward_state)
+            concat_axis = int(self.return_sequences)
+            result = jnp.concatenate((result, back_result), axis=concat_axis)
         return result
+
+
+def _accumulate_scan(
+    x: jax.Array,
+    cell: RNNCell,
+    state: RNNState,
+    reverse: bool = False,
+) -> jax.Array:
+    def scan_func(carry, x):
+        state = cell(x, state=carry)
+        return state, state
+
+    x = jnp.flip(x, axis=0) if reverse else x  # flip over time axis
+    result = jax.lax.scan(scan_func, state, x)[1].hidden_state
+    return jnp.flip(result, axis=-1) if reverse else result
+
+
+def _no_accumulate_scan(
+    x: jax.Array,
+    cell: RNNCell,
+    state: RNNState,
+    reverse: bool = False,
+) -> jax.Array:
+    def scan_func(carry, x):
+        state = cell(x, state=carry)
+        return state, None
+
+    x = jnp.flip(x, axis=0) if reverse else x
+    return jax.lax.scan(scan_func, state, x)[0].hidden_state
