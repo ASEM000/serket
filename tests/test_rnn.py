@@ -526,7 +526,7 @@ def test_conv_lstm1d():
         ]
     )
 
-    b_hidden_to_hidden = jnp.array(
+    b_in_to_hidden = jnp.array(
         [
             [0.0],
             [0.0],
@@ -567,7 +567,7 @@ def test_conv_lstm1d():
 
     cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
     cell = cell.at["hidden_to_hidden"].at["weight"].set(w_hidden_to_hidden)
-    cell = cell.at["hidden_to_hidden"].at["bias"].set(b_hidden_to_hidden)
+    cell = cell.at["in_to_hidden"].at["bias"].set(b_in_to_hidden)
 
     x = jnp.ones([time_steps, in_features, *spatial_dim])
 
