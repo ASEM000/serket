@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import isinstance_factory
+from serket.nn.utils import isinstance_factory
 
 
 class Flatten(pytc.TreeClass):
@@ -39,9 +39,7 @@ class Flatten(pytc.TreeClass):
     end_dim: int = pytc.field(default=-1, callbacks=[isinstance_factory(int)])
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        # normalize start_dim
         start_dim = self.start_dim + (0 if self.start_dim >= 0 else x.ndim)
-        # normalize end_dim
         end_dim = self.end_dim + 1 + (0 if self.end_dim >= 0 else x.ndim)
         return jax.lax.collapse(x, start_dim, end_dim)
 

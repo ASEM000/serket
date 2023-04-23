@@ -5,16 +5,18 @@ import functools as ft
 import jax
 import jax.random as jr
 import pytreeclass as pytc
+from jax.lax import stop_gradient
 
-from serket.nn.callbacks import validate_spatial_in_shape
-from serket.nn.utils import canonicalize
+from serket.nn.utils import canonicalize, validate_spatial_in_shape
 
 
 class CropND(pytc.TreeClass):
-    size: int | tuple[int, ...]
-    start: int | tuple[int, ...]
-
-    def __init__(self, size, start, spatial_ndim):
+    def __init__(
+        self,
+        size: int | tuple[int, ...],
+        start: int | tuple[int, ...],
+        spatial_ndim,
+    ):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 
         Args:
@@ -27,7 +29,8 @@ class CropND(pytc.TreeClass):
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.lax.dynamic_slice(x, (0, *self.start), (x.shape[0], *self.size))
+        shape = ((0, *self.start), (x.shape[0], *self.size))
+        return stop_gradient(jax.lax.dynamic_slice(x, *shape))
 
 
 class Crop1D(CropND):
@@ -46,7 +49,11 @@ class Crop1D(CropND):
 
 
 class Crop2D(CropND):
-    def __init__(self, size: int | tuple[int, int], start: int | tuple[int, int]):
+    def __init__(
+        self,
+        size: int | tuple[int, int],
+        start: int | tuple[int, int],
+    ):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 
         Args:
@@ -76,7 +83,9 @@ class Crop2D(CropND):
 
 class Crop3D(CropND):
     def __init__(
-        self, size: int | tuple[int, int, int], start: int | tuple[int, int, int]
+        self,
+        size: int | tuple[int, int, int],
+        start: int | tuple[int, int, int],
     ):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 

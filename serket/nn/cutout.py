@@ -8,8 +8,7 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import stop_gradient
 
-from serket.nn.callbacks import positive_int_cb, validate_spatial_in_shape
-from serket.nn.utils import canonicalize
+from serket.nn.utils import canonicalize, positive_int_cb, validate_spatial_in_shape
 
 
 def random_cutout_1d(
@@ -98,10 +97,6 @@ def random_cutout_2d(
 
 
 class RandomCutout1D(pytc.TreeClass):
-    shape: int | tuple[int]
-    cutout_count: int = pytc.field(callbacks=[positive_int_cb])
-    fill_value: float
-
     def __init__(
         self,
         shape: tuple[int],
@@ -124,28 +119,17 @@ class RandomCutout1D(pytc.TreeClass):
             [[100., 100., 100., 100.,   0.,   0.,   0.,   0.,   0., 100.]]
         """
         self.shape = canonicalize(shape, ndim=1, name="shape")
-        self.cutout_count = cutout_count
+        self.cutout_count = positive_int_cb(cutout_count)
         self.fill_value = fill_value
         self.spatial_ndim = 1
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        return stop_gradient(
-            random_cutout_1d(
-                x,
-                self.shape,
-                self.cutout_count,
-                self.fill_value,
-                key,
-            )
-        )
+        out = random_cutout_1d(x, self.shape, self.cutout_count, self.fill_value, key)
+        return stop_gradient(out)
 
 
 class RandomCutout2D(pytc.TreeClass):
-    shape: int | tuple[int, int]
-    cutout_count: int = pytc.field(callbacks=[positive_int_cb])
-    fill_value: float
-
     def __init__(
         self,
         shape: int | tuple[int, int],
@@ -164,18 +148,11 @@ class RandomCutout2D(pytc.TreeClass):
             https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
         """
         self.shape = canonicalize(shape, 2, "shape")
-        self.cutout_count = cutout_count
+        self.cutout_count = positive_int_cb(cutout_count)
         self.fill_value = fill_value
         self.spatial_ndim = 2
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        return stop_gradient(
-            random_cutout_2d(
-                x,
-                self.shape,
-                self.cutout_count,
-                self.fill_value,
-                key,
-            )
-        )
+        out = random_cutout_2d(x, self.shape, self.cutout_count, self.fill_value, key)
+        return stop_gradient(out)

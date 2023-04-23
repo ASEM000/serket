@@ -11,12 +11,6 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.callbacks import (
-    init_func_cb,
-    positive_int_cb,
-    validate_in_features,
-    validate_spatial_in_shape,
-)
 from serket.nn.utils import (
     DilationType,
     InitFuncType,
@@ -26,6 +20,10 @@ from serket.nn.utils import (
     calculate_transpose_padding,
     canonicalize,
     delayed_canonicalize_padding,
+    init_func_cb,
+    positive_int_cb,
+    validate_in_features,
+    validate_spatial_in_shape,
 )
 
 
@@ -142,19 +140,6 @@ def fft_conv_general_dilated(
 
 
 class FFTConvND(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel_size: KernelSizeType
-    strides: StridesType
-    padding: PaddingType
-    kernel_dilation: DilationType
-    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int = pytc.field(callbacks=[positive_int_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -189,19 +174,16 @@ class FFTConvND(pytc.TreeClass):
             https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
             The implementation is tested against https://github.com/fkodom/fft-conv-pytorch
         """
-        # already checked in callbacks
-        self.in_features = in_features
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
-        self.out_features = out_features
-        self.groups = groups
-        self.spatial_ndim = spatial_ndim
-
-        # needs more info to be checked
+        self.in_features = positive_int_cb(in_features)
+        self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")
         self.strides = canonicalize(strides, spatial_ndim, name="strides")
         self.padding = padding
         self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
+        self.weight_init_func = init_func_cb(weight_init_func)
+        self.bias_init_func = init_func_cb(bias_init_func)
+        self.groups = positive_int_cb(groups)
+        self.spatial_ndim = spatial_ndim
 
         if self.out_features % self.groups != 0:
             msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
@@ -391,20 +373,6 @@ class FFTConv3D(FFTConvND):
 
 
 class FFTConvNDTranspose(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel_size: KernelSizeType
-    padding: PaddingType
-    output_padding: int | tuple[int, ...]
-    strides: StridesType
-    kernel_dilation: DilationType
-    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int
-
     def __init__(
         self,
         in_features: int,
@@ -437,21 +405,17 @@ class FFTConvNDTranspose(pytc.TreeClass):
             spatial_ndim : Number of dimensions
             key : PRNG key
         """
-
-        # already checked in callbacks
-        self.in_features = in_features
-        self.out_features = out_features
-        self.groups = groups
-        self.spatial_ndim = spatial_ndim
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
-
-        # needs more info to be checked
+        self.in_features = positive_int_cb(in_features)
+        self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")
         self.strides = canonicalize(strides, spatial_ndim, name="strides")
-        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
         self.padding = padding
         self.output_padding = canonicalize(output_padding, spatial_ndim, name="output_padding")  # fmt: skip
+        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
+        self.weight_init_func = init_func_cb(weight_init_func)
+        self.bias_init_func = init_func_cb(bias_init_func)
+        self.groups = positive_int_cb(groups)
+        self.spatial_ndim = spatial_ndim
 
         if self.in_features % self.groups != 0:
             msg = f"Expected in_features % groups == 0, got {self.in_features % self.groups}"
@@ -647,18 +611,6 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
 
 
 class DepthwiseFFTConvND(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel_size: KernelSizeType
-    strides: StridesType
-    padding: PaddingType
-    depth_multiplier: int = pytc.field(callbacks=[positive_int_cb])
-
-    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -695,21 +647,16 @@ class DepthwiseFFTConvND(pytc.TreeClass):
                 https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
                 https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
-
-        # already checked by the callbacks
-        self.in_features = in_features
-        self.depth_multiplier = depth_multiplier
-        self.spatial_ndim = spatial_ndim
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
-
-        # needs more info to be checked
+        self.in_features = positive_int_cb(in_features)
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.depth_multiplier = positive_int_cb(depth_multiplier)
         self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.padding = padding
         self.input_dilation = canonicalize(1, spatial_ndim, "input_dilation")  # fmt: skip
         self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
-
-        self.padding = padding
+        self.weight_init_func = init_func_cb(weight_init_func)
+        self.bias_init_func = init_func_cb(bias_init_func)
+        self.spatial_ndim = spatial_ndim
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -880,9 +827,6 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
 
 
 class SeparableFFTConvND(pytc.TreeClass):
-    depthwise_conv: DepthwiseFFTConvND
-    pointwise_conv: DepthwiseFFTConvND
-
     def __init__(
         self,
         in_features: int,

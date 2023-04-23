@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import non_negative_scalar_cbs, positive_int_cb
+from serket.nn.utils import non_negative_scalar_cbs, positive_int_cb
 
 
 def layer_norm(
@@ -78,12 +78,7 @@ def group_norm(
 
 
 class LayerNorm(pytc.TreeClass):
-    γ: jax.Array = None
-    β: jax.Array = None
     ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
-
-    affine: bool
-    normalized_shape: int | tuple[int]
 
     def __init__(
         self,
@@ -124,13 +119,7 @@ class LayerNorm(pytc.TreeClass):
 
 
 class GroupNorm(pytc.TreeClass):
-    γ: jax.Array = None
-    β: jax.Array = None
     ε: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
-
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    groups: int = pytc.field(callbacks=[positive_int_cb])
-    affine: bool
 
     def __init__(
         self,
@@ -151,10 +140,10 @@ class GroupNorm(pytc.TreeClass):
             affine : a boolean value that when set to True, this module has learnable affine parameters.
         """
         # checked by callbacks
-        self.in_features = in_features
-        self.groups = groups
-        self.ε = eps
+        self.in_features = positive_int_cb(in_features)
+        self.groups = positive_int_cb(groups)
         self.affine = affine
+        self.ε = eps
 
         # needs more info for checking
         if in_features % groups != 0:

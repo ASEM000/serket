@@ -14,12 +14,6 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
-from serket.nn.callbacks import (
-    init_func_cb,
-    positive_int_cb,
-    validate_in_features,
-    validate_spatial_in_shape,
-)
 from serket.nn.utils import (
     DilationType,
     InitFuncType,
@@ -30,6 +24,10 @@ from serket.nn.utils import (
     calculate_transpose_padding,
     canonicalize,
     delayed_canonicalize_padding,
+    init_func_cb,
+    positive_int_cb,
+    validate_in_features,
+    validate_spatial_in_shape,
 )
 
 
@@ -39,25 +37,11 @@ def generate_conv_dim_numbers(spatial_ndim):
 
 
 class ConvND(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel_size: KernelSizeType
-    strides: StridesType
-    padding: PaddingType
-    input_dilation: DilationType
-    kernel_dilation: DilationType
-    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int = pytc.field(callbacks=[positive_int_cb])
-
     def __init__(
         self,
         in_features: int,
         out_features: int,
-        kernel_size: int | tuple[int, ...],
+        kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
@@ -88,23 +72,22 @@ class ConvND(pytc.TreeClass):
         See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
         # already checked by the callbacks
-        self.in_features = in_features
-        self.out_features = out_features
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
-        self.groups = groups
-        self.spatial_ndim = spatial_ndim
-
-        # needs more info to be checked
+        self.in_features = positive_int_cb(in_features)
+        self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")  # fmt: skip
         self.strides = canonicalize(strides, spatial_ndim, name="strides")
         self.padding = padding  # delayed canonicalization
         self.input_dilation = canonicalize(input_dilation, spatial_ndim, name="input_dilation")  # fmt: skip
         self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
+        self.weight_init_func = init_func_cb(weight_init_func)
+        self.bias_init_func = init_func_cb(bias_init_func)
+        self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
             msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
             raise ValueError(msg)
+
+        self.spatial_ndim = spatial_ndim
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
         self.weight = self.weight_init_func(key, weight_shape)
@@ -320,20 +303,6 @@ class Conv3D(ConvND):
 
 
 class ConvNDTranspose(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel_size: KernelSizeType
-    padding: PaddingType
-    output_padding: DilationType
-    strides: StridesType
-    kernel_dilation: DilationType
-    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    groups: int = pytc.field(callbacks=[positive_int_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -366,24 +335,22 @@ class ConvNDTranspose(pytc.TreeClass):
             key : PRNG key
             spatial_ndim : Number of dimensions
         """
-        # already checked by the callbacks
-        self.in_features = in_features
-        self.out_features = out_features
-        self.groups = groups
-        self.spatial_ndim = spatial_ndim
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
+        self.in_features = positive_int_cb(in_features)
+        self.out_features = positive_int_cb(out_features)
+        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.padding = padding  # delayed canonicalization
+        self.output_padding = canonicalize(output_padding, spatial_ndim, "output_padding")  # fmt: skip
+        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, "kernel_dilation")  # fmt: skip
+        self.weight_init_func = init_func_cb(weight_init_func)
+        self.bias_init_func = init_func_cb(bias_init_func)
+        self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
             msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
             raise ValueError(msg)
 
-        # needs more info to be checked
-        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
-        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
-        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, "kernel_dilation")  # fmt: skip
-        self.padding = padding  # delayed canonicalization
-        self.output_padding = canonicalize(output_padding, spatial_ndim, "output_padding")  # fmt: skip
+        self.spatial_ndim = spatial_ndim
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -573,18 +540,6 @@ class Conv3DTranspose(ConvNDTranspose):
 
 
 class DepthwiseConvND(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel_size: KernelSizeType
-    strides: StridesType
-    padding: PaddingType
-    depth_multiplier: int = pytc.field(callbacks=[positive_int_cb])
-
-    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -616,20 +571,16 @@ class DepthwiseConvND(pytc.TreeClass):
                 https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
                 https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
-        # already checked by the callbacks
-        self.in_features = in_features
-        self.depth_multiplier = depth_multiplier
-        self.spatial_ndim = spatial_ndim
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
-
-        # needs more info to be checked
+        self.in_features = positive_int_cb(in_features)
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.depth_multiplier = positive_int_cb(depth_multiplier)
         self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.padding = padding  # delayed canonicalization
         self.input_dilation = canonicalize(1, spatial_ndim, "input_dilation")  # fmt: skip
         self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
-
-        self.padding = padding  # delayed canonicalization
+        self.weight_init_func = init_func_cb(weight_init_func)
+        self.bias_init_func = init_func_cb(bias_init_func)
+        self.spatial_ndim = spatial_ndim
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -817,10 +768,6 @@ class DepthwiseConv3D(DepthwiseConvND):
 
 
 class SeparableConvND(pytc.TreeClass):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    depthwise_conv: DepthwiseConvND
-    pointwise_conv: DepthwiseConvND
-
     def __init__(
         self,
         in_features: int,
@@ -857,8 +804,7 @@ class SeparableConvND(pytc.TreeClass):
             spatial_ndim : Number of spatial dimensions.
 
         """
-        self.in_features = in_features
-        self.depth_multiplier = canonicalize(depth_multiplier, self.in_features, "depth_multiplier")  # fmt: skip
+        self.in_features = positive_int_cb(in_features)
         self.spatial_ndim = spatial_ndim
 
         self.depthwise_conv = DepthwiseConvND(
@@ -1050,20 +996,6 @@ class SeparableConv3D(SeparableConvND):
 
 
 class ConvNDLocal(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel_size: KernelSizeType
-    in_size: Sequence[int]  # size of input
-    strides: StridesType
-    padding: PaddingType
-    input_dilation: DilationType
-    kernel_dilation: DilationType
-    weight_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-    bias_init_func: InitFuncType = pytc.field(callbacks=[init_func_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -1074,6 +1006,7 @@ class ConvNDLocal(pytc.TreeClass):
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
         input_dilation: DilationType = 1,
+        kernel_dilation: DilationType = 1,
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         spatial_ndim: int = 2,
@@ -1098,29 +1031,24 @@ class ConvNDLocal(pytc.TreeClass):
             See : https://keras.io/api/layers/locally_connected_layers/
         """
         # checked by callbacks
-        self.in_features = in_features
-        self.out_features = out_features
-        self.weight_init_func = weight_init_func
-        self.bias_init_func = bias_init_func
-
-        self.spatial_ndim = spatial_ndim
-
-        # needs more info to check
-        self.in_size = canonicalize(in_size, spatial_ndim, "in_size")  # fmt: skip
+        self.in_features = positive_int_cb(in_features)
+        self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.in_size = canonicalize(in_size, spatial_ndim, "in_size")  # fmt: skip
         self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
-
-        self.input_dilation = canonicalize(input_dilation, spatial_ndim, "input_dilation")  # fmt: skip
-        self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
-
         self.padding = delayed_canonicalize_padding(
             self.in_size,
             padding,
             self.kernel_size,
             self.strides,
         )
+        self.input_dilation = canonicalize(input_dilation, spatial_ndim, "input_dilation")  # fmt: skip
+        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, "kernel_dilation")  # fmt: skip
+        self.weight_init_func = init_func_cb(weight_init_func)
+        self.bias_init_func = init_func_cb(bias_init_func)
+        self.spatial_ndim = spatial_ndim
 
-        self.out_size = calculate_convolution_output_shape(
+        out_size = calculate_convolution_output_shape(
             shape=self.in_size,
             kernel_size=self.kernel_size,
             padding=self.padding,
@@ -1128,15 +1056,15 @@ class ConvNDLocal(pytc.TreeClass):
         )
 
         # OIHW
-        self.weight_shape = (
+        weight_shape = (
             self.out_features,
             self.in_features * ft.reduce(op.mul, self.kernel_size),
-            *self.out_size,
+            *out_size,
         )
 
-        self.weight = self.weight_init_func(key, self.weight_shape)
+        self.weight = self.weight_init_func(key, weight_shape)
 
-        bias_shape = (self.out_features, *self.out_size)
+        bias_shape = (self.out_features, *out_size)
 
         if bias_init_func is None:
             self.bias = None

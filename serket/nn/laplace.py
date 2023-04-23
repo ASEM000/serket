@@ -6,7 +6,7 @@ import jax
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.callbacks import validate_spatial_in_shape
+from serket.nn.utils import validate_spatial_in_shape
 
 
 class Laplace2D(pytc.TreeClass):

@@ -8,7 +8,7 @@ import jax.tree_util as jtu
 import pytreeclass as pytc
 from jax.lax import stop_gradient
 
-from serket.nn.callbacks import non_negative_scalar_cbs, scalar_like_cb
+from serket.nn.utils import non_negative_scalar_cbs, scalar_like_cb
 
 ActivationType = Callable[[Any], Any]
 

@@ -8,17 +8,20 @@ import jax.numpy as jnp
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.callbacks import validate_spatial_in_shape
-from serket.nn.utils import KernelSizeType, PaddingType, StridesType, canonicalize
+from serket.nn.utils import (
+    KernelSizeType,
+    PaddingType,
+    StridesType,
+    canonicalize,
+    validate_spatial_in_shape,
+)
 
 # Based on colab hardware benchmarks `kernex` seems to
 # be faster on CPU and on par with JAX on GPU.
 
 
 class GeneralPoolND(pytc.TreeClass):
-    kernel_size: KernelSizeType
-    strides: StridesType
-    padding: PaddingType
+    func: Callable = pytc.field(repr=False)
 
     def __init__(
         self,

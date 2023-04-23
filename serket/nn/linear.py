@@ -7,8 +7,12 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.callbacks import init_func_cb, isinstance_factory, positive_int_cb
-from serket.nn.utils import InitFuncType
+from serket.nn.utils import (
+    InitFuncType,
+    init_func_cb,
+    isinstance_factory,
+    positive_int_cb,
+)
 
 
 @ft.lru_cache(maxsize=None)
@@ -66,12 +70,6 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
 
 
 class Multilinear(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
-    in_features: tuple[int, ...] | None = pytc.field(callbacks=[isinstance_factory((int, tuple))])  # fmt: skip
-    out_features: int
-
     def __init__(
         self,
         in_features: int | tuple[int, ...] | None,
@@ -198,13 +196,6 @@ class Bilinear(Multilinear):
 
 
 class GeneralLinear(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
-    in_features: tuple[int, ...] = pytc.field(callbacks=[isinstance_factory(tuple)])
-    out_features: tuple[int, ...]
-    in_axes: tuple[int, ...] = pytc.field(callbacks=[isinstance_factory(tuple)])
-
     def __init__(
         self,
         in_features: tuple[int, ...],
@@ -235,9 +226,9 @@ class GeneralLinear(pytc.TreeClass):
             this layer uses einsum to apply the linear layer to the specified axes.
         """
 
-        self.in_features = in_features
+        self.in_features = isinstance_factory(tuple)(in_features)
         self.out_features = out_features
-        self.in_axes = in_axes
+        self.in_axes = isinstance_factory(tuple)(in_axes)
 
         if len(in_axes) != len(in_features):
             msg = "Expected in_axes and in_features to have the same length,"
@@ -269,10 +260,6 @@ class Identity(pytc.TreeClass):
 
 
 class Embedding(pytc.TreeClass):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    weight: jax.Array
-
     def __init__(
         self,
         in_features: int,
@@ -294,8 +281,8 @@ class Embedding(pytc.TreeClass):
             >>> table(jnp.array([9]))
             Array([[0.43810904, 0.35078037, 0.13254273]], dtype=float32)
         """
-        self.in_features = in_features
-        self.out_features = out_features
+        self.in_features = positive_int_cb(in_features)
+        self.out_features = positive_int_cb(out_features)
         self.weight = jr.uniform(key, (self.in_features, self.out_features))
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -315,9 +302,6 @@ class Embedding(pytc.TreeClass):
 
 
 class MergeLinear(pytc.TreeClass):
-    weight: jax.Array
-    bias: jax.Array
-
     def __init__(self, *layers: tuple[Linear, ...]):
         """Merge multiple linear layers with the same `out_features`.
 

@@ -6,8 +6,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import validate_spatial_in_shape
-from serket.nn.utils import delayed_canonicalize_padding
+from serket.nn.utils import delayed_canonicalize_padding, validate_spatial_in_shape
 
 
 class PadND(pytc.TreeClass):
@@ -42,7 +41,8 @@ class PadND(pytc.TreeClass):
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         # do not pad the channel axis
-        return jnp.pad(x, ((0, 0), *self.padding), constant_values=self.value)
+        shape = ((0, 0), *self.padding)
+        return jax.lax.stop_gradient(jnp.pad(x, shape, constant_values=self.value))
 
 
 class Pad1D(PadND):

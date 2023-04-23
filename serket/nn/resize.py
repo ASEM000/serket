@@ -6,20 +6,15 @@ from typing import Literal
 import jax
 import pytreeclass as pytc
 
-from serket.nn.callbacks import isinstance_factory, validate_spatial_in_shape
-from serket.nn.utils import canonicalize
+from serket.nn.utils import canonicalize, validate_spatial_in_shape
 
 MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 
 
 class ResizeND(pytc.TreeClass):
-    size: int | tuple[int, ...]
-    method: MethodKind
-    antialias: bool
-
     """
     Resize an image to a given size using a given interpolation method.
-    
+
     Args:
         size (int | tuple[int, int], optional): the size of the output.
         method (str, optional): the method of interpolation. Defaults to "nearest".
@@ -44,7 +39,13 @@ class ResizeND(pytc.TreeClass):
                 Lanczos resampling, using a kernel of radius 5.
     """
 
-    def __init__(self, size, method="nearest", antialias=True, spatial_ndim=1):
+    def __init__(
+        self,
+        size: int | tuple[int, ...],
+        method: MethodKind = "nearest",
+        antialias: bool = True,
+        spatial_ndim: int = 1,
+    ):
         self.size = canonicalize(size, spatial_ndim, "size")
         self.method = method
         self.antialias = antialias
@@ -61,15 +62,10 @@ class ResizeND(pytc.TreeClass):
 
 
 class UpsampleND(pytc.TreeClass):
-    scale: int | tuple[int, ...] = pytc.field(
-        callbacks=[isinstance_factory((int, tuple))]
-    )
-    method: MethodKind
-
     def __init__(
         self,
         scale: int | tuple[int, ...] = 1,
-        method: str = "nearest",
+        method: MethodKind = "nearest",
         spatial_ndim: int = 1,
     ):
         # the difference between this and ResizeND is that UpsamplingND

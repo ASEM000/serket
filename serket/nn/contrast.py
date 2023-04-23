@@ -8,7 +8,7 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import stop_gradient
 
-from serket.nn.callbacks import validate_spatial_in_shape
+from serket.nn.utils import validate_spatial_in_shape
 
 
 def adjust_contrast_nd(x: jax.Array, contrast_factor: float):
@@ -90,7 +90,11 @@ class RandomContrastND(pytc.TreeClass):
         key: jr.KeyArray = jr.PRNGKey(0),
         **k,
     ) -> jax.Array:
-        return stop_gradient(random_contrast_nd(x, self.contrast_range, key=key))
+        return random_contrast_nd(
+            x,
+            jax.lax.stop_gradient(self.contrast_range),
+            key=key,
+        )
 
 
 class RandomContrast2D(RandomContrastND):

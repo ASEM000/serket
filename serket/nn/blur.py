@@ -8,21 +8,16 @@ import jax.numpy as jnp
 import pytreeclass as pytc
 from jax.lax import stop_gradient
 
-from serket.nn.callbacks import (
+from serket.nn.convolution import DepthwiseConv2D
+from serket.nn.fft_convolution import DepthwiseFFTConv2D
+from serket.nn.utils import (
     positive_int_cb,
     validate_in_features,
     validate_spatial_in_shape,
 )
-from serket.nn.convolution import DepthwiseConv2D
-from serket.nn.fft_convolution import DepthwiseFFTConv2D
 
 
 class AvgBlur2D(pytc.TreeClass):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel_size: int | tuple[int, int] = pytc.field(callbacks=[positive_int_cb])
-    conv1: DepthwiseConv2D = pytc.field(repr=False)
-    conv2: DepthwiseConv2D = pytc.field(repr=False)
-
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
         """Average blur 2D layer
         Args:
@@ -41,8 +36,8 @@ class AvgBlur2D(pytc.TreeClass):
           [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
 
         """
-        self.in_features = in_features
-        self.kernel_size = kernel_size
+        self.in_features = positive_int_cb(in_features)
+        self.kernel_size = positive_int_cb(kernel_size)
 
         w = jnp.ones(kernel_size)
         w = w / jnp.sum(w)
@@ -75,19 +70,7 @@ class AvgBlur2D(pytc.TreeClass):
 
 
 class GaussianBlur2D(pytc.TreeClass):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel_size: int = pytc.field(callbacks=[positive_int_cb])
-    sigma: float
-    conv1: DepthwiseConv2D
-    conv2: DepthwiseConv2D
-
-    def __init__(
-        self,
-        in_features,
-        kernel_size,
-        *,
-        sigma=1.0,
-    ):
+    def __init__(self, in_features: int, kernel_size: int, *, sigma: float = 1.0):
         """Apply Gaussian blur to a channel-first image.
 
         Args:
@@ -108,8 +91,8 @@ class GaussianBlur2D(pytc.TreeClass):
 
         """
 
-        self.in_features = in_features
-        self.kernel_size = kernel_size
+        self.in_features = positive_int_cb(in_features)
+        self.kernel_size = positive_int_cb(kernel_size)
 
         self.in_features = in_features
         self.kernel_size = kernel_size
@@ -147,10 +130,6 @@ class GaussianBlur2D(pytc.TreeClass):
 
 
 class Filter2D(pytc.TreeClass):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    conv: DepthwiseConv2D
-    kernel: jax.Array
-
     def __init__(self, in_features: int, kernel: jax.Array):
         """Apply 2D filter for each channel
         Args:
@@ -172,7 +151,7 @@ class Filter2D(pytc.TreeClass):
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
-        self.in_features = in_features
+        self.in_features = positive_int_cb(in_features)
         self.spatial_ndim = 2
         self.kernel = jnp.stack([kernel] * in_features, axis=0)
         self.kernel = self.kernel[:, None]
@@ -192,10 +171,6 @@ class Filter2D(pytc.TreeClass):
 
 
 class FFTFilter2D(pytc.TreeClass):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    kernel: jax.Array
-    conv: DepthwiseFFTConv2D
-
     def __init__(self, in_features: int, kernel: jax.Array):
         """Apply 2D filter for each channel using FFT
         Args:
@@ -217,7 +192,7 @@ class FFTFilter2D(pytc.TreeClass):
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
-        self.in_features = in_features
+        self.in_features = positive_int_cb(in_features)
         self.spatial_ndim = 2
         self.kernel = jnp.stack([kernel] * in_features, axis=0)
         self.kernel = self.kernel[:, None]

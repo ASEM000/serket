@@ -3,8 +3,7 @@ import jax.random as jr
 import jax.tree_util as jtu
 import pytest
 
-from serket.nn.callbacks import init_func_cb
-from serket.nn.utils import canonicalize
+from serket.nn.utils import canonicalize, init_func_cb
 
 
 def test_canonicalize_init_func():

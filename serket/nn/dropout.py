@@ -7,7 +7,7 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import stop_gradient
 
-from serket.nn.callbacks import range_cb_factory, validate_spatial_in_shape
+from serket.nn.utils import range_cb_factory, validate_spatial_in_shape
 
 
 def dropout(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
@@ -59,7 +59,7 @@ class DropoutND(pytc.TreeClass):
         [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
     """
 
-    spatial_ndim: int = pytc.field(callbacks=[pytc.freeze])
+    spatial_ndim: int
     p: float = pytc.field(default=0.5, callbacks=[range_cb_factory(0, 1)])
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")

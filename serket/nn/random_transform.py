@@ -7,10 +7,10 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import stop_gradient
 
-from serket.nn.callbacks import range_cb_factory
 from serket.nn.crop import RandomCrop2D
 from serket.nn.padding import Pad2D
 from serket.nn.resize import Resize2D
+from serket.nn.utils import range_cb_factory
 
 
 class RandomApply(pytc.TreeClass):

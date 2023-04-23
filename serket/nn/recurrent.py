@@ -10,11 +10,6 @@ import jax.random as jr
 import pytreeclass as pytc
 
 import serket as sk
-from serket.nn.callbacks import (
-    positive_int_cb,
-    validate_in_features,
-    validate_spatial_in_shape,
-)
 from serket.nn.utils import (
     _ACT_FUNC_MAP,
     ActivationType,
@@ -23,6 +18,9 @@ from serket.nn.utils import (
     KernelSizeType,
     PaddingType,
     StridesType,
+    positive_int_cb,
+    validate_in_features,
+    validate_spatial_in_shape,
 )
 
 """Defines RNN related classes."""
@@ -59,9 +57,6 @@ class SimpleRNNState(RNNState):
 
 
 class SimpleRNNCell(RNNCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -96,8 +91,8 @@ class SimpleRNNCell(RNNCell):
         """
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = in_features
-        self.hidden_features = hidden_features
+        self.in_features = positive_int_cb(in_features)
+        self.hidden_features = positive_int_cb(hidden_features)
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
 
         in_to_hidden = sk.nn.Linear(
@@ -144,9 +139,6 @@ class LSTMState(RNNState):
 
 
 class LSTMCell(RNNCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -176,8 +168,8 @@ class LSTMCell(RNNCell):
         """
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = in_features
-        self.hidden_features = hidden_features
+        self.in_features = positive_int_cb(in_features)
+        self.hidden_features = positive_int_cb(hidden_features)
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP.get(
             recurrent_act_func, recurrent_act_func
@@ -235,9 +227,6 @@ class GRUState(RNNState):
 
 
 class GRUCell(RNNCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -266,8 +255,8 @@ class GRUCell(RNNCell):
         """
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = in_features
-        self.hidden_features = hidden_features
+        self.in_features = positive_int_cb(in_features)
+        self.hidden_features = positive_int_cb(hidden_features)
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP[recurrent_act_func]
 
@@ -325,9 +314,6 @@ class ConvLSTMNDState(RNNState):
 
 
 class ConvLSTMNDCell(RNNCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -366,8 +352,8 @@ class ConvLSTMNDCell(RNNCell):
         """
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = in_features
-        self.hidden_features = hidden_features
+        self.in_features = positive_int_cb(in_features)
+        self.hidden_features = positive_int_cb(hidden_features)
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
 
@@ -610,9 +596,6 @@ class ConvGRUNDState(RNNState):
 
 
 class ConvGRUNDCell(RNNCell):
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    hidden_features: int = pytc.field(callbacks=[positive_int_cb])
-
     def __init__(
         self,
         in_features: int,
@@ -651,8 +634,8 @@ class ConvGRUNDCell(RNNCell):
         """
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = in_features
-        self.hidden_features = hidden_features
+        self.in_features = positive_int_cb(in_features)
+        self.hidden_features = positive_int_cb(hidden_features)
         self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
         self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
 

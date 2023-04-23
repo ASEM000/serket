@@ -7,7 +7,7 @@ import jax.random as jr
 import jax.tree_util as jtu
 import pytreeclass as pytc
 
-from serket.nn.callbacks import isinstance_factory
+from serket.nn.utils import isinstance_factory
 
 
 class Lambda(pytc.TreeClass):

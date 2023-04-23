@@ -9,7 +9,7 @@ import jax.numpy as jnp
 import pytreeclass as pytc
 
 import serket as sk
-from serket.nn.callbacks import positive_int_cb
+from serket.nn.utils import positive_int_cb
 
 
 class ResizeAndCat(pytc.TreeClass):

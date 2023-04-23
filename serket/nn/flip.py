@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import validate_spatial_in_shape
+from serket.nn.utils import validate_spatial_in_shape
 
 
 class FlipLeftRight2D(pytc.TreeClass):

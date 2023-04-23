@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.callbacks import positive_int_cb, validate_spatial_in_shape
+from serket.nn.utils import positive_int_cb, validate_spatial_in_shape
 
 
 @ft.partial(jax.jit, static_argnums=(1,))
