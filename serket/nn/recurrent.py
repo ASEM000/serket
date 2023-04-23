@@ -54,15 +54,11 @@ class RNNCell(pytc.TreeClass, abc.ABC):
         ...
 
 
-class NonSpatialRNNCell(RNNCell):
-    ...
-
-
 class SimpleRNNState(RNNState):
     ...
 
 
-class SimpleRNNCell(NonSpatialRNNCell):
+class SimpleRNNCell(RNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
@@ -147,7 +143,7 @@ class LSTMState(RNNState):
     cell_state: jax.Array
 
 
-class LSTMCell(NonSpatialRNNCell):
+class LSTMCell(RNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
@@ -238,7 +234,7 @@ class GRUState(RNNState):
     ...
 
 
-class GRUCell(NonSpatialRNNCell):
+class GRUCell(RNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
@@ -321,10 +317,6 @@ class GRUCell(NonSpatialRNNCell):
 # =============================================== Spatial RNN ======================================================= #
 
 
-class SpatialRNNCell(RNNCell):
-    ...
-
-
 # ------------------------------------------------- ConvLSTM RNN ----------------------------------------------------- #
 
 
@@ -332,7 +324,7 @@ class ConvLSTMNDState(RNNState):
     cell_state: jax.Array
 
 
-class ConvLSTMNDCell(SpatialRNNCell):
+class ConvLSTMNDCell(RNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
@@ -617,7 +609,7 @@ class ConvGRUNDState(RNNState):
     ...
 
 
-class ConvGRUNDCell(SpatialRNNCell):
+class ConvGRUNDCell(RNNCell):
     in_features: int = pytc.field(callbacks=[positive_int_cb])
     hidden_features: int = pytc.field(callbacks=[positive_int_cb])
 
@@ -891,13 +883,10 @@ class ConvGRU3DCell(ConvGRUNDCell):
 
 
 class ScanRNN(pytc.TreeClass):
-    cell: RNNCell
-    backward_cell: RNNCell
-
     def __init__(
         self,
-        cell: RNNCell | SpatialRNNCell,
-        backward_cell: RNNCell | SpatialRNNCell | None = None,
+        cell: RNNCell,
+        backward_cell: RNNCell | None = None,
         *,
         return_sequences: bool = False,
     ):
