@@ -804,9 +804,6 @@ class SeparableConvND(pytc.TreeClass):
             spatial_ndim : Number of spatial dimensions.
 
         """
-        self.in_features = positive_int_cb(in_features)
-        self.spatial_ndim = spatial_ndim
-
         self.depthwise_conv = DepthwiseConvND(
             in_features=in_features,
             depth_multiplier=depth_multiplier,
@@ -831,8 +828,6 @@ class SeparableConvND(pytc.TreeClass):
             spatial_ndim=spatial_ndim,
         )
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)

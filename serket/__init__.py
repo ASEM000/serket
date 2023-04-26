@@ -19,7 +19,6 @@ from .operators import diff, value_and_diff
 
 __all__ = (
     # general utils
-    "treeclass",
     "TreeClass",
     "is_tree_equal",
     "field",
@@ -43,4 +42,4 @@ __all__ = (
 )
 
 
-__version__ = "0.2.0b3"
+__version__ = "0.2.0b4"

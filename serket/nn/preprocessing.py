@@ -18,8 +18,6 @@ def histeq(x, bins_count: int = 256):
 
 
 class HistogramEqualization2D(pytc.TreeClass):
-    bins: int = pytc.field(callbacks=[positive_int_cb])
-
     def __init__(self, bins: int = 256):
         """Apply histogram equalization to 2D spatial array channel wise
         Args:
@@ -32,7 +30,7 @@ class HistogramEqualization2D(pytc.TreeClass):
             https://stackoverflow.com/questions/28518684/histogram-equalization-of-grayscale-images-with-numpy
         """
         self.spatial_ndim = 2
-        self.bins = bins
+        self.bins = positive_int_cb(bins)
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:

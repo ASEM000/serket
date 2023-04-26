@@ -34,7 +34,11 @@ class CropND(pytc.TreeClass):
 
 
 class Crop1D(CropND):
-    def __init__(self, size: int | tuple[int], start: int | tuple[int, int]):
+    def __init__(
+        self,
+        size: int | tuple[int],
+        start: int | tuple[int, int],
+    ):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 
         Example:

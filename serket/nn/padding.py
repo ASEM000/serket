@@ -60,11 +60,7 @@ class Pad1D(PadND):
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
-        super().__init__(
-            padding=padding,
-            value=value,
-            spatial_ndim=1,
-        )
+        super().__init__(padding=padding, value=value, spatial_ndim=1)
 
 
 class Pad2D(PadND):
@@ -86,11 +82,7 @@ class Pad2D(PadND):
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
-        super().__init__(
-            padding=padding,
-            value=value,
-            spatial_ndim=2,
-        )
+        super().__init__(padding=padding, value=value, spatial_ndim=2)
 
 
 class Pad3D(PadND):
@@ -112,8 +104,4 @@ class Pad3D(PadND):
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
-        super().__init__(
-            padding=padding,
-            value=value,
-            spatial_ndim=3,
-        )
+        super().__init__(padding=padding, value=value, spatial_ndim=3)

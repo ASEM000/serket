@@ -34,13 +34,17 @@ def calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padd
 ActivationLiteral = Literal["tanh", "relu", "sigmoid", "hard_sigmoid"]
 ActivationType = Union[ActivationLiteral, Callable[[Any], Any]]
 
-_ACT_FUNC_MAP = {
-    "tanh": jax.nn.tanh,
-    "relu": jax.nn.relu,
-    "sigmoid": jax.nn.sigmoid,
-    "hard_sigmoid": jax.nn.hard_sigmoid,
-    None: lambda x: x,
-}
+
+def resolve_activation(act_func: ActivationType) -> Callable[[Any], Any]:
+    entries = {
+        "tanh": jax.nn.tanh,
+        "relu": jax.nn.relu,
+        "sigmoid": jax.nn.sigmoid,
+        "hard_sigmoid": jax.nn.hard_sigmoid,
+        None: lambda x: x,
+    }
+
+    return entries.get(act_func, act_func)
 
 
 def calculate_convolution_output_shape(shape, kernel_size, padding, strides):

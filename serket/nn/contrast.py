@@ -36,16 +36,8 @@ class AdjustContrastND(pytc.TreeClass):
         https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
-    contrast_factor: float
-
-    def __init__(self, contrast_factor=1.0, spatial_ndim=1):
-        """
-        Args:
-            contrast_factor: contrast factor to adjust the image by.
-        """
-
-        self.spatial_ndim = spatial_ndim
-        self.contrast_factor = contrast_factor
+    contrast_factor: float = 1.0
+    spatial_ndim: int = 1
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:

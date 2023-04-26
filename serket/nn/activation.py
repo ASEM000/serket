@@ -8,7 +8,7 @@ import jax.tree_util as jtu
 import pytreeclass as pytc
 from jax.lax import stop_gradient
 
-from serket.nn.utils import non_negative_scalar_cbs, scalar_like_cb
+from serket.nn.utils import non_negative_scalar_cbs
 
 ActivationType = Callable[[Any], Any]
 
@@ -35,10 +35,6 @@ def hard_shrink(x: jax.Array, alpha: float = 0.5) -> jax.Array:
 
 def parametric_relu(x: jax.Array, a: float = 0.25) -> jax.Array:
     return jnp.where(x >= 0, x, x * a)
-
-
-def self_scalable_tanh(x: jax.Array, beta: float = 1.0) -> jax.Array:
-    return jnp.tanh(x) * (1.0 + beta * x)
 
 
 def soft_shrink(x: jax.Array, alpha: float = 0.5) -> jax.Array:
@@ -85,10 +81,9 @@ class AdaptiveLeakyReLU(pytc.TreeClass):
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
     v: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
-    func: ActivationType = pytc.field(default=adaptive_leaky_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.a, stop_gradient(self.v))
+        return adaptive_leaky_relu(x, self.a, stop_gradient(self.v))
 
 
 class AdaptiveReLU(pytc.TreeClass):
@@ -99,10 +94,9 @@ class AdaptiveReLU(pytc.TreeClass):
     """
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
-    func: ActivationType = pytc.field(default=adaptive_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.a)
+        return adaptive_relu(x, self.a)
 
 
 class AdaptiveSigmoid(pytc.TreeClass):
@@ -113,10 +107,9 @@ class AdaptiveSigmoid(pytc.TreeClass):
     """
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
-    func: ActivationType = pytc.field(default=adaptive_sigmoid, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.a)
+        return adaptive_sigmoid(x, self.a)
 
 
 class AdaptiveTanh(pytc.TreeClass):
@@ -127,10 +120,9 @@ class AdaptiveTanh(pytc.TreeClass):
     """
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
-    func: ActivationType = pytc.field(default=adaptive_tanh, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.a)
+        return adaptive_tanh(x, self.a)
 
 
 class CeLU(pytc.TreeClass):
@@ -142,20 +134,18 @@ class CeLU(pytc.TreeClass):
     """
 
     alpha: float = pytc.field(default=1.0)
-    func: ActivationType = pytc.field(default=jax.nn.celu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, alpha=stop_gradient(self.alpha))
+        return jax.nn.celu(x, alpha=stop_gradient(self.alpha))
 
 
 class ELU(pytc.TreeClass):
     r"""Exponential linear unit"""
 
     alpha: float = pytc.field(default=1.0)
-    func: ActivationType = pytc.field(default=jax.nn.elu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, alpha=stop_gradient(self.alpha))
+        return jax.nn.elu(x, alpha=stop_gradient(self.alpha))
 
 
 class GELU(pytc.TreeClass):
@@ -167,10 +157,9 @@ class GELU(pytc.TreeClass):
     """
 
     approximate: bool = pytc.field(default=True)
-    func: ActivationType = pytc.field(default=jax.nn.gelu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, approximate=stop_gradient(self.approximate))
+        return jax.nn.gelu(x, approximate=stop_gradient(self.approximate))
 
 
 class GLU(pytc.TreeClass):
@@ -179,10 +168,9 @@ class GLU(pytc.TreeClass):
     .. math::
         \mathrm{glu}(x) = x_1 \odot \sigma(x_2)
     """
-    func: ActivationType = pytc.field(default=jax.nn.glu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.glu(x)
 
 
 class HardSILU(pytc.TreeClass):
@@ -191,10 +179,9 @@ class HardSILU(pytc.TreeClass):
     .. math::
         \mathrm{hard\_silu}(x) = x \cdot \mathrm{hard\_sigmoid}(x)
     """
-    func: ActivationType = pytc.field(default=jax.nn.hard_silu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.hard_silu(x)
 
 
 class HardShrink(pytc.TreeClass):
@@ -210,10 +197,9 @@ class HardShrink(pytc.TreeClass):
     """
 
     alpha: float = pytc.field(default=0.5)
-    func: ActivationType = pytc.field(default=hard_shrink, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, stop_gradient(self.alpha))
+        return hard_shrink(x, stop_gradient(self.alpha))
 
 
 class HardSigmoid(pytc.TreeClass):
@@ -222,10 +208,9 @@ class HardSigmoid(pytc.TreeClass):
     .. math::
         \mathrm{hard\_sigmoid}(x) = \frac{\mathrm{relu6}(x + 3)}{6}
     """
-    func: ActivationType = pytc.field(default=jax.nn.hard_sigmoid, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.hard_sigmoid(x)
 
 
 class HardSwish(pytc.TreeClass):
@@ -234,10 +219,9 @@ class HardSwish(pytc.TreeClass):
     .. math::
         \mathrm{hard\_silu}(x) = x \cdot \mathrm{hard\_sigmoid}(x)
     """
-    func: ActivationType = pytc.field(default=jax.nn.hard_swish, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.hard_swish(x)
 
 
 class HardTanh(pytc.TreeClass):
@@ -250,10 +234,9 @@ class HardTanh(pytc.TreeClass):
       1, & 1 < x
     \end{cases}
     """
-    func: ActivationType = pytc.field(default=jax.nn.hard_tanh, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.hard_tanh(x)
 
 
 class LogSigmoid(pytc.TreeClass):
@@ -263,10 +246,9 @@ class LogSigmoid(pytc.TreeClass):
         \mathrm{log\_sigmoid}(x) = \log(\mathrm{sigmoid}(x)) = -\log(1 + e^{-x})
 
     """
-    func: ActivationType = pytc.field(default=jax.nn.log_sigmoid, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.log_sigmoid(x)
 
 
 class LogSoftmax(pytc.TreeClass):
@@ -276,10 +258,9 @@ class LogSoftmax(pytc.TreeClass):
         \mathrm{log\_softmax}(x) = \log \left( \frac{\exp(x_i)}{\sum_j \exp(x_j)}
         \right)
     """
-    func: ActivationType = pytc.field(default=jax.nn.log_softmax, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.log_softmax(x)
 
 
 class LeakyReLU(pytc.TreeClass):
@@ -292,10 +273,9 @@ class LeakyReLU(pytc.TreeClass):
         \end{cases}
     """
     negative_slope: float = pytc.field(default=0.01)
-    func: ActivationType = pytc.field(default=jax.nn.leaky_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, negative_slope=stop_gradient(self.negative_slope))
+        return jax.nn.leaky_relu(x, negative_slope=stop_gradient(self.negative_slope))
 
 
 class ReLU(pytc.TreeClass):
@@ -304,19 +284,16 @@ class ReLU(pytc.TreeClass):
     .. math::
         \mathrm{relu}(x) = \max(x, 0)
     """
-    func: ActivationType = pytc.field(default=jax.nn.relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.relu(x)
 
 
 class ReLU6(pytc.TreeClass):
-    """ReLU activation function"""
-
-    func: ActivationType = pytc.field(default=jax.nn.relu6, **fkwargs)
+    """ReLU6 activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.relu6(x)
 
 
 class SeLU(pytc.TreeClass):
@@ -331,19 +308,16 @@ class SeLU(pytc.TreeClass):
     where :math:`\lambda = 1.0507009873554804934193349852946` and
     :math:`\alpha = 1.6732632423543772848170429916717`.
     """
-    func: ActivationType = pytc.field(default=jax.nn.selu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.selu(x)
 
 
 class SILU(pytc.TreeClass):
     """SILU activation function"""
 
-    func: ActivationType = pytc.field(default=silu, **fkwargs)
-
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return silu(x)
 
 
 class Sigmoid(pytc.TreeClass):
@@ -352,10 +326,9 @@ class Sigmoid(pytc.TreeClass):
     .. math::
         \mathrm{sigmoid}(x) = \frac{1}{1 + e^{-x}}
     """
-    func: ActivationType = pytc.field(default=jax.nn.sigmoid, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.sigmoid(x)
 
 
 class SoftPlus(pytc.TreeClass):
@@ -364,39 +337,25 @@ class SoftPlus(pytc.TreeClass):
     .. math::
         \mathrm{softplus}(x) = \log(1 + e^x)
     """
-    func: ActivationType = pytc.field(default=jax.nn.softplus, callbacks=[jtu.Partial])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.softplus(x)
 
 
 class SoftSign(pytc.TreeClass):
     """SoftSign activation function"""
 
-    func: ActivationType = pytc.field(default=soft_sign, **fkwargs)
-
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return soft_sign(x)
 
 
 class SoftShrink(pytc.TreeClass):
     """SoftShrink activation function"""
 
     alpha: float = pytc.field(default=0.5)
-    func: ActivationType = pytc.field(default=soft_shrink, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, stop_gradient(self.alpha))
-
-
-class Stan(pytc.TreeClass):
-    """Stan activation function"""
-
-    beta: float = pytc.field(callbacks=[scalar_like_cb], default=1.0)
-    func: ActivationType = pytc.field(default=self_scalable_tanh, **fkwargs)
-
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.beta)
+        return soft_shrink(x, stop_gradient(self.alpha))
 
 
 class SquarePlus(pytc.TreeClass):

@@ -11,7 +11,6 @@ import pytreeclass as pytc
 
 import serket as sk
 from serket.nn.utils import (
-    _ACT_FUNC_MAP,
     ActivationType,
     DilationType,
     InitFuncType,
@@ -19,6 +18,7 @@ from serket.nn.utils import (
     PaddingType,
     StridesType,
     positive_int_cb,
+    resolve_activation,
     validate_in_features,
     validate_spatial_in_shape,
 )
@@ -93,7 +93,7 @@ class SimpleRNNCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
+        self.act_func = resolve_activation(act_func)
 
         in_to_hidden = sk.nn.Linear(
             in_features,
@@ -170,10 +170,8 @@ class LSTMCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
-        self.recurrent_act_func = _ACT_FUNC_MAP.get(
-            recurrent_act_func, recurrent_act_func
-        )
+        self.act_func = resolve_activation(act_func)
+        self.recurrent_act_func = resolve_activation(recurrent_act_func)
 
         in_to_hidden = sk.nn.Linear(
             in_features,
@@ -257,8 +255,8 @@ class GRUCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
-        self.recurrent_act_func = _ACT_FUNC_MAP[recurrent_act_func]
+        self.act_func = resolve_activation(act_func)
+        self.recurrent_act_func = resolve_activation(recurrent_act_func)
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
@@ -354,8 +352,8 @@ class ConvLSTMNDCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
-        self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
+        self.act_func = resolve_activation(act_func)
+        self.recurrent_act_func = resolve_activation(recurrent_act_func)
 
         self.in_to_hidden = conv_layer(
             in_features,
@@ -636,8 +634,8 @@ class ConvGRUNDCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = _ACT_FUNC_MAP.get(act_func, act_func)
-        self.recurrent_act_func = _ACT_FUNC_MAP.get(recurrent_act_func, recurrent_act_func)  # fmt: skip
+        self.act_func = resolve_activation(act_func)
+        self.recurrent_act_func = resolve_activation(recurrent_act_func)
 
         self.in_to_hidden = conv_layer(
             in_features,
@@ -915,8 +913,9 @@ class ScanRNN(pytc.TreeClass):
         # spatial RNN : (time steps, in_features, *spatial_dims)
 
         if x.ndim != self.cell.spatial_ndim + 2:
-            msg = f"Expected x to have {self.cell.spatial_ndim + 2}"  # account for time and in_features
-            msg += f" dimensions corresponds to (timesteps, in_features, {'*'*self.cell.spatial_ndim}), got {x.ndim}"
+            msg = f"Expected x to have {self.cell.spatial_ndim + 2} dimensions corresponds to "
+            msg += f"(timesteps, in_features, {'*'*self.cell.spatial_ndim}),"
+            msg += f" got {x.ndim}"
             raise ValueError(msg)
 
         if self.cell.in_features != x.shape[1]:

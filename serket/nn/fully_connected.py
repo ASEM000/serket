@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Sequence
+from typing import Sequence
 
 import jax
 import jax.random as jr
@@ -11,9 +11,6 @@ from serket.nn.utils import ActivationType, InitFuncType
 
 
 class FNN(pytc.TreeClass):
-    layers: Sequence[Linear]
-    act_func: Callable
-
     def __init__(
         self,
         layers: Sequence[int],
