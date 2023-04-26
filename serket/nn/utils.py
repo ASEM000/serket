@@ -32,10 +32,11 @@ def calculate_transpose_padding(padding, kernel_size, input_dilation, extra_padd
 
 
 ActivationLiteral = Literal["tanh", "relu", "sigmoid", "hard_sigmoid"]
-ActivationType = Union[ActivationLiteral, Callable[[Any], Any]]
+ActivationFunctionType = Callable[[jax.typing.ArrayLike], jax.Array]
+ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 
 
-def resolve_activation(act_func: ActivationType) -> Callable[[Any], Any]:
+def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
     entries = {
         "tanh": jax.nn.tanh,
         "relu": jax.nn.relu,

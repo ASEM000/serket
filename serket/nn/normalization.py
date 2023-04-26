@@ -58,21 +58,16 @@ def group_norm(
         in_features: number of input features
         groups: number of groups to separate the channels into
     """
-    if len(x.shape) <= 1:
-        raise ValueError("Input must have at least 2 dimensions")
-
     # split channels into groups
-    xx = x.reshape(groups, in_features // groups, *x.shape[1:])
-    dims = tuple(range(1, x.ndim + 1))
-
-    μ = jnp.mean(xx, axis=dims, keepdims=True)
-    σ_2 = jnp.var(xx, axis=dims, keepdims=True)
+    xx = x.reshape(groups, -1)
+    μ = jnp.mean(xx, axis=-1, keepdims=True)
+    σ_2 = jnp.var(xx, axis=-1, keepdims=True)
     x̂ = (xx - μ) * jax.lax.rsqrt((σ_2 + eps))
     x̂ = x̂.reshape(*x.shape)
 
     if gamma is not None and beta is not None:
-        gamma = jnp.expand_dims(gamma, axis=(dims[:-1]))
-        beta = jnp.expand_dims(beta, axis=(dims[:-1]))
+        gamma = jnp.expand_dims(gamma, axis=range(1, x.ndim))
+        beta = jnp.expand_dims(beta, axis=range(1, x.ndim))
         x̂ = x̂ * gamma + beta
     return x̂
 

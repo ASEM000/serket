@@ -57,7 +57,7 @@ class PixelShuffle2D(pytc.TreeClass):
             raise ValueError("upscale_factor must be an integer or tuple of length 2")
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k):
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         channels = x.shape[0]
 
         sr, sw = self.upscale_factor
