@@ -361,28 +361,22 @@ class SoftShrink(pytc.TreeClass):
 class SquarePlus(pytc.TreeClass):
     """SquarePlus activation function"""
 
-    func: ActivationType = pytc.field(default=square_plus, **fkwargs)
-
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return square_plus(x)
 
 
 class Swish(pytc.TreeClass):
     """Swish activation function"""
 
-    func: ActivationType = pytc.field(default=jax.nn.swish, **fkwargs)
-
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.swish(x)
 
 
 class Tanh(pytc.TreeClass):
     """Tanh activation function"""
 
-    func: ActivationType = pytc.field(default=jax.nn.tanh, **fkwargs)
-
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return jax.nn.tanh(x)
 
 
 class TanhShrink(pytc.TreeClass):
@@ -396,36 +390,31 @@ class ThresholdedReLU(pytc.TreeClass):
     """Thresholded ReLU activation function."""
 
     theta: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
-    func: ActivationType = pytc.field(default=thresholded_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, stop_gradient(self.theta))
+        return thresholded_relu(x, stop_gradient(self.theta))
 
 
 class Mish(pytc.TreeClass):
     """Mish activation function https://arxiv.org/pdf/1908.08681.pdf."""
 
-    func: ActivationType = pytc.field(default=mish, **fkwargs)
-
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x)
+        return mish(x)
 
 
 class PReLU(pytc.TreeClass):
     """Parametric ReLU activation function"""
 
     a: float = 0.25
-    func: ActivationType = pytc.field(default=parametric_relu, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, self.a)
+        return parametric_relu(x, self.a)
 
 
 class Snake(pytc.TreeClass):
     r"""Snake activation function https://arxiv.org/pdf/2006.08195.pdf."""
 
     a: float = pytc.field(callbacks=[*non_negative_scalar_cbs], default=1.0)
-    func: ActivationType = pytc.field(default=snake, **fkwargs)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return self.func(x, stop_gradient(self.a))
+        return snake(x, stop_gradient(self.a))
