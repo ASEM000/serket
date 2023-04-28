@@ -31,6 +31,7 @@ class GeneralPoolND(pytc.TreeClass):
         padding: PaddingType = "valid",
         spatial_ndim: int = 1,
         func: Callable = None,
+        constant_values: float | None = 0,
     ):
         """Apply pooling to the input with function `func` applied to the kernel.
 
@@ -46,9 +47,12 @@ class GeneralPoolND(pytc.TreeClass):
         self.padding = padding  # gets canonicalized in kmap
         self.spatial_ndim = spatial_ndim
 
-        @jax.jit
         @jax.vmap
-        @kex.kmap(self.kernel_size, self.strides, self.padding)
+        @kex.kmap(
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+            padding=self.padding,
+        )
         def _poolnd(x):
             return func(x)
 
@@ -191,6 +195,7 @@ class MaxPool1D(GeneralPoolND):
             padding=padding,
             spatial_ndim=1,
             func=jnp.max,
+            constant_values=-jnp.inf,
         )
 
 
@@ -208,6 +213,7 @@ class MaxPool2D(GeneralPoolND):
             padding=padding,
             spatial_ndim=2,
             func=jnp.max,
+            constant_values=-jnp.inf,
         )
 
 
@@ -225,6 +231,7 @@ class MaxPool3D(GeneralPoolND):
             padding=padding,
             spatial_ndim=3,
             func=jnp.max,
+            constant_values=-jnp.inf,
         )
 
 

@@ -65,7 +65,7 @@ class AvgBlur2D(pytc.TreeClass):
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x, **k) -> jax.Array:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return stop_gradient(self.conv2(self.conv1(x)))
 
 
@@ -125,7 +125,7 @@ class GaussianBlur2D(pytc.TreeClass):
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
-    def __call__(self, x, **k) -> jax.Array:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return stop_gradient(self.conv1(self.conv2(x)))
 
 
@@ -166,7 +166,7 @@ class Filter2D(pytc.TreeClass):
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x, **k) -> jax.Array:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return stop_gradient(self.conv(x))
 
 
@@ -207,5 +207,5 @@ class FFTFilter2D(pytc.TreeClass):
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x, **k) -> jax.Array:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return stop_gradient(self.conv(x))

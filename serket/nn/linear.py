@@ -23,13 +23,7 @@ def _multilinear_einsum_string(degree: int) -> str:
     #     '...a,ab->....b'
     #     >>> _multilinear_einsum_string(2)
     #     '...a,...b,abc->....c'
-
-    alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-    if not (1 <= degree <= len(alpha) - 1):
-        msg = f"degree must be between 1 and {len(alpha)-1}, got {degree}"
-        raise ValueError(msg)
-
+    alpha = "".join(map(str, range(degree + 1)))
     xs_string = [f"...{i}" for i in alpha[:degree]]
     output_string = ",".join(xs_string)
     output_string += f",{alpha[:degree+1]}->...{alpha[degree]}"
@@ -324,6 +318,9 @@ class MergeLinear(pytc.TreeClass):
             Use this layer to reduce the matrix multiplication operations in the forward pass.
         """
         out_dim0 = layers[0].out_features
+        if not all(isinstance(layer, Linear) for layer in layers):
+            msg = "All layers must be instances of Linear."
+            raise TypeError(msg)
 
         for layer in layers[1:]:
             if layer.out_features != out_dim0:

@@ -4,7 +4,6 @@ from typing import Any, Callable
 
 import jax
 import jax.numpy as jnp
-import jax.tree_util as jtu
 import pytreeclass as pytc
 from jax.lax import stop_gradient
 
@@ -67,9 +66,6 @@ def mish(x: jax.Array) -> jax.Array:
 
 def snake(x: jax.Array, frequency: float = 1.0) -> jax.Array:
     return x + (1 - jnp.cos(2 * frequency * x)) / (2 * frequency)
-
-
-fkwargs = dict(repr=False, callbacks=[jtu.Partial])
 
 
 class AdaptiveLeakyReLU(pytc.TreeClass):

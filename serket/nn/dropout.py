@@ -11,12 +11,19 @@ from serket.nn.utils import range_cb_factory, validate_spatial_in_shape
 
 
 def dropout(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
+    if p == 0:
+        return x
+    if p == 1:
+        return jnp.zeros_like(x)
     return jnp.where(jr.bernoulli(key, (1 - p), x.shape), x / (1 - p), 0)
 
 
 def dropout_nd(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
-    mask = jr.bernoulli(key, 1 - p, shape=(x.shape[0],))
-    return jnp.where(mask, x / (1 - p), 0)
+    if p == 0:
+        return x
+    if p == 1:
+        return jnp.zeros_like(x)
+    return jnp.where(jr.bernoulli(key, 1 - p, shape=(x.shape[0],)), x / (1 - p), 0)
 
 
 class Dropout(pytc.TreeClass):

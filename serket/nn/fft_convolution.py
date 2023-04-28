@@ -29,10 +29,10 @@ from serket.nn.utils import (
 
 @jax.jit
 def _ungrouped_matmul(x, y) -> jax.Array:
-    alpha = "abcdefghijklmnopqrstuvwx"
-    lhs = "y" + alpha[: x.ndim - 1]
-    rhs = "z" + alpha[: y.ndim - 1]
-    out = "yz" + lhs[2:]
+    alpha = "".join(map(str, range(max(x.ndim, y.ndim))))
+    lhs = "a" + alpha[: x.ndim - 1]
+    rhs = "b" + alpha[: y.ndim - 1]
+    out = "ab" + lhs[2:]
     return jnp.einsum(f"{lhs},{rhs}->{out}", x, y)
 
 

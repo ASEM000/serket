@@ -295,10 +295,14 @@ def validate_spatial_in_shape(call_wrapper, *, attribute_name: str):
     def check_spatial_in_shape(x, spatial_ndim: int) -> None:
         spatial_tuple = ("rows", "cols", "depths")
         if x.ndim != spatial_ndim + 1:
+            # the extra dimension is for the input features (channels)
             msg = f"Input must be a {spatial_ndim+1}D tensor in shape of "
             msg += f"(in_features, {', '.join(spatial_tuple[:spatial_ndim])}), "
             msg += f"but got {x.shape}.\n"
-            msg += "To apply on batched input, use `jax.vmap(model)(input)`."
+
+            if x.ndim == spatial_ndim + 2:
+                # maybe the user adding batch dimension by mistake
+                msg += "To apply on batched input, use `jax.vmap(layer)(input)`."
             raise ValueError(msg)
         return x
 
@@ -315,7 +319,7 @@ def validate_in_features(call_wrapper, *, attribute_name: str, axis: int = 0):
 
     def check_in_features(x, in_features: int, axis: int) -> None:
         if x.shape[axis] != in_features:
-            msg = f"Specified input_features={in_features} ,"
+            msg = f"Specified {in_features=} ,"
             msg += f"but got input with input_features={x.shape[axis]}."
             raise ValueError(msg)
         return x

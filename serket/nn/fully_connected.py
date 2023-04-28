@@ -60,7 +60,7 @@ class PFNN(pytc.TreeClass):
     """Parallel fully connected neural network with subnetworks for each output.
 
     Example:
-        >>> layers = [1, 2, [4,5], 2]
+        >>> nn = sk.nn.PFNN([1, 2, [4, 5], 2])
         >>> #         |---> 4 -> 1
         >>> # 1 -> 2 -|
         >>> #         |---> 5 -> 1
@@ -80,6 +80,10 @@ class PFNN(pytc.TreeClass):
         if not isinstance(layers, (tuple, list)):
             raise TypeError(f"layers must be a tuple or list, got {type(layers)}")
 
+        if not isinstance(layers[-1], int) or not isinstance(layers[0], int):
+            msg = "First and last layers must be integers, specifying input and output dimensions."
+            raise TypeError(msg)
+
         split_index = None
 
         # first pass to check if layers are valid
@@ -96,10 +100,6 @@ class PFNN(pytc.TreeClass):
                 if not all(isinstance(item, int) for item in layer):
                     msg = f"All layers in {layer} must be integers."
                     raise TypeError(msg)
-                if i == 0:
-                    # ex: ["[1,2]",3,4] is not allowed because cannot split at layer 0
-                    msg = "Cannot split paths at layer 0."
-                    raise ValueError(msg)
 
                 if len(layer) != layers[-1]:
                     # ex: [1, "[2,3]", 3] is not allowed becuase the split path must have
@@ -142,6 +142,9 @@ class PFNN(pytc.TreeClass):
         self.unshared_layers = []
 
         for i in range(layers[-1]):
+            # for each output add a subnetwork of fully connected layers
+            # ex: [1, [2,3], 2] will create two subnetworks
+            # one with layers [2,2] and another with layers [3,2]
             self.unshared_layers += [
                 FNN(
                     [in_dim, *unshared_spec[i], 1],
@@ -155,7 +158,6 @@ class PFNN(pytc.TreeClass):
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         if self.shared_layers:
-            shared_out = self.shared_layers(x)
-            unshared_out = [layer(shared_out) for layer in self.unshared_layers]
-            return jnp.concatenate(unshared_out, axis=-1)
-        return jnp.concatenate([layer(x) for layer in self.unshared_layers], axis=-1)
+            x = self.shared_layers(x)
+        x = [layer(x) for layer in self.unshared_layers]
+        return jnp.concatenate(x, axis=-1)
