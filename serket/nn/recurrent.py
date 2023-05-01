@@ -85,6 +85,7 @@ class SimpleRNNCell(RNNCell):
             >>> x = jnp.ones((10,)) # 10 features
             >>> result = cell(x, rnn_state)
             >>> result.hidden_state.shape  # 20 features
+            (20,)
 
         Note:
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
@@ -132,6 +133,77 @@ class SimpleRNNCell(RNNCell):
         del spatial_dim
         shape = (self.hidden_features,)
         return SimpleRNNState(jnp.zeros(shape))
+
+
+class DenseRNNState(RNNState):
+    ...
+
+
+class DenseCell(RNNCell):
+    def __init__(
+        self,
+        in_features: int,
+        hidden_features: int,
+        *,
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
+        act_func: ActivationType = jax.nn.tanh,
+        key: jr.KeyArray = jr.PRNGKey(0),
+    ):
+        """Linear + activation Cell, with no hidden state
+
+        Args:
+            in_features: the number of input features
+            hidden_features: the number of hidden features
+            weight_init_func: the function to use to initialize the weights
+            bias_init_func: the function to use to initialize the bias
+            act_func: the activation function to use for the hidden state update,
+                use `None` for no activation
+            key: the key to use to initialize the weights
+
+        Example:
+            >>> cell = DenseCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
+            >>> dummy_state = cell.init_state()  # 20-dimensional hidden state
+            >>> x = jnp.ones((10,)) # 10 features
+            >>> result = cell(x, dummy_state)
+            >>> result.hidden_state.shape  # 20 features
+            (20,)
+
+        Note:
+            https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
+        """
+
+        self.in_features = positive_int_cb(in_features)
+        self.hidden_features = positive_int_cb(hidden_features)
+        self.act_func = resolve_activation(act_func)
+
+        self.in_to_hidden = sk.nn.Linear(
+            in_features,
+            hidden_features,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=key,
+        )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 0
+
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, state: DenseRNNState, **k) -> DenseRNNState:
+        if not isinstance(state, DenseRNNState):
+            msg = "Expected state to be an instance of `DenseRNNState`"
+            msg += f", got {type(state).__name__}"
+            raise TypeError(msg)
+
+        h = self.act_func(self.in_to_hidden(x))
+        return DenseRNNState(h)
+
+    def init_state(self, spatial_dim: tuple[int, ...] = ()) -> DenseRNNState:
+        del spatial_dim
+        shape = (self.hidden_features,)
+        return DenseRNNState(jnp.empty(shape))  # dummy state
 
 
 class LSTMState(RNNState):

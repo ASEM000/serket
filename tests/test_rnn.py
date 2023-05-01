@@ -56,6 +56,7 @@ import pytest
 
 from serket.nn.recurrent import (  # ConvGRU1DCell,; ConvGRU2DCell,; ConvGRU3DCell,; ConvLSTM2DCell,; ConvLSTM3DCell,
     ConvLSTM1DCell,
+    DenseCell,
     GRUCell,
     LSTMCell,
     ScanRNN,
@@ -768,3 +769,17 @@ def test_rnn_error():
 
     with pytest.raises(ValueError):
         layer(jnp.ones([10, 3, 3]))
+
+
+def test_dense_cell():
+    cell = DenseCell(
+        in_features=10,
+        hidden_features=10,
+        act_func=lambda x: x,
+        weight_init_func="ones",
+        bias_init_func=None,
+    )
+    x = jnp.ones([10, 10])
+    res = ScanRNN(cell=cell)(x)
+    # 1x10 @ 10x10 => 1x10
+    npt.assert_allclose(res, jnp.ones([10]) * 10.0)
