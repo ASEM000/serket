@@ -11,6 +11,13 @@ from serket.nn.utils import range_cb_factory, validate_spatial_in_shape
 
 
 def dropout(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
+    """Randomly zeroes some of the elements of the input tensor with
+    probability :attr:`p` using samples from a Bernoulli distribution.
+
+    Args:
+        p: probability of an element to be zeroed. Default: 0.5. Use `p`= 0.0 to turn off dropout.
+        key: random key
+    """
     if p == 0:
         return x
     if p == 1:
@@ -19,6 +26,12 @@ def dropout(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
 
 
 def dropout_nd(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
+    """Drops full feature maps along the channel axis.
+
+    Args:
+        p: fraction of an elements to be zeroed out. Default: 0.5. Use `p`= 0.0 to turn off dropout.
+        key: random key
+    """
     if p == 0:
         return x
     if p == 1:

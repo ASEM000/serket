@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Any, Sequence
 
 import jax
 import jax.numpy as jnp
@@ -10,154 +10,137 @@ import pytreeclass as pytc
 from serket.nn.linear import Linear
 from serket.nn.utils import ActivationType, InitFuncType, resolve_activation
 
+PyTree = Any
+
 
 class FNN(pytc.TreeClass):
     def __init__(
         self,
         layers: Sequence[int],
         *,
-        act_func: ActivationType = jax.nn.relu,
-        weight_init_func: InitFuncType = "he_normal",
-        bias_init_func: InitFuncType = "ones",
+        act_func: ActivationType = "tanh",
+        weight_init_func: InitFuncType = "glorot_uniform",
+        bias_init_func: InitFuncType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Fully connected neural network
         Args:
             layers: Sequence of layer sizes
-            act_func: Activation function to use. Defaults to jax.nn.relu.
-            weight_init_func: Weight initializer function. Defaults to jax.nn.initializers.he_normal().
+            act_func: a single Activation function to be applied between layers or
+                `len(layers)-2` Sequence of activation functions applied between layers.
+            weight_init_func: Weight initializer function.
             bias_init_func: Bias initializer function. Defaults to lambda key, shape: jnp.ones(shape).
-            key: Random key for weight and bias initialization. Defaults to jr.PRNGKey(0).
+            key: Random key for weight and bias initialization.
 
         Example:
             >>> fnn = FNN([10, 5, 2])
             >>> fnn(jnp.ones((3, 10))).shape
             (3, 2)
+
+        Note:
+            - layers argument yields len(layers) - 1 linear layers with required `len(layers)-2`
+            activation functions, for example, `layers=[10, 5, 2]` yields 2 linear
+            layers with weight shapes (10, 5) and (5, 2) and single activation function is applied between them.
+            - `FNN` uses python `for` loop to apply layers and activation functions.
         """
 
         keys = jr.split(key, len(layers) - 1)
-        self.act_func = resolve_activation(act_func)
+
+        self.act_funcs = tuple(resolve_activation(act_func) for _ in keys[1:])
 
         self.layers = tuple(
             Linear(
-                in_features=in_dim,
-                out_features=out_dim,
+                in_features=di,
+                out_features=do,
                 key=ki,
                 weight_init_func=weight_init_func,
                 bias_init_func=bias_init_func,
             )
-            for (ki, in_dim, out_dim) in (zip(keys, layers[:-1], layers[1:]))
+            for (ki, di, do) in (zip(keys, layers[:-1], layers[1:]))
         )
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        for layer in self.layers[:-1]:
-            x = layer(x)
-            x = self.act_func(x)
+        for act, layer in zip(self.act_funcs, self.layers[:-1]):
+            x = act(layer(x))
         return self.layers[-1](x)
 
 
-class PFNN(pytc.TreeClass):
-    """Parallel fully connected neural network with subnetworks for each output.
-
-    Example:
-        >>> nn = sk.nn.PFNN([1, 2, [4, 5], 2])
-        >>> #         |---> 4 -> 1
-        >>> # 1 -> 2 -|
-        >>> #         |---> 5 -> 1
-
-    Note:
-        https://github.com/lululxvi/deepxde/blob/master/deepxde/nn/pytorch/fnn.py
-    """
-
+class MLP(pytc.TreeClass):
     def __init__(
         self,
-        layers: Sequence[int],
-        act_func: ActivationType = "relu",
+        in_features: int,
+        out_features: int,
+        *,
+        hidden_size: int,
+        num_hidden_layers: int,
+        act_func: ActivationType = "tanh",
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        if not isinstance(layers, (tuple, list)):
-            raise TypeError(f"layers must be a tuple or list, got {type(layers)}")
+        """Multi-layer perceptron.
 
-        if not isinstance(layers[-1], int) or not isinstance(layers[0], int):
-            msg = "First and last layers must be integers, specifying input and output dimensions."
-            raise TypeError(msg)
+        Args:
+            in_features: Number of input features.
+            out_features: Number of output features.
+            hidden_size: Number of hidden units in each hidden layer.
+            num_hidden_layers: Number of hidden layers including the output layer.
+            act_func: Activation function.
+            weight_init_func: Weight initialization function.
+            bias_init_func: Bias initialization function.
+            key: Random number generator key.
 
-        split_index = None
+        Note:
+            - MLP with `in_features`=1, `out_features`=2, `hidden_size`=4,
+            `num_hidden_layers`=2 is equivalent to `[1, 4, 4, 2]` which has one input layer (1, 4),
+            one intermediate  layer (4, 4), and one output layer (4, 2) = `num_hidden_layers` + 1
+            - `MLP` exploits same input/out size for intermediate layers to use `jax.lax.scan`.
+        """
 
-        # first pass to check if layers are valid
-        for i, layer in enumerate(layers):
-            if isinstance(layer, int):
-                if i < len(layers) - 1 and split_index is not None:
-                    # prevent joining of paths except at the last layer
-                    # ex: [1,[2,3],"4",5] is not allowed because 4 is not the last layer
-                    msg = f"Cannot join paths at layer {i} after splitting at layer {i-1}."
-                    msg += "Joining paths is only allowed at the last layer."
-                    raise ValueError(msg)
+        keys = jr.split(key, num_hidden_layers + 1)
+        self.act_funcs = tuple(resolve_activation(act_func) for _ in keys[1:])
 
-            elif isinstance(layer, (tuple, list)):
-                if not all(isinstance(item, int) for item in layer):
-                    msg = f"All layers in {layer} must be integers."
-                    raise TypeError(msg)
+        self.in_layer = Linear(
+            in_features=in_features,
+            out_features=hidden_size,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=keys[0],
+        )
 
-                if len(layer) != layers[-1]:
-                    # ex: [1, "[2,3]", 3] is not allowed becuase the split path must have
-                    # the same output size
-                    msg = f"Length of {layer} must match output size {layers[-1]}."
-                    raise ValueError(msg)
-
-                if split_index is None:
-                    # found the first split index
-                    split_index = i - 1
-
-            else:
-                msg = f"Layer {i} must be an integer or a list/tuple of integers."
-                raise TypeError(msg)
-
-        if split_index is None:
-            msg = "No split index found. Cannot create unshared layers."
-            msg += "Use FNN instead to create a fully connected shared network."
-            raise ValueError(msg)
-
-        # key for shared layers and a key
-        # for each path in the unshared layers if any
-        shared_key, *unshared_keys = jr.split(key, layers[-1] + 1)
-
-        if split_index > 0:
-            self.shared_layers = FNN(
-                layers[: split_index + 1],
-                act_func=act_func,
+        self.mid_layers = [
+            Linear(
+                in_features=hidden_size,
+                out_features=hidden_size,
                 weight_init_func=weight_init_func,
                 bias_init_func=bias_init_func,
-                key=shared_key,
+                key=key,
             )
-        else:
-            # ex: [1, [2,3], 2]
-            # if split_index == 0, then there are no shared layers
-            self.shared_layers = None
+            for key in keys[1:-1]
+        ]
 
-        in_dim = layers[split_index]
-        unshared_spec = list(zip(*layers[split_index + 1 : -1]))
-        self.unshared_layers = []
-
-        for i in range(layers[-1]):
-            # for each output add a subnetwork of fully connected layers
-            # ex: [1, [2,3], 2] will create two subnetworks
-            # one with layers [2,2] and another with layers [3,2]
-            self.unshared_layers += [
-                FNN(
-                    [in_dim, *unshared_spec[i], 1],
-                    act_func=act_func,
-                    weight_init_func=weight_init_func,
-                    bias_init_func=bias_init_func,
-                    key=unshared_keys[i],
-                )
-            ]
-        self.unshared_layers = tuple(self.unshared_layers)
+        self.out_layer = Linear(
+            in_features=hidden_size,
+            out_features=out_features,
+            weight_init_func=weight_init_func,
+            bias_init_func=bias_init_func,
+            key=keys[-1],
+        )
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        if self.shared_layers:
-            x = self.shared_layers(x)
-        x = [layer(x) for layer in self.unshared_layers]
-        return jnp.concatenate(x, axis=-1)
+        indices = jnp.arange(len(self.mid_layers))
+
+        def _scan_layers(carry, _):
+            x, linears, acts = carry
+            x = linears[0](x)
+            x = acts[0](x)
+            linears = linears[1:] + [linears[0]]
+            acts = acts[1:] + (acts[0],)
+            return (x, linears, acts), None
+
+        x = self.in_layer(x)
+        x = self.act_funcs[0](x)
+        carry = (x, self.mid_layers, self.act_funcs[1:])
+        x = jax.lax.scan(_scan_layers, carry, indices)[0][0]
+        x = self.out_layer(x)
+        return x

@@ -13,7 +13,7 @@ from serket.nn.utils import canonicalize, positive_int_cb, validate_spatial_in_s
 
 def random_cutout_1d(
     x: jax.Array,
-    shape: int,
+    shape: tuple[int] | int,
     cutout_count: int = 1,
     fill_value: int = 0,
     key: jr.KeyArray = jr.PRNGKey(0),
@@ -26,7 +26,7 @@ def random_cutout_1d(
         cutout_count: number of holes. Defaults to 1.
         fill_value: fill_value to fill. Defaults to 0.
     """
-    size = shape[0]
+    size = shape[0] if isinstance(shape, tuple) else shape
     row_arange = jnp.arange(x.shape[1])
 
     # split the key into subkeys, in essence, one for each cutout

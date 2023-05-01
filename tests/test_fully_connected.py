@@ -1,32 +1,17 @@
-import jax.numpy as jnp
-import pytest
+import jax
+import numpy.testing as npt
 
-from serket.nn import PFNN  # , Linear
+from serket.nn import FNN, MLP
 
 
-def test_PFNN():
-    with pytest.raises(ValueError, match="Cannot join paths"):
-        PFNN([1, 2, [3, 2], 3, 2])
+def test_FNN():
+    layer = FNN([1, 2, 3, 4], act_func="relu")
+    assert not layer.act_funcs[0] is layer.act_funcs[1]
+    assert not layer.layers[0] is layer.layers[1]
 
-    with pytest.raises(ValueError):
-        PFNN([1, 2, [3, 2], 3, 2])
 
-    with pytest.raises(ValueError):
-        PFNN([1, 2, [3, 2], 3, 1])
-
-    with pytest.raises(TypeError):
-        PFNN([1, 2, [3, "a"], 3, 2])
-
-    with pytest.raises(ValueError):
-        PFNN([1, 2])
-
-    with pytest.raises(TypeError):
-        PFNN([1, [2, "a", 2], 3])
-
-    assert PFNN([1, [2, 3], 2])(jnp.ones([1, 1])).shape == (1, 2)
-
-    with pytest.raises(ValueError):
-        PFNN([1, [2, 3], [3, 4, 5], 2])
-
-    with pytest.raises(TypeError):
-        PFNN([1, "a", [3, 4, 5], 2])
+def test_mlp():
+    fnn = FNN(layers=[2, 4, 4, 2], act_func="relu")
+    mlp = MLP(2, 2, hidden_size=4, num_hidden_layers=2, act_func="relu")
+    x = jax.random.normal(jax.random.PRNGKey(0), (10, 2))
+    npt.assert_allclose(fnn(x), mlp(x))

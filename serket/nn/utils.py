@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import functools as ft
 from types import FunctionType
 from typing import Any, Callable, Literal, Sequence, Tuple, Union
@@ -38,14 +39,16 @@ ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 
 def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
     entries = {
-        "tanh": jax.nn.tanh,
-        "relu": jax.nn.relu,
-        "sigmoid": jax.nn.sigmoid,
-        "hard_sigmoid": jax.nn.hard_sigmoid,
-        None: lambda x: x,
+        "tanh": jtu.Partial(jax.nn.tanh),
+        "relu": jtu.Partial(jax.nn.relu),
+        "sigmoid": jtu.Partial(jax.nn.sigmoid),
+        "hard_sigmoid": jtu.Partial(jax.nn.hard_sigmoid),
+        None: jtu.Partial(lambda x: x),
     }
 
-    return entries.get(act_func, act_func)
+    # in case the user passes a trainable activation function
+    # we need to make a copy of it to unpredictable side effects
+    return entries.get(act_func, copy.copy(act_func))
 
 
 def calculate_convolution_output_shape(shape, kernel_size, padding, strides):

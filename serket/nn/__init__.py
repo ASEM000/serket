@@ -73,7 +73,7 @@ from .fft_convolution import (
 )
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
-from .fully_connected import FNN, PFNN
+from .fully_connected import FNN, MLP
 from .laplace import Laplace2D
 from .linear import (
     Bilinear,
@@ -130,7 +130,7 @@ __all__ = (
     "blocks",
     # Fully connected
     "FNN",
-    "PFNN",
+    "MLP",
     # Linear
     "Linear",
     "Bilinear",

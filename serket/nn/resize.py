@@ -16,9 +16,9 @@ class ResizeND(pytc.TreeClass):
     Resize an image to a given size using a given interpolation method.
 
     Args:
-        size (int | tuple[int, int], optional): the size of the output.
-        method (str, optional): the method of interpolation. Defaults to "nearest".
-        antialias (bool, optional): whether to use antialiasing. Defaults to True.
+        size: the size of the output.
+        method: the method of interpolation. Defaults to "nearest".
+        antialias: whether to use antialiasing. Defaults to True.
 
     Note:
         - if size is None, the output size is calculated as input size * scale

@@ -26,7 +26,7 @@ from serket.nn.utils import (
 """Defines RNN related classes."""
 
 
-# =============================================== Non Spatial RNN ==================================================== #
+# Non Spatial RNN
 
 
 class RNNState(pytc.TreeClass):
@@ -135,7 +135,7 @@ class SimpleRNNCell(RNNCell):
         return SimpleRNNState(jnp.zeros(shape))
 
 
-class DenseRNNState(RNNState):
+class DenseState(RNNState):
     ...
 
 
@@ -150,7 +150,7 @@ class DenseCell(RNNCell):
         act_func: ActivationType = jax.nn.tanh,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Linear + activation Cell, with no hidden state
+        """No hidden state cell that applies a dense(Linear+activation) layer to the input
 
         Args:
             in_features: the number of input features
@@ -168,9 +168,6 @@ class DenseCell(RNNCell):
             >>> result = cell(x, dummy_state)
             >>> result.hidden_state.shape  # 20 features
             (20,)
-
-        Note:
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
         """
 
         self.in_features = positive_int_cb(in_features)
@@ -191,19 +188,19 @@ class DenseCell(RNNCell):
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jax.Array, state: DenseRNNState, **k) -> DenseRNNState:
-        if not isinstance(state, DenseRNNState):
-            msg = "Expected state to be an instance of `DenseRNNState`"
+    def __call__(self, x: jax.Array, state: DenseState, **k) -> DenseState:
+        if not isinstance(state, DenseState):
+            msg = "Expected state to be an instance of `DenseState`"
             msg += f", got {type(state).__name__}"
             raise TypeError(msg)
 
         h = self.act_func(self.in_to_hidden(x))
-        return DenseRNNState(h)
+        return DenseState(h)
 
-    def init_state(self, spatial_dim: tuple[int, ...] = ()) -> DenseRNNState:
+    def init_state(self, spatial_dim: tuple[int, ...] = ()) -> DenseState:
         del spatial_dim
         shape = (self.hidden_features,)
-        return DenseRNNState(jnp.empty(shape))  # dummy state
+        return DenseState(jnp.empty(shape))  # dummy state
 
 
 class LSTMState(RNNState):
@@ -373,10 +370,7 @@ class GRUCell(RNNCell):
         return GRUState(jnp.zeros(shape, dtype=jnp.float32))
 
 
-# =============================================== Spatial RNN ======================================================= #
-
-
-# ------------------------------------------------- ConvLSTM RNN ----------------------------------------------------- #
+# Spatial RNN
 
 
 class ConvLSTMNDState(RNNState):
@@ -658,9 +652,6 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         return 3
 
 
-# ------------------------------------------------- ConvGRU RNN ------------------------------------------------------ #
-
-
 class ConvGRUNDState(RNNState):
     ...
 
@@ -932,7 +923,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         return 3
 
 
-# =============================================== Scanning API ======================================================= #
+# Scanning API
 
 
 class ScanRNN(pytc.TreeClass):
