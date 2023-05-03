@@ -40,7 +40,12 @@ def test_linear():
         value, grad = loss_func(NN, x, y)
         return value, jtu.tree_map(lambda x, g: x - 1e-3 * g, NN, grad)
 
-    NN = FNN([1, 128, 128, 1])
+    NN = FNN(
+        [1, 128, 128, 1],
+        act_func="relu",
+        weight_init_func="he_normal",
+        bias_init_func="ones",
+    )
 
     # NN = jtu.tree_map(lambda x: pytc.freeze(x) if pytc.is_nondiff(x) else x, NN)
     NN = NN.at[pytc.bcmap(pytc.is_nondiff)(NN)].apply(pytc.freeze)
