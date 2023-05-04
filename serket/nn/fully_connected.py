@@ -100,7 +100,7 @@ class MLP(pytc.TreeClass):
         keys = jr.split(key, num_hidden_layers + 1)
         self.act_funcs = tuple(resolve_activation(act_func) for _ in keys[1:])
 
-        self.layers = (
+        self.layers = tuple(
             [
                 Linear(
                     in_features=in_features,
@@ -136,14 +136,14 @@ class MLP(pytc.TreeClass):
             x, linears, acts = carry
             x = linears[0](x)
             x = acts[0](x)
-            linears = linears[1:] + [linears[0]]
-            acts = acts[1:] + (acts[0],)
+            linears = (*linears[1:], linears[0])
+            acts = (*acts[1:], acts[0])
             return (x, linears, acts), None
 
         x = self.layers[0](x)
         x = self.act_funcs[0](x)
-        indices = jnp.empty(len(self.layers) - 2)
+        _ = jnp.empty(len(self.layers) - 2)
         carry = (x, self.layers[1:-1], self.act_funcs[1:])
-        x = jax.lax.scan(scan_func, carry, indices)[0][0]
+        x = jax.lax.scan(scan_func, carry, _)[0][0]
         x = self.layers[-1](x)
         return x
