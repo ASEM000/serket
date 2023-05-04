@@ -43,7 +43,6 @@ def group_norm(
     gamma: jax.Array,
     beta: jax.Array,
     eps: float,
-    in_features: int,
     groups: int,
 ) -> jax.Array:
     """Group Normalization
@@ -52,10 +51,9 @@ def group_norm(
 
     Args:
         x: input array
-        gamma: scale
-        beta: shift
+        gamma: scale Array
+        beta: shift Array
         eps: a value added to the denominator for numerical stability.
-        in_features: number of input features
         groups: number of groups to separate the channels into
     """
     # split channels into groups
@@ -155,7 +153,6 @@ class GroupNorm(pytc.TreeClass):
             gamma=self.gamma,
             beta=self.beta,
             eps=self.eps,
-            in_features=self.in_features,
             groups=self.groups,
         )
 

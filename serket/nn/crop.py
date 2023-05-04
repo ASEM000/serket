@@ -5,7 +5,7 @@ import functools as ft
 import jax
 import jax.random as jr
 import pytreeclass as pytc
-from jax.lax import stop_gradient
+from jax import lax
 
 from serket.nn.utils import canonicalize, validate_spatial_in_shape
 
@@ -30,7 +30,7 @@ class CropND(pytc.TreeClass):
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         shape = ((0, *self.start), (x.shape[0], *self.size))
-        return stop_gradient(jax.lax.dynamic_slice(x, *shape))
+        return lax.stop_gradient(jax.lax.dynamic_slice(x, *shape))
 
 
 class Crop1D(CropND):

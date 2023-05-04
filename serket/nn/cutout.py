@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
-from jax.lax import stop_gradient
+from jax import lax
 
 from serket.nn.utils import canonicalize, positive_int_cb, validate_spatial_in_shape
 
@@ -126,7 +126,7 @@ class RandomCutout1D(pytc.TreeClass):
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         out = random_cutout_1d(x, self.shape, self.cutout_count, self.fill_value, key)
-        return stop_gradient(out)
+        return lax.stop_gradient(out)
 
 
 class RandomCutout2D(pytc.TreeClass):
@@ -155,4 +155,4 @@ class RandomCutout2D(pytc.TreeClass):
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         out = random_cutout_2d(x, self.shape, self.cutout_count, self.fill_value, key)
-        return stop_gradient(out)
+        return lax.stop_gradient(out)

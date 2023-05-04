@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Callable
-
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
-from jax.lax import stop_gradient
+from jax import lax
 
 from serket.nn.utils import non_negative_scalar_cbs
-
-ActivationType = Callable[[Any], Any]
 
 
 def adaptive_leaky_relu(x: jax.Array, a: float = 1.0, v: float = 1.0) -> jax.Array:
@@ -69,25 +65,17 @@ def snake(x: jax.Array, frequency: float = 1.0) -> jax.Array:
 
 
 class AdaptiveLeakyReLU(pytc.TreeClass):
-    r"""Leaky ReLU activation function with learnable `a` parameter https://arxiv.org/pdf/1906.01170.pdf.
-
-    .. math::
-        \text{AdaptiveLeakyReLU}(x) = \max(0, a x) - v \max(0, -a x)
-    """
+    """Leaky ReLU activation function with learnable `a` parameter https://arxiv.org/pdf/1906.01170.pdf."""
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
     v: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return adaptive_leaky_relu(x, self.a, stop_gradient(self.v))
+        return adaptive_leaky_relu(x, self.a, lax.stop_gradient(self.v))
 
 
 class AdaptiveReLU(pytc.TreeClass):
-    r"""ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf.
-
-    .. math::
-        \text{AdaptiveReLU}(x) = \max(0, a x)
-    """
+    """ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf."""
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
@@ -96,11 +84,7 @@ class AdaptiveReLU(pytc.TreeClass):
 
 
 class AdaptiveSigmoid(pytc.TreeClass):
-    r"""Sigmoid activation function with learnable `a` parameter https://arxiv.org/pdf/1906.01170.pdf.
-
-    .. math::
-        \text{AdaptiveSigmoid}(x) = \frac{1}{1 + \exp(-a x)}
-    """
+    """Sigmoid activation function with learnable `a` parameter https://arxiv.org/pdf/1906.01170.pdf."""
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
@@ -109,11 +93,7 @@ class AdaptiveSigmoid(pytc.TreeClass):
 
 
 class AdaptiveTanh(pytc.TreeClass):
-    r"""Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf.
-
-    .. math::
-        \text{AdaptiveTanh}(x) = \frac{\exp(a x) - \exp(-a x)}{\exp(a x) + \exp(-a x)}
-    """
+    """Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf."""
 
     a: float = pytc.field(default=1.0, callbacks=[*non_negative_scalar_cbs])
 
@@ -122,164 +102,101 @@ class AdaptiveTanh(pytc.TreeClass):
 
 
 class CeLU(pytc.TreeClass):
-    r"""Celu activation function
-
-    .. math::
-        \text{CeLU}(x) = \max(0, x) + \min(0, \alpha \exp(x / \alpha) - 1)
-
-    """
+    """Celu activation function"""
 
     alpha: float = pytc.field(default=1.0)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.nn.celu(x, alpha=stop_gradient(self.alpha))
+        return jax.nn.celu(x, alpha=lax.stop_gradient(self.alpha))
 
 
 class ELU(pytc.TreeClass):
-    r"""Exponential linear unit"""
+    """Exponential linear unit"""
 
     alpha: float = pytc.field(default=1.0)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.nn.elu(x, alpha=stop_gradient(self.alpha))
+        return jax.nn.elu(x, alpha=lax.stop_gradient(self.alpha))
 
 
 class GELU(pytc.TreeClass):
-    r"""Gaussian error linear unit
-
-    .. math::
-        \mathrm{gelu}(x) = \frac{x}{2} \left(1 + \mathrm{erf} \left(
-        \frac{x}{\sqrt{2}} \right) \right)
-    """
+    """Gaussian error linear unit"""
 
     approximate: bool = pytc.field(default=True)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.nn.gelu(x, approximate=stop_gradient(self.approximate))
+        return jax.nn.gelu(x, approximate=lax.stop_gradient(self.approximate))
 
 
 class GLU(pytc.TreeClass):
-    r"""Gated linear unit
-
-    .. math::
-        \mathrm{glu}(x) = x_1 \odot \sigma(x_2)
-    """
+    """Gated linear unit"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.glu(x)
 
 
 class HardSILU(pytc.TreeClass):
-    r"""Hard SILU activation function
-
-    .. math::
-        \mathrm{hard\_silu}(x) = x \cdot \mathrm{hard\_sigmoid}(x)
-    """
+    """Hard SILU activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.hard_silu(x)
 
 
 class HardShrink(pytc.TreeClass):
-    r"""Hard shrink activation function
-
-    .. math::
-        \text{HardShrink}(x) =
-        \begin{cases}
-        x, & \text{ if } x > \lambda \\
-        x, & \text{ if } x < -\lambda \\
-        0, & \text{ otherwise }
-        \end{cases}
-    """
+    """Hard shrink activation function"""
 
     alpha: float = pytc.field(default=0.5)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return hard_shrink(x, stop_gradient(self.alpha))
+        return hard_shrink(x, lax.stop_gradient(self.alpha))
 
 
 class HardSigmoid(pytc.TreeClass):
-    r"""Hard sigmoid activation function
-
-    .. math::
-        \mathrm{hard\_sigmoid}(x) = \frac{\mathrm{relu6}(x + 3)}{6}
-    """
+    """Hard sigmoid activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.hard_sigmoid(x)
 
 
 class HardSwish(pytc.TreeClass):
-    r"""Hard swish activation function
-
-    .. math::
-        \mathrm{hard\_silu}(x) = x \cdot \mathrm{hard\_sigmoid}(x)
-    """
+    """Hard swish activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.hard_swish(x)
 
 
 class HardTanh(pytc.TreeClass):
-    r"""Hard tanh activation function
-
-  .. math::
-    \mathrm{hard\_tanh}(x) = \begin{cases}
-      -1, & x < -1\\
-      x, & -1 \le x \le 1\\
-      1, & 1 < x
-    \end{cases}
-    """
+    """Hard tanh activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.hard_tanh(x)
 
 
 class LogSigmoid(pytc.TreeClass):
-    r"""Log sigmoid activation function
-
-    .. math::
-        \mathrm{log\_sigmoid}(x) = \log(\mathrm{sigmoid}(x)) = -\log(1 + e^{-x})
-
-    """
+    """Log sigmoid activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.log_sigmoid(x)
 
 
 class LogSoftmax(pytc.TreeClass):
-    r"""Log softmax activation function
-
-    .. math ::
-        \mathrm{log\_softmax}(x) = \log \left( \frac{\exp(x_i)}{\sum_j \exp(x_j)}
-        \right)
-    """
+    """Log softmax activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.log_softmax(x)
 
 
 class LeakyReLU(pytc.TreeClass):
-    r"""Leaky ReLU activation function
+    """Leaky ReLU activation function"""
 
-    .. math::
-        \mathrm{leaky\_relu}(x) = \begin{cases}
-        x, & x \ge 0\\
-        \alpha x, & x < 0
-        \end{cases}
-    """
     negative_slope: float = pytc.field(default=0.01)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.nn.leaky_relu(x, negative_slope=stop_gradient(self.negative_slope))
+        return jax.nn.leaky_relu(x, lax.stop_gradient(self.negative_slope))
 
 
 class ReLU(pytc.TreeClass):
-    r"""ReLU activation function
-
-    .. math::
-        \mathrm{relu}(x) = \max(x, 0)
-    """
+    """ReLU activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.relu(x)
@@ -293,17 +210,7 @@ class ReLU6(pytc.TreeClass):
 
 
 class SeLU(pytc.TreeClass):
-    r"""Scaled Exponential Linear Unit
-
-    .. math::
-        \mathrm{selu}(x) = \lambda \begin{cases}
-        x, & x > 0\\
-        \alpha e^x - \alpha, & x \le 0
-        \end{cases}
-
-    where :math:`\lambda = 1.0507009873554804934193349852946` and
-    :math:`\alpha = 1.6732632423543772848170429916717`.
-    """
+    """Scaled Exponential Linear Unit"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.selu(x)
@@ -317,22 +224,14 @@ class SILU(pytc.TreeClass):
 
 
 class Sigmoid(pytc.TreeClass):
-    r"""Sigmoid activation function
-
-    .. math::
-        \mathrm{sigmoid}(x) = \frac{1}{1 + e^{-x}}
-    """
+    """Sigmoid activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.sigmoid(x)
 
 
 class SoftPlus(pytc.TreeClass):
-    r"""SoftPlus activation function
-
-    .. math::
-        \mathrm{softplus}(x) = \log(1 + e^x)
-    """
+    """SoftPlus activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.softplus(x)
@@ -351,7 +250,7 @@ class SoftShrink(pytc.TreeClass):
     alpha: float = pytc.field(default=0.5)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return soft_shrink(x, stop_gradient(self.alpha))
+        return soft_shrink(x, lax.stop_gradient(self.alpha))
 
 
 class SquarePlus(pytc.TreeClass):
@@ -388,7 +287,7 @@ class ThresholdedReLU(pytc.TreeClass):
     theta: float = pytc.field(callbacks=[*non_negative_scalar_cbs])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return thresholded_relu(x, stop_gradient(self.theta))
+        return thresholded_relu(x, lax.stop_gradient(self.theta))
 
 
 class Mish(pytc.TreeClass):
@@ -408,9 +307,13 @@ class PReLU(pytc.TreeClass):
 
 
 class Snake(pytc.TreeClass):
-    r"""Snake activation function https://arxiv.org/pdf/2006.08195.pdf."""
+    """Snake activation function https://arxiv.org/pdf/2006.08195.pdf.
+
+    Args:
+        a: scalar (frequency) parameter of the activation function, default is 1.0.
+    """
 
     a: float = pytc.field(callbacks=[*non_negative_scalar_cbs], default=1.0)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return snake(x, stop_gradient(self.a))
+        return snake(x, lax.stop_gradient(self.a))

@@ -84,8 +84,10 @@ class ConvND(pytc.TreeClass):
         self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
-            msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
-            raise ValueError(msg)
+            raise ValueError(
+                f"Expected out_features % groups == 0, \n"
+                f"got {self.out_features % self.groups}"
+            )
 
         self.spatial_ndim = spatial_ndim
 
@@ -299,7 +301,7 @@ class Conv3D(ConvND):
         )
 
 
-# ----------------------------------------------------------------------------------------------------------------------#
+# ---------------------------------------------------------------------------- #
 
 
 class ConvNDTranspose(pytc.TreeClass):
@@ -536,7 +538,7 @@ class Conv3DTranspose(ConvNDTranspose):
         )
 
 
-# ----------------------------------------------------------------------------------------------------------------------#
+# ---------------------------------------------------------------------------- #
 
 
 class DepthwiseConvND(pytc.TreeClass):
@@ -764,7 +766,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         )
 
 
-# ----------------------------------------------------------------------------------------------------------------------#
+# ---------------------------------------------------------------------------- #
 
 
 class SeparableConvND(pytc.TreeClass):

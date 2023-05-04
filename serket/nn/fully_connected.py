@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, Sequence
 
 import jax
-import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
@@ -142,8 +141,7 @@ class MLP(pytc.TreeClass):
 
         x = self.layers[0](x)
         x = self.act_funcs[0](x)
-        _ = jnp.empty(len(self.layers) - 2)
         carry = (x, self.layers[1:-1], self.act_funcs[1:])
-        x = jax.lax.scan(scan_func, carry, _)[0][0]
+        (x, _, _), _ = jax.lax.scan(scan_func, carry, None, length=len(self.layers) - 2)
         x = self.layers[-1](x)
         return x

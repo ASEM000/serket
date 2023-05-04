@@ -6,7 +6,7 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
-from jax.lax import stop_gradient
+from jax import lax
 
 from serket.nn.convolution import DepthwiseConv2D
 from serket.nn.fft_convolution import DepthwiseFFTConv2D
@@ -66,7 +66,7 @@ class AvgBlur2D(pytc.TreeClass):
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return stop_gradient(self.conv2(self.conv1(x)))
+        return lax.stop_gradient(self.conv2(self.conv1(x)))
 
 
 class GaussianBlur2D(pytc.TreeClass):
@@ -126,7 +126,7 @@ class GaussianBlur2D(pytc.TreeClass):
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return stop_gradient(self.conv1(self.conv2(x)))
+        return lax.stop_gradient(self.conv1(self.conv2(x)))
 
 
 class Filter2D(pytc.TreeClass):
@@ -167,7 +167,7 @@ class Filter2D(pytc.TreeClass):
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return stop_gradient(self.conv(x))
+        return lax.stop_gradient(self.conv(x))
 
 
 class FFTFilter2D(pytc.TreeClass):
@@ -208,4 +208,4 @@ class FFTFilter2D(pytc.TreeClass):
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return stop_gradient(self.conv(x))
+        return lax.stop_gradient(self.conv(x))

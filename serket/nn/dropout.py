@@ -5,7 +5,7 @@ import functools as ft
 import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
-from jax.lax import stop_gradient
+from jax import lax
 
 from serket.nn.utils import range_cb_factory, validate_spatial_in_shape
 
@@ -15,28 +15,34 @@ def dropout(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
     probability :attr:`p` using samples from a Bernoulli distribution.
 
     Args:
-        p: probability of an element to be zeroed. Default: 0.5. Use `p`= 0.0 to turn off dropout.
+        p: probability of an element to be zeroed. Default: 0.5. Use `p`= 0.0
+            to turn off dropout.
         key: random key
     """
     if p == 0:
         return x
     if p == 1:
         return jnp.zeros_like(x)
-    return jnp.where(jr.bernoulli(key, (1 - p), x.shape), x / (1 - p), 0)
+    keep_rate = 1 - p
+    mask = jr.bernoulli(key, keep_rate, x.shape)
+    return jnp.where(mask, x / keep_rate, 0)
 
 
 def dropout_nd(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
     """Drops full feature maps along the channel axis.
 
     Args:
-        p: fraction of an elements to be zeroed out. Default: 0.5. Use `p`= 0.0 to turn off dropout.
+        p: fraction of an elements to be zeroed out. Default: 0.5.
+            Use `p`= 0.0 to turn off dropout.
         key: random key
     """
     if p == 0:
         return x
     if p == 1:
         return jnp.zeros_like(x)
-    return jnp.where(jr.bernoulli(key, 1 - p, shape=(x.shape[0],)), x / (1 - p), 0)
+    keep_rate = 1 - p
+    mask = jr.bernoulli(key, keep_rate, x.shape)
+    return jnp.where(mask, x / keep_rate, 0)
 
 
 class Dropout(pytc.TreeClass):
@@ -60,7 +66,7 @@ class Dropout(pytc.TreeClass):
     p: float = pytc.field(default=0.5, callbacks=[range_cb_factory(0, 1)])
 
     def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        return dropout(x, p=stop_gradient(self.p), key=key)
+        return dropout(x, p=lax.stop_gradient(self.p), key=key)
 
 
 class DropoutND(pytc.TreeClass):
@@ -84,7 +90,7 @@ class DropoutND(pytc.TreeClass):
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
-        return dropout_nd(x, p=stop_gradient(self.p), key=key)
+        return dropout_nd(x, p=lax.stop_gradient(self.p), key=key)
 
 
 class Dropout1D(DropoutND):
