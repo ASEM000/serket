@@ -100,37 +100,39 @@ class MLP(pytc.TreeClass):
         keys = jr.split(key, num_hidden_layers + 1)
         self.act_funcs = tuple(resolve_activation(act_func) for _ in keys[1:])
 
-        self.in_layer = Linear(
-            in_features=in_features,
-            out_features=hidden_size,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=keys[0],
-        )
-
-        self.mid_layers = [
-            Linear(
-                in_features=hidden_size,
-                out_features=hidden_size,
-                weight_init_func=weight_init_func,
-                bias_init_func=bias_init_func,
-                key=key,
-            )
-            for key in keys[1:-1]
-        ]
-
-        self.out_layer = Linear(
-            in_features=hidden_size,
-            out_features=out_features,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=keys[-1],
+        self.layers = (
+            [
+                Linear(
+                    in_features=in_features,
+                    out_features=hidden_size,
+                    weight_init_func=weight_init_func,
+                    bias_init_func=bias_init_func,
+                    key=keys[0],
+                )
+            ]
+            + [
+                Linear(
+                    in_features=hidden_size,
+                    out_features=hidden_size,
+                    weight_init_func=weight_init_func,
+                    bias_init_func=bias_init_func,
+                    key=key,
+                )
+                for key in keys[1:-1]
+            ]
+            + [
+                Linear(
+                    in_features=hidden_size,
+                    out_features=out_features,
+                    weight_init_func=weight_init_func,
+                    bias_init_func=bias_init_func,
+                    key=keys[-1],
+                )
+            ]
         )
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        indices = jnp.arange(len(self.mid_layers))
-
-        def _scan_layers(carry, _):
+        def scan_func(carry, _):
             x, linears, acts = carry
             x = linears[0](x)
             x = acts[0](x)
@@ -138,9 +140,10 @@ class MLP(pytc.TreeClass):
             acts = acts[1:] + (acts[0],)
             return (x, linears, acts), None
 
-        x = self.in_layer(x)
+        x = self.layers[0](x)
         x = self.act_funcs[0](x)
-        carry = (x, self.mid_layers, self.act_funcs[1:])
-        x = jax.lax.scan(_scan_layers, carry, indices)[0][0]
-        x = self.out_layer(x)
+        indices = jnp.empty(len(self.layers) - 2)
+        carry = (x, self.layers[1:-1], self.act_funcs[1:])
+        x = jax.lax.scan(scan_func, carry, indices)[0][0]
+        x = self.layers[-1](x)
         return x
