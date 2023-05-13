@@ -1,5 +1,20 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
+import abc
 import functools as ft
 
 import jax.numpy as jnp
@@ -7,7 +22,7 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax import lax
 
-from serket.nn.utils import range_cb_factory, validate_spatial_in_shape
+from serket.nn.utils import Range, validate_spatial_in_shape
 
 
 def dropout(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
@@ -63,7 +78,7 @@ class Dropout(pytc.TreeClass):
         Use `p`= 0.0 to turn off dropout.
     """
 
-    p: float = pytc.field(default=0.5, callbacks=[range_cb_factory(0, 1)])
+    p: float = pytc.field(default=0.5, callbacks=[Range(0, 1)])
 
     def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
         return dropout(x, p=lax.stop_gradient(self.p), key=key)
@@ -80,17 +95,22 @@ class DropoutND(pytc.TreeClass):
         https://arxiv.org/abs/1411.4280
 
     Example:
-        >>> layer = DropoutND(0.5, spatial_ndim=1)
+        >>> layer = DropoutND(0.5)
         >>> layer(jnp.ones((1, 10)))
         [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
     """
 
     spatial_ndim: int
-    p: float = pytc.field(default=0.5, callbacks=[range_cb_factory(0, 1)])
+    p: float = pytc.field(default=0.5, callbacks=[Range(0, 1)])
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
         return dropout_nd(x, p=lax.stop_gradient(self.p), key=key)
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self):
+        ...
 
 
 class Dropout1D(DropoutND):
@@ -106,11 +126,15 @@ class Dropout1D(DropoutND):
             https://arxiv.org/abs/1411.4280
 
         Example:
-            >>> layer = DropoutND(0.5, spatial_ndim=1)
+            >>> layer = DropoutND(0.5)
             >>> layer(jnp.ones((1, 10)))
             [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
-        super().__init__(p=p, spatial_ndim=1)
+        super().__init__(p=p)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class Dropout2D(DropoutND):
@@ -126,11 +150,15 @@ class Dropout2D(DropoutND):
             https://arxiv.org/abs/1411.4280
 
         Example:
-            >>> layer = DropoutND(0.5, spatial_ndim=1)
+            >>> layer = DropoutND(0.5)
             >>> layer(jnp.ones((1, 10)))
             [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
         super().__init__(p=p, spatial_ndim=2)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Dropout3D(DropoutND):
@@ -146,8 +174,12 @@ class Dropout3D(DropoutND):
             https://arxiv.org/abs/1411.4280
 
         Example:
-            >>> layer = DropoutND(0.5, spatial_ndim=1)
+            >>> layer = DropoutND(0.5)
             >>> layer(jnp.ones((1, 10)))
             [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
         super().__init__(p=p, spatial_ndim=3)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3

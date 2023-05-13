@@ -1,10 +1,24 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import isinstance_factory
+from serket.nn.utils import IsInstance
 
 
 class Flatten(pytc.TreeClass):
@@ -35,8 +49,8 @@ class Flatten(pytc.TreeClass):
         https://pytorch.org/docs/stable/generated/torch.nn.Flatten.html?highlight=flatten#torch.nn.Flatten
     """
 
-    start_dim: int = pytc.field(default=0, callbacks=[isinstance_factory(int)])
-    end_dim: int = pytc.field(default=-1, callbacks=[isinstance_factory(int)])
+    start_dim: int = pytc.field(default=0, callbacks=[IsInstance(int)])
+    end_dim: int = pytc.field(default=-1, callbacks=[IsInstance(int)])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         start_dim = self.start_dim + (0 if self.start_dim >= 0 else x.ndim)
@@ -45,8 +59,8 @@ class Flatten(pytc.TreeClass):
 
 
 class Unflatten(pytc.TreeClass):
-    dim: int = pytc.field(default=0, callbacks=[isinstance_factory(int)])
-    shape: tuple = pytc.field(default=None, callbacks=[isinstance_factory(tuple)])
+    dim: int = pytc.field(default=0, callbacks=[IsInstance(int)])
+    shape: tuple = pytc.field(default=None, callbacks=[IsInstance(tuple)])
 
     """
     

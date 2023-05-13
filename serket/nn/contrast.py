@@ -1,5 +1,20 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
+import abc
 import functools as ft
 
 import jax
@@ -37,11 +52,16 @@ class AdjustContrastND(pytc.TreeClass):
     """
 
     contrast_factor: float = 1.0
-    spatial_ndim: int = 1
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(adjust_contrast_nd(x, self.contrast_factor))
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the image."""
+        ...
 
 
 class AdjustContrast2D(AdjustContrastND):
@@ -51,14 +71,20 @@ class AdjustContrast2D(AdjustContrastND):
         Args:
             contrast_factor: contrast factor to adjust the image by.
         """
-        super().__init__(contrast_factor=contrast_factor, spatial_ndim=2)
+        super().__init__(contrast_factor=contrast_factor)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class RandomContrastND(pytc.TreeClass):
     contrast_range: tuple
 
-    def __init__(self, contrast_range=(0.5, 1), spatial_ndim=1):
-        """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.
+    def __init__(self, contrast_range=(0.5, 1)):
+        """Randomly adjusts the contrast of an image by scaling the pixel
+        values by a factor.
+
         Args:
             contrast_range: range of contrast factors to randomly sample from.
         """
@@ -72,7 +98,6 @@ class RandomContrastND(pytc.TreeClass):
             raise ValueError(msg)
 
         self.contrast_range = contrast_range
-        self.spatial_ndim = spatial_ndim
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(
@@ -88,12 +113,23 @@ class RandomContrastND(pytc.TreeClass):
             key=key,
         )
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the image."""
+        ...
+
 
 class RandomContrast2D(RandomContrastND):
     def __init__(self, contrast_range=(0.5, 1)):
-        """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.
+        """Randomly adjusts the contrast of an image by scaling the pixel
+        values by a factor.
 
         Args:
             contrast_range: range of contrast factors to randomly sample from.
         """
-        super().__init__(contrast_range=contrast_range, spatial_ndim=2)
+        super().__init__(contrast_range=contrast_range)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2

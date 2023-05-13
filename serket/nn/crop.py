@@ -1,5 +1,20 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
+import abc
 import functools as ft
 
 import jax
@@ -15,7 +30,6 @@ class CropND(pytc.TreeClass):
         self,
         size: int | tuple[int, ...],
         start: int | tuple[int, ...],
-        spatial_ndim,
     ):
         """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
 
@@ -23,14 +37,19 @@ class CropND(pytc.TreeClass):
             size: size of the slice
             start: start of the slice
         """
-        self.size = canonicalize(size, spatial_ndim, "size")
-        self.start = canonicalize(start, spatial_ndim, "start")
-        self.spatial_ndim = spatial_ndim
+        self.size = canonicalize(size, self.spatial_ndim, name="size")
+        self.start = canonicalize(start, self.spatial_ndim, name="start")
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         shape = ((0, *self.start), (x.shape[0], *self.size))
         return lax.stop_gradient(jax.lax.dynamic_slice(x, *shape))
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the image."""
+        ...
 
 
 class Crop1D(CropND):
@@ -49,7 +68,11 @@ class Crop1D(CropND):
             >>> print(sk.nn.Crop1D(size=3, start=1)(x))
             [[2 3 4]]
         """
-        super().__init__(size, start, spatial_ndim=1)
+        super().__init__(size, start)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class Crop2D(CropND):
@@ -82,7 +105,11 @@ class Crop2D(CropND):
               [16 17 18]
               [21 22 23]]]
         """
-        super().__init__(size, start, spatial_ndim=2)
+        super().__init__(size, start)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Crop3D(CropND):
@@ -97,18 +124,21 @@ class Crop3D(CropND):
             size: size of the slice, either a single int or a tuple of two ints
             start: start of the slice, either a single int or a tuple of three ints for start along each axis
         """
-        super().__init__(size, start, spatial_ndim=3)
+        super().__init__(size, start)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 class RandomCropND(pytc.TreeClass):
-    def __init__(self, size: int | tuple[int, ...], spatial_ndim: int):
+    def __init__(self, size: int | tuple[int, ...]):
         """Applies jax.lax.dynamic_slice_in_dim with a random start along each axis
 
         Args:
             size: size of the slice
         """
-        self.size = canonicalize(size, spatial_ndim, "size")
-        self.spatial_ndim = spatial_ndim
+        self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
@@ -118,6 +148,12 @@ class RandomCropND(pytc.TreeClass):
         )
         return jax.lax.dynamic_slice(x, (0, *start), (x.shape[0], *self.size))
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the image."""
+        ...
+
 
 class RandomCrop1D(RandomCropND):
     def __init__(self, size: int | tuple[int]):
@@ -126,7 +162,11 @@ class RandomCrop1D(RandomCropND):
         Args:
             size: size of the slice
         """
-        super().__init__(size, spatial_ndim=1)
+        super().__init__(size)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class RandomCrop2D(RandomCropND):
@@ -136,7 +176,11 @@ class RandomCrop2D(RandomCropND):
         Args:
             size: size of the slice
         """
-        super().__init__(size, spatial_ndim=2)
+        super().__init__(size)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class RandomCrop3D(RandomCropND):
@@ -146,4 +190,8 @@ class RandomCrop3D(RandomCropND):
         Args:
             size: size of the slice
         """
-        super().__init__(size, spatial_ndim=3)
+        super().__init__(size)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3

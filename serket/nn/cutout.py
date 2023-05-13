@@ -1,3 +1,17 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import functools as ft
@@ -121,12 +135,15 @@ class RandomCutout1D(pytc.TreeClass):
         self.shape = canonicalize(shape, ndim=1, name="shape")
         self.cutout_count = positive_int_cb(cutout_count)
         self.fill_value = fill_value
-        self.spatial_ndim = 1
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         out = random_cutout_1d(x, self.shape, self.cutout_count, self.fill_value, key)
         return lax.stop_gradient(out)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class RandomCutout2D(pytc.TreeClass):
@@ -147,12 +164,15 @@ class RandomCutout2D(pytc.TreeClass):
             https://arxiv.org/abs/1708.04552
             https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
         """
-        self.shape = canonicalize(shape, 2, "shape")
+        self.shape = canonicalize(shape, 2, name="shape")
         self.cutout_count = positive_int_cb(cutout_count)
         self.fill_value = fill_value
-        self.spatial_ndim = 2
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         out = random_cutout_2d(x, self.shape, self.cutout_count, self.fill_value, key)
         return lax.stop_gradient(out)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2

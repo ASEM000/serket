@@ -1,9 +1,20 @@
-# this script defines different convolutional layers
-# https://arxiv.org/pdf/1603.07285.pdf
-# Throughout the code, we use OIHW  as the default data format for kernels. and NCHW for data.
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import annotations
 
+import abc
 import functools as ft
 import operator as op
 from typing import Sequence
@@ -51,7 +62,6 @@ class ConvND(pytc.TreeClass):
         bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
-        spatial_ndim: int = 2,
     ):
         """Convolutional layer.
 
@@ -66,19 +76,31 @@ class ConvND(pytc.TreeClass):
             weight_init_func: function to use for initializing the weights
             bias_init_func: function to use for initializing the bias
             groups: number of groups to use for grouped convolution
-            spatial_ndim: number of dimensions of the convolution
             key: key to use for initializing the weights
 
-        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        Note:
+            https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
         # already checked by the callbacks
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")  # fmt: skip
-        self.strides = canonicalize(strides, spatial_ndim, name="strides")
+        self.kernel_size = canonicalize(
+            kernel_size,
+            self.spatial_ndim,
+            name="kernel_size",
+        )
+        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding  # delayed canonicalization
-        self.input_dilation = canonicalize(input_dilation, spatial_ndim, name="input_dilation")  # fmt: skip
-        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
+        self.input_dilation = canonicalize(
+            input_dilation,
+            self.spatial_ndim,
+            name="input_dilation",
+        )
+        self.kernel_dilation = canonicalize(
+            kernel_dilation,
+            self.spatial_ndim,
+            name="kernel_dilation",
+        )
         self.weight_init_func = init_func_cb(weight_init_func)
         self.bias_init_func = init_func_cb(bias_init_func)
         self.groups = positive_int_cb(groups)
@@ -89,15 +111,13 @@ class ConvND(pytc.TreeClass):
                 f"got {self.out_features % self.groups}"
             )
 
-        self.spatial_ndim = spatial_ndim
-
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
         self.weight = self.weight_init_func(key, weight_shape)
 
         if bias_init_func is None:
             self.bias = None
         else:
-            bias_shape = (out_features, *(1,) * spatial_ndim)
+            bias_shape = (out_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -124,6 +144,12 @@ class ConvND(pytc.TreeClass):
         if self.bias is None:
             return jnp.squeeze(x, 0)
         return jnp.squeeze((x + self.bias), 0)
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolutional layer."""
+        ...
 
 
 class Conv1D(ConvND):
@@ -165,7 +191,8 @@ class Conv1D(ConvND):
             >>> print(layer(x).shape)
             (2, 5)
 
-        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        Note:
+            https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
 
         super().__init__(
@@ -180,8 +207,11 @@ class Conv1D(ConvND):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class Conv2D(ConvND):
@@ -238,8 +268,11 @@ class Conv2D(ConvND):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Conv3D(ConvND):
@@ -282,7 +315,8 @@ class Conv3D(ConvND):
             (2, 5, 5, 5)
 
 
-        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        Note:
+            https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
 
         super().__init__(
@@ -297,8 +331,11 @@ class Conv3D(ConvND):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=3,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 # ---------------------------------------------------------------------------- #
@@ -319,7 +356,6 @@ class ConvNDTranspose(pytc.TreeClass):
         bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
-        spatial_ndim: int = 2,
     ):
         """Convolutional Transpose Layer
 
@@ -335,24 +371,33 @@ class ConvNDTranspose(pytc.TreeClass):
             bias_init_func : Bias initialization function
             groups : Number of groups
             key : PRNG key
-            spatial_ndim : Number of dimensions
         """
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
-        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.kernel_size = canonicalize(
+            kernel_size, self.spatial_ndim, name="kernel_size"
+        )
+        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding  # delayed canonicalization
-        self.output_padding = canonicalize(output_padding, spatial_ndim, "output_padding")  # fmt: skip
-        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, "kernel_dilation")  # fmt: skip
+        self.output_padding = canonicalize(
+            output_padding,
+            self.spatial_ndim,
+            name="output_padding",
+        )
+        self.kernel_dilation = canonicalize(
+            kernel_dilation,
+            self.spatial_ndim,
+            name="kernel_dilation",
+        )
         self.weight_init_func = init_func_cb(weight_init_func)
         self.bias_init_func = init_func_cb(bias_init_func)
         self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
-            msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
-            raise ValueError(msg)
-
-        self.spatial_ndim = spatial_ndim
+            raise ValueError(
+                "Expected out_features % groups == 0,"
+                f"got {self.out_features % self.groups}"
+            )
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -360,7 +405,7 @@ class ConvNDTranspose(pytc.TreeClass):
         if bias_init_func is None:
             self.bias = None
         else:
-            bias_shape = (out_features, *(1,) * spatial_ndim)
+            bias_shape = (out_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -393,6 +438,12 @@ class ConvNDTranspose(pytc.TreeClass):
             return jnp.squeeze(y, 0)
         return jnp.squeeze(y + self.bias, 0)
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolutional layer."""
+        ...
+
 
 class Conv1DTranspose(ConvNDTranspose):
     def __init__(
@@ -424,7 +475,6 @@ class Conv1DTranspose(ConvNDTranspose):
             bias_init_func : Bias initialization function
             groups : Number of groups
             key : PRNG key
-            spatial_ndim : Number of dimensions
         """
         super().__init__(
             in_features=in_features,
@@ -438,8 +488,11 @@ class Conv1DTranspose(ConvNDTranspose):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class Conv2DTranspose(ConvNDTranspose):
@@ -472,7 +525,6 @@ class Conv2DTranspose(ConvNDTranspose):
             bias_init_func : Bias initialization function
             groups : Number of groups
             key : PRNG key
-            spatial_ndim : Number of dimensions
         """
         super().__init__(
             in_features=in_features,
@@ -486,8 +538,11 @@ class Conv2DTranspose(ConvNDTranspose):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Conv3DTranspose(ConvNDTranspose):
@@ -520,7 +575,6 @@ class Conv3DTranspose(ConvNDTranspose):
             bias_init_func : Bias initialization function
             groups : Number of groups
             key : PRNG key
-            spatial_ndim : Number of dimensions
         """
         super().__init__(
             in_features=in_features,
@@ -534,8 +588,11 @@ class Conv3DTranspose(ConvNDTranspose):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=3,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 # ---------------------------------------------------------------------------- #
@@ -553,7 +610,6 @@ class DepthwiseConvND(pytc.TreeClass):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
-        spatial_ndim: int = 2,
     ):
         """Depthwise Convolutional layer.
 
@@ -565,24 +621,25 @@ class DepthwiseConvND(pytc.TreeClass):
             padding: padding of the input
             weight_init_func: function to initialize the weights
             bias_init_func: function to initialize the bias
-            spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
         Note:
-            See :
-                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-                https://github.com/google/flax/blob/main/flax/linen/linear.py
+            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+            https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
         self.in_features = positive_int_cb(in_features)
-        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.kernel_size = canonicalize(
+            kernel_size, self.spatial_ndim, name="kernel_size"
+        )
         self.depth_multiplier = positive_int_cb(depth_multiplier)
-        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding  # delayed canonicalization
-        self.input_dilation = canonicalize(1, spatial_ndim, "input_dilation")  # fmt: skip
-        self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
+        self.input_dilation = canonicalize(1, self.spatial_ndim, name="input_dilation")
+        self.kernel_dilation = canonicalize(
+            1, self.spatial_ndim, name="kernel_dilation"
+        )
         self.weight_init_func = init_func_cb(weight_init_func)
         self.bias_init_func = init_func_cb(bias_init_func)
-        self.spatial_ndim = spatial_ndim
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -590,7 +647,7 @@ class DepthwiseConvND(pytc.TreeClass):
         if bias_init_func is None:
             self.bias = None
         else:
-            bias_shape = (depth_multiplier * in_features, *(1,) * spatial_ndim)
+            bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -618,6 +675,12 @@ class DepthwiseConvND(pytc.TreeClass):
             return jnp.squeeze(y, 0)
         return jnp.squeeze((y + self.bias), 0)
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolutional layer."""
+        ...
+
 
 class DepthwiseConv1D(DepthwiseConvND):
     def __init__(
@@ -642,7 +705,6 @@ class DepthwiseConv1D(DepthwiseConvND):
             padding: padding of the input
             weight_init_func: function to initialize the weights
             bias_init_func: function to initialize the bias
-            spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
         Example:
@@ -664,8 +726,11 @@ class DepthwiseConv1D(DepthwiseConvND):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=key,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class DepthwiseConv2D(DepthwiseConvND):
@@ -691,7 +756,6 @@ class DepthwiseConv2D(DepthwiseConvND):
             padding: padding of the input
             weight_init_func: function to initialize the weights
             bias_init_func: function to initialize the bias
-            spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
         Example:
@@ -713,8 +777,11 @@ class DepthwiseConv2D(DepthwiseConvND):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=key,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class DepthwiseConv3D(DepthwiseConvND):
@@ -740,7 +807,6 @@ class DepthwiseConv3D(DepthwiseConvND):
             padding: padding of the input
             weight_init_func: function to initialize the weights
             bias_init_func: function to initialize the bias
-            spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
         Example:
@@ -762,81 +828,17 @@ class DepthwiseConv3D(DepthwiseConvND):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=key,
-            spatial_ndim=3,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 # ---------------------------------------------------------------------------- #
 
 
-class SeparableConvND(pytc.TreeClass):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        depth_multiplier: int = 1,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_bias_init_func: InitFuncType = "zeros",
-        spatial_ndim: int = 2,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        """Separable convolutional layer.
-
-        Note:
-            See:
-                https://en.wikipedia.org/wiki/Separable_filter
-                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
-
-        Args:
-            in_features : Number of input channels.
-            out_features : Number of output channels.
-            kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels for each input channel.
-            strides : Stride of the convolution.
-            padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-            spatial_ndim : Number of spatial dimensions.
-
-        """
-        self.depthwise_conv = DepthwiseConvND(
-            in_features=in_features,
-            depth_multiplier=depth_multiplier,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            weight_init_func=depthwise_weight_init_func,
-            bias_init_func=None,  # no bias for lhs
-            key=key,
-            spatial_ndim=spatial_ndim,
-        )
-
-        self.pointwise_conv = ConvND(
-            in_features=in_features * depth_multiplier,
-            out_features=out_features,
-            kernel_size=1,
-            strides=strides,
-            padding=padding,
-            weight_init_func=pointwise_weight_init_func,
-            bias_init_func=pointwise_bias_init_func,
-            key=key,
-            spatial_ndim=spatial_ndim,
-        )
-
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self.depthwise_conv(x)
-        x = self.pointwise_conv(x)
-        return x
-
-
-class SeparableConv1D(SeparableConvND):
+class SeparableConv1D(pytc.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -853,41 +855,59 @@ class SeparableConv1D(SeparableConvND):
     ):
         """1D Separable convolutional layer.
 
-        Note:
-            See:
-                https://en.wikipedia.org/wiki/Separable_filter
-                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
-
         Args:
             in_features : Number of input channels.
             out_features : Number of output channels.
             kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels for each input channel.
+            depth_multiplier : Number of depthwise convolution output channels
+                for each input channel.
             strides : Stride of the convolution.
             padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-            spatial_ndim : Number of spatial dimensions.
+            depthwise_weight_init_func : Function to initialize the depthwise
+                convolution weights.
+            pointwise_weight_init_func : Function to initialize the pointwise
+                convolution weights.
+            pointwise_bias_init_func : Function to initialize the pointwise
+                convolution bias.
 
+        Note:
+            https://en.wikipedia.org/wiki/Separable_filter
+            https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+            https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
         """
-        super().__init__(
+        self.depthwise_conv = DepthwiseConv1D(
             in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
             depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            depthwise_weight_init_func=depthwise_weight_init_func,
-            pointwise_weight_init_func=pointwise_weight_init_func,
-            pointwise_bias_init_func=pointwise_bias_init_func,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
             key=key,
-            spatial_ndim=1,
         )
 
+        self.pointwise_conv = Conv1D(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+        )
 
-class SeparableConv2D(SeparableConvND):
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+
+class SeparableConv2D(pytc.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -904,41 +924,59 @@ class SeparableConv2D(SeparableConvND):
     ):
         """2D Separable convolutional layer.
 
-        Note:
-            See:
-                https://en.wikipedia.org/wiki/Separable_filter
-                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
-
         Args:
             in_features : Number of input channels.
             out_features : Number of output channels.
             kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels for each input channel.
+            depth_multiplier : Number of depthwise convolution output channels
+                for each input channel.
             strides : Stride of the convolution.
             padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-            spatial_ndim : Number of spatial dimensions.
+            depthwise_weight_init_func : Function to initialize the depthwise
+                convolution weights.
+            pointwise_weight_init_func : Function to initialize the pointwise
+                convolution weights.
+            pointwise_bias_init_func : Function to initialize the pointwise
+                convolution bias.
 
+        Note:
+            https://en.wikipedia.org/wiki/Separable_filter
+            https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+            https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
         """
-        super().__init__(
+        self.depthwise_conv = DepthwiseConv2D(
             in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
             depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            depthwise_weight_init_func=depthwise_weight_init_func,
-            pointwise_weight_init_func=pointwise_weight_init_func,
-            pointwise_bias_init_func=pointwise_bias_init_func,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
             key=key,
-            spatial_ndim=2,
         )
 
+        self.pointwise_conv = Conv2D(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+        )
 
-class SeparableConv3D(SeparableConvND):
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class SeparableConv3D(pytc.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -965,31 +1003,50 @@ class SeparableConv3D(SeparableConvND):
             in_features : Number of input channels.
             out_features : Number of output channels.
             kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels for each input channel.
+            depth_multiplier : Number of depthwise convolution output channels
+                for each input channel.
             strides : Stride of the convolution.
             padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-            spatial_ndim : Number of spatial dimensions.
-
+            depthwise_weight_init_func : Function to initialize the depthwise
+                convolution weights.
+            pointwise_weight_init_func : Function to initialize the pointwise
+                convolution weights.
+            pointwise_bias_init_func : Function to initialize the pointwise
+                convolution bias.
         """
-        super().__init__(
+        self.depthwise_conv = DepthwiseConv3D(
             in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
             depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            depthwise_weight_init_func=depthwise_weight_init_func,
-            pointwise_weight_init_func=pointwise_weight_init_func,
-            pointwise_bias_init_func=pointwise_bias_init_func,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
             key=key,
-            spatial_ndim=3,
         )
 
+        self.pointwise_conv = Conv3D(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+        )
 
-# ----------------------------------------------------------------------------------------------------------------------#
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
+
+# ---------------------------------------------------------------------------- #
 
 
 class ConvNDLocal(pytc.TreeClass):
@@ -1006,7 +1063,6 @@ class ConvNDLocal(pytc.TreeClass):
         kernel_dilation: DilationType = 1,
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
-        spatial_ndim: int = 2,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Local convolutional layer.
@@ -1022,7 +1078,6 @@ class ConvNDLocal(pytc.TreeClass):
             kernel_dilation: dilation of the convolution kernel
             weight_init_func: weight initialization function
             bias_init_func: bias initialization function
-            spatial_ndim: number of dimensions
             key: random number generator key
         Note:
             See : https://keras.io/api/layers/locally_connected_layers/
@@ -1030,20 +1085,29 @@ class ConvNDLocal(pytc.TreeClass):
         # checked by callbacks
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
-        self.in_size = canonicalize(in_size, spatial_ndim, "in_size")  # fmt: skip
-        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.kernel_size = canonicalize(
+            kernel_size, self.spatial_ndim, name="kernel_size"
+        )
+        self.in_size = canonicalize(in_size, self.spatial_ndim, name="in_size")
+        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = delayed_canonicalize_padding(
             self.in_size,
             padding,
             self.kernel_size,
             self.strides,
         )
-        self.input_dilation = canonicalize(input_dilation, spatial_ndim, "input_dilation")  # fmt: skip
-        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, "kernel_dilation")  # fmt: skip
+        self.input_dilation = canonicalize(
+            input_dilation,
+            self.spatial_ndim,
+            name="input_dilation",
+        )
+        self.kernel_dilation = canonicalize(
+            kernel_dilation,
+            self.spatial_ndim,
+            name="kernel_dilation",
+        )
         self.weight_init_func = init_func_cb(weight_init_func)
         self.bias_init_func = init_func_cb(bias_init_func)
-        self.spatial_ndim = spatial_ndim
 
         out_size = calculate_convolution_output_shape(
             shape=self.in_size,
@@ -1086,6 +1150,12 @@ class ConvNDLocal(pytc.TreeClass):
             return jnp.squeeze(y, 0)
         return jnp.squeeze((y + self.bias), 0)
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolutional layer."""
+        ...
+
 
 class Conv1DLocal(ConvNDLocal):
     def __init__(
@@ -1115,7 +1185,6 @@ class Conv1DLocal(ConvNDLocal):
             kernel_dilation: dilation of the convolution kernel
             weight_init_func: weight initialization function
             bias_init_func: bias initialization function
-            spatial_ndim: number of dimensions
             key: random number generator key
         Note:
             See : https://keras.io/api/layers/locally_connected_layers/
@@ -1131,8 +1200,11 @@ class Conv1DLocal(ConvNDLocal):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=key,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class Conv2DLocal(ConvNDLocal):
@@ -1163,7 +1235,6 @@ class Conv2DLocal(ConvNDLocal):
             kernel_dilation: dilation of the convolution kernel
             weight_init_func: weight initialization function
             bias_init_func: bias initialization function
-            spatial_ndim: number of dimensions
             key: random number generator key
         Note:
             See : https://keras.io/api/layers/locally_connected_layers/
@@ -1179,8 +1250,11 @@ class Conv2DLocal(ConvNDLocal):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=key,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Conv3DLocal(ConvNDLocal):
@@ -1211,7 +1285,6 @@ class Conv3DLocal(ConvNDLocal):
             kernel_dilation: dilation of the convolution kernel
             weight_init_func: weight initialization function
             bias_init_func: bias initialization function
-            spatial_ndim: number of dimensions
             key: random number generator key
         Note:
             See : https://keras.io/api/layers/locally_connected_layers/
@@ -1227,5 +1300,8 @@ class Conv3DLocal(ConvNDLocal):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=key,
-            spatial_ndim=3,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3

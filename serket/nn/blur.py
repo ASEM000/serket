@@ -1,3 +1,17 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 # import kernex as kex
@@ -44,7 +58,6 @@ class AvgBlur2D(pytc.TreeClass):
         w = w[:, None]
         w = jnp.repeat(w[None, None], in_features, axis=0)
 
-        self.spatial_ndim = 2
         self.in_features = in_features
         self.conv1 = DepthwiseConv2D(
             in_features=in_features,
@@ -67,6 +80,10 @@ class AvgBlur2D(pytc.TreeClass):
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv2(self.conv1(x)))
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class GaussianBlur2D(pytc.TreeClass):
@@ -120,13 +137,16 @@ class GaussianBlur2D(pytc.TreeClass):
         )
 
         self.in_features = in_features
-        self.spatial_ndim = 2
 
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv1(self.conv2(x)))
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Filter2D(pytc.TreeClass):
@@ -152,7 +172,6 @@ class Filter2D(pytc.TreeClass):
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
         self.in_features = positive_int_cb(in_features)
-        self.spatial_ndim = 2
         self.kernel = jnp.stack([kernel] * in_features, axis=0)
         self.kernel = self.kernel[:, None]
 
@@ -168,6 +187,10 @@ class Filter2D(pytc.TreeClass):
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv(x))
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class FFTFilter2D(pytc.TreeClass):
@@ -193,7 +216,6 @@ class FFTFilter2D(pytc.TreeClass):
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
         self.in_features = positive_int_cb(in_features)
-        self.spatial_ndim = 2
         self.kernel = jnp.stack([kernel] * in_features, axis=0)
         self.kernel = self.kernel[:, None]
 
@@ -209,3 +231,7 @@ class FFTFilter2D(pytc.TreeClass):
     @ft.partial(validate_in_features, attribute_name="in_features")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv(x))
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2

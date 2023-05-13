@@ -1,3 +1,17 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 from typing import Any
@@ -10,7 +24,7 @@ from jax.lax import stop_gradient
 from serket.nn.crop import RandomCrop2D
 from serket.nn.padding import Pad2D
 from serket.nn.resize import Resize2D
-from serket.nn.utils import range_cb_factory
+from serket.nn.utils import Range
 
 
 class RandomApply(pytc.TreeClass):
@@ -36,7 +50,7 @@ class RandomApply(pytc.TreeClass):
     """
 
     layer: Any
-    p: float = pytc.field(default=0.5, callbacks=[range_cb_factory(0, 1)])
+    p: float = pytc.field(default=0.5, callbacks=[Range(0, 1)])
 
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):
         if not jr.bernoulli(key, stop_gradient(self.p)):
@@ -110,3 +124,7 @@ class RandomZoom2D(pytc.TreeClass):
             x = Pad2D(((0, 0), ((C - CC) // 2, (C - CC) - (C - CC) // 2)))(x)
 
         return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2

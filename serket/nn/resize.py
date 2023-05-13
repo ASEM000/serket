@@ -1,5 +1,20 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
+import abc
 import functools as ft
 from typing import Literal
 
@@ -44,12 +59,10 @@ class ResizeND(pytc.TreeClass):
         size: int | tuple[int, ...],
         method: MethodKind = "nearest",
         antialias: bool = True,
-        spatial_ndim: int = 1,
     ):
-        self.size = canonicalize(size, spatial_ndim, "size")
+        self.size = canonicalize(size, self.spatial_ndim, name="size")
         self.method = method
         self.antialias = antialias
-        self.spatial_ndim = spatial_ndim
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -60,20 +73,24 @@ class ResizeND(pytc.TreeClass):
             antialias=self.antialias,
         )
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the image."""
+        ...
+
 
 class UpsampleND(pytc.TreeClass):
     def __init__(
         self,
         scale: int | tuple[int, ...] = 1,
         method: MethodKind = "nearest",
-        spatial_ndim: int = 1,
     ):
         # the difference between this and ResizeND is that UpsamplingND
         # use scale instead of size
         # assert types
-        self.scale = canonicalize(scale, spatial_ndim, "scale")
+        self.scale = canonicalize(scale, self.spatial_ndim, name="scale")
         self.method = method
-        self.spatial_ndim = spatial_ndim
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -83,6 +100,12 @@ class UpsampleND(pytc.TreeClass):
             shape=(x.shape[0], *resized_shape),
             method=self.method,
         )
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the image."""
+        ...
 
 
 class Resize1D(ResizeND):
@@ -117,7 +140,11 @@ class Resize1D(ResizeND):
                 "lanczos5"
                     Lanczos resampling, using a kernel of radius 5.
         """
-        super().__init__(size=size, method=method, antialias=antialias, spatial_ndim=1)
+        super().__init__(size=size, method=method, antialias=antialias)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class Resize2D(ResizeND):
@@ -152,7 +179,11 @@ class Resize2D(ResizeND):
                 "lanczos5"
                     Lanczos resampling, using a kernel of radius 5.
         """
-        super().__init__(size=size, method=method, antialias=antialias, spatial_ndim=2)
+        super().__init__(size=size, method=method, antialias=antialias)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Resize3D(ResizeND):
@@ -187,7 +218,11 @@ class Resize3D(ResizeND):
                 "lanczos5"
                     Lanczos resampling, using a kernel of radius 5.
         """
-        super().__init__(size=size, method=method, antialias=antialias, spatial_ndim=3)
+        super().__init__(size=size, method=method, antialias=antialias)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 class Upsample1D(UpsampleND):
@@ -198,7 +233,11 @@ class Upsample1D(UpsampleND):
             scale: the scale of the output.
             method: the method of interpolation. Defaults to "nearest".
         """
-        super().__init__(scale=scale, method=method, spatial_ndim=1)
+        super().__init__(scale=scale, method=method)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class Upsample2D(UpsampleND):
@@ -209,7 +248,11 @@ class Upsample2D(UpsampleND):
             scale: the scale of the output.
             method: the method of interpolation. Defaults to "nearest".
         """
-        super().__init__(scale=scale, method=method, spatial_ndim=2)
+        super().__init__(scale=scale, method=method)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Upsample3D(UpsampleND):
@@ -220,4 +263,8 @@ class Upsample3D(UpsampleND):
             scale: the scale of the output.
             method: the method of interpolation. Defaults to "nearest".
         """
-        super().__init__(scale=scale, method=method, spatial_ndim=3)
+        super().__init__(scale=scale, method=method)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3

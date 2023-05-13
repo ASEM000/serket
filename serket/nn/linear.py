@@ -1,3 +1,17 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import functools as ft
@@ -7,12 +21,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import (
-    InitFuncType,
-    init_func_cb,
-    isinstance_factory,
-    positive_int_cb,
-)
+from serket.nn.utils import InitFuncType, IsInstance, init_func_cb, positive_int_cb
 
 
 @ft.lru_cache(maxsize=None)
@@ -220,9 +229,9 @@ class GeneralLinear(pytc.TreeClass):
             this layer uses einsum to apply the linear layer to the specified axes.
         """
 
-        self.in_features = isinstance_factory(tuple)(in_features)
+        self.in_features = IsInstance(tuple)(in_features)
         self.out_features = out_features
-        self.in_axes = isinstance_factory(tuple)(in_axes)
+        self.in_axes = IsInstance(tuple)(in_axes)
 
         if len(in_axes) != len(in_features):
             msg = "Expected in_axes and in_features to have the same length,"

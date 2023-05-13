@@ -1,9 +1,20 @@
-# references
-# https://github.com/fkodom/fft-conv-pytorch/blob/master/fft_conv_pytorch/fft_conv.py
-# https://stackoverflow.com/questions/47272699/need-tensorflow-keras-equivalent-for-scipy-signal-fftconvolve
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import annotations
 
+import abc
 import functools as ft
 
 import jax
@@ -105,7 +116,8 @@ def fft_conv_general_dilated(
         x: input array in shape (batch, in_features, *spatial_in_shape)
         w: kernel array in shape of (out_features, in_features // groups, *kernel_size)
         strides: strides in form of tuple of ints for each spatial dimension
-        padding: padding in the form of ((before_1, after_1), ..., (before_N, after_N)) for each spatial dimension
+        padding: padding in the form of ((before_1, after_1), ..., (before_N, after_N))
+            for each spatial dimension
         groups: number of groups
         dilation: dilation in the form of tuple of ints for each spatial dimension
     """
@@ -130,8 +142,8 @@ def fft_conv_general_dilated(
     z = jnp.fft.irfftn(z_fft, axes=range(2, spatial_ndim + 2))
 
     start = (0,) * (spatial_ndim + 2)
-    end = (z.shape[0], z.shape[1])
-    end += tuple(max((x_shape[i] - w_shape[i] + 1), 0) for i in range(2, spatial_ndim + 2))  # fmt: skip
+    end = [z.shape[0], z.shape[1]]
+    end += [max((x_shape[i] - w_shape[i] + 1), 0) for i in range(2, spatial_ndim + 2)]
 
     if all(s == 1 for s in strides):
         return jax.lax.dynamic_slice(z, start, end)
@@ -153,7 +165,6 @@ class FFTConvND(pytc.TreeClass):
         bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
-        spatial_ndim: int = 2,
     ):
         """FFT Convolutional layer.
 
@@ -167,7 +178,6 @@ class FFTConvND(pytc.TreeClass):
             weight_init_func: function to use for initializing the weights
             bias_init_func: function to use for initializing the bias
             groups: number of groups to use for grouped convolution
-            spatial_ndim: number of dimensions of the convolution
             key: key to use for initializing the weights
 
         See:
@@ -176,14 +186,21 @@ class FFTConvND(pytc.TreeClass):
         """
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")
-        self.strides = canonicalize(strides, spatial_ndim, name="strides")
+        self.kernel_size = canonicalize(
+            kernel_size,
+            ndim=self.spatial_ndim,
+            name="kernel_size",
+        )
+        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding
-        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
+        self.kernel_dilation = canonicalize(
+            kernel_dilation,
+            self.spatial_ndim,
+            name="kernel_dilation",
+        )
         self.weight_init_func = init_func_cb(weight_init_func)
         self.bias_init_func = init_func_cb(bias_init_func)
         self.groups = positive_int_cb(groups)
-        self.spatial_ndim = spatial_ndim
 
         if self.out_features % self.groups != 0:
             msg = f"Expected out_features % groups == 0, got {self.out_features % self.groups}"
@@ -195,7 +212,7 @@ class FFTConvND(pytc.TreeClass):
         if bias_init_func is None:
             self.bias = None
         else:
-            bias_shape = (out_features, *(1,) * spatial_ndim)
+            bias_shape = (out_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -220,6 +237,12 @@ class FFTConvND(pytc.TreeClass):
         if self.bias is None:
             return y
         return y + self.bias
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolution."""
+        ...
 
 
 class FFTConv1D(FFTConvND):
@@ -249,7 +272,6 @@ class FFTConv1D(FFTConvND):
             weight_init_func: function to use for initializing the weights
             bias_init_func: function to use for initializing the bias
             groups: number of groups to use for grouped convolution
-            spatial_ndim: number of dimensions of the convolution
             key: key to use for initializing the weights
 
         See:
@@ -267,8 +289,11 @@ class FFTConv1D(FFTConvND):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class FFTConv2D(FFTConvND):
@@ -298,7 +323,6 @@ class FFTConv2D(FFTConvND):
             weight_init_func: function to use for initializing the weights
             bias_init_func: function to use for initializing the bias
             groups: number of groups to use for grouped convolution
-            spatial_ndim: number of dimensions of the convolution
             key: key to use for initializing the weights
 
         See:
@@ -316,8 +340,11 @@ class FFTConv2D(FFTConvND):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class FFTConv3D(FFTConvND):
@@ -347,7 +374,6 @@ class FFTConv3D(FFTConvND):
             weight_init_func: function to use for initializing the weights
             bias_init_func: function to use for initializing the bias
             groups: number of groups to use for grouped convolution
-            spatial_ndim: number of dimensions of the convolution
             key: key to use for initializing the weights
 
         See:
@@ -365,11 +391,14 @@ class FFTConv3D(FFTConvND):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=3,
         )
 
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
-# ----------------------------------------------------------------------------------------------------------------------#
+
+# ---------------------------------------------------------------------------- #
 
 
 class FFTConvNDTranspose(pytc.TreeClass):
@@ -387,7 +416,6 @@ class FFTConvNDTranspose(pytc.TreeClass):
         bias_init_func: InitFuncType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
-        spatial_ndim: int = 2,
     ):
         """Convolutional Transpose Layer
 
@@ -402,24 +430,36 @@ class FFTConvNDTranspose(pytc.TreeClass):
             weight_init_func : Weight initialization function
             bias_init_func : Bias initialization function
             groups : Number of groups
-            spatial_ndim : Number of dimensions
             key : PRNG key
         """
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(kernel_size, spatial_ndim, name="kernel_size")
-        self.strides = canonicalize(strides, spatial_ndim, name="strides")
+        self.kernel_size = canonicalize(
+            kernel_size,
+            self.spatial_ndim,
+            name="kernel_size",
+        )
+        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding
-        self.output_padding = canonicalize(output_padding, spatial_ndim, name="output_padding")  # fmt: skip
-        self.kernel_dilation = canonicalize(kernel_dilation, spatial_ndim, name="kernel_dilation")  # fmt: skip
+        self.output_padding = canonicalize(
+            output_padding,
+            self.spatial_ndim,
+            name="output_padding",
+        )
+        self.kernel_dilation = canonicalize(
+            kernel_dilation,
+            self.spatial_ndim,
+            name="kernel_dilation",
+        )
         self.weight_init_func = init_func_cb(weight_init_func)
         self.bias_init_func = init_func_cb(bias_init_func)
         self.groups = positive_int_cb(groups)
-        self.spatial_ndim = spatial_ndim
 
         if self.in_features % self.groups != 0:
-            msg = f"Expected in_features % groups == 0, got {self.in_features % self.groups}"
-            raise ValueError(msg)
+            raise ValueError(
+                f"Expected in_features % groups == 0, "
+                f"got {self.in_features % self.groups}"
+            )
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -427,7 +467,7 @@ class FFTConvNDTranspose(pytc.TreeClass):
         if bias_init_func is None:
             self.bias = None
         else:
-            bias_shape = (out_features, *(1,) * spatial_ndim)
+            bias_shape = (out_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -462,6 +502,12 @@ class FFTConvNDTranspose(pytc.TreeClass):
             return y
         return y + self.bias
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolution."""
+        ...
+
 
 class FFTConv1DTranspose(FFTConvNDTranspose):
     def __init__(
@@ -492,7 +538,6 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
             weight_init_func : Weight initialization function
             bias_init_func : Bias initialization function
             groups : Number of groups
-            spatial_ndim : Number of dimensions
             key : PRNG key
         """
         super().__init__(
@@ -507,8 +552,11 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class FFTConv2DTranspose(FFTConvNDTranspose):
@@ -540,7 +588,6 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
             weight_init_func : Weight initialization function
             bias_init_func : Bias initialization function
             groups : Number of groups
-            spatial_ndim : Number of dimensions
             key : PRNG key
         """
         super().__init__(
@@ -555,8 +602,11 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class FFTConv3DTranspose(FFTConvNDTranspose):
@@ -588,7 +638,6 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
             weight_init_func : Weight initialization function
             bias_init_func : Bias initialization function
             groups : Number of groups
-            spatial_ndim : Number of dimensions
             key : PRNG key
         """
         super().__init__(
@@ -603,11 +652,14 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
             bias_init_func=bias_init_func,
             groups=groups,
             key=key,
-            spatial_ndim=3,
         )
 
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
-# ----------------------------------------------------------------------------------------------------------------------#
+
+# ----------------------------------------------------------------------------- #
 
 
 class DepthwiseFFTConvND(pytc.TreeClass):
@@ -622,7 +674,6 @@ class DepthwiseFFTConvND(pytc.TreeClass):
         weight_init_func: InitFuncType = "glorot_uniform",
         bias_init_func: InitFuncType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
-        spatial_ndim: int = 2,
     ):
         """Depthwise Convolutional layer.
 
@@ -634,7 +685,6 @@ class DepthwiseFFTConvND(pytc.TreeClass):
             padding: padding of the input
             weight_init_func: function to initialize the weights
             bias_init_func: function to initialize the bias
-            spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
         Examples:----
@@ -643,20 +693,22 @@ class DepthwiseFFTConvND(pytc.TreeClass):
             (3, 16, 16, 6)
 
         Note:
-            See :
-                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-                https://github.com/google/flax/blob/main/flax/linen/linear.py
+            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+            https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
         self.in_features = positive_int_cb(in_features)
-        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")  # fmt: skip
+        self.kernel_size = canonicalize(
+            kernel_size, self.spatial_ndim, name="kernel_size"
+        )
         self.depth_multiplier = positive_int_cb(depth_multiplier)
-        self.strides = canonicalize(strides, spatial_ndim, "strides")  # fmt: skip
+        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding
-        self.input_dilation = canonicalize(1, spatial_ndim, "input_dilation")  # fmt: skip
-        self.kernel_dilation = canonicalize(1, spatial_ndim, "kernel_dilation")  # fmt: skip
+        self.input_dilation = canonicalize(1, self.spatial_ndim, name="input_dilation")
+        self.kernel_dilation = canonicalize(
+            1, self.spatial_ndim, name="kernel_dilation"
+        )
         self.weight_init_func = init_func_cb(weight_init_func)
         self.bias_init_func = init_func_cb(bias_init_func)
-        self.spatial_ndim = spatial_ndim
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -664,7 +716,7 @@ class DepthwiseFFTConvND(pytc.TreeClass):
         if bias_init_func is None:
             self.bias = None
         else:
-            bias_shape = (depth_multiplier * in_features, *(1,) * spatial_ndim)
+            bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -690,6 +742,12 @@ class DepthwiseFFTConvND(pytc.TreeClass):
             return y
         return y + self.bias
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolution."""
+        ...
+
 
 class DepthwiseFFTConv1D(DepthwiseFFTConvND):
     def __init__(
@@ -714,13 +772,11 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             padding: padding of the input
             weight_init_func: function to initialize the weights
             bias_init_func: function to initialize the bias
-            spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
         Note:
-            See :
-                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-                https://github.com/google/flax/blob/main/flax/linen/linear.py
+            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+            https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
         super().__init__(
             in_features=in_features,
@@ -731,8 +787,11 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=key,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class DepthwiseFFTConv2D(DepthwiseFFTConvND):
@@ -758,13 +817,11 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
             padding: padding of the input
             weight_init_func: function to initialize the weights
             bias_init_func: function to initialize the bias
-            spatial_ndim: number of spatial dimensions
             key: random key for weight initialization
 
         Note:
-            See :
-                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-                https://github.com/google/flax/blob/main/flax/linen/linear.py
+            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+            https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
         super().__init__(
             in_features=in_features,
@@ -775,8 +832,11 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=key,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class DepthwiseFFTConv3D(DepthwiseFFTConvND):
@@ -806,9 +866,8 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
             key: random key for weight initialization
 
         Note:
-            See :
-                https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-                https://github.com/google/flax/blob/main/flax/linen/linear.py
+            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
+            https://github.com/google/flax/blob/main/flax/linen/linear.py
         """
         super().__init__(
             in_features=in_features,
@@ -819,87 +878,17 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=key,
-            spatial_ndim=3,
         )
 
-
-# ----------------------------------------------------------------------------------------------------------------------#
-
-
-class SeparableFFTConvND(pytc.TreeClass):
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        depth_multiplier: int = 1,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_bias_init_func: InitFuncType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-        spatial_ndim: int = 2,
-    ):
-        """Separable convolutional layer.
-
-        Note:
-            See:
-                https://en.wikipedia.org/wiki/Separable_filter
-                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
-
-        Args:
-            in_features : Number of input channels.
-            out_features : Number of output channels.
-            kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels for each input channel.
-            strides : Stride of the convolution.
-            padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-            spatial_ndim : Number of spatial dimensions.
-
-        """
-        self.in_features = in_features
-        self.depth_multiplier = canonicalize(depth_multiplier, self.in_features, "depth_multiplier")  # fmt: skip
-        self.spatial_ndim = spatial_ndim
-
-        self.depthwise_conv = DepthwiseFFTConvND(
-            in_features=in_features,
-            depth_multiplier=depth_multiplier,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            weight_init_func=depthwise_weight_init_func,
-            bias_init_func=None,  # no bias for lhs
-            key=key,
-            spatial_ndim=spatial_ndim,
-        )
-
-        self.pointwise_conv = FFTConvND(
-            in_features=in_features * depth_multiplier,
-            out_features=out_features,
-            kernel_size=1,
-            strides=strides,
-            padding=padding,
-            weight_init_func=pointwise_weight_init_func,
-            bias_init_func=pointwise_bias_init_func,
-            key=key,
-            spatial_ndim=spatial_ndim,
-        )
-
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self.depthwise_conv(x)
-        x = self.pointwise_conv(x)
-        return x
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
-class SeparableFFTConv1D(SeparableFFTConvND):
+# ---------------------------------------------------------------------------- #
+
+
+class SeparableFFTConv1D(pytc.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -915,42 +904,69 @@ class SeparableFFTConv1D(SeparableFFTConvND):
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Separable 1D FFT Convolutional layer.
-
-        Note:
-            See:
-                https://en.wikipedia.org/wiki/Separable_filter
-                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
-
         Args:
             in_features : Number of input channels.
             out_features : Number of output channels.
             kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels for each input channel.
+            depth_multiplier : Number of depthwise convolution output channels
+                for each input channel.
             strides : Stride of the convolution.
             padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-            spatial_ndim : Number of spatial dimensions.
+            depthwise_weight_init_func : Function to initialize the depthwise
+                convolution weights.
+            pointwise_weight_init_func : Function to initialize the pointwise
+                convolution weights.
+            pointwise_bias_init_func : Function to initialize the pointwise
+                convolution bias.
+
+        Note:
+            https://en.wikipedia.org/wiki/Separable_filter
+            https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+            https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
 
         """
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            depthwise_weight_init_func=depthwise_weight_init_func,
-            pointwise_weight_init_func=pointwise_weight_init_func,
-            pointwise_bias_init_func=pointwise_bias_init_func,
-            key=key,
-            spatial_ndim=1,
+        self.in_features = in_features
+        self.depth_multiplier = canonicalize(
+            depth_multiplier,
+            self.in_features,
+            name="depth_multiplier",
         )
 
+        self.depthwise_conv = DepthwiseFFTConv1D(
+            in_features=in_features,
+            depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
+            key=key,
+        )
 
-class SeparableFFTConv2D(SeparableFFTConvND):
+        self.pointwise_conv = FFTConv1D(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+        )
+
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+
+class SeparableFFTConv2D(pytc.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -967,41 +983,67 @@ class SeparableFFTConv2D(SeparableFFTConvND):
     ):
         """Separable 2D FFT Convolutional layer.
 
-        Note:
-            See:
-                https://en.wikipedia.org/wiki/Separable_filter
-                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
-
         Args:
             in_features : Number of input channels.
             out_features : Number of output channels.
             kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels for each input channel.
+            depth_multiplier : Number of depthwise convolution output channels
+                for each input channel.
             strides : Stride of the convolution.
             padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-            spatial_ndim : Number of spatial dimensions.
-
+            depthwise_weight_init_func : Function to initialize the depthwise
+                convolution weights.
+            pointwise_weight_init_func : Function to initialize the pointwise
+                convolution weights.
+            pointwise_bias_init_func : Function to initialize the pointwise
+                convolution bias.
+        Note:
+            https://en.wikipedia.org/wiki/Separable_filter
+            https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+            https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
         """
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            depthwise_weight_init_func=depthwise_weight_init_func,
-            pointwise_weight_init_func=pointwise_weight_init_func,
-            pointwise_bias_init_func=pointwise_bias_init_func,
-            key=key,
-            spatial_ndim=2,
+        self.in_features = in_features
+        self.depth_multiplier = canonicalize(
+            depth_multiplier,
+            self.in_features,
+            name="depth_multiplier",
         )
 
+        self.depthwise_conv = DepthwiseFFTConv2D(
+            in_features=in_features,
+            depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
+            key=key,
+        )
 
-class SeparableFFTConv3D(SeparableFFTConvND):
+        self.pointwise_conv = FFTConv2D(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+        )
+
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class SeparableFFTConv3D(pytc.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -1034,19 +1076,43 @@ class SeparableFFTConv3D(SeparableFFTConvND):
             depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
             pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
             pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-            spatial_ndim : Number of spatial dimensions.
-
         """
-        super().__init__(
+        self.in_features = in_features
+        self.depth_multiplier = canonicalize(
+            depth_multiplier,
+            self.in_features,
+            name="depth_multiplier",
+        )
+
+        self.depthwise_conv = DepthwiseFFTConv3D(
             in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
             depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            depthwise_weight_init_func=depthwise_weight_init_func,
-            pointwise_weight_init_func=pointwise_weight_init_func,
-            pointwise_bias_init_func=pointwise_bias_init_func,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
             key=key,
-            spatial_ndim=3,
         )
+
+        self.pointwise_conv = FFTConv3D(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+        )
+
+    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_in_features, attribute_name="in_features")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3

@@ -1,5 +1,20 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
+import abc
 import functools as ft
 from typing import Callable
 
@@ -29,7 +44,6 @@ class GeneralPoolND(pytc.TreeClass):
         strides: StridesType = 1,
         *,
         padding: PaddingType = "valid",
-        spatial_ndim: int = 1,
         func: Callable = None,
         constant_values: float | None = 0,
     ):
@@ -39,13 +53,15 @@ class GeneralPoolND(pytc.TreeClass):
             kernel_size: size of the kernel
             strides: strides of the kernel
             padding: padding of the kernel
-            spatial_ndim: number of dimensions
             func: function to apply to the kernel
         """
-        self.kernel_size = canonicalize(kernel_size, spatial_ndim, "kernel_size")
-        self.strides = canonicalize(strides, spatial_ndim, "strides")
+        self.kernel_size = canonicalize(
+            kernel_size,
+            self.spatial_ndim,
+            name="kernel_size",
+        )
+        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding  # gets canonicalized in kmap
-        self.spatial_ndim = spatial_ndim
 
         @jax.vmap
         @kex.kmap(
@@ -62,6 +78,11 @@ class GeneralPoolND(pytc.TreeClass):
     def __call__(self, x, **k):
         return self.func(x)
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        ...
+
 
 class LPPoolND(GeneralPoolND):
     def __init__(
@@ -71,7 +92,6 @@ class LPPoolND(GeneralPoolND):
         strides: StridesType | None = None,
         *,
         padding: PaddingType = "valid",
-        spatial_ndim: int = 1,
     ):
         """Apply Lp pooling to the input.
 
@@ -80,30 +100,26 @@ class LPPoolND(GeneralPoolND):
             kernel_size: size of the kernel
             strides: strides of the kernel
             padding: padding of the kernel
-            spatial_ndim: number of dimensions
         """
 
         super().__init__(
             kernel_size=kernel_size,
             strides=strides or kernel_size,
             padding=padding,
-            spatial_ndim=spatial_ndim,
             func=lambda x: jnp.sum(x**norm_type) ** (1 / norm_type),
         )
 
 
 class GlobalPoolND(pytc.TreeClass):
-    def __init__(
-        self, keepdims: bool = True, spatial_ndim: int = 1, func: Callable = jnp.mean
-    ):
-        """Apply global pooling to the input with function `func` applied to the kernel.
+    def __init__(self, keepdims: bool = True, func: Callable = jnp.mean):
+        """Apply global pooling to the input with function `func` applied
+        to the kernel.
+
         Args:
             keepdims: keep the spatial dimensions
-            spatial_ndim: number of spatial dimensions
             func: function to apply to the kernel
         """
         self.keepdims = keepdims
-        self.spatial_ndim = spatial_ndim
         self.func = func
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -111,17 +127,16 @@ class GlobalPoolND(pytc.TreeClass):
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
         return self.func(x, axis=axes, keepdims=self.keepdims)
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        ...
+
 
 class AdaptivePoolND(pytc.TreeClass):
     output_size: tuple[int, ...]
 
-    def __init__(
-        self,
-        output_size: tuple[int, ...],
-        *,
-        spatial_ndim: int = 1,
-        func: Callable = None,
-    ):
+    def __init__(self, output_size: tuple[int, ...], *, func: Callable = None):
         """Apply pooling to the input with function `func` applied to the kernel.
 
 
@@ -129,7 +144,6 @@ class AdaptivePoolND(pytc.TreeClass):
             kernel_size: size of the kernel
             strides: strides of the kernel
             padding: padding of the kernel
-            spatial_ndim: number of dimensions
             func: function to apply to the kernel
 
         Note:
@@ -138,8 +152,9 @@ class AdaptivePoolND(pytc.TreeClass):
             * kernel_size_i = input_size_i - (output_size_i-1)*stride_i
             * padding_i = "valid"
         """
-        self.output_size = canonicalize(output_size, spatial_ndim, "output_size")
-        self.spatial_ndim = spatial_ndim
+        self.output_size = canonicalize(
+            output_size, self.spatial_ndim, name="output_size"
+        )
         self.func = func
 
     @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
@@ -158,31 +173,20 @@ class AdaptivePoolND(pytc.TreeClass):
 
         return _adaptive_pool(x)
 
-
-class AdaptiveConcatPoolND(pytc.TreeClass):
-    def __init__(self, output_size: tuple[int, ...], spatial_ndim: int):
-        """Concatenate AdaptiveAvgPool1D and AdaptiveMaxPool1D
-        See: https://github.com/fastai/fastai/blob/master/fastai/layers.py#L110
-        """
-        self.spatial_ndim = spatial_ndim
-        self.avg_pool = AdaptivePoolND(
-            output_size,
-            func=jnp.mean,
-            spatial_ndim=spatial_ndim,
-        )
-        self.max_pool = AdaptivePoolND(
-            output_size,
-            func=jnp.max,
-            spatial_ndim=spatial_ndim,
-        )
-
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    def __call__(self, x, **k):
-        return jnp.concatenate([self.max_pool(x), self.avg_pool(x)], axis=0)
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        ...
 
 
 class MaxPool1D(GeneralPoolND):
-    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+    def __init__(
+        self,
+        kernel_size: int,
+        strides: int = 1,
+        *,
+        padding: str = "valid",
+    ):
         """1D Max Pooling layer
         Args:
             kernel_size: size of the kernel
@@ -193,14 +197,23 @@ class MaxPool1D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            spatial_ndim=1,
             func=jnp.max,
             constant_values=-jnp.inf,
         )
 
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
 
 class MaxPool2D(GeneralPoolND):
-    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+    def __init__(
+        self,
+        kernel_size: int,
+        strides: int = 1,
+        *,
+        padding: str = "valid",
+    ):
         """2D Max Pooling layer
         Args:
             kernel_size: size of the kernel
@@ -211,14 +224,23 @@ class MaxPool2D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            spatial_ndim=2,
             func=jnp.max,
             constant_values=-jnp.inf,
         )
 
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
 
 class MaxPool3D(GeneralPoolND):
-    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+    def __init__(
+        self,
+        kernel_size: int,
+        strides: int = 1,
+        *,
+        padding: str = "valid",
+    ):
         """3D Max Pooling layer
         Args:
             kernel_size: size of the kernel
@@ -229,14 +251,23 @@ class MaxPool3D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            spatial_ndim=3,
             func=jnp.max,
             constant_values=-jnp.inf,
         )
 
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
 
 class AvgPool1D(GeneralPoolND):
-    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+    def __init__(
+        self,
+        kernel_size: int,
+        strides: int = 1,
+        *,
+        padding: str = "valid",
+    ):
         """1D Average Pooling layer
         Args:
             kernel_size: size of the kernel
@@ -247,13 +278,22 @@ class AvgPool1D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            spatial_ndim=1,
             func=jnp.mean,
         )
 
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
 
 class AvgPool2D(GeneralPoolND):
-    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+    def __init__(
+        self,
+        kernel_size: int,
+        strides: int = 1,
+        *,
+        padding: str = "valid",
+    ):
         """2D Average Pooling layer
         Args:
             kernel_size: size of the kernel
@@ -264,13 +304,22 @@ class AvgPool2D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            spatial_ndim=2,
             func=jnp.mean,
         )
 
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
 
 class AvgPool3D(GeneralPoolND):
-    def __init__(self, kernel_size: int, strides: int = 1, *, padding: str = "valid"):
+    def __init__(
+        self,
+        kernel_size: int,
+        strides: int = 1,
+        *,
+        padding: str = "valid",
+    ):
         """3D Average Pooling layer
         Args:
             kernel_size: size of the kernel
@@ -281,9 +330,12 @@ class AvgPool3D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            spatial_ndim=3,
             func=jnp.mean,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 class LPPool1D(LPPoolND):
@@ -308,8 +360,11 @@ class LPPool1D(LPPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            spatial_ndim=1,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class LPPool2D(LPPoolND):
@@ -334,8 +389,11 @@ class LPPool2D(LPPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            spatial_ndim=2,
         )
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class LPPool3D(LPPoolND):
@@ -370,11 +428,11 @@ class GlobalAvgPool1D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(
-            spatial_ndim=1,
-            func=jnp.mean,
-            keepdims=keepdims,
-        )
+        super().__init__(func=jnp.mean, keepdims=keepdims)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class GlobalAvgPool2D(GlobalPoolND):
@@ -383,11 +441,11 @@ class GlobalAvgPool2D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(
-            spatial_ndim=2,
-            func=jnp.mean,
-            keepdims=keepdims,
-        )
+        super().__init__(func=jnp.mean, keepdims=keepdims)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class GlobalAvgPool3D(GlobalPoolND):
@@ -396,11 +454,11 @@ class GlobalAvgPool3D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(
-            spatial_ndim=3,
-            func=jnp.mean,
-            keepdims=keepdims,
-        )
+        super().__init__(func=jnp.mean, keepdims=keepdims)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 class GlobalMaxPool1D(GlobalPoolND):
@@ -409,11 +467,11 @@ class GlobalMaxPool1D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(
-            spatial_ndim=1,
-            func=jnp.max,
-            keepdims=keepdims,
-        )
+        super().__init__(func=jnp.max, keepdims=keepdims)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class GlobalMaxPool2D(GlobalPoolND):
@@ -422,11 +480,11 @@ class GlobalMaxPool2D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(
-            spatial_ndim=2,
-            func=jnp.max,
-            keepdims=keepdims,
-        )
+        super().__init__(func=jnp.max, keepdims=keepdims)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class GlobalMaxPool3D(GlobalPoolND):
@@ -435,11 +493,11 @@ class GlobalMaxPool3D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(
-            spatial_ndim=3,
-            func=jnp.max,
-            keepdims=keepdims,
-        )
+        super().__init__(func=jnp.max, keepdims=keepdims)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 class AdaptiveAvgPool1D(AdaptivePoolND):
@@ -448,11 +506,11 @@ class AdaptiveAvgPool1D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(
-            output_size=output_size,
-            spatial_ndim=1,
-            func=jnp.mean,
-        )
+        super().__init__(output_size=output_size, func=jnp.mean)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class AdaptiveAvgPool2D(AdaptivePoolND):
@@ -461,11 +519,11 @@ class AdaptiveAvgPool2D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(
-            output_size=output_size,
-            spatial_ndim=2,
-            func=jnp.mean,
-        )
+        super().__init__(output_size=output_size, func=jnp.mean)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class AdaptiveAvgPool3D(AdaptivePoolND):
@@ -474,11 +532,11 @@ class AdaptiveAvgPool3D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(
-            output_size=output_size,
-            spatial_ndim=3,
-            func=jnp.mean,
-        )
+        super().__init__(output_size=output_size, func=jnp.mean)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 class AdaptiveMaxPool1D(AdaptivePoolND):
@@ -487,11 +545,11 @@ class AdaptiveMaxPool1D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(
-            output_size=output_size,
-            spatial_ndim=1,
-            func=jnp.max,
-        )
+        super().__init__(output_size=output_size, func=jnp.max)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class AdaptiveMaxPool2D(AdaptivePoolND):
@@ -500,11 +558,11 @@ class AdaptiveMaxPool2D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(
-            output_size=output_size,
-            spatial_ndim=2,
-            func=jnp.max,
-        )
+        super().__init__(output_size=output_size, func=jnp.max)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class AdaptiveMaxPool3D(AdaptivePoolND):
@@ -513,8 +571,8 @@ class AdaptiveMaxPool3D(AdaptivePoolND):
         Args:
             output_size: size of the output
         """
-        super().__init__(
-            output_size=output_size,
-            spatial_ndim=3,
-            func=jnp.max,
-        )
+        super().__init__(output_size=output_size, func=jnp.max)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3

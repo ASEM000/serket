@@ -1,5 +1,20 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
+import abc
 import functools as ft
 
 import jax
@@ -10,17 +25,11 @@ from serket.nn.utils import delayed_canonicalize_padding, validate_spatial_in_sh
 
 
 class PadND(pytc.TreeClass):
-    def __init__(
-        self,
-        padding: int | tuple[int, int],
-        value: float = 0.0,
-        spatial_ndim=1,
-    ):
+    def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
         """
         Args:
             padding: padding to apply to each side of the input.
             value: value to pad with. Defaults to 0.0.
-            spatial_ndim: number of spatial dimensions. Defaults to 1.
 
         Note:
             https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
@@ -28,8 +37,6 @@ class PadND(pytc.TreeClass):
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
-        self.spatial_ndim = spatial_ndim
-
         self.padding = delayed_canonicalize_padding(
             in_dim=None,
             padding=padding,
@@ -43,6 +50,12 @@ class PadND(pytc.TreeClass):
         # do not pad the channel axis
         shape = ((0, 0), *self.padding)
         return jax.lax.stop_gradient(jnp.pad(x, shape, constant_values=self.value))
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the image."""
+        ...
 
 
 class Pad1D(PadND):
@@ -60,15 +73,15 @@ class Pad1D(PadND):
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
-        super().__init__(padding=padding, value=value, spatial_ndim=1)
+        super().__init__(padding=padding, value=value)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
 
 
 class Pad2D(PadND):
-    def __init__(
-        self,
-        padding: int | tuple[int, int],
-        value: float = 0.0,
-    ):
+    def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
         """
         Pad a 2D tensor.
 
@@ -82,15 +95,15 @@ class Pad2D(PadND):
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
-        super().__init__(padding=padding, value=value, spatial_ndim=2)
+        super().__init__(padding=padding, value=value)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Pad3D(PadND):
-    def __init__(
-        self,
-        padding: int | tuple[int, int],
-        value: float = 0.0,
-    ):
+    def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
         """
         Pad a 3D tensor.
 
@@ -104,4 +117,8 @@ class Pad3D(PadND):
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
             https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
         """
-        super().__init__(padding=padding, value=value, spatial_ndim=3)
+        super().__init__(padding=padding, value=value)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3

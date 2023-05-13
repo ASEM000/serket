@@ -1,3 +1,17 @@
+# Copyright 2023 Serket authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import copy
@@ -11,6 +25,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import jax.tree_util as jtu
 import numpy as np
+import pytreeclass as pytc
 
 ActivationLiteral = Literal["tanh", "relu", "sigmoid", "hard_sigmoid"]
 ActivationFunctionType = Callable[[jax.typing.ArrayLike], jax.Array]
@@ -89,7 +104,7 @@ def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
     }
 
     # in case the user passes a trainable activation function
-    # we need to make a copy of it to unpredictable side effects
+    # we need to make a copy of it to avoid unpredictable side effects
     return entries.get(act_func, copy.copy(act_func))
 
 
@@ -194,7 +209,7 @@ def delayed_canonicalize_padding(
     )
 
 
-def canonicalize(value, ndim, name: str | None = None):
+def canonicalize(value, ndim, *, name: str | None = None):
     if isinstance(value, int):
         return (value,) * ndim
     if isinstance(value, jax.Array):
@@ -206,47 +221,54 @@ def canonicalize(value, ndim, name: str | None = None):
             raise ValueError(msg)
         return tuple(value)
 
-    msg = f"Expected int or tuple for , got {value}." f" for {name}"
+    msg = f"Expected int or tuple for , got {value}."
     msg += f" for {name}" if name is not None else ""
     raise ValueError(msg)
 
 
-def range_cb_factory(min_val: float = -float("inf"), max_val: float = float("inf")):
-    """Return a function that checks if the input is in the range [min_val, max_val]."""
+class Range(pytc.TreeClass):
+    """Check if the input is in the range [min_val, max_val]."""
 
-    def range_check(value: float):
-        if min_val <= value <= max_val:
+    min_val: float = -float("inf")
+    max_val: float = float("inf")
+
+    def __call__(self, value: Any):
+        if self.min_val <= value <= self.max_val:
             return value
-        raise ValueError(f"Expected value between {min_val} and {max_val}, got {value}")
+        raise ValueError(
+            f"Expected value between {self.min_val} and {self.max_val}, "
+            f"got {value} of type {type(value).__name__}."
+        )
 
-    return range_check
 
+class IsInstance(pytc.TreeClass):
+    """Check if the input is an instance of expected_type."""
 
-def isinstance_factory(expected_type: type | Sequence[type]):
-    """Return a function that checks if the input is an instance of expected_type."""
+    predicted_type: type | Sequence[type]
 
-    def instance_check(value: Any):
-        if isinstance(value, expected_type):
+    def __call__(self, value: Any):
+        if isinstance(value, self.predicted_type):
             return value
 
-        raise TypeError(f"Expected type {expected_type}, got {type(value).__name__}")
-
-    return instance_check
+        raise TypeError(f"Expected {self.predicted_type}, got {type(value).__name__}")
 
 
-def scalar_like_cb(value: Any):
-    """Return a function that checks if the input is a trainable scalar."""
-    if isinstance(value, (float, complex)):
-        return value
-    if (
-        isinstance(value, (jax.Array, np.ndarray))
-        and np.issubdtype(value.dtype, np.inexact)
-        and value.shape == ()
-    ):
-        return value
+class ScalarLike(pytc.TreeClass):
+    """Check if the input is a scalar"""
 
-    msg = f"Expected value to be a float, complex, or array-like object, got {type(value)}"
-    raise ValueError(msg)
+    def __call__(self, value: Any):
+        if isinstance(value, (float, complex)):
+            return value
+        if (
+            isinstance(value, (jax.Array, np.ndarray))
+            and np.issubdtype(value.dtype, np.inexact)
+            and value.shape == ()
+        ):
+            return value
+        raise ValueError(
+            f"Expected value to be a float, complex, or array-like object"
+            f", got {type(value)}"
+        )
 
 
 def canonicalize_cb(value, ndim, name: str | None = None):
@@ -352,6 +374,3 @@ def validate_in_features(call_wrapper, *, attribute_name: str, axis: int = 0):
         return call_wrapper(self, array, *a, **k)
 
     return wrapper
-
-
-non_negative_scalar_cbs = [range_cb_factory(0), scalar_like_cb]
