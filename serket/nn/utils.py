@@ -54,8 +54,32 @@ InitLiteral = Literal[
     "orthogonal",
 ]
 
-
 InitFuncType = Union[InitLiteral, Callable[[jr.KeyArray, Shape, Dtype], jax.Array]]
+
+
+init_map = {
+    "he_normal": ji.he_normal(),
+    "he_uniform": ji.he_uniform(),
+    "glorot_normal": ji.glorot_normal(),
+    "glorot_uniform": ji.glorot_uniform(),
+    "lecun_normal": ji.lecun_normal(),
+    "lecun_uniform": ji.lecun_uniform(),
+    "normal": ji.normal(),
+    "uniform": ji.uniform(),
+    "ones": ji.ones,
+    "zeros": ji.zeros,
+    "xavier_normal": ji.xavier_normal(),
+    "xavier_uniform": ji.xavier_uniform(),
+    "orthogonal": ji.orthogonal(),
+}
+
+act_map = {
+    "tanh": jax.nn.tanh,
+    "relu": jax.nn.relu,
+    "sigmoid": jax.nn.sigmoid,
+    "hard_sigmoid": jax.nn.hard_sigmoid,
+    None: lambda x: x,
+}
 
 
 @ft.lru_cache(maxsize=128)
@@ -95,17 +119,10 @@ def calculate_convolution_output_shape(
 
 
 def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
-    entries = {
-        "tanh": jtu.Partial(jax.nn.tanh),
-        "relu": jtu.Partial(jax.nn.relu),
-        "sigmoid": jtu.Partial(jax.nn.sigmoid),
-        "hard_sigmoid": jtu.Partial(jax.nn.hard_sigmoid),
-        None: jtu.Partial(lambda x: x),
-    }
-
     # in case the user passes a trainable activation function
     # we need to make a copy of it to avoid unpredictable side effects
-    return entries.get(act_func, copy.copy(act_func))
+    func = copy.copy(act_map.get(act_func, act_func))
+    return jtu.Partial(func)
 
 
 def same_padding_along_dim(in_dim: int, kernel_size: int, stride: int):
@@ -299,31 +316,15 @@ def positive_int_cb(value):
     return value
 
 
-def init_func_cb(init_func: str | Callable) -> Callable:
+def resolve_init_func(init_func: str | Callable) -> Callable:
     if isinstance(init_func, FunctionType):
         return jtu.Partial(init_func)
 
     if isinstance(init_func, str):
-        init_map = {
-            "he_normal": ji.he_normal(),
-            "he_uniform": ji.he_uniform(),
-            "glorot_normal": ji.glorot_normal(),
-            "glorot_uniform": ji.glorot_uniform(),
-            "lecun_normal": ji.lecun_normal(),
-            "lecun_uniform": ji.lecun_uniform(),
-            "normal": ji.normal(),
-            "uniform": ji.uniform(),
-            "ones": ji.ones,
-            "zeros": ji.zeros,
-            "xavier_normal": ji.xavier_normal(),
-            "xavier_uniform": ji.xavier_uniform(),
-            "orthogonal": ji.orthogonal(),
-        }
-
         if init_func in init_map:
             func = init_map[init_func]
-            func.__name__ = init_func + "_init"
-            return jtu.Partial(init_map[init_func])
+            func = jtu.Partial(func)
+            return func
         raise ValueError(f"value must be one of ({', '.join(init_map.keys())})")
 
     if init_func is None:
@@ -332,7 +333,7 @@ def init_func_cb(init_func: str | Callable) -> Callable:
     raise ValueError("Value must be a string or a function.")
 
 
-def validate_spatial_in_shape(call_wrapper, *, attribute_name: str):
+def validate_spatial_ndim(call_wrapper, attribute_name: str):
     """Decorator to validate spatial input shape."""
 
     def check_spatial_in_shape(x, spatial_ndim: int) -> None:
@@ -357,10 +358,10 @@ def validate_spatial_in_shape(call_wrapper, *, attribute_name: str):
     return wrapper
 
 
-def validate_in_features(call_wrapper, *, attribute_name: str, axis: int = 0):
+def validate_axis_shape(call_wrapper, *, attribute_name: str, axis: int = 0):
     """Decorator to validate input features."""
 
-    def check_in_features(x, in_features: int, axis: int) -> None:
+    def check_axis_shape(x, in_features: int, axis: int) -> None:
         if x.shape[axis] != in_features:
             raise ValueError(
                 f"Specified {in_features=} ,"
@@ -370,7 +371,7 @@ def validate_in_features(call_wrapper, *, attribute_name: str, axis: int = 0):
 
     @ft.wraps(call_wrapper)
     def wrapper(self, array, *a, **k):
-        check_in_features(array, getattr(self, attribute_name), axis)
+        check_axis_shape(array, getattr(self, attribute_name), axis)
         return call_wrapper(self, array, *a, **k)
 
     return wrapper

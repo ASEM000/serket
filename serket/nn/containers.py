@@ -27,7 +27,7 @@ class Lambda(pytc.TreeClass):
     """A layer that applies a function to its input.
 
     Args:
-        func: a function that takes a single argument and returns a jax.numpy.ndarray.
+        func: a function that takes a single argument and returns a jax.Array.
 
     Example:
         >>> import jax.numpy as jnp

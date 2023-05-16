@@ -20,7 +20,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import validate_spatial_in_shape
+from serket.nn.utils import validate_spatial_ndim
 
 
 class FlipLeftRight2D(pytc.TreeClass):
@@ -28,7 +28,7 @@ class FlipLeftRight2D(pytc.TreeClass):
         """Flip channels left to right.
 
         Note:
-            See: https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
+            https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
 
         Examples:
             >>> x = jnp.arange(1,10).reshape(1,3, 3)
@@ -43,7 +43,7 @@ class FlipLeftRight2D(pytc.TreeClass):
             [9 8 7]]]
         """
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         flip = lambda x: jnp.flip(x, axis=1)
         return jax.vmap(flip)(x)
@@ -58,7 +58,7 @@ class FlipUpDown2D(pytc.TreeClass):
         """Flip channels up to down.
 
         Note:
-            See: https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
+            https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
 
         Examples:
             >>> x = jnp.arange(1,10).reshape(1,3, 3)
@@ -73,7 +73,7 @@ class FlipUpDown2D(pytc.TreeClass):
             [1 2 3]]]
         """
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         flip = lambda x: jnp.flip(x, axis=0)
         return jax.vmap(flip)(x)

@@ -22,7 +22,7 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax import lax
 
-from serket.nn.utils import canonicalize, validate_spatial_in_shape
+from serket.nn.utils import canonicalize, validate_spatial_ndim
 
 
 class CropND(pytc.TreeClass):
@@ -40,7 +40,7 @@ class CropND(pytc.TreeClass):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
         self.start = canonicalize(start, self.spatial_ndim, name="start")
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         shape = ((0, *self.start), (x.shape[0], *self.size))
         return lax.stop_gradient(jax.lax.dynamic_slice(x, *shape))
@@ -140,7 +140,7 @@ class RandomCropND(pytc.TreeClass):
         """
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         start = tuple(
             jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)

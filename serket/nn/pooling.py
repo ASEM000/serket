@@ -28,7 +28,7 @@ from serket.nn.utils import (
     PaddingType,
     StridesType,
     canonicalize,
-    validate_spatial_in_shape,
+    validate_spatial_ndim,
 )
 
 # Based on colab hardware benchmarks `kernex` seems to
@@ -74,7 +74,7 @@ class GeneralPoolND(pytc.TreeClass):
 
         self.func = _poolnd
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x, **k):
         return self.func(x)
 
@@ -122,7 +122,7 @@ class GlobalPoolND(pytc.TreeClass):
         self.keepdims = keepdims
         self.func = func
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
         return self.func(x, axis=axes, keepdims=self.keepdims)
@@ -157,7 +157,7 @@ class AdaptivePoolND(pytc.TreeClass):
         )
         self.func = func
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x, **kwargs):
         input_size = x.shape[1:]
         output_size = self.output_size

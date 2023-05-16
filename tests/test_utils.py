@@ -17,33 +17,33 @@ import jax.random as jr
 import jax.tree_util as jtu
 import pytest
 
-from serket.nn.utils import canonicalize, init_func_cb
+from serket.nn.utils import canonicalize, resolve_init_func
 
 
 def test_canonicalize_init_func():
     k = jr.PRNGKey(0)
 
-    assert init_func_cb("he_normal")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("he_uniform")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("glorot_normal")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("glorot_uniform")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("lecun_normal")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("lecun_uniform")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("normal")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("uniform")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("ones")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("zeros")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("xavier_normal")(k, (2, 2)).shape == (2, 2)
-    assert init_func_cb("xavier_uniform")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("he_normal")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("he_uniform")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("glorot_normal")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("glorot_uniform")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("lecun_normal")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("lecun_uniform")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("normal")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("uniform")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("ones")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("zeros")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("xavier_normal")(k, (2, 2)).shape == (2, 2)
+    assert resolve_init_func("xavier_uniform")(k, (2, 2)).shape == (2, 2)
 
-    assert isinstance(init_func_cb(jax.nn.initializers.he_normal()), jtu.Partial)
-    assert isinstance(init_func_cb(None), type(None))
-
-    with pytest.raises(ValueError):
-        init_func_cb("invalid")
+    assert isinstance(resolve_init_func(jax.nn.initializers.he_normal()), jtu.Partial)
+    assert isinstance(resolve_init_func(None), type(None))
 
     with pytest.raises(ValueError):
-        init_func_cb(1)
+        resolve_init_func("invalid")
+
+    with pytest.raises(ValueError):
+        resolve_init_func(1)
 
 
 def test_canonicalize():

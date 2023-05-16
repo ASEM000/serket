@@ -20,7 +20,7 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 
-from serket.nn.utils import positive_int_cb, validate_spatial_in_shape
+from serket.nn.utils import positive_int_cb, validate_spatial_ndim
 
 
 @ft.partial(jax.jit, static_argnums=(1,))
@@ -45,7 +45,7 @@ class HistogramEqualization2D(pytc.TreeClass):
         """
         self.bins = positive_int_cb(bins)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return histeq(x, self.bins)
 
@@ -73,7 +73,7 @@ class PixelShuffle2D(pytc.TreeClass):
         else:
             raise ValueError("upscale_factor must be an integer or tuple of length 2")
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         channels = x.shape[0]
 

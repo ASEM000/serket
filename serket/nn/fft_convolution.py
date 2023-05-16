@@ -31,10 +31,10 @@ from serket.nn.utils import (
     calculate_transpose_padding,
     canonicalize,
     delayed_canonicalize_padding,
-    init_func_cb,
     positive_int_cb,
-    validate_in_features,
-    validate_spatial_in_shape,
+    resolve_init_func,
+    validate_axis_shape,
+    validate_spatial_ndim,
 )
 
 
@@ -198,8 +198,8 @@ class FFTConvND(pytc.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        self.weight_init_func = init_func_cb(weight_init_func)
-        self.bias_init_func = init_func_cb(bias_init_func)
+        self.weight_init_func = resolve_init_func(weight_init_func)
+        self.bias_init_func = resolve_init_func(bias_init_func)
         self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
@@ -215,8 +215,8 @@ class FFTConvND(pytc.TreeClass):
             bias_shape = (out_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
@@ -451,8 +451,8 @@ class FFTConvNDTranspose(pytc.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        self.weight_init_func = init_func_cb(weight_init_func)
-        self.bias_init_func = init_func_cb(bias_init_func)
+        self.weight_init_func = resolve_init_func(weight_init_func)
+        self.bias_init_func = resolve_init_func(bias_init_func)
         self.groups = positive_int_cb(groups)
 
         if self.in_features % self.groups != 0:
@@ -470,8 +470,8 @@ class FFTConvNDTranspose(pytc.TreeClass):
             bias_shape = (out_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
@@ -707,8 +707,8 @@ class DepthwiseFFTConvND(pytc.TreeClass):
         self.kernel_dilation = canonicalize(
             1, self.spatial_ndim, name="kernel_dilation"
         )
-        self.weight_init_func = init_func_cb(weight_init_func)
-        self.bias_init_func = init_func_cb(bias_init_func)
+        self.weight_init_func = resolve_init_func(weight_init_func)
+        self.bias_init_func = resolve_init_func(bias_init_func)
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -719,8 +719,8 @@ class DepthwiseFFTConvND(pytc.TreeClass):
             bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
@@ -954,8 +954,8 @@ class SeparableFFTConv1D(pytc.TreeClass):
             key=key,
         )
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
@@ -1031,8 +1031,8 @@ class SeparableFFTConv2D(pytc.TreeClass):
             key=key,
         )
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
@@ -1106,8 +1106,8 @@ class SeparableFFTConv3D(pytc.TreeClass):
             key=key,
         )
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)

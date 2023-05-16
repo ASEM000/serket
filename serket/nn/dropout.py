@@ -22,7 +22,7 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax import lax
 
-from serket.nn.utils import Range, validate_spatial_in_shape
+from serket.nn.utils import Range, validate_spatial_ndim
 
 
 def dropout(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
@@ -100,10 +100,9 @@ class DropoutND(pytc.TreeClass):
         [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
     """
 
-    spatial_ndim: int
     p: float = pytc.field(default=0.5, callbacks=[Range(0, 1)])
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
         return dropout_nd(x, p=lax.stop_gradient(self.p), key=key)
 

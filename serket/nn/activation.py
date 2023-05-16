@@ -79,7 +79,10 @@ def snake(x: jax.Array, frequency: float = 1.0) -> jax.Array:
 
 
 class AdaptiveLeakyReLU(pytc.TreeClass):
-    """Leaky ReLU activation function with learnable `a` parameter https://arxiv.org/pdf/1906.01170.pdf."""
+    """Leaky ReLU activation function with learnable `a` parameter
+    Note:
+        https://arxiv.org/pdf/1906.01170.pdf.
+    """
 
     a: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
     v: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
@@ -89,7 +92,10 @@ class AdaptiveLeakyReLU(pytc.TreeClass):
 
 
 class AdaptiveReLU(pytc.TreeClass):
-    """ReLU activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf."""
+    """ReLU activation function with learnable parameters
+    Note:
+        https://arxiv.org/pdf/1906.01170.pdf.
+    """
 
     a: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
@@ -98,7 +104,10 @@ class AdaptiveReLU(pytc.TreeClass):
 
 
 class AdaptiveSigmoid(pytc.TreeClass):
-    """Sigmoid activation function with learnable `a` parameter https://arxiv.org/pdf/1906.01170.pdf."""
+    """Sigmoid activation function with learnable `a` parameter
+    Note:
+        https://arxiv.org/pdf/1906.01170.pdf.
+    """
 
     a: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
@@ -107,7 +116,10 @@ class AdaptiveSigmoid(pytc.TreeClass):
 
 
 class AdaptiveTanh(pytc.TreeClass):
-    """Tanh activation function with learnable parameters https://arxiv.org/pdf/1906.01170.pdf."""
+    """Tanh activation function with learnable parameters
+    Note:
+        https://arxiv.org/pdf/1906.01170.pdf.
+    """
 
     a: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
@@ -321,10 +333,13 @@ class PReLU(pytc.TreeClass):
 
 
 class Snake(pytc.TreeClass):
-    """Snake activation function https://arxiv.org/pdf/2006.08195.pdf.
+    """Snake activation function
 
     Args:
         a: scalar (frequency) parameter of the activation function, default is 1.0.
+
+    Note:
+        https://arxiv.org/pdf/2006.08195.pdf.
     """
 
     a: float = pytc.field(callbacks=[Range(0), ScalarLike()], default=1.0)

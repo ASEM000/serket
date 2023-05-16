@@ -33,8 +33,8 @@ from serket.nn.utils import (
     StridesType,
     positive_int_cb,
     resolve_activation,
-    validate_in_features,
-    validate_spatial_in_shape,
+    validate_axis_shape,
+    validate_spatial_ndim,
 )
 
 """Defines RNN related classes."""
@@ -132,8 +132,8 @@ class SimpleRNNCell(RNNCell):
     def spatial_ndim(self) -> int:
         return 0
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: SimpleRNNState, **k) -> SimpleRNNState:
         if not isinstance(state, SimpleRNNState):
             msg = "Expected state to be an instance of `SimpleRNNState`"
@@ -200,8 +200,8 @@ class DenseCell(RNNCell):
     def spatial_ndim(self) -> int:
         return 0
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: DenseState, **k) -> DenseState:
         if not isinstance(state, DenseState):
             msg = "Expected state to be an instance of `DenseState`"
@@ -274,8 +274,8 @@ class LSTMCell(RNNCell):
 
         self.in_and_hidden_to_hidden = sk.nn.MergeLinear(in_to_hidden, hidden_to_hidden)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: LSTMState, **k) -> LSTMState:
         if not isinstance(state, LSTMState):
             msg = "Expected state to be an instance of `LSTMState`"
@@ -361,8 +361,8 @@ class GRUCell(RNNCell):
     def spatial_ndim(self) -> int:
         return 0
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: GRUState, **k) -> GRUState:
         if not isinstance(state, GRUState):
             msg = "Expected state to be an instance of `GRUState`"
@@ -461,8 +461,8 @@ class ConvLSTMNDCell(RNNCell):
             key=k2,
         )
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: ConvLSTMNDState, **k) -> ConvLSTMNDState:
         if not isinstance(state, ConvLSTMNDState):
             msg = f"Expected state to be an instance of ConvLSTMNDState, got {type(state)}"
@@ -740,7 +740,7 @@ class ConvGRUNDCell(RNNCell):
             key=k2,
         )
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, state: ConvGRUNDState, **k) -> ConvGRUNDState:
         if not isinstance(state, ConvGRUNDState):
             msg = f"Expected state to be an instance of GRUState, got {type(state)}"

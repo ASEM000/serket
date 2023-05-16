@@ -24,11 +24,7 @@ from jax import lax
 
 from serket.nn.convolution import DepthwiseConv2D
 from serket.nn.fft_convolution import DepthwiseFFTConv2D
-from serket.nn.utils import (
-    positive_int_cb,
-    validate_in_features,
-    validate_spatial_in_shape,
-)
+from serket.nn.utils import positive_int_cb, validate_axis_shape, validate_spatial_ndim
 
 
 class AvgBlur2D(pytc.TreeClass):
@@ -76,8 +72,8 @@ class AvgBlur2D(pytc.TreeClass):
         self.conv1 = self.conv1.at["weight"].set(w)
         self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv2(self.conv1(x)))
 
@@ -183,8 +179,8 @@ class Filter2D(pytc.TreeClass):
         )
         self.conv = self.conv.at["weight"].set(self.kernel)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv(x))
 
@@ -227,8 +223,8 @@ class FFTFilter2D(pytc.TreeClass):
         )
         self.conv = self.conv.at["weight"].set(self.kernel)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv(x))
 

@@ -35,10 +35,10 @@ from serket.nn.utils import (
     calculate_transpose_padding,
     canonicalize,
     delayed_canonicalize_padding,
-    init_func_cb,
     positive_int_cb,
-    validate_in_features,
-    validate_spatial_in_shape,
+    resolve_init_func,
+    validate_axis_shape,
+    validate_spatial_ndim,
 )
 
 
@@ -101,8 +101,8 @@ class ConvND(pytc.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        self.weight_init_func = init_func_cb(weight_init_func)
-        self.bias_init_func = init_func_cb(bias_init_func)
+        self.weight_init_func = resolve_init_func(weight_init_func)
+        self.bias_init_func = resolve_init_func(bias_init_func)
         self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
@@ -120,8 +120,8 @@ class ConvND(pytc.TreeClass):
             bias_shape = (out_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
@@ -253,7 +253,8 @@ class Conv2D(ConvND):
             >>> print(layer(x).shape)
             (2, 5, 5)
 
-        See: https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        Note:
+            https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         """
 
         super().__init__(
@@ -389,8 +390,8 @@ class ConvNDTranspose(pytc.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        self.weight_init_func = init_func_cb(weight_init_func)
-        self.bias_init_func = init_func_cb(bias_init_func)
+        self.weight_init_func = resolve_init_func(weight_init_func)
+        self.bias_init_func = resolve_init_func(bias_init_func)
         self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
@@ -408,8 +409,8 @@ class ConvNDTranspose(pytc.TreeClass):
             bias_shape = (out_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
@@ -638,8 +639,8 @@ class DepthwiseConvND(pytc.TreeClass):
         self.kernel_dilation = canonicalize(
             1, self.spatial_ndim, name="kernel_dilation"
         )
-        self.weight_init_func = init_func_cb(weight_init_func)
-        self.bias_init_func = init_func_cb(bias_init_func)
+        self.weight_init_func = resolve_init_func(weight_init_func)
+        self.bias_init_func = resolve_init_func(bias_init_func)
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = self.weight_init_func(key, weight_shape)
@@ -650,8 +651,8 @@ class DepthwiseConvND(pytc.TreeClass):
             bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
@@ -994,10 +995,9 @@ class SeparableConv3D(pytc.TreeClass):
         """3D Separable convolutional layer.
 
         Note:
-            See:
-                https://en.wikipedia.org/wiki/Separable_filter
-                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
+            https://en.wikipedia.org/wiki/Separable_filter
+            https://keras.io/api/layers/convolution_layers/separable_convolution2d/
+            https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
 
         Args:
             in_features : Number of input channels.
@@ -1080,7 +1080,7 @@ class ConvNDLocal(pytc.TreeClass):
             bias_init_func: bias initialization function
             key: random number generator key
         Note:
-            See : https://keras.io/api/layers/locally_connected_layers/
+            https://keras.io/api/layers/locally_connected_layers/
         """
         # checked by callbacks
         self.in_features = positive_int_cb(in_features)
@@ -1106,8 +1106,8 @@ class ConvNDLocal(pytc.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        self.weight_init_func = init_func_cb(weight_init_func)
-        self.bias_init_func = init_func_cb(bias_init_func)
+        self.weight_init_func = resolve_init_func(weight_init_func)
+        self.bias_init_func = resolve_init_func(bias_init_func)
 
         out_size = calculate_convolution_output_shape(
             shape=self.in_size,
@@ -1132,8 +1132,8 @@ class ConvNDLocal(pytc.TreeClass):
         else:
             self.bias = self.bias_init_func(key, bias_shape)
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
-    @ft.partial(validate_in_features, attribute_name="in_features")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         y = jax.lax.conv_general_dilated_local(
             lhs=jnp.expand_dims(x, 0),
@@ -1187,7 +1187,7 @@ class Conv1DLocal(ConvNDLocal):
             bias_init_func: bias initialization function
             key: random number generator key
         Note:
-            See : https://keras.io/api/layers/locally_connected_layers/
+            https://keras.io/api/layers/locally_connected_layers/
         """
         super().__init__(
             in_features=in_features,
@@ -1237,7 +1237,7 @@ class Conv2DLocal(ConvNDLocal):
             bias_init_func: bias initialization function
             key: random number generator key
         Note:
-            See : https://keras.io/api/layers/locally_connected_layers/
+            https://keras.io/api/layers/locally_connected_layers/
         """
         super().__init__(
             in_features=in_features,
@@ -1287,7 +1287,7 @@ class Conv3DLocal(ConvNDLocal):
             bias_init_func: bias initialization function
             key: random number generator key
         Note:
-            See : https://keras.io/api/layers/locally_connected_layers/
+            https://keras.io/api/layers/locally_connected_layers/
         """
         super().__init__(
             in_features=in_features,

@@ -23,7 +23,7 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax import lax
 
-from serket.nn.utils import validate_spatial_in_shape
+from serket.nn.utils import validate_spatial_ndim
 
 
 def adjust_contrast_nd(x: jax.Array, contrast_factor: float):
@@ -53,7 +53,7 @@ class AdjustContrastND(pytc.TreeClass):
 
     contrast_factor: float = 1.0
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(adjust_contrast_nd(x, self.contrast_factor))
 
@@ -99,7 +99,7 @@ class RandomContrastND(pytc.TreeClass):
 
         self.contrast_range = contrast_range
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(
         self,
         x: jax.Array,

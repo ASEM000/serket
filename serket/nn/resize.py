@@ -21,7 +21,7 @@ from typing import Literal
 import jax
 import pytreeclass as pytc
 
-from serket.nn.utils import canonicalize, validate_spatial_in_shape
+from serket.nn.utils import canonicalize, validate_spatial_ndim
 
 MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 
@@ -64,7 +64,7 @@ class ResizeND(pytc.TreeClass):
         self.method = method
         self.antialias = antialias
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.image.resize(
             x,
@@ -92,7 +92,7 @@ class UpsampleND(pytc.TreeClass):
         self.scale = canonicalize(scale, self.spatial_ndim, name="scale")
         self.method = method
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         resized_shape = tuple(s * x.shape[i + 1] for i, s in enumerate(self.scale))
         return jax.image.resize(

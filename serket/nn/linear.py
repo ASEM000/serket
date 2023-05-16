@@ -21,7 +21,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import InitFuncType, IsInstance, init_func_cb, positive_int_cb
+from serket.nn.utils import InitFuncType, IsInstance, positive_int_cb, resolve_init_func
 
 
 @ft.lru_cache(maxsize=None)
@@ -109,8 +109,8 @@ class Multilinear(pytc.TreeClass):
         self.in_features = in_features
         self.out_features = out_features
 
-        self.weight_init_func = init_func_cb(weight_init_func)
-        self.bias_init_func = init_func_cb(bias_init_func)
+        self.weight_init_func = resolve_init_func(weight_init_func)
+        self.bias_init_func = resolve_init_func(bias_init_func)
 
         weight_shape = (*self.in_features, out_features)
         self.weight = self.weight_init_func(key, weight_shape)
@@ -238,8 +238,8 @@ class GeneralLinear(pytc.TreeClass):
             msg += f"got {len(in_axes)} and {len(in_features)}"
             raise ValueError(msg)
 
-        self.weight_init_func = init_func_cb(weight_init_func)
-        self.bias_init_func = init_func_cb(bias_init_func)
+        self.weight_init_func = resolve_init_func(weight_init_func)
+        self.bias_init_func = resolve_init_func(bias_init_func)
         self.weight = self.weight_init_func(key, (*self.in_features, self.out_features))
 
         if self.bias_init_func is None:

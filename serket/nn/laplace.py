@@ -20,7 +20,7 @@ import jax
 import kernex as kex
 import pytreeclass as pytc
 
-from serket.nn.utils import validate_spatial_in_shape
+from serket.nn.utils import validate_spatial_ndim
 
 
 class Laplace2D(pytc.TreeClass):
@@ -33,7 +33,7 @@ class Laplace2D(pytc.TreeClass):
 
         self._func = op
 
-    @ft.partial(validate_spatial_in_shape, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return self._func(x)
 
