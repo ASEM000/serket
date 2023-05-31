@@ -22,7 +22,6 @@ from serket.nn import (
     ELU,
     GELU,
     GLU,
-    SILU,
     AdaptiveLeakyReLU,
     AdaptiveReLU,
     AdaptiveSigmoid,
@@ -30,7 +29,6 @@ from serket.nn import (
     CeLU,
     HardShrink,
     HardSigmoid,
-    HardSILU,
     HardSwish,
     HardTanh,
     LeakyReLU,
@@ -178,13 +176,6 @@ def test_hardtanh():
     npt.assert_allclose(actual, expected, atol=1e-4)
 
 
-def test_hard_silu():
-    x = jnp.array([-1.0, 0, 1])
-    expected = jax.nn.hard_silu(x)
-    actual = HardSILU()(x)
-    npt.assert_allclose(actual, expected, atol=1e-4)
-
-
 def test_hardsigmoid():
     x = jnp.array([-1.0, 0, 1])
     expected = jnp.array([0.3333, 0.5000, 0.6667])
@@ -238,13 +229,6 @@ def test_tanh():
     x = jnp.array([-1.0, 0, 1])
     expected = jax.nn.tanh(x)
     actual = Tanh()(x)
-    npt.assert_allclose(actual, expected, atol=1e-4)
-
-
-def test_silu():
-    x = jnp.array([-1.0, 0, 1])
-    expected = jax.nn.silu(x)
-    actual = SILU()(x)
     npt.assert_allclose(actual, expected, atol=1e-4)
 
 
