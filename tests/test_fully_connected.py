@@ -29,3 +29,8 @@ def test_mlp():
     mlp = MLP(2, 2, hidden_size=4, num_hidden_layers=2, act_func="relu")
     x = jax.random.normal(jax.random.PRNGKey(0), (10, 2))
     npt.assert_allclose(fnn(x), mlp(x))
+
+    fnn = FNN(layers=[2, 4, 2], act_func="relu")
+    mlp = MLP(2, 2, hidden_size=4, num_hidden_layers=1, act_func="relu")
+    x = jax.random.normal(jax.random.PRNGKey(0), (10, 2))
+    npt.assert_allclose(fnn(x), mlp(x))

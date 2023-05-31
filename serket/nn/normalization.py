@@ -101,7 +101,8 @@ class LayerNorm(pytc.TreeClass):
         Args:
             normalized_shape: the shape of the input to be normalized.
             eps: a value added to the denominator for numerical stability.
-            affine: a boolean value that when set to True, this module has learnable affine parameters.
+            affine: a boolean value that when set to True, this module has
+                learnable affine parameters.
         """
         self.normalized_shape = (
             normalized_shape
@@ -144,7 +145,8 @@ class GroupNorm(pytc.TreeClass):
             in_features : the shape of the input to be normalized.
             groups : number of groups to separate the channels into.
             eps : a value added to the denominator for numerical stability.
-            affine : a boolean value that when set to True, this module has learnable affine parameters.
+            affine : a boolean value that when set to True, this module has
+                learnable affine parameters.
         """
         # checked by callbacks
         self.in_features = positive_int_cb(in_features)
@@ -181,12 +183,14 @@ class InstanceNorm(GroupNorm):
     ):
         """Instance Normalization
         See: https://nn.labml.ai/normalization/instance_norm/index.html
-        transform the input by scaling and shifting to have zero mean and unit variance.
+        transform the input by scaling and shifting to have zero mean and unit
+            variance.
 
         Args:
             in_features : the shape of the input to be normalized.
             eps : a value added to the denominator for numerical stability.
-            affine : a boolean value that when set to True, this module has learnable affine parameters.
+            affine : a boolean value that when set to True, this module has
+                learnable affine parameters.
         """
         super().__init__(
             in_features=in_features,
