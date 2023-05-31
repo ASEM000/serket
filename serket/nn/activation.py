@@ -54,10 +54,6 @@ def soft_shrink(x: jax.Array, alpha: float = 0.5) -> jax.Array:
     )
 
 
-def silu(x: jax.Array) -> jax.Array:
-    return x * jax.nn.sigmoid(x)
-
-
 def square_plus(x: jax.Array) -> jax.Array:
     return 0.5 * (x + jnp.sqrt(x * x + 4))
 
@@ -161,13 +157,6 @@ class GLU(pytc.TreeClass):
         return jax.nn.glu(x)
 
 
-class HardSILU(pytc.TreeClass):
-    """Hard SILU activation function"""
-
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.nn.hard_silu(x)
-
-
 class HardShrink(pytc.TreeClass):
     """Hard shrink activation function"""
 
@@ -240,13 +229,6 @@ class SeLU(pytc.TreeClass):
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.selu(x)
-
-
-class SILU(pytc.TreeClass):
-    """SILU activation function"""
-
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return silu(x)
 
 
 class Sigmoid(pytc.TreeClass):
