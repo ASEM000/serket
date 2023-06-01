@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import copy
 import functools as ft
 from types import FunctionType
 from typing import Any, Callable, Literal, Sequence, Tuple, Union
@@ -26,10 +25,6 @@ import jax.random as jr
 import jax.tree_util as jtu
 import numpy as np
 import pytreeclass as pytc
-
-ActivationLiteral = Literal["tanh", "relu", "sigmoid", "hard_sigmoid"]
-ActivationFunctionType = Callable[[jax.typing.ArrayLike], jax.Array]
-ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 
 Shape = Any
 Dtype = Any
@@ -73,14 +68,6 @@ init_map = {
     "orthogonal": ji.orthogonal(),
 }
 
-act_map = {
-    "tanh": jax.nn.tanh,
-    "relu": jax.nn.relu,
-    "sigmoid": jax.nn.sigmoid,
-    "hard_sigmoid": jax.nn.hard_sigmoid,
-    None: lambda x: x,
-}
-
 
 @ft.lru_cache(maxsize=128)
 def calculate_transpose_padding(
@@ -116,13 +103,6 @@ def calculate_convolution_output_shape(
         (xi + (li + ri) - ki) // si + 1
         for xi, ki, si, (li, ri) in zip(shape, kernel_size, strides, padding)
     )
-
-
-def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
-    # in case the user passes a trainable activation function
-    # we need to make a copy of it to avoid unpredictable side effects
-    func = copy.copy(act_map.get(act_func, act_func))
-    return jtu.Partial(func)
 
 
 def same_padding_along_dim(in_dim: int, kernel_size: int, stride: int):

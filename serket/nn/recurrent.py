@@ -24,15 +24,14 @@ import jax.random as jr
 import pytreeclass as pytc
 
 import serket as sk
+from serket.nn.activation import ActivationType, resolve_activation
 from serket.nn.utils import (
-    ActivationType,
     DilationType,
     InitFuncType,
     KernelSizeType,
     PaddingType,
     StridesType,
     positive_int_cb,
-    resolve_activation,
     validate_axis_shape,
     validate_spatial_ndim,
 )

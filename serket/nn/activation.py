@@ -14,10 +14,14 @@
 
 from __future__ import annotations
 
+import copy
+from typing import Callable, Literal, Union, get_args
+
 import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 from jax import lax
+from pytreeclass import TreeClass
 
 from serket.nn.utils import Range, ScalarLike
 
@@ -126,7 +130,7 @@ class AdaptiveTanh(pytc.TreeClass):
 class CeLU(pytc.TreeClass):
     """Celu activation function"""
 
-    alpha: float = pytc.field(default=1.0)
+    alpha: float = 1.0
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.celu(x, alpha=lax.stop_gradient(self.alpha))
@@ -135,7 +139,7 @@ class CeLU(pytc.TreeClass):
 class ELU(pytc.TreeClass):
     """Exponential linear unit"""
 
-    alpha: float = pytc.field(default=1.0)
+    alpha: float = 1.0
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.elu(x, alpha=lax.stop_gradient(self.alpha))
@@ -144,10 +148,10 @@ class ELU(pytc.TreeClass):
 class GELU(pytc.TreeClass):
     """Gaussian error linear unit"""
 
-    approximate: bool = pytc.field(default=True)
+    approximate: bool = True
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.nn.gelu(x, approximate=lax.stop_gradient(self.approximate))
+        return jax.nn.gelu(x, approximate=self.approximate)
 
 
 class GLU(pytc.TreeClass):
@@ -160,7 +164,7 @@ class GLU(pytc.TreeClass):
 class HardShrink(pytc.TreeClass):
     """Hard shrink activation function"""
 
-    alpha: float = pytc.field(default=0.5)
+    alpha: float = 0.5
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return hard_shrink(x, lax.stop_gradient(self.alpha))
@@ -204,7 +208,7 @@ class LogSoftmax(pytc.TreeClass):
 class LeakyReLU(pytc.TreeClass):
     """Leaky ReLU activation function"""
 
-    negative_slope: float = pytc.field(default=0.01)
+    negative_slope: float = 0.01
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.leaky_relu(x, lax.stop_gradient(self.negative_slope))
@@ -255,7 +259,7 @@ class SoftSign(pytc.TreeClass):
 class SoftShrink(pytc.TreeClass):
     """SoftShrink activation function"""
 
-    alpha: float = pytc.field(default=0.5)
+    alpha: float = 0.5
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return soft_shrink(x, lax.stop_gradient(self.alpha))
@@ -328,3 +332,90 @@ class Snake(pytc.TreeClass):
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return snake(x, lax.stop_gradient(self.a))
+
+
+ActivationLiteral = Literal[
+    "adaptive_leaky_relu",
+    "adaptive_relu",
+    "adaptive_sigmoid",
+    "adaptive_tanh",
+    "celu",
+    "elu",
+    "gelu",
+    "glu",
+    "hard_shrink",
+    "hard_sigmoid",
+    "hard_swish",
+    "hard_tanh",
+    "leaky_relu",
+    "log_sigmoid",
+    "log_softmax",
+    "mish",
+    "prelu",
+    "relu",
+    "relu6",
+    "selu",
+    "sigmoid",
+    "snake",
+    "softplus",
+    "softshrink",
+    "softsign",
+    "squareplus",
+    "swish",
+    "tanh",
+    "tanhshrink",
+    "thresholded_relu",
+]
+
+
+acts = [
+    AdaptiveLeakyReLU,
+    AdaptiveReLU,
+    AdaptiveSigmoid,
+    AdaptiveTanh,
+    CeLU,
+    ELU,
+    GELU,
+    GLU,
+    HardShrink,
+    HardSigmoid,
+    HardSwish,
+    HardTanh,
+    LeakyReLU,
+    LogSigmoid,
+    LogSoftmax,
+    Mish,
+    PReLU,
+    ReLU,
+    ReLU6,
+    SeLU,
+    Sigmoid,
+    Snake,
+    SoftPlus,
+    SoftShrink,
+    SoftSign,
+    SquarePlus,
+    Swish,
+    Tanh,
+    TanhShrink,
+    ThresholdedReLU,
+]
+
+
+act_map: dict[str, TreeClass] = dict(zip(get_args(ActivationLiteral), acts))
+
+ActivationFunctionType = Callable[[jax.typing.ArrayLike], jax.Array]
+ActivationType = Union[ActivationLiteral, ActivationFunctionType]
+
+
+def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
+    # in case the user passes a trainable activation function
+    # we need to make a copy of it to avoid unpredictable side effects
+    if isinstance(act_func, str):
+        if act_func in act_map:
+            return act_map[act_func]()
+        raise ValueError(
+            f"Unknown activation function {act_func=}, "
+            f"available activations are {list(act_map.keys())}"
+        )
+    return copy.copy(act_func)
