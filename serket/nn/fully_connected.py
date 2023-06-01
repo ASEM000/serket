@@ -42,8 +42,7 @@ class FNN(pytc.TreeClass):
             act_func: a single Activation function to be applied between layers or
                 `len(layers)-2` Sequence of activation functions applied between layers.
             weight_init_func: Weight initializer function.
-            bias_init_func: Bias initializer function. Defaults to lambda key,
-                shape: jnp.ones(shape).
+            bias_init_func: Bias initializer function. Defaults to lambda key, shape: jnp.ones(shape).
             key: Random key for weight and bias initialization.
 
         Example:
@@ -52,10 +51,9 @@ class FNN(pytc.TreeClass):
             (3, 2)
 
         Note:
-            - layers argument yields len(layers) - 1 linear layers with required
-                `len(layers)-2` activation functions, for example, `layers=[10, 5, 2]`
-                yields 2 linear layers with weight shapes (10, 5) and (5, 2)
-                and single activation function is applied between them.
+            - layers argument yields len(layers) - 1 linear layers with required `len(layers)-2`
+            activation functions, for example, `layers=[10, 5, 2]` yields 2 linear
+            layers with weight shapes (10, 5) and (5, 2) and single activation function is applied between them.
             - `FNN` uses python `for` loop to apply layers and activation functions.
         """
 
@@ -111,8 +109,6 @@ class MLP(pytc.TreeClass):
             one intermediate  layer (4, 4), and one output layer (4, 2) = `num_hidden_layers` + 1
             - `MLP` exploits same input/out size for intermediate layers to use `jax.lax.scan`.
         """
-        if hidden_size < 1:
-            raise ValueError(f"hidden_size must be positive, got {hidden_size}")
 
         keys = jr.split(key, num_hidden_layers + 1)
         self.act_funcs = tuple(resolve_activation(act_func) for _ in keys[1:])
@@ -153,13 +149,13 @@ class MLP(pytc.TreeClass):
             x, linears, acts = carry
             x = linears[0](x)
             x = acts[0](x)
-            linears = [*linears[1:], linears[0]]
-            acts = [*acts[1:], acts[0]]
-            return [x, linears, acts], None
+            linears = (*linears[1:], linears[0])
+            acts = (*acts[1:], acts[0])
+            return (x, linears, acts), None
 
-        l0, *lh, lf = self.layers
-        a0, *ah = self.act_funcs
-        x = a0(l0(x))
-        if length := len(lh):
-            (x, _, _), _ = jax.lax.scan(scan_func, [x, lh, ah], None, length=length)
-        return lf(x)
+        x = self.layers[0](x)
+        x = self.act_funcs[0](x)
+        carry = (x, self.layers[1:-1], self.act_funcs[1:])
+        (x, _, _), _ = jax.lax.scan(scan_func, carry, None, length=len(self.layers) - 2)
+        x = self.layers[-1](x)
+        return x
