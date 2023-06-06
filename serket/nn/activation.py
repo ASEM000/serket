@@ -334,6 +334,7 @@ class Snake(pytc.TreeClass):
         return snake(x, lax.stop_gradient(self.a))
 
 
+# useful for building layers from configuration text
 ActivationLiteral = Literal[
     "adaptive_leaky_relu",
     "adaptive_relu",
@@ -363,7 +364,7 @@ ActivationLiteral = Literal[
     "squareplus",
     "swish",
     "tanh",
-    "tanhshrink",
+    "tanh_shrink",
     "thresholded_relu",
 ]
 

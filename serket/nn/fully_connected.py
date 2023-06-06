@@ -21,8 +21,8 @@ import jax.random as jr
 import pytreeclass as pytc
 
 from serket.nn.activation import ActivationType, resolve_activation
+from serket.nn.initialization import InitType
 from serket.nn.linear import Linear
-from serket.nn.utils import InitFuncType
 
 PyTree = Any
 
@@ -33,8 +33,8 @@ class FNN(pytc.TreeClass):
         layers: Sequence[int],
         *,
         act_func: ActivationType = "tanh",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Fully connected neural network
@@ -90,8 +90,8 @@ class MLP(pytc.TreeClass):
         hidden_size: int,
         num_hidden_layers: int,
         act_func: ActivationType = "tanh",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Multi-layer perceptron.
@@ -110,7 +110,9 @@ class MLP(pytc.TreeClass):
             - MLP with `in_features`=1, `out_features`=2, `hidden_size`=4,
             `num_hidden_layers`=2 is equivalent to `[1, 4, 4, 2]` which has one input layer (1, 4),
             one intermediate  layer (4, 4), and one output layer (4, 2) = `num_hidden_layers` + 1
-            - `MLP` exploits same input/out size for intermediate layers to use `jax.lax.scan`.
+            - `MLP` exploits same input/out size for intermediate layers to use `jax.lax.scan`,
+                which offers better compilation speed for large number of layers
+                and producing a smaller `jaxpr`.
         """
         if hidden_size < 1:
             raise ValueError(f"hidden_size must be positive, got {hidden_size}")

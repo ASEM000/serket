@@ -25,9 +25,9 @@ import jax.random as jr
 import pytreeclass as pytc
 from jax.lax import ConvDimensionNumbers
 
+from serket.nn.initialization import InitType, resolve_init_func
 from serket.nn.utils import (
     DilationType,
-    InitFuncType,
     KernelSizeType,
     PaddingType,
     StridesType,
@@ -36,7 +36,6 @@ from serket.nn.utils import (
     canonicalize,
     delayed_canonicalize_padding,
     positive_int_cb,
-    resolve_init_func,
     validate_axis_shape,
     validate_spatial_ndim,
 )
@@ -58,8 +57,8 @@ class ConvND(pytc.TreeClass):
         padding: PaddingType = "SAME",
         input_dilation: DilationType = 1,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -163,8 +162,8 @@ class Conv1D(ConvND):
         padding: PaddingType = "SAME",
         input_dilation: DilationType = 1,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -225,8 +224,8 @@ class Conv2D(ConvND):
         padding: PaddingType = "SAME",
         input_dilation: DilationType = 1,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -287,8 +286,8 @@ class Conv3D(ConvND):
         padding: PaddingType = "SAME",
         input_dilation: DilationType = 1,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -353,8 +352,8 @@ class ConvNDTranspose(pytc.TreeClass):
         padding: PaddingType = "SAME",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -457,8 +456,8 @@ class Conv1DTranspose(ConvNDTranspose):
         padding: PaddingType = "SAME",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -507,8 +506,8 @@ class Conv2DTranspose(ConvNDTranspose):
         padding: PaddingType = "SAME",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -557,8 +556,8 @@ class Conv3DTranspose(ConvNDTranspose):
         padding: PaddingType = "SAME",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -608,8 +607,8 @@ class DepthwiseConvND(pytc.TreeClass):
         depth_multiplier: int = 1,
         strides: int = 1,
         padding: PaddingType = "SAME",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Depthwise Convolutional layer.
@@ -692,8 +691,8 @@ class DepthwiseConv1D(DepthwiseConvND):
         depth_multiplier: int = 1,
         strides: int = 1,
         padding: PaddingType = "SAME",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Depthwise Convolutional layer.
@@ -743,8 +742,8 @@ class DepthwiseConv2D(DepthwiseConvND):
         depth_multiplier: int = 1,
         strides: int = 1,
         padding: PaddingType = "SAME",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Depthwise Convolutional layer.
@@ -794,8 +793,8 @@ class DepthwiseConv3D(DepthwiseConvND):
         depth_multiplier: int = 1,
         strides: int = 1,
         padding: PaddingType = "SAME",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Depthwise Convolutional layer.
@@ -849,9 +848,9 @@ class SeparableConv1D(pytc.TreeClass):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_bias_init_func: InitFuncType = "zeros",
+        depthwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Separable convolutional layer.
@@ -918,9 +917,9 @@ class SeparableConv2D(pytc.TreeClass):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_bias_init_func: InitFuncType = "zeros",
+        depthwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Separable convolutional layer.
@@ -987,9 +986,9 @@ class SeparableConv3D(pytc.TreeClass):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_bias_init_func: InitFuncType = "zeros",
+        depthwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Separable convolutional layer.
@@ -1061,8 +1060,8 @@ class ConvNDLocal(pytc.TreeClass):
         padding: PaddingType = "SAME",
         input_dilation: DilationType = 1,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Local convolutional layer.
@@ -1168,8 +1167,8 @@ class Conv1DLocal(ConvNDLocal):
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
         input_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Local convolutional layer.
@@ -1218,8 +1217,8 @@ class Conv2DLocal(ConvNDLocal):
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
         input_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Local convolutional layer.
@@ -1268,8 +1267,8 @@ class Conv3DLocal(ConvNDLocal):
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
         input_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Local convolutional layer.

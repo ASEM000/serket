@@ -22,9 +22,9 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
+from serket.nn.initialization import InitType, resolve_init_func
 from serket.nn.utils import (
     DilationType,
-    InitFuncType,
     KernelSizeType,
     PaddingType,
     StridesType,
@@ -32,7 +32,6 @@ from serket.nn.utils import (
     canonicalize,
     delayed_canonicalize_padding,
     positive_int_cb,
-    resolve_init_func,
     validate_axis_shape,
     validate_spatial_ndim,
 )
@@ -161,8 +160,8 @@ class FFTConvND(pytc.TreeClass):
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -255,8 +254,8 @@ class FFTConv1D(FFTConvND):
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -306,8 +305,8 @@ class FFTConv2D(FFTConvND):
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -357,8 +356,8 @@ class FFTConv3D(FFTConvND):
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -412,8 +411,8 @@ class FFTConvNDTranspose(pytc.TreeClass):
         padding: PaddingType = "SAME",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -520,8 +519,8 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         padding: PaddingType = "SAME",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -570,8 +569,8 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         padding: PaddingType = "SAME",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -620,8 +619,8 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         padding: PaddingType = "SAME",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -671,8 +670,8 @@ class DepthwiseFFTConvND(pytc.TreeClass):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Depthwise Convolutional layer.
@@ -758,8 +757,8 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """1D Depthwise FFT Convolutional layer.
@@ -803,8 +802,8 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """2D Depthwise FFT Convolutional layer.
@@ -848,8 +847,8 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        weight_init_func: InitFuncType = "glorot_uniform",
-        bias_init_func: InitFuncType = "zeros",
+        weight_init_func: InitType = "glorot_uniform",
+        bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """3D Depthwise FFT Convolutional layer.
@@ -898,9 +897,9 @@ class SeparableFFTConv1D(pytc.TreeClass):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_bias_init_func: InitFuncType = "zeros",
+        depthwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Separable 1D FFT Convolutional layer.
@@ -976,9 +975,9 @@ class SeparableFFTConv2D(pytc.TreeClass):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_bias_init_func: InitFuncType = "zeros",
+        depthwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Separable 2D FFT Convolutional layer.
@@ -1053,9 +1052,9 @@ class SeparableFFTConv3D(pytc.TreeClass):
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_weight_init_func: InitFuncType = "glorot_uniform",
-        pointwise_bias_init_func: InitFuncType = "zeros",
+        depthwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Separable 3D FFT Convolutional layer.

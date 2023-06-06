@@ -21,7 +21,8 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytreeclass as pytc
 
-from serket.nn.utils import InitFuncType, IsInstance, positive_int_cb, resolve_init_func
+from serket.nn.initialization import InitType, resolve_init_func
+from serket.nn.utils import IsInstance, positive_int_cb
 
 
 @ft.lru_cache(maxsize=None)
@@ -78,8 +79,8 @@ class Multilinear(pytc.TreeClass):
         in_features: int | tuple[int, ...] | None,
         out_features: int,
         *,
-        weight_init_func: InitFuncType = "he_normal",
-        bias_init_func: InitFuncType = "ones",
+        weight_init_func: InitType = "he_normal",
+        bias_init_func: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Linear layer with arbitrary number of inputs applied to last axis of each input
@@ -150,8 +151,8 @@ class Linear(Multilinear):
         in_features: int,
         out_features: int,
         *,
-        weight_init_func: InitFuncType = "he_normal",
-        bias_init_func: InitFuncType = "ones",
+        weight_init_func: InitType = "he_normal",
+        bias_init_func: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         super().__init__(
@@ -170,8 +171,8 @@ class Bilinear(Multilinear):
         in2_features: int,
         out_features: int,
         *,
-        weight_init_func: InitFuncType = "he_normal",
-        bias_init_func: InitFuncType = "ones",
+        weight_init_func: InitType = "he_normal",
+        bias_init_func: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Bilinear layer
@@ -205,8 +206,8 @@ class GeneralLinear(pytc.TreeClass):
         out_features: int,
         *,
         in_axes: tuple[int, ...],
-        weight_init_func: InitFuncType = "he_normal",
-        bias_init_func: InitFuncType = "ones",
+        weight_init_func: InitType = "he_normal",
+        bias_init_func: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         """Apply a Linear Layer to input at in_axes

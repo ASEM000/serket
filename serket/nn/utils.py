@@ -15,58 +15,17 @@
 from __future__ import annotations
 
 import functools as ft
-from types import FunctionType
-from typing import Any, Callable, Literal, Sequence, Tuple, Union
+from typing import Any, Sequence, Tuple, Union
 
 import jax
-import jax.nn.initializers as ji
 import jax.numpy as jnp
-import jax.random as jr
-import jax.tree_util as jtu
 import numpy as np
 import pytreeclass as pytc
 
-Shape = Any
-Dtype = Any
 KernelSizeType = Union[int, Sequence[int]]
 StridesType = Union[int, Sequence[int]]
 PaddingType = Union[str, int, Sequence[int], Sequence[Tuple[int, int]]]
 DilationType = Union[int, Sequence[int]]
-
-InitLiteral = Literal[
-    "he_normal",
-    "he_uniform",
-    "glorot_normal",
-    "glorot_uniform",
-    "lecun_normal",
-    "lecun_uniform",
-    "normal",
-    "uniform",
-    "ones",
-    "zeros",
-    "xavier_normal",
-    "xavier_uniform",
-    "orthogonal",
-]
-
-InitFuncType = Union[InitLiteral, Callable[[jr.KeyArray, Shape, Dtype], jax.Array]]
-
-
-init_map = {
-    "he_normal": ji.he_normal(),
-    "he_uniform": ji.he_uniform(),
-    "glorot_normal": ji.glorot_normal(),
-    "glorot_uniform": ji.glorot_uniform(),
-    "lecun_normal": ji.lecun_normal(),
-    "lecun_uniform": ji.lecun_uniform(),
-    "normal": ji.normal(),
-    "uniform": ji.uniform(),
-    "ones": ji.ones,
-    "zeros": ji.zeros,
-    "xavier_normal": ji.xavier_normal(),
-    "xavier_uniform": ji.xavier_uniform(),
-    "orthogonal": ji.orthogonal(),
-}
 
 
 @ft.lru_cache(maxsize=128)
@@ -294,23 +253,6 @@ def positive_int_cb(value):
     if value <= 0:
         raise ValueError(f"value must be positive, got {value!r}")
     return value
-
-
-def resolve_init_func(init_func: str | Callable) -> Callable:
-    if isinstance(init_func, FunctionType):
-        return jtu.Partial(init_func)
-
-    if isinstance(init_func, str):
-        if init_func in init_map:
-            func = init_map[init_func]
-            func = jtu.Partial(func)
-            return func
-        raise ValueError(f"value must be one of ({', '.join(init_map.keys())})")
-
-    if init_func is None:
-        return None
-
-    raise ValueError("Value must be a string or a function.")
 
 
 def validate_spatial_ndim(call_wrapper, attribute_name: str):
