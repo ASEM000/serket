@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import copy
 from typing import Callable, Literal, Union, get_args
 
 import jax
@@ -419,4 +418,4 @@ def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
             f"Unknown activation function {act_func=}, "
             f"available activations are {list(act_map.keys())}"
         )
-    return copy.copy(act_func)
+    return act_func

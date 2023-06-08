@@ -19,9 +19,9 @@ from serket.nn import FNN, MLP
 
 
 def test_FNN():
-    layer = FNN([1, 2, 3, 4], act_func="relu")
-    assert not layer.act_funcs[0] is layer.act_funcs[1]
-    assert not layer.layers[0] is layer.layers[1]
+    layer = FNN([1, 2, 3, 4], act_func=("relu", "relu", "relu"))
+    assert not (layer.act_func[0] is layer.act_func[1])
+    assert not (layer.layers[0] is layer.layers[1])
 
 
 def test_mlp():

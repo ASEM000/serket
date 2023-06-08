@@ -32,7 +32,7 @@ class FNN(pytc.TreeClass):
         self,
         layers: Sequence[int],
         *,
-        act_func: ActivationType = "tanh",
+        act_func: ActivationType | tuple[ActivationType, ...] = "tanh",
         weight_init_func: InitType = "glorot_uniform",
         bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
@@ -62,7 +62,17 @@ class FNN(pytc.TreeClass):
 
         keys = jr.split(key, len(layers) - 1)
 
-        self.act_funcs = tuple(resolve_activation(act_func) for _ in keys[1:])
+        num_hidden_layers = len(layers) - 2
+
+        if isinstance(act_func, tuple):
+            if len(act_func) != (num_hidden_layers + 1):
+                raise ValueError(
+                    "tuple of activation functions must have "
+                    f"length: {(num_hidden_layers+1)=}, "
+                )
+            self.act_func = tuple(resolve_activation(act) for act in act_func)
+        else:
+            self.act_func = resolve_activation(act_func)
 
         self.layers = tuple(
             Linear(
@@ -75,10 +85,22 @@ class FNN(pytc.TreeClass):
             for (ki, di, do) in (zip(keys, layers[:-1], layers[1:]))
         )
 
+    def _multi_call(self, x: jax.Array, **k) -> jax.Array:
+        *layers, last = self.layers
+        for ai, li in zip(self.act_func, layers):
+            x = ai(li(x))
+        return last(x)
+
+    def _single_call(self, x: jax.Array, **k) -> jax.Array:
+        *layers, last = self.layers
+        for li in layers:
+            x = self.act_func(li(x))
+        return last(x)
+
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        for act, layer in zip(self.act_funcs, self.layers[:-1]):
-            x = act(layer(x))
-        return self.layers[-1](x)
+        if isinstance(self.act_func, tuple):
+            return self._multi_call(x, **k)
+        return self._single_call(x, **k)
 
 
 class MLP(pytc.TreeClass):
@@ -89,7 +111,7 @@ class MLP(pytc.TreeClass):
         *,
         hidden_size: int,
         num_hidden_layers: int,
-        act_func: ActivationType = "tanh",
+        act_func: ActivationType | tuple[ActivationType, ...] = "tanh",
         weight_init_func: InitType = "glorot_uniform",
         bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
@@ -118,7 +140,16 @@ class MLP(pytc.TreeClass):
             raise ValueError(f"hidden_size must be positive, got {hidden_size}")
 
         keys = jr.split(key, num_hidden_layers + 1)
-        self.act_funcs = tuple(resolve_activation(act_func) for _ in keys[1:])
+
+        if isinstance(act_func, tuple):
+            if len(act_func) != (num_hidden_layers + 1):
+                raise ValueError(
+                    "tuple of activation functions must have "
+                    f"length: {(num_hidden_layers+1)=}, "
+                )
+            self.act_func = tuple(resolve_activation(act) for act in act_func)
+        else:
+            self.act_func = resolve_activation(act_func)
 
         self.layers = tuple(
             [
@@ -151,13 +182,29 @@ class MLP(pytc.TreeClass):
             ]
         )
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def _single_call(self, x: jax.Array, **k) -> jax.Array:
+        def scan_func(carry, _):
+            x, (l0, *lh) = carry
+            return [self.act_func(l0(x)), [*lh, l0]], None
+
+        (l0, *lh, lf) = self.layers
+        x = self.act_func(l0(x))
+        if length := len(lh):
+            (x, _), _ = jax.lax.scan(scan_func, [x, lh], None, length=length)
+        return lf(x)
+
+    def _multi_call(self, x: jax.Array, **k) -> jax.Array:
         def scan_func(carry, _):
             x, (l0, *lh), (a0, *ah) = carry
             return [a0(l0(x)), [*lh, l0], [*ah, a0]], None
 
-        (l0, *lh, lf), (a0, *ah) = self.layers, self.act_funcs
+        (l0, *lh, lf), (a0, *ah) = self.layers, self.act_func
         x = a0(l0(x))
         if length := len(lh):
             (x, _, _), _ = jax.lax.scan(scan_func, [x, lh, ah], None, length=length)
         return lf(x)
+
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        if isinstance(self.act_func, tuple):
+            return self._multi_call(x, **k)
+        return self._single_call(x, **k)
