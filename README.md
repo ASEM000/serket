@@ -22,10 +22,6 @@
 
 ## 🛠️ Installation<a id="Installation"></a>
 
-```python
-pip install serket
-```
-
 **Install development version**
 
 ```python
