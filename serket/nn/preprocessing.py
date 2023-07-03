@@ -81,8 +81,7 @@ class PixelShuffle2D(pytc.TreeClass):
         oc = channels // (sr * sw)
 
         if not (channels % (sr * sw)) == 0:
-            msg = f"Input channels must be divisible by {sr*sw}, got {channels}."
-            raise ValueError(msg)
+            raise ValueError(f"{channels=} not divisible by {sr*sw}.")
 
         ih, iw = x.shape[1], x.shape[2]
         x = jnp.reshape(x, (sr, sw, oc, ih, iw))

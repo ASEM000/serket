@@ -101,9 +101,7 @@ class GaussianBlur2D(pytc.TreeClass):
           [0.7259314 1.        1.        1.        0.7259314]
           [0.7259314 1.        1.        1.        0.7259314]
           [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
-
         """
-
         self.in_features = positive_int_cb(in_features)
         self.kernel_size = positive_int_cb(kernel_size)
 
@@ -162,7 +160,6 @@ class Filter2D(pytc.TreeClass):
           [6. 9. 9. 9. 6.]
           [6. 9. 9. 9. 6.]
           [4. 6. 6. 6. 4.]]]
-
         """
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
@@ -207,7 +204,6 @@ class FFTFilter2D(pytc.TreeClass):
           [6.0000005 9.        9.        9.        6.0000005]
           [4.        6.0000005 6.0000005 6.0000005 4.       ]]]
         """
-
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 

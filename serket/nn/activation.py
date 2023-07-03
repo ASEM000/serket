@@ -20,61 +20,8 @@ import jax
 import jax.numpy as jnp
 import pytreeclass as pytc
 from jax import lax
-from pytreeclass import TreeClass
 
-from serket.nn.utils import Range, ScalarLike
-
-
-def adaptive_leaky_relu(x: jax.Array, a: float = 1.0, v: float = 1.0) -> jax.Array:
-    return jnp.maximum(0, a * x) - v * jnp.maximum(0, -a * x)
-
-
-def adaptive_relu(x: jax.Array, a: float = 1.0) -> jax.Array:
-    return jnp.maximum(0, a * x)
-
-
-def adaptive_sigmoid(x: jax.Array, a: float = 1.0) -> jax.Array:
-    return 1 / (1 + jnp.exp(-a * x))
-
-
-def adaptive_tanh(x: jax.Array, a: float = 1.0) -> jax.Array:
-    return (jnp.exp(a * x) - jnp.exp(-a * x)) / (jnp.exp(a * x) + jnp.exp(-a * x))
-
-
-def hard_shrink(x: jax.Array, alpha: float = 0.5) -> jax.Array:
-    return jnp.where(x > alpha, x, jnp.where(x < -alpha, x, 0.0))
-
-
-def parametric_relu(x: jax.Array, a: float = 0.25) -> jax.Array:
-    return jnp.where(x >= 0, x, x * a)
-
-
-def soft_shrink(x: jax.Array, alpha: float = 0.5) -> jax.Array:
-    return jnp.where(
-        x < -alpha,
-        x + alpha,
-        jnp.where(x > alpha, x - alpha, 0.0),
-    )
-
-
-def square_plus(x: jax.Array) -> jax.Array:
-    return 0.5 * (x + jnp.sqrt(x * x + 4))
-
-
-def soft_sign(x: jax.Array) -> jax.Array:
-    return x / (1 + jnp.abs(x))
-
-
-def thresholded_relu(x: jax.Array, theta: float = 1.0) -> jax.Array:
-    return jnp.where(x > theta, x, 0)
-
-
-def mish(x: jax.Array) -> jax.Array:
-    return x * jax.nn.tanh(jax.nn.softplus(x))
-
-
-def snake(x: jax.Array, frequency: float = 1.0) -> jax.Array:
-    return x + (1 - jnp.cos(2 * frequency * x)) / (2 * frequency)
+from serket.nn.utils import IsInstance, Range, ScalarLike
 
 
 class AdaptiveLeakyReLU(pytc.TreeClass):
@@ -87,7 +34,8 @@ class AdaptiveLeakyReLU(pytc.TreeClass):
     v: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return adaptive_leaky_relu(x, self.a, lax.stop_gradient(self.v))
+        v = jax.lax.stop_gradient(self.v)
+        return jnp.maximum(0, self.a * x) - v * jnp.maximum(0, -self.a * x)
 
 
 class AdaptiveReLU(pytc.TreeClass):
@@ -99,7 +47,7 @@ class AdaptiveReLU(pytc.TreeClass):
     a: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return adaptive_relu(x, self.a)
+        return jnp.maximum(0, self.a * x)
 
 
 class AdaptiveSigmoid(pytc.TreeClass):
@@ -111,7 +59,7 @@ class AdaptiveSigmoid(pytc.TreeClass):
     a: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return adaptive_sigmoid(x, self.a)
+        return 1 / (1 + jnp.exp(-self.a * x))
 
 
 class AdaptiveTanh(pytc.TreeClass):
@@ -123,13 +71,14 @@ class AdaptiveTanh(pytc.TreeClass):
     a: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return adaptive_tanh(x, self.a)
+        a = self.a
+        return (jnp.exp(a * x) - jnp.exp(-a * x)) / (jnp.exp(a * x) + jnp.exp(-a * x))
 
 
 class CeLU(pytc.TreeClass):
     """Celu activation function"""
 
-    alpha: float = 1.0
+    alpha: float = pytc.field(default=1.0, callbacks=[ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.celu(x, alpha=lax.stop_gradient(self.alpha))
@@ -138,7 +87,7 @@ class CeLU(pytc.TreeClass):
 class ELU(pytc.TreeClass):
     """Exponential linear unit"""
 
-    alpha: float = 1.0
+    alpha: float = pytc.field(default=1.0, callbacks=[ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.elu(x, alpha=lax.stop_gradient(self.alpha))
@@ -147,7 +96,7 @@ class ELU(pytc.TreeClass):
 class GELU(pytc.TreeClass):
     """Gaussian error linear unit"""
 
-    approximate: bool = True
+    approximate: bool = pytc.field(default=1.0, callbacks=[IsInstance(bool)])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.gelu(x, approximate=self.approximate)
@@ -163,10 +112,11 @@ class GLU(pytc.TreeClass):
 class HardShrink(pytc.TreeClass):
     """Hard shrink activation function"""
 
-    alpha: float = 0.5
+    alpha: float = pytc.field(default=0.5, callbacks=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return hard_shrink(x, lax.stop_gradient(self.alpha))
+        alpha = lax.stop_gradient(self.alpha)
+        return jnp.where(x > alpha, x, jnp.where(x < -alpha, x, 0.0))
 
 
 class HardSigmoid(pytc.TreeClass):
@@ -207,7 +157,7 @@ class LogSoftmax(pytc.TreeClass):
 class LeakyReLU(pytc.TreeClass):
     """Leaky ReLU activation function"""
 
-    negative_slope: float = 0.01
+    negative_slope: float = pytc.field(default=0.01, callbacks=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.nn.leaky_relu(x, lax.stop_gradient(self.negative_slope))
@@ -252,23 +202,28 @@ class SoftSign(pytc.TreeClass):
     """SoftSign activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return soft_sign(x)
+        return x / (1 + jnp.abs(x))
 
 
 class SoftShrink(pytc.TreeClass):
     """SoftShrink activation function"""
 
-    alpha: float = 0.5
+    alpha: float = pytc.field(default=0.5, callbacks=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return soft_shrink(x, lax.stop_gradient(self.alpha))
+        alpha = lax.stop_gradient(self.alpha)
+        return jnp.where(
+            x < -alpha,
+            x + alpha,
+            jnp.where(x > alpha, x - alpha, 0.0),
+        )
 
 
 class SquarePlus(pytc.TreeClass):
     """SquarePlus activation function"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return square_plus(x)
+        return 0.5 * (x + jnp.sqrt(x * x + 4))
 
 
 class Swish(pytc.TreeClass):
@@ -295,26 +250,27 @@ class TanhShrink(pytc.TreeClass):
 class ThresholdedReLU(pytc.TreeClass):
     """Thresholded ReLU activation function."""
 
-    theta: float = pytc.field(callbacks=[Range(0), ScalarLike()])
+    theta: float = pytc.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return thresholded_relu(x, lax.stop_gradient(self.theta))
+        theta = lax.stop_gradient(self.theta)
+        return jnp.where(x > theta, x, 0)
 
 
 class Mish(pytc.TreeClass):
     """Mish activation function https://arxiv.org/pdf/1908.08681.pdf."""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return mish(x)
+        return x * jax.nn.tanh(jax.nn.softplus(x))
 
 
 class PReLU(pytc.TreeClass):
     """Parametric ReLU activation function"""
 
-    a: float = 0.25
+    a: float = pytc.field(default=0.25, callbacks=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return parametric_relu(x, self.a)
+        return jnp.where(x >= 0, x, x * self.a)
 
 
 class Snake(pytc.TreeClass):
@@ -330,7 +286,8 @@ class Snake(pytc.TreeClass):
     a: float = pytc.field(callbacks=[Range(0), ScalarLike()], default=1.0)
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return snake(x, lax.stop_gradient(self.a))
+        a = lax.stop_gradient(self.a)
+        return x + (1 - jnp.cos(2 * a * x)) / (2 * a)
 
 
 # useful for building layers from configuration text
@@ -402,7 +359,7 @@ acts = [
 ]
 
 
-act_map: dict[str, TreeClass] = dict(zip(get_args(ActivationLiteral), acts))
+act_map: dict[str, pytc.TreeClass] = dict(zip(get_args(ActivationLiteral), acts))
 
 ActivationFunctionType = Callable[[jax.typing.ArrayLike], jax.Array]
 ActivationType = Union[ActivationLiteral, ActivationFunctionType]
@@ -414,6 +371,7 @@ def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
     if isinstance(act_func, str):
         if act_func in act_map:
             return act_map[act_func]()
+
         raise ValueError(
             f"Unknown activation function {act_func=}, "
             f"available activations are {list(act_map.keys())}"

@@ -46,7 +46,19 @@ class RNNState(pytc.TreeClass):
     hidden_state: jax.Array
 
 
-class RNNCell(pytc.TreeClass, abc.ABC):
+class RNNCell(pytc.TreeClass):
+    """Abstract class for RNN cells.
+
+    Subclasses must implement:
+        - `__call__` should take in an `input` and a `state` and return a new `state`.
+        - `init_state` should take in a `spatial_shape` and return an initial `state`.
+        - `spatial_ndim` should return the spatial dimensionality of the RNN.
+            0 for non-spatial, 1 for 1D, 2 for 2D, 3 for 3D etc.
+
+    Subclassed classes can by used with `ScanRNN` to scan the RNN over a sequence
+    of inputs. for example, check out `SimpleRNNCell`.
+    """
+
     @abc.abstractclassmethod
     def __call__(self, x: jax.Array, state: RNNState, **k) -> RNNState:
         ...
@@ -135,9 +147,7 @@ class SimpleRNNCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: SimpleRNNState, **k) -> SimpleRNNState:
         if not isinstance(state, SimpleRNNState):
-            msg = "Expected state to be an instance of `SimpleRNNState`"
-            msg += f", got {type(state).__name__}"
-            raise TypeError(msg)
+            raise TypeError(f"Expected {state=} to be an instance of `SimpleRNNState`")
 
         h = self.act_func(self.in_and_hidden_to_hidden(x, state.hidden_state))
         return SimpleRNNState(h)
@@ -203,9 +213,7 @@ class DenseCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: DenseState, **k) -> DenseState:
         if not isinstance(state, DenseState):
-            msg = "Expected state to be an instance of `DenseState`"
-            msg += f", got {type(state).__name__}"
-            raise TypeError(msg)
+            raise TypeError(f"Expected {state=} to be an instance of `DenseState`")
 
         h = self.act_func(self.in_to_hidden(x))
         return DenseState(h)
@@ -277,9 +285,7 @@ class LSTMCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: LSTMState, **k) -> LSTMState:
         if not isinstance(state, LSTMState):
-            msg = "Expected state to be an instance of `LSTMState`"
-            msg += f", got {type(state).__name__}"
-            raise TypeError(msg)
+            raise TypeError(f"Expected {state=} to be an instance of `LSTMState`")
 
         h, c = state.hidden_state, state.cell_state
         h = self.in_and_hidden_to_hidden(x, h)
@@ -364,9 +370,7 @@ class GRUCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: GRUState, **k) -> GRUState:
         if not isinstance(state, GRUState):
-            msg = "Expected state to be an instance of `GRUState`"
-            msg += f", got {type(state).__name__}"
-            raise TypeError(msg)
+            raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
         h = state.hidden_state
         xe, xu, xo = jnp.split(self.in_to_hidden(x), 3, axis=-1)
@@ -464,8 +468,7 @@ class ConvLSTMNDCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: ConvLSTMNDState, **k) -> ConvLSTMNDState:
         if not isinstance(state, ConvLSTMNDState):
-            msg = f"Expected state to be an instance of ConvLSTMNDState, got {type(state)}"
-            raise TypeError(msg)
+            raise TypeError(f"Expected {state=} to be an instance of ConvLSTMNDState.")
 
         h, c = state.hidden_state, state.cell_state
         h = self.in_to_hidden(x) + self.hidden_to_hidden(h)
@@ -742,8 +745,7 @@ class ConvGRUNDCell(RNNCell):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, state: ConvGRUNDState, **k) -> ConvGRUNDState:
         if not isinstance(state, ConvGRUNDState):
-            msg = f"Expected state to be an instance of GRUState, got {type(state)}"
-            raise TypeError(msg)
+            raise TypeError(f"Expected {state=} to be an instance of GRUState")
 
         h = state.hidden_state
         xe, xu, xo = jnp.split(self.in_to_hidden(x), 3, axis=0)
@@ -961,13 +963,10 @@ class ScanRNN(pytc.TreeClass):
             >>> result = rnn(x)  # 20 features
         """
         if not isinstance(cell, RNNCell):
-            msg = f"Expected `cell` to be an instance of RNNCell got {type(cell)}"
-            raise TypeError(msg)
+            raise TypeError(f"Expected {cell=} to be an instance of RNNCell.")
 
         if not isinstance(backward_cell, (RNNCell, type(None))):
-            msg = "Expected `backward_cell` to be an instance of RNNCell, "
-            msg += f"got {type(backward_cell).__name__}"
-            raise TypeError(msg)
+            raise TypeError(f"Expected {backward_cell=} to be an instance of RNNCell.")
 
         self.cell = cell
         self.backward_cell = backward_cell
@@ -989,15 +988,17 @@ class ScanRNN(pytc.TreeClass):
         # spatial RNN : (time steps, in_features, *spatial_dims)
 
         if x.ndim != self.cell.spatial_ndim + 2:
-            msg = f"Expected x to have {self.cell.spatial_ndim + 2} dimensions corresponds to "
-            msg += f"(timesteps, in_features, {'*'*self.cell.spatial_ndim}),"
-            msg += f" got {x.ndim}"
-            raise ValueError(msg)
+            raise ValueError(
+                f"Expected x to have {self.cell.spatial_ndim + 2} dimensions corresponds to "
+                f"(timesteps, in_features, {'*'*self.cell.spatial_ndim}),"
+                f" got {x.ndim=}"
+            )
 
         if self.cell.in_features != x.shape[1]:
-            msg = f"Expected x to have shape (timesteps, {self.cell.in_features}, {'*'*self.cell.spatial_ndim})"
-            msg += f", got {x.shape}"
-            raise ValueError(msg)
+            raise ValueError(
+                f"Expected x to have shape (timesteps, {self.cell.in_features},"
+                f"{'*'*self.cell.spatial_ndim}), got {x.shape=}"
+            )
 
         state = state or self.cell.init_state(x.shape[2:])
 

@@ -28,6 +28,7 @@ from serket.nn.utils import (
     PaddingType,
     StridesType,
     canonicalize,
+    delayed_canonicalize_padding,
     validate_spatial_ndim,
 )
 
@@ -36,16 +37,13 @@ from serket.nn.utils import (
 
 
 class GeneralPoolND(pytc.TreeClass):
-    func: Callable = pytc.field(repr=False)
-
     def __init__(
         self,
         kernel_size: KernelSizeType,
         strides: StridesType = 1,
         *,
         padding: PaddingType = "valid",
-        func: Callable = None,
-        constant_values: float | None = 0,
+        operation: Callable[[jax.Array], jax.Array],
     ):
         """Apply pooling to the input with function `func` applied to the kernel.
 
@@ -53,7 +51,7 @@ class GeneralPoolND(pytc.TreeClass):
             kernel_size: size of the kernel
             strides: strides of the kernel
             padding: padding of the kernel
-            func: function to apply to the kernel
+            operation: operation to apply to the kernel.
         """
         self.kernel_size = canonicalize(
             kernel_size,
@@ -61,22 +59,28 @@ class GeneralPoolND(pytc.TreeClass):
             name="kernel_size",
         )
         self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
-        self.padding = padding  # gets canonicalized in kmap
+        self.padding = padding
+        self.operation = operation
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x, **k):
+        padding = delayed_canonicalize_padding(
+            in_dim=x.shape,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+            padding=self.padding,
+        )
 
         @jax.vmap
         @kex.kmap(
             kernel_size=self.kernel_size,
             strides=self.strides,
-            padding=self.padding,
+            padding=padding,
         )
-        def _poolnd(x):
-            return func(x)
+        def pool(x):
+            return self.operation(x)
 
-        self.func = _poolnd
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x, **k):
-        return self.func(x)
+        return pool(x)
 
     @property
     @abc.abstractmethod
@@ -106,12 +110,12 @@ class LPPoolND(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides or kernel_size,
             padding=padding,
-            func=lambda x: jnp.sum(x**norm_type) ** (1 / norm_type),
+            operation=lambda x: jnp.sum(x**norm_type) ** (1 / norm_type),
         )
 
 
 class GlobalPoolND(pytc.TreeClass):
-    def __init__(self, keepdims: bool = True, func: Callable = jnp.mean):
+    def __init__(self, keepdims: bool = True, operation: Callable = jnp.mean):
         """Apply global pooling to the input with function `func` applied
         to the kernel.
 
@@ -120,12 +124,12 @@ class GlobalPoolND(pytc.TreeClass):
             func: function to apply to the kernel
         """
         self.keepdims = keepdims
-        self.func = func
+        self.operation = operation
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
-        return self.func(x, axis=axes, keepdims=self.keepdims)
+        return self.operation(x, axis=axes, keepdims=self.keepdims)
 
     @property
     @abc.abstractmethod
@@ -158,7 +162,7 @@ class AdaptivePoolND(pytc.TreeClass):
         self.func = func
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x, **kwargs):
+    def __call__(self, x, **k):
         input_size = x.shape[1:]
         output_size = self.output_size
         strides = tuple(i // o for i, o in zip(input_size, output_size))
@@ -197,8 +201,7 @@ class MaxPool1D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            func=jnp.max,
-            constant_values=-jnp.inf,
+            operation=jnp.max,
         )
 
     @property
@@ -224,8 +227,7 @@ class MaxPool2D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            func=jnp.max,
-            constant_values=-jnp.inf,
+            operation=jnp.max,
         )
 
     @property
@@ -251,8 +253,7 @@ class MaxPool3D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            func=jnp.max,
-            constant_values=-jnp.inf,
+            operation=jnp.max,
         )
 
     @property
@@ -278,7 +279,7 @@ class AvgPool1D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            func=jnp.mean,
+            operation=jnp.mean,
         )
 
     @property
@@ -304,7 +305,7 @@ class AvgPool2D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            func=jnp.mean,
+            operation=jnp.mean,
         )
 
     @property
@@ -330,7 +331,7 @@ class AvgPool3D(GeneralPoolND):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            func=jnp.mean,
+            operation=jnp.mean,
         )
 
     @property
@@ -428,7 +429,7 @@ class GlobalAvgPool1D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(func=jnp.mean, keepdims=keepdims)
+        super().__init__(operation=jnp.mean, keepdims=keepdims)
 
     @property
     def spatial_ndim(self) -> int:
@@ -441,7 +442,7 @@ class GlobalAvgPool2D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(func=jnp.mean, keepdims=keepdims)
+        super().__init__(operation=jnp.mean, keepdims=keepdims)
 
     @property
     def spatial_ndim(self) -> int:
@@ -454,7 +455,7 @@ class GlobalAvgPool3D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(func=jnp.mean, keepdims=keepdims)
+        super().__init__(operation=jnp.mean, keepdims=keepdims)
 
     @property
     def spatial_ndim(self) -> int:
@@ -467,7 +468,7 @@ class GlobalMaxPool1D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(func=jnp.max, keepdims=keepdims)
+        super().__init__(operation=jnp.max, keepdims=keepdims)
 
     @property
     def spatial_ndim(self) -> int:
@@ -480,7 +481,7 @@ class GlobalMaxPool2D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(func=jnp.max, keepdims=keepdims)
+        super().__init__(operation=jnp.max, keepdims=keepdims)
 
     @property
     def spatial_ndim(self) -> int:
@@ -493,7 +494,7 @@ class GlobalMaxPool3D(GlobalPoolND):
         Args:
             keepdims: whether to keep the dimensions or not
         """
-        super().__init__(func=jnp.max, keepdims=keepdims)
+        super().__init__(operation=jnp.max, keepdims=keepdims)
 
     @property
     def spatial_ndim(self) -> int:

@@ -47,7 +47,7 @@ from .activation import (
 )
 from .blocks import UNetBlock, VGG16Block, VGG19Block
 from .blur import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
-from .containers import Lambda, Sequential
+from .containers import Sequential
 from .contrast import AdjustContrast2D, RandomContrast2D
 from .convolution import (
     Conv1D,
@@ -86,7 +86,6 @@ from .fft_convolution import (
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, MLP
-from .laplace import Laplace2D
 from .linear import (
     Bilinear,
     Embedding,
@@ -158,7 +157,6 @@ __all__ = (
     "Dropout3D",
     # containers
     "Sequential",
-    "Lambda",
     # Pooling
     "MaxPool1D",
     "MaxPool2D",
@@ -223,7 +221,6 @@ __all__ = (
     "Filter2D",
     "FFTFilter2D",
     # Resize
-    "Laplace2D",
     "FlipLeftRight2D",
     "FlipUpDown2D",
     "Resize1D",

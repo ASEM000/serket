@@ -12,30 +12,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pytreeclass import (
-    TreeClass,
-    field,
+from pytreeclass._src.code_build import field, fields
+from pytreeclass._src.tree_base import TreeClass
+from pytreeclass._src.tree_index import AtIndexer, BaseKey
+from pytreeclass._src.tree_mask import (
     freeze,
     is_frozen,
     is_nondiff,
-    is_tree_equal,
+    tree_mask,
+    tree_unmask,
+    unfreeze,
+)
+from pytreeclass._src.tree_pprint import (
     tree_diagram,
     tree_indent,
     tree_mermaid,
     tree_repr,
+    tree_repr_with_trace,
     tree_str,
     tree_summary,
-    unfreeze,
+)
+from pytreeclass._src.tree_util import (
+    Partial,
+    bcmap,
+    is_tree_equal,
+    tree_flatten_with_trace,
+    tree_leaves_with_trace,
+    tree_map_with_trace,
 )
 
 from . import nn
-from .operators import diff, value_and_diff
 
 __all__ = (
     # general utils
     "TreeClass",
     "is_tree_equal",
     "field",
+    "fields",
     # pprint utils
     "tree_diagram",
     "tree_mermaid",
@@ -43,17 +56,26 @@ __all__ = (
     "tree_str",
     "tree_indent",
     "tree_summary",
-    "tree_trace_summary",
-    # freeze/unfreeze utils
+    # masking utils
     "is_nondiff",
     "is_frozen",
     "freeze",
     "unfreeze",
+    "tree_unmask",
+    "tree_mask",
+    # indexing utils
+    "AtIndexer",
+    "BaseKey",
+    # tree utils
+    "bcmap",
+    "tree_map_with_trace",
+    "tree_leaves_with_trace",
+    "tree_flatten_with_trace",
+    "tree_repr_with_trace",
+    "Partial",
     # serket
     "nn",
-    "diff",
-    "value_and_diff",
 )
 
 
-__version__ = "0.2.0b6"
+__version__ = "0.2.0b7"

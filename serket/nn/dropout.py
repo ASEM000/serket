@@ -25,43 +25,8 @@ from jax import lax
 from serket.nn.utils import Range, validate_spatial_ndim
 
 
-def dropout(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
-    """Randomly zeroes some of the elements of the input tensor with
-    probability :attr:`p` using samples from a Bernoulli distribution.
-
-    Args:
-        p: probability of an element to be zeroed. Default: 0.5. Use `p`= 0.0
-            to turn off dropout.
-        key: random key
-    """
-    if p == 0:
-        return x
-    if p == 1:
-        return jnp.zeros_like(x)
-    keep_rate = 1 - p
-    mask = jr.bernoulli(key, keep_rate, x.shape)
-    return jnp.where(mask, x / keep_rate, 0)
-
-
-def dropout_nd(x, *, p: float = 0.5, key: jr.KeyArray = jr.PRNGKey(0)):
-    """Drops full feature maps along the channel axis.
-
-    Args:
-        p: fraction of an elements to be zeroed out. Default: 0.5.
-            Use `p`= 0.0 to turn off dropout.
-        key: random key
-    """
-    if p == 0:
-        return x
-    if p == 1:
-        return jnp.zeros_like(x)
-    keep_rate = 1 - p
-    mask = jr.bernoulli(key, keep_rate, x.shape)
-    return jnp.where(mask, x / keep_rate, 0)
-
-
 class Dropout(pytc.TreeClass):
-    r"""Randomly zeroes some of the elements of the input
+    """Randomly zeroes some of the elements of the input
     tensor with probability :attr:`p` using samples from a Bernoulli
     distribution.
 
@@ -74,6 +39,7 @@ class Dropout(pytc.TreeClass):
         >>> layer = sk.nn.Dropout(0.5)
         >>> # change `p` to 0.0 to turn off dropout
         >>> layer = layer.at["p"].set(0.0, is_leaf=pytc.is_frozen)
+
     Note:
         Use `p`= 0.0 to turn off dropout.
     """
@@ -81,7 +47,11 @@ class Dropout(pytc.TreeClass):
     p: float = pytc.field(default=0.5, callbacks=[Range(0, 1)])
 
     def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        return dropout(x, p=lax.stop_gradient(self.p), key=key)
+        return jnp.where(
+            (keep_prop := lax.stop_gradient(1 - self.p)) == 0.0,
+            jnp.zeros_like(x),
+            jnp.where(jr.bernoulli(key, keep_prop, x.shape), x / keep_prop, 0),
+        )
 
 
 class DropoutND(pytc.TreeClass):
@@ -104,7 +74,14 @@ class DropoutND(pytc.TreeClass):
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
-        return dropout_nd(x, p=lax.stop_gradient(self.p), key=key)
+        # drops full feature maps along first axis.
+        shape = (x.shape[0], *([1] * (x.ndim - 1)))
+
+        return jnp.where(
+            (keep_prop := lax.stop_gradient(1 - self.p)) == 0.0,
+            jnp.zeros_like(x),
+            jnp.where(jr.bernoulli(key, keep_prop, shape=shape), x / keep_prop, 0),
+        )
 
     @property
     @abc.abstractmethod
@@ -117,7 +94,6 @@ class Dropout1D(DropoutND):
         """Drops full feature maps along the channel axis.
 
         Args:
-
             p: fraction of an elements to be zeroed out
 
         Note:
@@ -141,7 +117,6 @@ class Dropout2D(DropoutND):
         """Drops full feature maps along the channel axis.
 
         Args:
-
             p: fraction of an elements to be zeroed out
 
         Note:
@@ -165,7 +140,6 @@ class Dropout3D(DropoutND):
         """Drops full feature maps along the channel axis.
 
         Args:
-
             p: fraction of an elements to be zeroed out
 
         Note:

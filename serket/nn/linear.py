@@ -104,8 +104,7 @@ class Multilinear(pytc.TreeClass):
             (1, 8)
         """
         if not isinstance(in_features, (tuple, int)):
-            msg = f"Expected tuple or int for in_features, got {type(in_features)}"
-            raise ValueError(msg)
+            raise ValueError(f"Expected tuple or int for {in_features=}.")
 
         self.in_features = in_features
         self.out_features = out_features
@@ -116,18 +115,16 @@ class Multilinear(pytc.TreeClass):
         weight_shape = (*self.in_features, out_features)
         self.weight = self.weight_init_func(key, weight_shape)
 
-        if self.bias_init_func is None:
-            self.bias = None
-        else:
-            self.bias = self.bias_init_func(key, (out_features,))
+        self.bias = (
+            None
+            if bias_init_func is None
+            else self.bias_init_func(key, (out_features,))
+        )
 
     def __call__(self, *x, **k) -> jax.Array:
         einsum_string = _multilinear_einsum_string(len(self.in_features))
         x = jnp.einsum(einsum_string, *x, self.weight)
-
-        if self.bias is None:
-            return x
-        return x + self.bias
+        return x if self.bias is None else (x + self.bias)
 
 
 class Linear(Multilinear):
@@ -235,18 +232,20 @@ class GeneralLinear(pytc.TreeClass):
         self.in_axes = IsInstance(tuple)(in_axes)
 
         if len(in_axes) != len(in_features):
-            msg = "Expected in_axes and in_features to have the same length,"
-            msg += f"got {len(in_axes)} and {len(in_features)}"
-            raise ValueError(msg)
+            raise ValueError(
+                "Expected in_axes and in_features to have the same length,"
+                f"got {len(in_axes)=} and {len(in_features)=}"
+            )
 
         self.weight_init_func = resolve_init_func(weight_init_func)
         self.bias_init_func = resolve_init_func(bias_init_func)
         self.weight = self.weight_init_func(key, (*self.in_features, self.out_features))
 
-        if self.bias_init_func is None:
-            self.bias = None
-        else:
-            self.bias = self.bias_init_func(key, (self.out_features,))
+        self.bias = (
+            None
+            if self.bias_init_func is None
+            else self.bias_init_func(key, (self.out_features,))
+        )
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         # ensure negative axes
@@ -329,14 +328,14 @@ class MergeLinear(pytc.TreeClass):
         """
         out_dim0 = layers[0].out_features
         if not all(isinstance(layer, Linear) for layer in layers):
-            msg = "All layers must be instances of Linear."
-            raise TypeError(msg)
+            raise TypeError("All layers must be instances of Linear.")
 
         for layer in layers[1:]:
             if layer.out_features != out_dim0:
-                msg = "All layers must have the same output dimension."
-                msg += f" Got {out_dim0} and {layer.out_features}"
-                raise ValueError(msg)
+                raise ValueError(
+                    "All layers must have the same output dimension."
+                    f" Got {out_dim0} and {layer.out_features}"
+                )
 
         self.weight = jnp.concatenate([L.weight for L in layers], axis=0)
         self.bias = sum([L.bias for L in layers if L.bias_init_func])

@@ -55,7 +55,6 @@ class RandomApply(pytc.TreeClass):
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):
         if not jr.bernoulli(key, stop_gradient(self.p)):
             return x
-
         return self.layer(x)
 
 

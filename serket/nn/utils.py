@@ -172,14 +172,10 @@ def canonicalize(value, ndim, *, name: str | None = None):
         return jnp.repeat(value, ndim)
     if isinstance(value, tuple):
         if len(value) != ndim:
-            msg = f"Expected tuple of length {ndim}, got {len(value)}: {value}"
-            msg += f" for {name}" if name is not None else ""
-            raise ValueError(msg)
+            raise ValueError(f"{len(value)=} != {ndim=} for {name=} and {value=}.")
         return tuple(value)
 
-    msg = f"Expected int or tuple for , got {value}."
-    msg += f" for {name}" if name is not None else ""
-    raise ValueError(msg)
+    raise ValueError(f"Expected int or tuple , got {value=}.")
 
 
 class Range(pytc.TreeClass):
@@ -191,10 +187,7 @@ class Range(pytc.TreeClass):
     def __call__(self, value: Any):
         if self.min_val <= value <= self.max_val:
             return value
-        raise ValueError(
-            f"Expected value between {self.min_val} and {self.max_val}, "
-            f"got {value} of type {type(value).__name__}."
-        )
+        raise ValueError(f"Not in range[{self.min_val}, {self.max_val}] got {value=}.")
 
 
 class IsInstance(pytc.TreeClass):
@@ -205,7 +198,6 @@ class IsInstance(pytc.TreeClass):
     def __call__(self, value: Any):
         if isinstance(value, self.predicted_type):
             return value
-
         raise TypeError(f"Expected {self.predicted_type}, got {type(value).__name__}")
 
 
@@ -221,10 +213,7 @@ class ScalarLike(pytc.TreeClass):
             and value.shape == ()
         ):
             return value
-        raise ValueError(
-            f"Expected value to be a float, complex, or array-like object"
-            f", got {type(value)}"
-        )
+        raise ValueError(f"Expected inexact type got {value=}")
 
 
 def canonicalize_cb(value, ndim, name: str | None = None):
@@ -236,14 +225,10 @@ def canonicalize_cb(value, ndim, name: str | None = None):
         return jnp.repeat(value, ndim)
     if isinstance(value, tuple):
         if len(value) != ndim:
-            msg = f"Expected tuple of length {ndim}, got {len(value)}: {value}"
-            msg += f" for {name}" if name is not None else ""
-            raise ValueError(msg)
+            raise ValueError(f"{len(value)} != {ndim} for {name=} and {value=}.")
         return tuple(value)
 
-    msg = f"Expected int or tuple for , got {value}."
-    msg += f" for {name}" if name is not None else ""
-    raise ValueError(msg)
+    raise ValueError(f"Expected int/tuple for {name=} and {value=}.")
 
 
 def positive_int_cb(value):
@@ -262,14 +247,17 @@ def validate_spatial_ndim(call_wrapper, attribute_name: str):
         spatial_tuple = ("rows", "cols", "depths")
         if x.ndim != spatial_ndim + 1:
             # the extra dimension is for the input features (channels)
-            msg = f"Input must be a {spatial_ndim+1}D tensor in shape of "
-            msg += f"(in_features, {', '.join(spatial_tuple[:spatial_ndim])}), "
-            msg += f"but got {x.shape}.\n"
-
-            if x.ndim == spatial_ndim + 2:
-                # maybe the user adding batch dimension by mistake
-                msg += "To apply on batched input, use `jax.vmap(layer)(input)`."
-            raise ValueError(msg)
+            raise ValueError(
+                f"Input must be a {spatial_ndim+1}D tensor in shape of "
+                f"(in_features, {', '.join(spatial_tuple[:spatial_ndim])}), "
+                f"but got {x.shape}.\n"
+                + (
+                    # maybe the user apply the layer on a batched input
+                    "To apply on batched input, use `jax.vmap(layer)(input)`."
+                    if x.ndim == spatial_ndim + 2
+                    else ""
+                )
+            )
         return x
 
     @ft.wraps(call_wrapper)

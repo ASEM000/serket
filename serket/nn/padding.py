@@ -49,7 +49,8 @@ class PadND(pytc.TreeClass):
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         # do not pad the channel axis
         shape = ((0, 0), *self.padding)
-        return jax.lax.stop_gradient(jnp.pad(x, shape, constant_values=self.value))
+        value = jax.lax.stop_gradient(self.value)
+        return jnp.pad(x, shape, constant_values=value)
 
     @property
     @abc.abstractmethod

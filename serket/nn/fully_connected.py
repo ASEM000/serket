@@ -41,7 +41,8 @@ class FNN(pytc.TreeClass):
         Args:
             layers: Sequence of layer sizes
             act_func: a single Activation function to be applied between layers or
-                `len(layers)-2` Sequence of activation functions applied between layers.
+                `len(layers)-2` Sequence of activation functions applied between
+                layers.
             weight_init_func: Weight initializer function.
             bias_init_func: Bias initializer function. Defaults to lambda key,
                 shape: jnp.ones(shape).
@@ -61,7 +62,6 @@ class FNN(pytc.TreeClass):
         """
 
         keys = jr.split(key, len(layers) - 1)
-
         num_hidden_layers = len(layers) - 2
 
         if isinstance(act_func, tuple):
@@ -70,6 +70,7 @@ class FNN(pytc.TreeClass):
                     "tuple of activation functions must have "
                     f"length: {(num_hidden_layers+1)=}, "
                 )
+
             self.act_func = tuple(resolve_activation(act) for act in act_func)
         else:
             self.act_func = resolve_activation(act_func)
@@ -130,11 +131,13 @@ class MLP(pytc.TreeClass):
 
         Note:
             - MLP with `in_features`=1, `out_features`=2, `hidden_size`=4,
-            `num_hidden_layers`=2 is equivalent to `[1, 4, 4, 2]` which has one input layer (1, 4),
-            one intermediate  layer (4, 4), and one output layer (4, 2) = `num_hidden_layers` + 1
-            - `MLP` exploits same input/out size for intermediate layers to use `jax.lax.scan`,
-                which offers better compilation speed for large number of layers
-                and producing a smaller `jaxpr`.
+            `num_hidden_layers`=2 is equivalent to `[1, 4, 4, 2]` which has one
+                input layer (1, 4), one intermediate  layer (4, 4), and one output
+                layer (4, 2) = `num_hidden_layers` + 1
+            - `MLP` exploits same input/out size for intermediate layers to use
+                `jax.lax.scan`, which offers better compilation speed for large
+                number of layers and producing a smaller `jaxpr` but could be
+                slower than equivalent `FNN` for small number of layers.
         """
         if hidden_size < 1:
             raise ValueError(f"hidden_size must be positive, got {hidden_size}")
