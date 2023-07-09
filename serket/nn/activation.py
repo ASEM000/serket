@@ -25,7 +25,8 @@ from serket.nn.utils import IsInstance, Range, ScalarLike
 
 
 class AdaptiveLeakyReLU(pytc.TreeClass):
-    """Leaky ReLU activation function with learnable `a` parameter
+    """Leaky ReLU activation function
+
     Note:
         https://arxiv.org/pdf/1906.01170.pdf.
     """

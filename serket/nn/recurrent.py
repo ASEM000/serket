@@ -980,9 +980,7 @@ class ScanRNN(pytc.TreeClass):
         **k,
     ) -> jax.Array:
         if not isinstance(state, (RNNState, type(None))):
-            msg = "Expected state to be an instance of RNNState, "
-            msg += f"got {type(state).__name__}"
-            raise TypeError(msg)
+            raise TypeError(f"Expected state to be an instance of RNNState, {state=}")
 
         # non-spatial RNN : (time steps, in_features)
         # spatial RNN : (time steps, in_features, *spatial_dims)

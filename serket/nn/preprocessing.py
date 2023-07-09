@@ -23,14 +23,6 @@ import pytreeclass as pytc
 from serket.nn.utils import positive_int_cb, validate_spatial_ndim
 
 
-@ft.partial(jax.jit, static_argnums=(1,))
-def histeq(x, bins_count: int = 256):
-    hist, bins = jnp.histogram(x.flatten(), bins_count, density=True)
-    cdf = hist.cumsum()
-    cdf = (bins_count - 1) * cdf / cdf[-1]
-    return jnp.interp(x.flatten(), bins[:-1], cdf).reshape(x.shape)
-
-
 class HistogramEqualization2D(pytc.TreeClass):
     def __init__(self, bins: int = 256):
         """Apply histogram equalization to 2D spatial array channel wise
@@ -47,7 +39,11 @@ class HistogramEqualization2D(pytc.TreeClass):
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return histeq(x, self.bins)
+        bins_count = self.bins
+        hist, bins = jnp.histogram(x.flatten(), bins_count, density=True)
+        cdf = hist.cumsum()
+        cdf = (bins_count - 1) * cdf / cdf[-1]
+        return jnp.interp(x.flatten(), bins[:-1], cdf).reshape(x.shape)
 
     @property
     def spatial_ndim(self) -> int:

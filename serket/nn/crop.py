@@ -143,7 +143,12 @@ class RandomCropND(pytc.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         start = tuple(
-            jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)
+            jr.randint(
+                key,
+                shape=(),
+                minval=0,
+                maxval=x.shape[i] - s,
+            )
             for i, s in enumerate(self.size)
         )
         return jax.lax.dynamic_slice(x, (0, *start), (x.shape[0], *self.size))

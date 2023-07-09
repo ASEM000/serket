@@ -31,27 +31,19 @@ class ResizeND(pytc.TreeClass):
     Resize an image to a given size using a given interpolation method.
 
     Args:
-        size: the size of the output.
-        method: the method of interpolation. Defaults to "nearest".
+        size: the size of the output. if size is None, the output size is
+            calculated as input size * scale
+        method: the method of interpolation. Defaults to "nearest". choices are:
+        - "nearest": Nearest neighbor interpolation. The values of antialias
+            and precision are ignored.
+        - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
+            If antialias is True, uses a triangular filter when downsampling.
+        - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
+            cubic kernel.
+        - "lanczos3": Lanczos resampling, using a kernel of radius 3.
+        - "lanczos5": Lanczos resampling, using a kernel of radius 5.
         antialias: whether to use antialiasing. Defaults to True.
-
-    Note:
-        - if size is None, the output size is calculated as input size * scale
-        - interpolation methods
-            "nearest" :
-                Nearest neighbor interpolation. The values of antialias and precision are ignored.
-
-            "linear", "bilinear", "trilinear", "triangle" :
-                Linear interpolation. If antialias is True, uses a triangular filter when downsampling.
-
-            "cubic", "bicubic", "tricubic" :
-                Cubic interpolation, using the Keys cubic kernel.
-
-            "lanczos3" :
-                Lanczos resampling, using a kernel of radius 3.
-
-            "lanczos5"
-                Lanczos resampling, using a kernel of radius 5.
+        antialias: whether to use antialiasing. Defaults to True.
     """
 
     def __init__(
@@ -118,27 +110,18 @@ class Resize1D(ResizeND):
         """Resize a 1D input to a given size using a given interpolation method.
 
         Args:
-            size: the size of the output.
-            method: the method of interpolation. Defaults to "nearest".
+            size: the size of the output. if size is None, the output size is
+                calculated as input size * scale
+            method: the method of interpolation. Defaults to "nearest". choices are:
+            - "nearest": Nearest neighbor interpolation. The values of antialias
+                and precision are ignored.
+            - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
+                If antialias is True, uses a triangular filter when downsampling.
+            - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
+                cubic kernel.
+            - "lanczos3": Lanczos resampling, using a kernel of radius 3.
+            - "lanczos5": Lanczos resampling, using a kernel of radius 5.
             antialias: whether to use antialiasing. Defaults to True.
-
-        Note:
-            - if size is None, the output size is calculated as input size * scale
-            - interpolation methods
-                "nearest" :
-                    Nearest neighbor interpolation. The values of antialias and precision are ignored.
-
-                "linear", "bilinear", "trilinear", "triangle" :
-                    Linear interpolation. If antialias is True, uses a triangular filter when downsampling.
-
-                "cubic", "bicubic", "tricubic" :
-                    Cubic interpolation, using the Keys cubic kernel.
-
-                "lanczos3" :
-                    Lanczos resampling, using a kernel of radius 3.
-
-                "lanczos5"
-                    Lanczos resampling, using a kernel of radius 5.
         """
         super().__init__(size=size, method=method, antialias=antialias)
 
@@ -157,27 +140,18 @@ class Resize2D(ResizeND):
         """Resize a 2D input to a given size using a given interpolation method.
 
         Args:
-            size: the size of the output.
-            method: the method of interpolation. Defaults to "nearest".
+            size: the size of the output. if size is None, the output size is
+                calculated as input size * scale
+            method: the method of interpolation. Defaults to "nearest". choices are:
+            - "nearest": Nearest neighbor interpolation. The values of antialias
+                and precision are ignored.
+            - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
+                If antialias is True, uses a triangular filter when downsampling.
+            - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
+                cubic kernel.
+            - "lanczos3": Lanczos resampling, using a kernel of radius 3.
+            - "lanczos5": Lanczos resampling, using a kernel of radius 5.
             antialias: whether to use antialiasing. Defaults to True.
-
-        Note:
-            - if size is None, the output size is calculated as input size * scale
-            - interpolation methods
-                "nearest" :
-                    Nearest neighbor interpolation. The values of antialias and precision are ignored.
-
-                "linear", "bilinear", "trilinear", "triangle" :
-                    Linear interpolation. If antialias is True, uses a triangular filter when downsampling.
-
-                "cubic", "bicubic", "tricubic" :
-                    Cubic interpolation, using the Keys cubic kernel.
-
-                "lanczos3" :
-                    Lanczos resampling, using a kernel of radius 3.
-
-                "lanczos5"
-                    Lanczos resampling, using a kernel of radius 5.
         """
         super().__init__(size=size, method=method, antialias=antialias)
 
@@ -196,27 +170,18 @@ class Resize3D(ResizeND):
         """Resize a 3D input to a given size using a given interpolation method.
 
         Args:
-            size: the size of the output.
-            method: the method of interpolation. Defaults to "nearest".
+            size: the size of the output. if size is None, the output size is
+                calculated as input size * scale
+            method: the method of interpolation. Defaults to "nearest". choices are:
+            - "nearest": Nearest neighbor interpolation. The values of antialias
+                and precision are ignored.
+            - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
+                If antialias is True, uses a triangular filter when downsampling.
+            - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
+                cubic kernel.
+            - "lanczos3": Lanczos resampling, using a kernel of radius 3.
+            - "lanczos5": Lanczos resampling, using a kernel of radius 5.
             antialias: whether to use antialiasing. Defaults to True.
-
-        Note:
-            - if size is None, the output size is calculated as input size * scale
-            - interpolation methods
-                "nearest" :
-                    Nearest neighbor interpolation. The values of antialias and precision are ignored.
-
-                "linear", "bilinear", "trilinear", "triangle" :
-                    Linear interpolation. If antialias is True, uses a triangular filter when downsampling.
-
-                "cubic", "bicubic", "tricubic" :
-                    Cubic interpolation, using the Keys cubic kernel.
-
-                "lanczos3" :
-                    Lanczos resampling, using a kernel of radius 3.
-
-                "lanczos5"
-                    Lanczos resampling, using a kernel of radius 5.
         """
         super().__init__(size=size, method=method, antialias=antialias)
 

@@ -28,7 +28,8 @@ class Sequential(pytc.TreeClass):
     """A sequential container for layers.
 
     Args:
-        layers: a tuple of layers.
+        layers: a tuple or a list of layers. if a list is passed, it will
+            be casted to a tuple to maintain immutable behavior.
 
     Example:
         >>> import jax.numpy as jnp
