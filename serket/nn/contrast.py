@@ -20,9 +20,9 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-import pytreeclass as pytc
 from jax import lax
 
+import serket as sk
 from serket.nn.utils import validate_spatial_ndim
 
 
@@ -43,10 +43,10 @@ def random_contrast_nd(
     return adjust_contrast_nd(x, contrast_factor)
 
 
-class AdjustContrastND(pytc.TreeClass):
+class AdjustContrastND(sk.TreeClass):
     """Adjusts the contrast of an NDimage by scaling the pixel values by a factor.
 
-    See:
+    Note:
         https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
         https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
@@ -65,12 +65,13 @@ class AdjustContrastND(pytc.TreeClass):
 
 
 class AdjustContrast2D(AdjustContrastND):
-    def __init__(self, contrast_factor=1.0):
-        """Adjusts the contrast of an image by scaling the pixel values by a factor.
+    """Adjusts the contrast of an image by scaling the pixel values by a factor.
 
-        Args:
-            contrast_factor: contrast factor to adjust the image by.
-        """
+    Args:
+        contrast_factor: contrast factor to adjust the image by.
+    """
+
+    def __init__(self, contrast_factor=1.0):
         super().__init__(contrast_factor=contrast_factor)
 
     @property
@@ -78,16 +79,17 @@ class AdjustContrast2D(AdjustContrastND):
         return 2
 
 
-class RandomContrastND(pytc.TreeClass):
+class RandomContrastND(sk.TreeClass):
+    """Randomly adjusts the contrast of an image by scaling the pixel
+    values by a factor.
+
+    Args:
+        contrast_range: range of contrast factors to randomly sample from.
+    """
+
     contrast_range: tuple
 
     def __init__(self, contrast_range=(0.5, 1)):
-        """Randomly adjusts the contrast of an image by scaling the pixel
-        values by a factor.
-
-        Args:
-            contrast_range: range of contrast factors to randomly sample from.
-        """
         if not (
             isinstance(contrast_range, tuple)
             and len(contrast_range) == 2
@@ -121,13 +123,14 @@ class RandomContrastND(pytc.TreeClass):
 
 
 class RandomContrast2D(RandomContrastND):
-    def __init__(self, contrast_range=(0.5, 1)):
-        """Randomly adjusts the contrast of an image by scaling the pixel
-        values by a factor.
+    """Randomly adjusts the contrast of an image by scaling the pixel
+    values by a factor.
 
-        Args:
-            contrast_range: range of contrast factors to randomly sample from.
-        """
+    Args:
+        contrast_range: range of contrast factors to randomly sample from.
+    """
+
+    def __init__(self, contrast_range=(0.5, 1)):
         super().__init__(contrast_range=contrast_range)
 
     @property

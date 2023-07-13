@@ -19,13 +19,13 @@ import functools as ft
 
 import jax.numpy as jnp
 import jax.random as jr
-import pytreeclass as pytc
 from jax import lax
 
+import serket as sk
 from serket.nn.utils import Range, validate_spatial_ndim
 
 
-class Dropout(pytc.TreeClass):
+class Dropout(sk.TreeClass):
     """Randomly zeroes some of the elements of the input
     tensor with probability :attr:`p` using samples from a Bernoulli
     distribution.
@@ -35,7 +35,7 @@ class Dropout(pytc.TreeClass):
 
     Example:
         >>> import serket as sk
-        >>> import pytreeclass as pytc
+        >>> import jax.numpy as jnp
         >>> layer = sk.nn.Dropout(0.5)
         >>> # change `p` to 0.0 to turn off dropout
         >>> layer = layer.at["p"].set(0.0, is_leaf=pytc.is_frozen)
@@ -44,7 +44,7 @@ class Dropout(pytc.TreeClass):
         Use `p`= 0.0 to turn off dropout.
     """
 
-    p: float = pytc.field(default=0.5, callbacks=[Range(0, 1)])
+    p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
 
     def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
         return jnp.where(
@@ -54,23 +54,10 @@ class Dropout(pytc.TreeClass):
         )
 
 
-class DropoutND(pytc.TreeClass):
-    """Drops full feature maps along the channel axis.
+class DropoutND(sk.TreeClass):
+    """Drops full feature maps along the channel axis."""
 
-    Args:
-        p: fraction of an elements to be zeroed out
-
-    Note:
-        https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
-        https://arxiv.org/abs/1411.4280
-
-    Example:
-        >>> layer = DropoutND(0.5)
-        >>> layer(jnp.ones((1, 10)))
-        [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
-    """
-
-    p: float = pytc.field(default=0.5, callbacks=[Range(0, 1)])
+    p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
@@ -94,16 +81,18 @@ class Dropout1D(DropoutND):
         """Drops full feature maps along the channel axis.
 
         Args:
-            p: fraction of an elements to be zeroed out
+            p: fraction of an elements to be zeroed out.
+
+        Example:
+            >>> import serket as sk
+            >>> import jax.numpy as jnp
+            >>> layer = sk.nn.Dropout1D(0.5)
+            >>> print(layer(jnp.ones((1, 10))))
+            [[2. 2. 2. 2. 2. 2. 2. 2. 2. 2.]]
 
         Note:
             https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
             https://arxiv.org/abs/1411.4280
-
-        Example:
-            >>> layer = DropoutND(0.5)
-            >>> layer(jnp.ones((1, 10)))
-            [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
         super().__init__(p=p)
 
@@ -117,18 +106,24 @@ class Dropout2D(DropoutND):
         """Drops full feature maps along the channel axis.
 
         Args:
-            p: fraction of an elements to be zeroed out
+            p: fraction of an elements to be zeroed out.
 
         Note:
             https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
             https://arxiv.org/abs/1411.4280
 
         Example:
-            >>> layer = DropoutND(0.5)
-            >>> layer(jnp.ones((1, 10)))
-            [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
+            >>> import serket as sk
+            >>> import jax.numpy as jnp
+            >>> layer = sk.nn.Dropout2D(0.5)
+            >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +NORMALIZE_WHITESPACE
+            [[[2. 2. 2. 2. 2.]
+             [2. 2. 2. 2. 2.]
+             [2. 2. 2. 2. 2.]
+             [2. 2. 2. 2. 2.]
+             [2. 2. 2. 2. 2.]]]
         """
-        super().__init__(p=p, spatial_ndim=2)
+        super().__init__(p=p)
 
     @property
     def spatial_ndim(self) -> int:
@@ -140,18 +135,24 @@ class Dropout3D(DropoutND):
         """Drops full feature maps along the channel axis.
 
         Args:
-            p: fraction of an elements to be zeroed out
+            p: fraction of an elements to be zeroed out.
+
+        Example:
+            >>> import serket as sk
+            >>> import jax.numpy as jnp
+            >>> layer = sk.nn.Dropout3D(0.5)
+            >>> print(layer(jnp.ones((1, 2, 2, 2))))  # doctest: +NORMALIZE_WHITESPACE
+            [[[[2. 2.]
+            [2. 2.]]
+            <BLANKLINE>
+            [[2. 2.]
+            [2. 2.]]]]
 
         Note:
             https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
             https://arxiv.org/abs/1411.4280
-
-        Example:
-            >>> layer = DropoutND(0.5)
-            >>> layer(jnp.ones((1, 10)))
-            [[2., 2., 2., 2., 2., 2., 2., 2., 2., 2.]]
         """
-        super().__init__(p=p, spatial_ndim=3)
+        super().__init__(p=p)
 
     @property
     def spatial_ndim(self) -> int:

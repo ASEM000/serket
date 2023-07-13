@@ -19,8 +19,8 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn.initialization import InitType, resolve_init_func
 from serket.nn.utils import IsInstance, positive_int_cb
 
@@ -73,7 +73,28 @@ def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
     return f"{input_string},{weight_string}->{result_string}"
 
 
-class Multilinear(pytc.TreeClass):
+class Multilinear(sk.TreeClass):
+    """Linear layer with arbitrary number of inputs applied to last axis of each input
+
+    Args:
+        in_features: number of input features for each input
+        out_features: number of output features
+        weight_init_func: function to initialize the weights
+        bias_init_func: function to initialize the bias
+        key: key for the random number generator
+
+    Example:
+        >>> # Bilinear layer
+        >>> layer = Multilinear((5,6), 7)
+        >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
+        (1, 7)
+
+        >>> # Trilinear layer
+        >>> layer = Multilinear((5,6,7), 8)
+        >>> layer(jnp.ones((1,5)), jnp.ones((1,6)), jnp.ones((1,7))).shape
+        (1, 8)
+    """
+
     def __init__(
         self,
         in_features: int | tuple[int, ...] | None,
@@ -83,26 +104,6 @@ class Multilinear(pytc.TreeClass):
         bias_init_func: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Linear layer with arbitrary number of inputs applied to last axis of each input
-
-        Args:
-            in_features: number of input features for each input
-            out_features: number of output features
-            weight_init_func: function to initialize the weights
-            bias_init_func: function to initialize the bias
-            key: key for the random number generator
-
-        Example:
-            >>> # Bilinear layer
-            >>> layer = Multilinear((5,6), 7)
-            >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
-            (1, 7)
-
-            >>> # Trilinear layer
-            >>> layer = Multilinear((5,6,7), 8)
-            >>> layer(jnp.ones((1,5)), jnp.ones((1,6)), jnp.ones((1,7))).shape
-            (1, 8)
-        """
         if not isinstance(in_features, (tuple, int)):
             raise ValueError(f"Expected tuple or int for {in_features=}.")
 
@@ -162,6 +163,22 @@ class Linear(Multilinear):
 
 
 class Bilinear(Multilinear):
+    """Bilinear layer
+
+    Args:
+        in1_features: number of input features for the first input
+        in2_features: number of input features for the second input
+        out_features: number of output features
+        weight_init_func: function to initialize the weights
+        bias_init_func: function to initialize the bias
+        key: key for the random number generator
+
+    Example:
+        >>> layer = Bilinear(5, 6, 7)
+        >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
+        (1, 7)
+    """
+
     def __init__(
         self,
         in1_features: int,
@@ -172,21 +189,6 @@ class Bilinear(Multilinear):
         bias_init_func: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Bilinear layer
-
-        Args:
-            in1_features: number of input features for the first input
-            in2_features: number of input features for the second input
-            out_features: number of output features
-            weight_init_func: function to initialize the weights
-            bias_init_func: function to initialize the bias
-            key: key for the random number generator
-
-        Example:
-            >>> layer = Bilinear(5, 6, 7)
-            >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
-            (1, 7)
-        """
         super().__init__(
             (in1_features, in2_features),
             out_features,
@@ -196,7 +198,27 @@ class Bilinear(Multilinear):
         )
 
 
-class GeneralLinear(pytc.TreeClass):
+class GeneralLinear(sk.TreeClass):
+    """Apply a Linear Layer to input at in_axes
+
+    Args:
+        in_features: number of input features corresponding to in_axes
+        out_features: number of output features
+        in_axes: axes to apply the linear layer to
+        weight_init_func: weight initialization function
+        bias_init_func: bias initialization function
+        key: random key
+
+    Example:
+        >>> x = jnp.ones([1, 2, 3, 4])
+        >>> layer = GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
+        >>> assert layer(x).shape == (3, 4, 5)
+
+    Note:
+        This layer is similar to to flax linen's DenseGeneral, the difference is that
+        this layer uses einsum to apply the linear layer to the specified axes.
+    """
+
     def __init__(
         self,
         in_features: tuple[int, ...],
@@ -207,26 +229,6 @@ class GeneralLinear(pytc.TreeClass):
         bias_init_func: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Apply a Linear Layer to input at in_axes
-
-        Args:
-            in_features: number of input features corresponding to in_axes
-            out_features: number of output features
-            in_axes: axes to apply the linear layer to
-            weight_init_func: weight initialization function
-            bias_init_func: bias initialization function
-            key: random key
-
-        Example:
-            >>> x = jnp.ones([1, 2, 3, 4])
-            >>> layer = GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
-            >>> assert layer(x).shape == (3, 4, 5)
-
-        Note:
-            This layer is similar to to flax linen's DenseGeneral, the difference is that
-            this layer uses einsum to apply the linear layer to the specified axes.
-        """
-
         self.in_features = IsInstance(tuple)(in_features)
         self.out_features = out_features
         self.in_axes = IsInstance(tuple)(in_axes)
@@ -255,35 +257,36 @@ class GeneralLinear(pytc.TreeClass):
         return x
 
 
-class Identity(pytc.TreeClass):
+class Identity(sk.TreeClass):
     """Identity layer"""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return x
 
 
-class Embedding(pytc.TreeClass):
+class Embedding(sk.TreeClass):
+    """Defines an embedding layer.
+
+    Args:
+        in_features: vocabulary size.
+        out_features: embedding size.
+        key: random key to initialize the weights.
+
+    Example:
+        >>> import serket as sk
+        >>> # 10 words in the vocabulary, each word is represented by a 3 dimensional vector
+        >>> table = sk.nn.Embedding(10,3)
+        >>> # take the last word in the vocab
+        >>> table(jnp.array([9]))
+        Array([[0.43810904, 0.35078037, 0.13254273]], dtype=float32)
+    """
+
     def __init__(
         self,
         in_features: int,
         out_features: int,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Defines an embedding layer.
-
-        Args:
-            in_features: vocabulary size.
-            out_features: embedding size.
-            key: random key to initialize the weights.
-
-        Example:
-            >>> import serket as sk
-            >>> # 10 words in the vocabulary, each word is represented by a 3 dimensional vector
-            >>> table = sk.nn.Embedding(10,3)
-            >>> # take the last word in the vocab
-            >>> table(jnp.array([9]))
-            Array([[0.43810904, 0.35078037, 0.13254273]], dtype=float32)
-        """
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.weight = jr.uniform(key, (self.in_features, self.out_features))
@@ -304,28 +307,29 @@ class Embedding(pytc.TreeClass):
         return jnp.take(self.weight, x, axis=0)
 
 
-class MergeLinear(pytc.TreeClass):
+class MergeLinear(sk.TreeClass):
+    """Merge multiple linear layers with the same `out_features`.
+
+    Args:
+        layers: linear layers to merge
+
+    Example:
+        >>> import serket as sk
+        >>> import numpy.testing as npt
+        >>> layer1 = sk.nn.Linear(5, 6)  # 5 input features, 6 output features
+        >>> layer2 = sk.nn.Linear(7, 6)  # 7 input features, 6 output features
+        >>> merged_layer = sk.nn.MergeLinear(layer1, layer2)  # 12 input features, 6 output features
+        >>> x1 = jnp.ones([1, 5])  # 1 sample, 5 features
+        >>> x2 = jnp.ones([1, 7])  # 1 sample, 7 features
+        >>> y = merged_layer(x1, x2)  # one matrix multiplication
+        >>> z = layer1(x1) + layer2(x2)  # two matrix multiplications
+        >>> npt.assert_allclose(y, z, atol=1e-6)
+
+    Note:
+        Use this layer to reduce the matrix multiplication operations in the forward pass.
+    """
+
     def __init__(self, *layers: tuple[Linear, ...]):
-        """Merge multiple linear layers with the same `out_features`.
-
-        Args:
-            layers: linear layers to merge
-
-        Example:
-            >>> import serket as sk
-            >>> import numpy.testing as npt
-            >>> layer1 = sk.nn.Linear(5, 6)  # 5 input features, 6 output features
-            >>> layer2 = sk.nn.Linear(7, 6)  # 7 input features, 6 output features
-            >>> merged_layer = sk.nn.MergeLinear(layer1, layer2)  # 12 input features, 6 output features
-            >>> x1 = jnp.ones([1, 5])  # 1 sample, 5 features
-            >>> x2 = jnp.ones([1, 7])  # 1 sample, 7 features
-            >>> y = merged_layer(x1, x2)  # one matrix multiplication
-            >>> z = layer1(x1) + layer2(x2)  # two matrix multiplications
-            >>> npt.assert_allclose(y, z, atol=1e-6)
-
-        Note:
-            Use this layer to reduce the matrix multiplication operations in the forward pass.
-        """
         out_dim0 = layers[0].out_features
         if not all(isinstance(layer, Linear) for layer in layers):
             raise TypeError("All layers must be instances of Linear.")

@@ -14,11 +14,14 @@
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 import jax
 import jax.numpy as jnp
-import pytreeclass as pytc
+from jax.custom_batching import custom_vmap
 
-from serket.nn.utils import Range, ScalarLike, positive_int_cb
+import serket as sk
+from serket.nn.utils import IsInstance, Range, ScalarLike, positive_int_cb
 
 
 def layer_norm(
@@ -84,8 +87,18 @@ def group_norm(
     return x̂
 
 
-class LayerNorm(pytc.TreeClass):
-    eps: float = pytc.field(callbacks=[Range(0), ScalarLike()])
+class LayerNorm(sk.TreeClass):
+    """Layer Normalization
+    See: https://nn.labml.ai/normalization/layer_norm/index.html
+    transform the input by scaling and shifting to have zero mean and unit variance.
+
+    Args:
+        normalized_shape: the shape of the input to be normalized.
+        eps: a value added to the denominator for numerical stability.
+        affine: a boolean value that when set to True, this module has learnable affine parameters.
+    """
+
+    eps: float = sk.field(callbacks=[Range(0), ScalarLike()])
 
     def __init__(
         self,
@@ -94,15 +107,6 @@ class LayerNorm(pytc.TreeClass):
         eps: float = 1e-5,
         affine: bool = True,
     ):
-        """Layer Normalization
-        See: https://nn.labml.ai/normalization/layer_norm/index.html
-        transform the input by scaling and shifting to have zero mean and unit variance.
-
-        Args:
-            normalized_shape: the shape of the input to be normalized.
-            eps: a value added to the denominator for numerical stability.
-            affine: a boolean value that when set to True, this module has learnable affine parameters.
-        """
         self.normalized_shape = (
             normalized_shape
             if isinstance(normalized_shape, tuple)
@@ -125,8 +129,19 @@ class LayerNorm(pytc.TreeClass):
         )
 
 
-class GroupNorm(pytc.TreeClass):
-    eps: float = pytc.field(callbacks=[Range(0), ScalarLike()])
+class GroupNorm(sk.TreeClass):
+    """Group Normalization
+    See: https://nn.labml.ai/normalization/group_norm/index.html
+    transform the input by scaling and shifting to have zero mean and unit variance.
+
+    Args:
+        in_features : the shape of the input to be normalized.
+        groups : number of groups to separate the channels into.
+        eps : a value added to the denominator for numerical stability.
+        affine : a boolean value that when set to True, this module has learnable affine parameters.
+    """
+
+    eps: float = sk.field(callbacks=[Range(0), ScalarLike()])
 
     def __init__(
         self,
@@ -136,17 +151,6 @@ class GroupNorm(pytc.TreeClass):
         eps: float = 1e-5,
         affine: bool = True,
     ):
-        """Group Normalization
-        See: https://nn.labml.ai/normalization/group_norm/index.html
-        transform the input by scaling and shifting to have zero mean and unit variance.
-
-        Args:
-            in_features : the shape of the input to be normalized.
-            groups : number of groups to separate the channels into.
-            eps : a value added to the denominator for numerical stability.
-            affine : a boolean value that when set to True, this module has learnable affine parameters.
-        """
-        # checked by callbacks
         self.in_features = positive_int_cb(in_features)
         self.groups = positive_int_cb(groups)
         self.affine = affine
@@ -172,6 +176,16 @@ class GroupNorm(pytc.TreeClass):
 
 
 class InstanceNorm(GroupNorm):
+    """Instance Normalization
+    See: https://nn.labml.ai/normalization/instance_norm/index.html
+    transform the input by scaling and shifting to have zero mean and unit variance.
+
+    Args:
+        in_features : the shape of the input to be normalized.
+        eps : a value added to the denominator for numerical stability.
+        affine : a boolean value that when set to True, this module has learnable affine parameters.
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -179,18 +193,73 @@ class InstanceNorm(GroupNorm):
         eps: float = 1e-5,
         affine: bool = True,
     ):
-        """Instance Normalization
-        See: https://nn.labml.ai/normalization/instance_norm/index.html
-        transform the input by scaling and shifting to have zero mean and unit variance.
-
-        Args:
-            in_features : the shape of the input to be normalized.
-            eps : a value added to the denominator for numerical stability.
-            affine : a boolean value that when set to True, this module has learnable affine parameters.
-        """
         super().__init__(
             in_features=in_features,
             groups=in_features,
             eps=eps,
             affine=affine,
+        )
+
+
+class BatchNormState(NamedTuple):
+    running_mean: jax.Array
+    running_var: jax.Array
+
+
+@custom_vmap
+def batchnorm(
+    x: jax.Array,
+    state: tuple[jax.Array, jax.Array],
+    *,
+    momentum: float = 0.1,
+    eps: float = 1e-5,
+    gamma: jax.Array | None = None,
+    beta: jax.Array | None = None,
+    track_running_stats: bool = False,
+):
+    del momentum, eps, gamma, beta, track_running_stats
+    return x, state
+
+
+@batchnorm.def_vmap
+def _(
+    axis_size,
+    in_batched,
+    x: jax.Array,
+    state: tuple[jax.Array, jax.Array],
+    *,
+    momentum: float = 0.1,
+    eps: float = 1e-5,
+    track_running_stats: bool = True,
+):
+    run_mean, run_var = state
+
+    axes = [0] + list(range(2, x.ndim))
+
+    batch_mean, batch_var = jnp.mean(x, axis=axes), jnp.var(x, axis=axes)
+
+    run_mean = jnp.where(
+        track_running_stats,
+        (1 - momentum) * run_mean + momentum * batch_mean,
+        batch_mean,
+    )
+
+    run_var = jnp.where(
+        track_running_stats,
+        (1 - momentum) * run_var + momentum * batch_var * (axis_size / (axis_size - 1)),
+        batch_var,
+    )
+    x_normalized = (x - batch_mean) * jax.lax.rsqrt(batch_var + eps)
+    return (x_normalized, (run_mean, run_var)), (True, (True, True))
+
+
+class BatchNorm(sk.TreeClass):
+    in_features: int = sk.field(callbacks=[IsInstance(int), Range(1)])
+    momentum: float = sk.field(callbacks=[Range(0, 1), ScalarLike()])
+    eps: float = sk.field(callbacks=[Range(0), ScalarLike()])
+    track_running_stats: bool = sk.field(callbacks=[IsInstance(bool)])
+
+    def __post_init__(self):
+        self.state = BatchNormState(
+            jnp.zeros(self.in_features), jnp.ones(self.in_features)
         )

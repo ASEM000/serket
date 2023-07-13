@@ -17,8 +17,8 @@ import jax.numpy as jnp
 import jax.tree_util as jtu
 import numpy.testing as npt
 import pytest
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn import (
     FNN,
     Bilinear,
@@ -46,7 +46,7 @@ def test_linear():
 
     @jax.value_and_grad
     def loss_func(NN, x, y):
-        NN = NN.at[...].apply(pytc.unfreeze, is_leaf=pytc.is_frozen)
+        NN = sk.tree_unmask(NN)
         return jnp.mean((NN(x) - y) ** 2)
 
     @jax.jit
@@ -54,19 +54,17 @@ def test_linear():
         value, grad = loss_func(NN, x, y)
         return value, jtu.tree_map(lambda x, g: x - 1e-3 * g, NN, grad)
 
-    NN = FNN(
+    nn = FNN(
         [1, 128, 128, 1],
         act_func="relu",
         weight_init_func="he_normal",
         bias_init_func="ones",
     )
 
-    # NN = jtu.tree_map(lambda x: pytc.freeze(x) if pytc.is_nondiff(x) else x, NN)
-    NN = NN.at[pytc.bcmap(pytc.is_nondiff)(NN)].apply(pytc.freeze)
+    nn = sk.tree_mask(nn)
 
-    # print(pytc.tree_diagram(NN))
     for _ in range(20_000):
-        value, NN = update(NN, x, y)
+        value, nn = update(nn, x, y)
 
     npt.assert_allclose(jnp.array(4.933563e-05), value, atol=1e-3)
 

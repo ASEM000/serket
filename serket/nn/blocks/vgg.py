@@ -16,12 +16,11 @@ from __future__ import annotations
 
 import jax
 import jax.random as jr
-import pytreeclass as pytc
 
 import serket as sk
 
 
-class VGG16Block(pytc.TreeClass):
+class VGG16Block(sk.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -113,7 +112,7 @@ class VGG16Block(pytc.TreeClass):
         return x
 
 
-class VGG19Block(pytc.TreeClass):
+class VGG19Block(sk.TreeClass):
     def __init__(
         self,
         in_feautres: int,

@@ -21,7 +21,6 @@ from typing import Any, Callable
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-import pytreeclass as pytc
 
 import serket as sk
 from serket.nn.activation import ActivationType, resolve_activation
@@ -42,11 +41,11 @@ from serket.nn.utils import (
 # Non Spatial RNN
 
 
-class RNNState(pytc.TreeClass):
+class RNNState(sk.TreeClass):
     hidden_state: jax.Array
 
 
-class RNNCell(pytc.TreeClass):
+class RNNCell(sk.TreeClass):
     """Abstract class for RNN cells.
 
     Subclasses must implement:
@@ -163,6 +162,26 @@ class DenseState(RNNState):
 
 
 class DenseCell(RNNCell):
+    """No hidden state cell that applies a dense(Linear+activation) layer to the input
+
+    Args:
+        in_features: the number of input features
+        hidden_features: the number of hidden features
+        weight_init_func: the function to use to initialize the weights
+        bias_init_func: the function to use to initialize the bias
+        act_func: the activation function to use for the hidden state update,
+            use `None` for no activation
+        key: the key to use to initialize the weights
+
+    Example:
+        >>> cell = DenseCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
+        >>> dummy_state = cell.init_state()  # 20-dimensional hidden state
+        >>> x = jnp.ones((10,)) # 10 features
+        >>> result = cell(x, dummy_state)
+        >>> result.hidden_state.shape  # 20 features
+        (20,)
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -173,26 +192,6 @@ class DenseCell(RNNCell):
         act_func: ActivationType = jax.nn.tanh,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """No hidden state cell that applies a dense(Linear+activation) layer to the input
-
-        Args:
-            in_features: the number of input features
-            hidden_features: the number of hidden features
-            weight_init_func: the function to use to initialize the weights
-            bias_init_func: the function to use to initialize the bias
-            act_func: the activation function to use for the hidden state update,
-                use `None` for no activation
-            key: the key to use to initialize the weights
-
-        Example:
-            >>> cell = DenseCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
-            >>> dummy_state = cell.init_state()  # 20-dimensional hidden state
-            >>> x = jnp.ones((10,)) # 10 features
-            >>> result = cell(x, dummy_state)
-            >>> result.hidden_state.shape  # 20 features
-            (20,)
-        """
-
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
         self.act_func = resolve_activation(act_func)
@@ -229,6 +228,23 @@ class LSTMState(RNNState):
 
 
 class LSTMCell(RNNCell):
+    """LSTM cell that defines the update rule for the hidden state and cell state
+
+    Args:
+        in_features: the number of input features
+        hidden_features: the number of hidden features
+        weight_init_func: the function to use to initialize the weights
+        bias_init_func: the function to use to initialize the bias
+        recurrent_weight_init_func: the function to use to initialize the recurrent weights
+        act_func: the activation function to use for the hidden state update
+        recurrent_act_func: the activation function to use for the cell state update
+        key: the key to use to initialize the weights
+
+    Note:
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTMCell
+        https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -241,21 +257,6 @@ class LSTMCell(RNNCell):
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """LSTM cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: the number of input features
-            hidden_features: the number of hidden features
-            weight_init_func: the function to use to initialize the weights
-            bias_init_func: the function to use to initialize the bias
-            recurrent_weight_init_func: the function to use to initialize the recurrent weights
-            act_func: the activation function to use for the hidden state update
-            recurrent_act_func: the activation function to use for the cell state update
-            key: the key to use to initialize the weights
-
-        Note:
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTMCell
-            https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
-        """
         k1, k2 = jr.split(key, 2)
 
         self.in_features = positive_int_cb(in_features)
@@ -313,6 +314,22 @@ class GRUState(RNNState):
 
 
 class GRUCell(RNNCell):
+    """GRU cell that defines the update rule for the hidden state and cell state
+
+    Args:
+        in_features: the number of input features
+        hidden_features: the number of hidden features
+        weight_init_func: the function to use to initialize the weights
+        bias_init_func: the function to use to initialize the bias
+        recurrent_weight_init_func: the function to use to initialize the recurrent weights
+        act_func: the activation function to use for the hidden state update
+        recurrent_act_func: the activation function to use for the cell state update
+        key: the key to use to initialize the weights
+
+    Note:
+        https://keras.io/api/layers/recurrent_layers/gru/
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -325,20 +342,6 @@ class GRUCell(RNNCell):
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """GRU cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: the number of input features
-            hidden_features: the number of hidden features
-            weight_init_func: the function to use to initialize the weights
-            bias_init_func: the function to use to initialize the bias
-            recurrent_weight_init_func: the function to use to initialize the recurrent weights
-            act_func: the activation function to use for the hidden state update
-            recurrent_act_func: the activation function to use for the cell state update
-            key: the key to use to initialize the weights
-
-        See:
-            https://keras.io/api/layers/recurrent_layers/gru/
-        """
         k1, k2 = jr.split(key, 2)
 
         self.in_features = positive_int_cb(in_features)
@@ -395,6 +398,27 @@ class ConvLSTMNDState(RNNState):
 
 
 class ConvLSTMNDCell(RNNCell):
+    """Convolution LSTM cell that defines the update rule for the hidden state and cell state
+
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        input_dilation: Dilation of the input
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+
+    Note:
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -413,24 +437,6 @@ class ConvLSTMNDCell(RNNCell):
         key: jr.KeyArray = jr.PRNGKey(0),
         conv_layer: Any = None,
     ):
-        """Convolution LSTM cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: Number of input features
-            hidden_features: Number of output features
-            kernel_size: Size of the convolutional kernel
-            strides: Stride of the convolution
-            padding: Padding of the convolution
-            input_dilation: Dilation of the input
-            kernel_dilation: Dilation of the convolutional kernel
-            weight_init_func: Weight initialization function
-            bias_init_func: Bias initialization function
-            recurrent_weight_init_func: Recurrent weight initialization function
-            act_func: Activation function
-            recurrent_act_func: Recurrent activation function
-            key: PRNG key
-
-        See: https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
-        """
         k1, k2 = jr.split(key, 2)
 
         self.in_features = positive_int_cb(in_features)
@@ -489,6 +495,27 @@ class ConvLSTMNDCell(RNNCell):
 
 
 class ConvLSTM1DCell(ConvLSTMNDCell):
+    """1D Convolution LSTM cell that defines the update rule for the hidden state and cell state
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        input_dilation: Dilation of the input
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+        spatial_ndim: Number of spatial dimensions.
+
+    Note:
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -506,26 +533,6 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """1D Convolution LSTM cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: Number of input features
-            hidden_features: Number of output features
-            kernel_size: Size of the convolutional kernel
-            strides: Stride of the convolution
-            padding: Padding of the convolution
-            input_dilation: Dilation of the input
-            kernel_dilation: Dilation of the convolutional kernel
-            weight_init_func: Weight initialization function
-            bias_init_func: Bias initialization function
-            recurrent_weight_init_func: Recurrent weight initialization function
-            act_func: Activation function
-            recurrent_act_func: Recurrent activation function
-            key: PRNG key
-            spatial_ndim: Number of spatial dimensions.
-
-        Note:
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
-        """
         super().__init__(
             in_features=in_features,
             hidden_features=hidden_features,
@@ -549,6 +556,27 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
 
 
 class ConvLSTM2DCell(ConvLSTMNDCell):
+    """2D Convolution LSTM cell that defines the update rule for the hidden state and cell state
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        input_dilation: Dilation of the input
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+        spatial_ndim: Number of spatial dimensions.
+
+    Note:
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -566,26 +594,6 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """2D Convolution LSTM cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: Number of input features
-            hidden_features: Number of output features
-            kernel_size: Size of the convolutional kernel
-            strides: Stride of the convolution
-            padding: Padding of the convolution
-            input_dilation: Dilation of the input
-            kernel_dilation: Dilation of the convolutional kernel
-            weight_init_func: Weight initialization function
-            bias_init_func: Bias initialization function
-            recurrent_weight_init_func: Recurrent weight initialization function
-            act_func: Activation function
-            recurrent_act_func: Recurrent activation function
-            key: PRNG key
-            spatial_ndim: Number of spatial dimensions.
-
-        Note:
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
-        """
         super().__init__(
             in_features=in_features,
             hidden_features=hidden_features,
@@ -609,6 +617,27 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
 
 
 class ConvLSTM3DCell(ConvLSTMNDCell):
+    """3D Convolution LSTM cell that defines the update rule for the hidden state and cell state
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        input_dilation: Dilation of the input
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+        spatial_ndim: Number of spatial dimensions.
+
+    Note:
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -626,26 +655,6 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """3D Convolution LSTM cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: Number of input features
-            hidden_features: Number of output features
-            kernel_size: Size of the convolutional kernel
-            strides: Stride of the convolution
-            padding: Padding of the convolution
-            input_dilation: Dilation of the input
-            kernel_dilation: Dilation of the convolutional kernel
-            weight_init_func: Weight initialization function
-            bias_init_func: Bias initialization function
-            recurrent_weight_init_func: Recurrent weight initialization function
-            act_func: Activation function
-            recurrent_act_func: Recurrent activation function
-            key: PRNG key
-            spatial_ndim: Number of spatial dimensions.
-
-        Note:
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
-        """
         super().__init__(
             in_features=in_features,
             hidden_features=hidden_features,
@@ -673,6 +682,25 @@ class ConvGRUNDState(RNNState):
 
 
 class ConvGRUNDCell(RNNCell):
+    """Convolution GRU cell that defines the update rule for the hidden state and cell state
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        input_dilation: Dilation of the input
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+        spatial_ndim: Number of spatial dimensions.
+
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -691,24 +719,6 @@ class ConvGRUNDCell(RNNCell):
         key: jr.KeyArray = jr.PRNGKey(0),
         conv_layer: Any = None,
     ):
-        """Convolution GRU cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: Number of input features
-            hidden_features: Number of output features
-            kernel_size: Size of the convolutional kernel
-            strides: Stride of the convolution
-            padding: Padding of the convolution
-            input_dilation: Dilation of the input
-            kernel_dilation: Dilation of the convolutional kernel
-            weight_init_func: Weight initialization function
-            bias_init_func: Bias initialization function
-            recurrent_weight_init_func: Recurrent weight initialization function
-            act_func: Activation function
-            recurrent_act_func: Recurrent activation function
-            key: PRNG key
-            spatial_ndim: Number of spatial dimensions.
-
-        """
         k1, k2 = jr.split(key, 2)
 
         self.in_features = positive_int_cb(in_features)
@@ -764,6 +774,25 @@ class ConvGRUNDCell(RNNCell):
 
 
 class ConvGRU1DCell(ConvGRUNDCell):
+    """1D Convolution GRU cell that defines the update rule for the hidden state and cell state
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        input_dilation: Dilation of the input
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+        spatial_ndim: Number of spatial dimensions.
+
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -781,24 +810,6 @@ class ConvGRU1DCell(ConvGRUNDCell):
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """1D Convolution GRU cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: Number of input features
-            hidden_features: Number of output features
-            kernel_size: Size of the convolutional kernel
-            strides: Stride of the convolution
-            padding: Padding of the convolution
-            input_dilation: Dilation of the input
-            kernel_dilation: Dilation of the convolutional kernel
-            weight_init_func: Weight initialization function
-            bias_init_func: Bias initialization function
-            recurrent_weight_init_func: Recurrent weight initialization function
-            act_func: Activation function
-            recurrent_act_func: Recurrent activation function
-            key: PRNG key
-            spatial_ndim: Number of spatial dimensions.
-
-        """
         super().__init__(
             in_features=in_features,
             hidden_features=hidden_features,
@@ -822,6 +833,25 @@ class ConvGRU1DCell(ConvGRUNDCell):
 
 
 class ConvGRU2DCell(ConvGRUNDCell):
+    """2D Convolution GRU cell that defines the update rule for the hidden state and cell state
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        input_dilation: Dilation of the input
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+        spatial_ndim: Number of spatial dimensions.
+
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -839,24 +869,6 @@ class ConvGRU2DCell(ConvGRUNDCell):
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """2D Convolution GRU cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: Number of input features
-            hidden_features: Number of output features
-            kernel_size: Size of the convolutional kernel
-            strides: Stride of the convolution
-            padding: Padding of the convolution
-            input_dilation: Dilation of the input
-            kernel_dilation: Dilation of the convolutional kernel
-            weight_init_func: Weight initialization function
-            bias_init_func: Bias initialization function
-            recurrent_weight_init_func: Recurrent weight initialization function
-            act_func: Activation function
-            recurrent_act_func: Recurrent activation function
-            key: PRNG key
-            spatial_ndim: Number of spatial dimensions.
-
-        """
         super().__init__(
             in_features=in_features,
             hidden_features=hidden_features,
@@ -880,6 +892,25 @@ class ConvGRU2DCell(ConvGRUNDCell):
 
 
 class ConvGRU3DCell(ConvGRUNDCell):
+    """3D Convolution GRU cell that defines the update rule for the hidden state and cell state
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        input_dilation: Dilation of the input
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+        spatial_ndim: Number of spatial dimensions.
+
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -897,24 +928,6 @@ class ConvGRU3DCell(ConvGRUNDCell):
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """3D Convolution GRU cell that defines the update rule for the hidden state and cell state
-        Args:
-            in_features: Number of input features
-            hidden_features: Number of output features
-            kernel_size: Size of the convolutional kernel
-            strides: Stride of the convolution
-            padding: Padding of the convolution
-            input_dilation: Dilation of the input
-            kernel_dilation: Dilation of the convolutional kernel
-            weight_init_func: Weight initialization function
-            bias_init_func: Bias initialization function
-            recurrent_weight_init_func: Recurrent weight initialization function
-            act_func: Activation function
-            recurrent_act_func: Recurrent activation function
-            key: PRNG key
-            spatial_ndim: Number of spatial dimensions.
-
-        """
         super().__init__(
             in_features=in_features,
             hidden_features=hidden_features,
@@ -941,27 +954,31 @@ class ConvGRU3DCell(ConvGRUNDCell):
 # Scanning API
 
 
-class ScanRNN(pytc.TreeClass):
+class ScanRNN(sk.TreeClass):
+    """Scans RNN cell over a sequence.
+
+    Args:
+        cell: the RNN cell to use.
+        backward_cell: the RNN cell to use for bidirectional scanning.
+        return_sequences: whether to return the hidden state for each timestep.
+
+    Example:
+        >>> cell = SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
+        >>> rnn = ScanRNN(cell)
+        >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
+        >>> result = rnn(x)  # 20 features
+    """
+
+    # cell: RNN
+
     def __init__(
         self,
         cell: RNNCell,
         backward_cell: RNNCell | None = None,
         *,
         return_sequences: bool = False,
+        return_state: bool = False,
     ):
-        """Scans RNN cell over a sequence.
-
-        Args:
-            cell: the RNN cell to use
-            backward_cell: the RNN cell to use for bidirectional scanning.
-            return_sequences: whether to return the hidden state for each timestep
-
-        Example:
-            >>> cell = SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
-            >>> rnn = ScanRNN(cell)
-            >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
-            >>> result = rnn(x)  # 20 features
-        """
         if not isinstance(cell, RNNCell):
             raise TypeError(f"Expected {cell=} to be an instance of RNNCell.")
 
@@ -975,7 +992,7 @@ class ScanRNN(pytc.TreeClass):
     def __call__(
         self,
         x: jax.Array,
-        state: RNNCell | None = None,
+        state: RNNState | None = None,
         backward_state: RNNState | None = None,
         **k,
     ) -> jax.Array:

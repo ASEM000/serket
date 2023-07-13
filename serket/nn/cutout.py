@@ -19,9 +19,9 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-import pytreeclass as pytc
 from jax import lax
 
+import serket as sk
 from serket.nn.utils import canonicalize, positive_int_cb, validate_spatial_ndim
 
 
@@ -110,28 +110,29 @@ def random_cutout_2d(
     return x
 
 
-class RandomCutout1D(pytc.TreeClass):
+class RandomCutout1D(sk.TreeClass):
+    """Random Cutouts for spatial 1D array.
+
+    Args:
+        shape: shape of the cutout. accepts an int or a tuple of int.
+        cutout_count: number of holes. Defaults to 1.
+        fill_value: fill_value to fill. Defaults to 0.
+
+    Note:
+        https://arxiv.org/abs/1708.04552
+        https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
+
+    Examples:
+        >>> print(RandomCutout1D(5)(jnp.ones((1, 10)) * 100))
+        [[100. 100. 100. 100.   0.   0.   0.   0.   0. 100.]]
+    """
+
     def __init__(
         self,
-        shape: tuple[int],
+        shape: int | tuple[int],
         cutout_count: int = 1,
         fill_value: int | float = 0,
     ):
-        """Random Cutouts for spatial 1D array.
-
-        Args:
-            shape: shape of the cutout
-            cutout_count: number of holes. Defaults to 1.
-            fill_value: fill_value to fill. Defaults to 0.
-
-        See:
-            https://arxiv.org/abs/1708.04552
-            https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
-
-        Examples:
-            >>> RandomCutout1D(5)(jnp.ones((1, 10))*100)
-            [[100., 100., 100., 100.,   0.,   0.,   0.,   0.,   0., 100.]]
-        """
         self.shape = canonicalize(shape, ndim=1, name="shape")
         self.cutout_count = positive_int_cb(cutout_count)
         self.fill_value = fill_value
@@ -146,24 +147,25 @@ class RandomCutout1D(pytc.TreeClass):
         return 1
 
 
-class RandomCutout2D(pytc.TreeClass):
+class RandomCutout2D(sk.TreeClass):
+    """Random Cutouts for spatial 2D array
+
+    Args:
+        shape: shape of the cutout. accepts int or a two element tuple.
+        cutout_count: number of holes. Defaults to 1.
+        fill_value: fill_value to fill. Defaults to 0.
+
+    Note:
+        https://arxiv.org/abs/1708.04552
+        https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
+    """
+
     def __init__(
         self,
         shape: int | tuple[int, int],
         cutout_count: int = 1,
         fill_value: int | float = 0,
     ):
-        """Random Cutouts for spatial 2D array
-
-        Args:
-            shape: shape of the cutout
-            cutout_count: number of holes. Defaults to 1.
-            fill_value: fill_value to fill. Defaults to 0.
-
-        See:
-            https://arxiv.org/abs/1708.04552
-            https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
-        """
         self.shape = canonicalize(shape, 2, name="shape")
         self.cutout_count = positive_int_cb(cutout_count)
         self.fill_value = fill_value

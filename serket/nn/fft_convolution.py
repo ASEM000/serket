@@ -20,8 +20,8 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn.initialization import InitType, resolve_init_func
 from serket.nn.utils import (
     DilationType,
@@ -84,10 +84,10 @@ def _general_intersperse(
 def _general_pad(x: jax.Array, pad_width: tuple[tuple[int, int], ...]) -> jax.Array:
     """Pad the input with `pad_width` on each side. Negative value will lead to cropping.
     Example:
-        >>> _general_pad(jnp.ones([3,3]),((0,0),(-1,1)))
-        [[1., 1., 0.],
-        [1., 1., 0.],
-        [1., 1., 0.]]
+        >>> print(_general_pad(jnp.ones([3,3]),((0,0),(-1,1))))  # DOCTEST: +NORMALIZE_WHITESPACE
+        [[1. 1. 0.]
+         [1. 1. 0.]
+         [1. 1. 0.]]
     """
 
     for axis, (lhs, rhs) in enumerate(pad_width := list(pad_width)):
@@ -150,7 +150,7 @@ def fft_conv_general_dilated(
     return jax.lax.slice(z, start, end, (1, 1, *strides))
 
 
-class FFTConvND(pytc.TreeClass):
+class FFTConvND(sk.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -165,24 +165,6 @@ class FFTConvND(pytc.TreeClass):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """FFT Convolutional layer.
-
-        Args:
-            in_features: number of input features
-            out_features: number of output features
-            kernel_size: size of the convolutional kernel
-            strides: stride of the convolution
-            padding: padding of the input
-            kernel_dilation: dilation of the kernel
-            weight_init_func: function to use for initializing the weights
-            bias_init_func: function to use for initializing the bias
-            groups: number of groups to use for grouped convolution
-            key: key to use for initializing the weights
-
-        See:
-            https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
-            The implementation is tested against https://github.com/fkodom/fft-conv-pytorch
-        """
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(
@@ -245,6 +227,57 @@ class FFTConvND(pytc.TreeClass):
 
 
 class FFTConv1D(FFTConvND):
+    """1D Convolutional layer.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        out_features: number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        kernel_dilation: dilation of the convolutional kernel accepts:
+            * single integer for same dilation in all dimensions.
+            * sequence of integers for different dilation in each dimension.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        groups: number of groups to use for grouped convolution.
+        key: key to use for initializing the weights. defaults to `0`.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.FFTConv1D(in_features=1, out_features=2, kernel_size=3)
+        >>> # single sample
+        >>> x = jnp.ones((1, 5))
+        >>> print(layer(x).shape)
+        (2, 5)
+        >>> # batch of samples
+        >>> x = jnp.ones((2, 1, 5))
+        >>> print(jax.vmap(layer)(x).shape)
+        (2, 2, 5)
+
+    Note:
+        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -259,24 +292,6 @@ class FFTConv1D(FFTConvND):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """1D FFT Convolutional layer.
-
-        Args:
-            in_features: number of input features
-            out_features: number of output features
-            kernel_size: size of the convolutional kernel
-            strides: stride of the convolution
-            padding: padding of the input
-            kernel_dilation: dilation of the kernel
-            weight_init_func: function to use for initializing the weights
-            bias_init_func: function to use for initializing the bias
-            groups: number of groups to use for grouped convolution
-            key: key to use for initializing the weights
-
-        See:
-            https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
-            The implementation is tested against https://github.com/fkodom/fft-conv-pytorch
-        """
         super().__init__(
             in_features=in_features,
             out_features=out_features,
@@ -296,6 +311,57 @@ class FFTConv1D(FFTConvND):
 
 
 class FFTConv2D(FFTConvND):
+    """2D FFT Convolutional layer.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        out_features: number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        kernel_dilation: dilation of the convolutional kernel accepts:
+            * single integer for same dilation in all dimensions.
+            * sequence of integers for different dilation in each dimension.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        groups: number of groups to use for grouped convolution.
+        key: key to use for initializing the weights. defaults to `0`.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.FFTConv2D(in_features=1, out_features=2, kernel_size=3)
+        >>> # single sample
+        >>> x = jnp.ones((1, 5, 5))
+        >>> print(layer(x).shape)
+        (2, 5, 5)
+        >>> # batch of samples
+        >>> x = jnp.ones((2, 1, 5, 5))
+        >>> print(jax.vmap(layer)(x).shape)
+        (2, 2, 5, 5)
+
+    Note:
+        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -310,24 +376,6 @@ class FFTConv2D(FFTConvND):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """2D FFT Convolutional layer.
-
-        Args:
-            in_features: number of input features
-            out_features: number of output features
-            kernel_size: size of the convolutional kernel
-            strides: stride of the convolution
-            padding: padding of the input
-            kernel_dilation: dilation of the kernel
-            weight_init_func: function to use for initializing the weights
-            bias_init_func: function to use for initializing the bias
-            groups: number of groups to use for grouped convolution
-            key: key to use for initializing the weights
-
-        See:
-            https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
-            The implementation is tested against https://github.com/fkodom/fft-conv-pytorch
-        """
         super().__init__(
             in_features=in_features,
             out_features=out_features,
@@ -347,6 +395,57 @@ class FFTConv2D(FFTConvND):
 
 
 class FFTConv3D(FFTConvND):
+    """3D FFT Convolutional layer.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        out_features: number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        kernel_dilation: dilation of the convolutional kernel accepts:
+            * single integer for same dilation in all dimensions.
+            * sequence of integers for different dilation in each dimension.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        groups: number of groups to use for grouped convolution.
+        key: key to use for initializing the weights. defaults to `0`.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.FFTConv3D(in_features=1, out_features=2, kernel_size=3)
+        >>> # single sample
+        >>> x = jnp.ones((1, 5, 5, 5))
+        >>> print(layer(x).shape)
+        (2, 5, 5, 5)
+        >>> # batch of samples
+        >>> x = jnp.ones((2, 1, 5, 5, 5))
+        >>> print(jax.vmap(layer)(x).shape)
+        (2, 2, 5, 5, 5)
+
+    Note:
+        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -361,24 +460,6 @@ class FFTConv3D(FFTConvND):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """3D FFT Convolutional layer.
-
-        Args:
-            in_features: number of input features
-            out_features: number of output features
-            kernel_size: size of the convolutional kernel
-            strides: stride of the convolution
-            padding: padding of the input
-            kernel_dilation: dilation of the kernel
-            weight_init_func: function to use for initializing the weights
-            bias_init_func: function to use for initializing the bias
-            groups: number of groups to use for grouped convolution
-            key: key to use for initializing the weights
-
-        See:
-            https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
-            The implementation is tested against https://github.com/fkodom/fft-conv-pytorch
-        """
         super().__init__(
             in_features=in_features,
             out_features=out_features,
@@ -397,10 +478,7 @@ class FFTConv3D(FFTConvND):
         return 3
 
 
-# ---------------------------------------------------------------------------- #
-
-
-class FFTConvNDTranspose(pytc.TreeClass):
+class FFTConvNDTranspose(sk.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -416,21 +494,6 @@ class FFTConvNDTranspose(pytc.TreeClass):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Convolutional Transpose Layer
-
-        Args:
-            in_features : Number of input channels
-            out_features : Number of output channels
-            kernel_size : Size of the convolutional kernel
-            strides : Stride of the convolution
-            padding : Padding of the input
-            output_padding : Additional size added to one side of the output shape
-            kernel_dilation : Dilation of the kernel
-            weight_init_func : Weight initialization function
-            bias_init_func : Bias initialization function
-            groups : Number of groups
-            key : PRNG key
-        """
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(
@@ -509,6 +572,59 @@ class FFTConvNDTranspose(pytc.TreeClass):
 
 
 class FFTConv1DTranspose(FFTConvNDTranspose):
+    """1D FFT Convolution transpose layer.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        out_features: number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        output_padding: padding of the output after convolution. accepts:
+            * single integer for same padding in all dimensions.
+        kernel_dilation: dilation of the convolutional kernel accepts:
+            * single integer for same dilation in all dimensions.
+            * sequence of integers for different dilation in each dimension.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        groups: number of groups to use for grouped convolution.
+        key: key to use for initializing the weights. defaults to `0`.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.FFTConv1DTranspose(1, 2, 3)
+        >>> # single sample
+        >>> x = jnp.ones((1, 5))
+        >>> print(layer(x).shape)
+        (2, 5)
+        >>> # batch of samples
+        >>> x = jnp.ones((2, 1, 5))
+        >>> print(jax.vmap(layer)(x).shape)
+        (2, 2, 5)
+
+    Note:
+        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -524,21 +640,6 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """1D FFT Convolutional Transpose Layer.
-
-        Args:
-            in_features : Number of input channels
-            out_features : Number of output channels
-            kernel_size : Size of the convolutional kernel
-            strides : Stride of the convolution
-            padding : Padding of the input
-            output_padding : Additional size added to one side of the output shape
-            kernel_dilation : Dilation of the kernel
-            weight_init_func : Weight initialization function
-            bias_init_func : Bias initialization function
-            groups : Number of groups
-            key : PRNG key
-        """
         super().__init__(
             in_features=in_features,
             out_features=out_features,
@@ -559,6 +660,59 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
 
 
 class FFTConv2DTranspose(FFTConvNDTranspose):
+    """2D FFT Convolution transpose layer.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        out_features: number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        output_padding: padding of the output after convolution. accepts:
+            * single integer for same padding in all dimensions.
+        kernel_dilation: dilation of the convolutional kernel accepts:
+            * single integer for same dilation in all dimensions.
+            * sequence of integers for different dilation in each dimension.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        groups: number of groups to use for grouped convolution.
+        key: key to use for initializing the weights. defaults to `0`.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.FFTConv2DTranspose(1, 2, 3)
+        >>> # single sample
+        >>> x = jnp.ones((1, 5, 5))
+        >>> print(layer(x).shape)
+        (2, 5, 5)
+        >>> # batch of samples
+        >>> x = jnp.ones((2, 1, 5, 5))
+        >>> print(jax.vmap(layer)(x).shape)
+        (2, 2, 5, 5)
+
+    Note:
+        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -574,21 +728,6 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """2D FFT Convolutional Transpose Layer.
-
-        Args:
-            in_features : Number of input channels
-            out_features : Number of output channels
-            kernel_size : Size of the convolutional kernel
-            strides : Stride of the convolution
-            padding : Padding of the input
-            output_padding : Additional size added to one side of the output shape
-            kernel_dilation : Dilation of the kernel
-            weight_init_func : Weight initialization function
-            bias_init_func : Bias initialization function
-            groups : Number of groups
-            key : PRNG key
-        """
         super().__init__(
             in_features=in_features,
             out_features=out_features,
@@ -609,6 +748,59 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
 
 
 class FFTConv3DTranspose(FFTConvNDTranspose):
+    """3D FFT Convolution transpose layer.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        out_features: number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        output_padding: padding of the output after convolution. accepts:
+            * single integer for same padding in all dimensions.
+        kernel_dilation: dilation of the convolutional kernel accepts:
+            * single integer for same dilation in all dimensions.
+            * sequence of integers for different dilation in each dimension.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        groups: number of groups to use for grouped convolution.
+        key: key to use for initializing the weights. defaults to `0`.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.FFTConv3DTranspose(1, 2, 3)
+        >>> # single sample
+        >>> x = jnp.ones((1, 5, 5, 5))
+        >>> print(layer(x).shape)
+        (2, 5, 5, 5)
+        >>> # batch of samples
+        >>> x = jnp.ones((2, 1, 5, 5, 5))
+        >>> print(jax.vmap(layer)(x).shape)
+        (2, 2, 5, 5, 5)
+
+    Note:
+        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -624,21 +816,6 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """3D FFT Convolutional Transpose Layer.
-
-        Args:
-            in_features : Number of input channels
-            out_features : Number of output channels
-            kernel_size : Size of the convolutional kernel
-            strides : Stride of the convolution
-            padding : Padding of the input
-            output_padding : Additional size added to one side of the output shape
-            kernel_dilation : Dilation of the kernel
-            weight_init_func : Weight initialization function
-            bias_init_func : Bias initialization function
-            groups : Number of groups
-            key : PRNG key
-        """
         super().__init__(
             in_features=in_features,
             out_features=out_features,
@@ -658,10 +835,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         return 3
 
 
-# ----------------------------------------------------------------------------- #
-
-
-class DepthwiseFFTConvND(pytc.TreeClass):
+class DepthwiseFFTConvND(sk.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -674,27 +848,6 @@ class DepthwiseFFTConvND(pytc.TreeClass):
         bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Depthwise Convolutional layer.
-
-        Args:
-            in_features: number of input features
-            kernel_size: size of the convolution kernel
-            depth_multiplier : number of output channels per input channel
-            strides: stride of the convolution
-            padding: padding of the input
-            weight_init_func: function to initialize the weights
-            bias_init_func: function to initialize the bias
-            key: random key for weight initialization
-
-        Examples:----
-            >>> l1 = DepthwiseConvND(3, 3, depth_multiplier=2, strides=2, padding="SAME")
-            >>> l1(jnp.ones((3, 32, 32))).shape
-            (3, 16, 16, 6)
-
-        Note:
-            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-            https://github.com/google/flax/blob/main/flax/linen/linear.py
-        """
         self.in_features = positive_int_cb(in_features)
         self.kernel_size = canonicalize(
             kernel_size, self.spatial_ndim, name="kernel_size"
@@ -749,6 +902,48 @@ class DepthwiseFFTConvND(pytc.TreeClass):
 
 
 class DepthwiseFFTConv1D(DepthwiseFFTConvND):
+    """1D Depthwise FFT convolution layer.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        depth_multiplier: multiplier for the number of output channels. for example
+            if the input has 32 channels and the depth multiplier is 2 then the
+            output will have 64 channels.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        key: key to use for initializing the weights. defaults to `0`.
+
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> l1 = sk.nn.DepthwiseFFTConv1D(3, 3, depth_multiplier=2, strides=2)
+        >>> l1(jnp.ones((3, 32))).shape
+        (6, 16)
+
+    Note:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        - https://github.com/google/flax/blob/main/flax/linen/linear.py
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -761,22 +956,6 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
         bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """1D Depthwise FFT Convolutional layer.
-
-        Args:
-            in_features: number of input features
-            kernel_size: size of the convolution kernel
-            depth_multiplier : number of output channels per input channel
-            strides: stride of the convolution
-            padding: padding of the input
-            weight_init_func: function to initialize the weights
-            bias_init_func: function to initialize the bias
-            key: random key for weight initialization
-
-        Note:
-            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-            https://github.com/google/flax/blob/main/flax/linen/linear.py
-        """
         super().__init__(
             in_features=in_features,
             kernel_size=kernel_size,
@@ -794,6 +973,48 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
 
 
 class DepthwiseFFTConv2D(DepthwiseFFTConvND):
+    """2D Depthwise convolution layer.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        depth_multiplier: multiplier for the number of output channels. for example
+            if the input has 32 channels and the depth multiplier is 2 then the
+            output will have 64 channels.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        key: key to use for initializing the weights. defaults to `0`.
+
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> l1 = sk.nn.DepthwiseFFTConv2D(3, 3, depth_multiplier=2, strides=2)
+        >>> l1(jnp.ones((3, 32, 32))).shape
+        (6, 16, 16)
+
+    Note:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        - https://github.com/google/flax/blob/main/flax/linen/linear.py
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -806,22 +1027,6 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
         bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """2D Depthwise FFT Convolutional layer.
-
-        Args:
-            in_features: number of input features
-            kernel_size: size of the convolution kernel
-            depth_multiplier : number of output channels per input channel
-            strides: stride of the convolution
-            padding: padding of the input
-            weight_init_func: function to initialize the weights
-            bias_init_func: function to initialize the bias
-            key: random key for weight initialization
-
-        Note:
-            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-            https://github.com/google/flax/blob/main/flax/linen/linear.py
-        """
         super().__init__(
             in_features=in_features,
             kernel_size=kernel_size,
@@ -839,6 +1044,48 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
 
 
 class DepthwiseFFTConv3D(DepthwiseFFTConvND):
+    """3D Depthwise FFT convolution layer.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        depth_multiplier: multiplier for the number of output channels. for example
+            if the input has 32 channels and the depth multiplier is 2 then the
+            output will have 64 channels.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        key: key to use for initializing the weights. defaults to `0`.
+
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> l1 = sk.nn.DepthwiseFFTConv3D(3, 3, depth_multiplier=2, strides=2)
+        >>> l1(jnp.ones((3, 32, 32, 32))).shape
+        (6, 16, 16, 16)
+
+    Note:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        - https://github.com/google/flax/blob/main/flax/linen/linear.py
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -851,23 +1098,6 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """3D Depthwise FFT Convolutional layer.
-
-        Args:
-            in_features: number of input features
-            kernel_size: size of the convolution kernel
-            depth_multiplier : number of output channels per input channel
-            strides: stride of the convolution
-            padding: padding of the input
-            weight_init_func: function to initialize the weights
-            bias_init_func: function to initialize the bias
-            spatial_ndim: number of spatial dimensions
-            key: random key for weight initialization
-
-        Note:
-            https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/
-            https://github.com/google/flax/blob/main/flax/linen/linear.py
-        """
         super().__init__(
             in_features=in_features,
             kernel_size=kernel_size,
@@ -884,10 +1114,56 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         return 3
 
 
-# ---------------------------------------------------------------------------- #
+class SeparableFFTConv1D(sk.TreeClass):
+    """1D Separable FFT convolution layer.
+
+    Separable convolution is a depthwise convolution followed by a pointwise
+    convolution. The objective is to reduce the number of parameters in the
+    convolutional layer. For example, for I input features and O output features,
+    and a kernel size = Ki, then standard convolution has I * O * K0 ... * Kn + O
+    parameters, whereas separable convolution has I * K0 ... * Kn + I * O + O
+    parameters.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        depth_multiplier: multiplier for the number of output channels. for example
+            if the input has 32 channels and the depth multiplier is 2 then the
+            output will have 64 channels.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        key: key to use for initializing the weights. defaults to `0`.
 
 
-class SeparableFFTConv1D(pytc.TreeClass):
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> l1 = sk.nn.SeparableFFTConv1D(3, 3, 3, depth_multiplier=2)
+        >>> l1(jnp.ones((3, 32))).shape
+        (3, 32)
+
+    Note:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        - https://github.com/google/flax/blob/main/flax/linen/linear.py
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -902,28 +1178,6 @@ class SeparableFFTConv1D(pytc.TreeClass):
         pointwise_bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Separable 1D FFT Convolutional layer.
-        Args:
-            in_features : Number of input channels.
-            out_features : Number of output channels.
-            kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels
-                for each input channel.
-            strides : Stride of the convolution.
-            padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise
-                convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise
-                convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise
-                convolution bias.
-
-        Note:
-            https://en.wikipedia.org/wiki/Separable_filter
-            https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-            https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
-
-        """
         self.in_features = in_features
         self.depth_multiplier = canonicalize(
             depth_multiplier,
@@ -965,7 +1219,55 @@ class SeparableFFTConv1D(pytc.TreeClass):
         return 1
 
 
-class SeparableFFTConv2D(pytc.TreeClass):
+class SeparableFFTConv2D(sk.TreeClass):
+    """2D Separable FFT convolution layer.
+
+    Separable convolution is a depthwise convolution followed by a pointwise
+    convolution. The objective is to reduce the number of parameters in the
+    convolutional layer. For example, for I input features and O output features,
+    and a kernel size = Ki, then standard convolution has I * O * K0 ... * Kn + O
+    parameters, whereas separable convolution has I * K0 ... * Kn + I * O + O
+    parameters.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        depth_multiplier: multiplier for the number of output channels. for example
+            if the input has 32 channels and the depth multiplier is 2 then the
+            output will have 64 channels.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        key: key to use for initializing the weights. defaults to `0`.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> l1 = sk.nn.SeparableFFTConv2D(3, 3, 3, depth_multiplier=2)
+        >>> l1(jnp.ones((3, 32, 32))).shape
+        (3, 32, 32)
+
+    Note:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        - https://github.com/google/flax/blob/main/flax/linen/linear.py
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -980,27 +1282,6 @@ class SeparableFFTConv2D(pytc.TreeClass):
         pointwise_bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Separable 2D FFT Convolutional layer.
-
-        Args:
-            in_features : Number of input channels.
-            out_features : Number of output channels.
-            kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels
-                for each input channel.
-            strides : Stride of the convolution.
-            padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise
-                convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise
-                convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise
-                convolution bias.
-        Note:
-            https://en.wikipedia.org/wiki/Separable_filter
-            https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-            https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
-        """
         self.in_features = in_features
         self.depth_multiplier = canonicalize(
             depth_multiplier,
@@ -1042,7 +1323,55 @@ class SeparableFFTConv2D(pytc.TreeClass):
         return 2
 
 
-class SeparableFFTConv3D(pytc.TreeClass):
+class SeparableFFTConv3D(sk.TreeClass):
+    """3D Separable FFT convolution layer.
+
+    Separable convolution is a depthwise convolution followed by a pointwise
+    convolution. The objective is to reduce the number of parameters in the
+    convolutional layer. For example, for I input features and O output features,
+    and a kernel size = Ki, then standard convolution has I * O * K0 ... * Kn + O
+    parameters, whereas separable convolution has I * K0 ... * Kn + I * O + O
+    parameters.
+
+    Args:
+        in_features: number of input feature maps, for 1D convolution this is the
+            length of the input, for 2D convolution this is the number of input
+            channels, for 3D convolution this is the number of input channels.
+        kernel_size: size of the convolutional kernel. accepts:
+            * single integer for same kernel size in all dimensions.
+            * sequence of integers for different kernel sizes in each dimension.
+        depth_multiplier: multiplier for the number of output channels. for example
+            if the input has 32 channels and the depth multiplier is 2 then the
+            output will have 64 channels.
+        strides: stride of the convolution. accepts:
+            * single integer for same stride in all dimensions.
+            * sequence of integers for different strides in each dimension.
+        padding: padding of the input before convolution. accepts:
+            * single integer for same padding in all dimensions.
+            * tuple of integers for different padding in each dimension.
+            * tuple of a tuple of two integers for before and after padding in
+                each dimension.
+            * "same"/"SAME" for padding such that the output has the same shape
+                as the input.
+            * "valid"/"VALID" for no padding.
+        weight_init_func: function to use for initializing the weights. defaults
+            to `glorot uniform`.
+        bias_init_func: function to use for initializing the bias. defaults to
+            `zeros`. set to `None` to not use a bias.
+        key: key to use for initializing the weights. defaults to `0`.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> l1 = sk.nn.SeparableFFTConv3D(3, 3, 3, depth_multiplier=2)
+        >>> l1(jnp.ones((3, 32, 32, 32))).shape
+        (3, 32, 32, 32)
+
+    Note:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+        - https://github.com/google/flax/blob/main/flax/linen/linear.py
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -1057,25 +1386,6 @@ class SeparableFFTConv3D(pytc.TreeClass):
         pointwise_bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Separable 3D FFT Convolutional layer.
-
-        Note:
-            See:
-                https://en.wikipedia.org/wiki/Separable_filter
-                https://keras.io/api/layers/convolution_layers/separable_convolution2d/
-                https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/depthwise_conv.py
-
-        Args:
-            in_features : Number of input channels.
-            out_features : Number of output channels.
-            kernel_size : Size of the convolving kernel.
-            depth_multiplier : Number of depthwise convolution output channels for each input channel.
-            strides : Stride of the convolution.
-            padding : Padding to apply to the input.
-            depthwise_weight_init_func : Function to initialize the depthwise convolution weights.
-            pointwise_weight_init_func : Function to initialize the pointwise convolution weights.
-            pointwise_bias_init_func : Function to initialize the pointwise convolution bias.
-        """
         self.in_features = in_features
         self.depth_multiplier = canonicalize(
             depth_multiplier,

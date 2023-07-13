@@ -15,8 +15,8 @@
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn import Dropout
 
 
@@ -26,7 +26,7 @@ def test_dropout():
     layer = Dropout(1.0)
     npt.assert_allclose(layer(x), jnp.array([0.0, 0.0, 0.0, 0.0, 0.0]))
 
-    layer = layer.at["p"].set(0.0, is_leaf=pytc.is_frozen)
+    layer = layer.at["p"].set(0.0, is_leaf=sk.is_frozen)
     npt.assert_allclose(layer(x), x)
 
     with pytest.raises(ValueError):

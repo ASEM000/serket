@@ -18,8 +18,8 @@ from typing import Any, Sequence
 
 import jax
 import jax.random as jr
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn.activation import ActivationType, resolve_activation
 from serket.nn.initialization import InitType
 from serket.nn.linear import Linear
@@ -27,7 +27,33 @@ from serket.nn.linear import Linear
 PyTree = Any
 
 
-class FNN(pytc.TreeClass):
+class FNN(sk.TreeClass):
+    """Fully connected neural network
+    Args:
+        layers: Sequence of layer sizes
+        act_func: a single Activation function to be applied between layers or
+            `len(layers)-2` Sequence of activation functions applied between
+            layers.
+        weight_init_func: Weight initializer function.
+        bias_init_func: Bias initializer function. Defaults to lambda key,
+            shape: jnp.ones(shape).
+        key: Random key for weight and bias initialization.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> fnn = sk.nn.FNN([10, 5, 2])
+        >>> fnn(jnp.ones((3, 10))).shape
+        (3, 2)
+
+    Note:
+        - layers argument yields len(layers) - 1 linear layers with required
+            `len(layers)-2` activation functions, for example, `layers=[10, 5, 2]`
+            yields 2 linear layers with weight shapes (10, 5) and (5, 2)
+            and single activation function is applied between them.
+        - `FNN` uses python `for` loop to apply layers and activation functions.
+    """
+
     def __init__(
         self,
         layers: Sequence[int],
@@ -37,30 +63,6 @@ class FNN(pytc.TreeClass):
         bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Fully connected neural network
-        Args:
-            layers: Sequence of layer sizes
-            act_func: a single Activation function to be applied between layers or
-                `len(layers)-2` Sequence of activation functions applied between
-                layers.
-            weight_init_func: Weight initializer function.
-            bias_init_func: Bias initializer function. Defaults to lambda key,
-                shape: jnp.ones(shape).
-            key: Random key for weight and bias initialization.
-
-        Example:
-            >>> fnn = FNN([10, 5, 2])
-            >>> fnn(jnp.ones((3, 10))).shape
-            (3, 2)
-
-        Note:
-            - layers argument yields len(layers) - 1 linear layers with required
-                `len(layers)-2` activation functions, for example, `layers=[10, 5, 2]`
-                yields 2 linear layers with weight shapes (10, 5) and (5, 2)
-                and single activation function is applied between them.
-            - `FNN` uses python `for` loop to apply layers and activation functions.
-        """
-
         keys = jr.split(key, len(layers) - 1)
         num_hidden_layers = len(layers) - 2
 
@@ -104,7 +106,30 @@ class FNN(pytc.TreeClass):
         return self._single_call(x, **k)
 
 
-class MLP(pytc.TreeClass):
+class MLP(sk.TreeClass):
+    """Multi-layer perceptron.
+
+    Args:
+        in_features: Number of input features.
+        out_features: Number of output features.
+        hidden_size: Number of hidden units in each hidden layer.
+        num_hidden_layers: Number of hidden layers including the output layer.
+        act_func: Activation function.
+        weight_init_func: Weight initialization function.
+        bias_init_func: Bias initialization function.
+        key: Random number generator key.
+
+    Note:
+        - MLP with `in_features`=1, `out_features`=2, `hidden_size`=4,
+        `num_hidden_layers`=2 is equivalent to `[1, 4, 4, 2]` which has one
+            input layer (1, 4), one intermediate  layer (4, 4), and one output
+            layer (4, 2) = `num_hidden_layers` + 1
+        - `MLP` exploits same input/out size for intermediate layers to use
+            `jax.lax.scan`, which offers better compilation speed for large
+            number of layers and producing a smaller `jaxpr` but could be
+            slower than equivalent `FNN` for small number of layers.
+    """
+
     def __init__(
         self,
         in_features: int,
@@ -117,28 +142,6 @@ class MLP(pytc.TreeClass):
         bias_init_func: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        """Multi-layer perceptron.
-
-        Args:
-            in_features: Number of input features.
-            out_features: Number of output features.
-            hidden_size: Number of hidden units in each hidden layer.
-            num_hidden_layers: Number of hidden layers including the output layer.
-            act_func: Activation function.
-            weight_init_func: Weight initialization function.
-            bias_init_func: Bias initialization function.
-            key: Random number generator key.
-
-        Note:
-            - MLP with `in_features`=1, `out_features`=2, `hidden_size`=4,
-            `num_hidden_layers`=2 is equivalent to `[1, 4, 4, 2]` which has one
-                input layer (1, 4), one intermediate  layer (4, 4), and one output
-                layer (4, 2) = `num_hidden_layers` + 1
-            - `MLP` exploits same input/out size for intermediate layers to use
-                `jax.lax.scan`, which offers better compilation speed for large
-                number of layers and producing a smaller `jaxpr` but could be
-                slower than equivalent `FNN` for small number of layers.
-        """
         if hidden_size < 1:
             raise ValueError(f"hidden_size must be positive, got {hidden_size}")
 

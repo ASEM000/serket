@@ -20,13 +20,12 @@ from __future__ import annotations
 
 import jax
 import jax.numpy as jnp
-import pytreeclass as pytc
 
 import serket as sk
 from serket.nn.utils import positive_int_cb
 
 
-class ResizeAndCat(pytc.TreeClass):
+class ResizeAndCat(sk.TreeClass):
     def __call__(self, x1: jax.Array, x2: jax.Array) -> jax.Array:
         """resize a tensor to the same size as another tensor and concatenate x2 to x1 along the channel axis"""
         x1 = jax.image.resize(x1, shape=x2.shape, method="nearest")
@@ -34,7 +33,7 @@ class ResizeAndCat(pytc.TreeClass):
         return x1
 
 
-class DoubleConvBlock(pytc.TreeClass):
+class DoubleConvBlock(sk.TreeClass):
     def __init__(self, in_features: int, out_features: int):
         self.conv1 = sk.nn.Conv2D(
             in_features=in_features,
@@ -59,7 +58,7 @@ class DoubleConvBlock(pytc.TreeClass):
         return x
 
 
-class UpscaleBlock(pytc.TreeClass):
+class UpscaleBlock(sk.TreeClass):
     def __init__(self, in_features: int, out_features: int):
         self.conv = sk.nn.Conv2DTranspose(
             in_features=in_features,
@@ -72,7 +71,7 @@ class UpscaleBlock(pytc.TreeClass):
         return self.conv(x)
 
 
-class UNetBlock(pytc.TreeClass):
+class UNetBlock(sk.TreeClass):
     """Vanilla UNet
 
     Args:
@@ -82,10 +81,10 @@ class UNetBlock(pytc.TreeClass):
         init_features : number of features in the first block. Default is 64
     """
 
-    in_features: int = pytc.field(callbacks=[positive_int_cb])
-    out_features: int = pytc.field(callbacks=[positive_int_cb])
-    blocks: int = pytc.field(callbacks=[positive_int_cb], default=4)
-    init_features: int = pytc.field(callbacks=[positive_int_cb], default=64)
+    in_features: int = sk.field(callbacks=[positive_int_cb])
+    out_features: int = sk.field(callbacks=[positive_int_cb])
+    blocks: int = sk.field(callbacks=[positive_int_cb], default=4)
+    init_features: int = sk.field(callbacks=[positive_int_cb], default=64)
 
     def __post_init__(self):
         """

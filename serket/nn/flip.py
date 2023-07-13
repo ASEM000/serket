@@ -18,30 +18,29 @@ import functools as ft
 
 import jax
 import jax.numpy as jnp
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn.utils import validate_spatial_ndim
 
 
-class FlipLeftRight2D(pytc.TreeClass):
-    def __init__(self):
-        """Flip channels left to right.
+class FlipLeftRight2D(sk.TreeClass):
+    """Flip channels left to right.
 
-        Note:
-            https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
+    Note:
+        https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
 
-        Examples:
-            >>> x = jnp.arange(1,10).reshape(1,3, 3)
-            >>> x
-            [[[1 2 3]
-            [4 5 6]
-            [7 8 9]]]
+    Examples:
+        >>> x = jnp.arange(1,10).reshape(1,3, 3)
+        >>> print(x)
+        [[[1 2 3]
+        [4 5 6]
+        [7 8 9]]]
 
-            >>> FlipLeftRight2D()(x)
-            [[[3 2 1]
-            [6 5 4]
-            [9 8 7]]]
-        """
+        >>> print(FlipLeftRight2D()(x))
+        [[[3 2 1]
+        [6 5 4]
+        [9 8 7]]]
+    """
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -53,25 +52,24 @@ class FlipLeftRight2D(pytc.TreeClass):
         return 2
 
 
-class FlipUpDown2D(pytc.TreeClass):
-    def __init__(self):
-        """Flip channels up to down.
+class FlipUpDown2D(sk.TreeClass):
+    """Flip channels up to down.
 
-        Note:
-            https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
+    Note:
+        https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
 
-        Examples:
-            >>> x = jnp.arange(1,10).reshape(1,3, 3)
-            >>> x
-            [[[1 2 3]
-            [4 5 6]
-            [7 8 9]]]
+    Examples:
+        >>> x = jnp.arange(1,10).reshape(1,3, 3)
+        >>> print(x)
+        [[[1 2 3]
+        [4 5 6]
+        [7 8 9]]]
 
-            >>> FlipUpDown2D()(x)
-            [[[7 8 9]
-            [4 5 6]
-            [1 2 3]]]
-        """
+        >>> print(FlipUpDown2D()(x))
+        [[[7 8 9]
+        [4 5 6]
+        [1 2 3]]]
+    """
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:

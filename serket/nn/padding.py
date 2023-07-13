@@ -19,24 +19,13 @@ import functools as ft
 
 import jax
 import jax.numpy as jnp
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn.utils import delayed_canonicalize_padding, validate_spatial_ndim
 
 
-class PadND(pytc.TreeClass):
+class PadND(sk.TreeClass):
     def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
-        """
-        Args:
-            padding: padding to apply to each side of the input.
-            value: value to pad with. Defaults to 0.0.
-
-        Note:
-            https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
-        """
         self.padding = delayed_canonicalize_padding(
             in_dim=None,
             padding=padding,
@@ -60,20 +49,21 @@ class PadND(pytc.TreeClass):
 
 
 class Pad1D(PadND):
+    """
+    Pad a 1D tensor.
+
+    Args:
+        padding: padding to apply to each side of the input.
+        value: value to pad with. Defaults to 0.0.
+
+    Note:
+        https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
+    """
+
     def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
-        """
-        Pad a 1D tensor.
-
-        Args:
-            padding: padding to apply to each side of the input.
-            value: value to pad with. Defaults to 0.0.
-
-        Note:
-            https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
-        """
         super().__init__(padding=padding, value=value)
 
     @property

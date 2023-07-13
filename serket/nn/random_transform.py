@@ -18,16 +18,16 @@ from typing import Any
 
 import jax
 import jax.random as jr
-import pytreeclass as pytc
 from jax.lax import stop_gradient
 
+import serket as sk
 from serket.nn.crop import RandomCrop2D
 from serket.nn.padding import Pad2D
 from serket.nn.resize import Resize2D
 from serket.nn.utils import Range
 
 
-class RandomApply(pytc.TreeClass):
+class RandomApply(sk.TreeClass):
     """
     Randomly applies a layer with probability p.
 
@@ -36,6 +36,8 @@ class RandomApply(pytc.TreeClass):
         p: probability of applying the layer
 
     Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
         >>> layer = RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=0.0)
         >>> layer(jnp.ones((1, 10, 10))).shape
         (1, 10, 10)
@@ -50,7 +52,7 @@ class RandomApply(pytc.TreeClass):
     """
 
     layer: Any
-    p: float = pytc.field(default=0.5, callbacks=[Range(0, 1)])
+    p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
 
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):
         if not jr.bernoulli(key, stop_gradient(self.p)):
@@ -58,7 +60,7 @@ class RandomApply(pytc.TreeClass):
         return self.layer(x)
 
 
-class RandomZoom2D(pytc.TreeClass):
+class RandomZoom2D(sk.TreeClass):
     def __init__(
         self,
         height_factor: tuple[float, float] = (0.0, 1.0),
@@ -85,17 +87,20 @@ class RandomZoom2D(pytc.TreeClass):
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         keys = jr.split(key, 4)
 
+        height_factor = jax.lax.stop_gradient(self.height_factor)
+        width_factor = jax.lax.stop_gradient(self.width_factor)
+
         height_factor = jr.uniform(
             keys[0],
             shape=(),
-            minval=self.height_factor[0],
-            maxval=self.height_factor[1],
+            minval=height_factor[0],
+            maxval=height_factor[1],
         )
         width_factor = jr.uniform(
             keys[1],
             shape=(),
-            minval=self.width_factor[0],
-            maxval=self.width_factor[1],
+            minval=width_factor[0],
+            maxval=width_factor[1],
         )
 
         R, C = x.shape[1:3]  # R = rows, C = cols

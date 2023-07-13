@@ -19,12 +19,12 @@ from typing import Any
 
 import jax
 import jax.random as jr
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn.utils import IsInstance
 
 
-class Sequential(pytc.TreeClass):
+class Sequential(sk.TreeClass):
     """A sequential container for layers.
 
     Args:
@@ -38,10 +38,14 @@ class Sequential(pytc.TreeClass):
         >>> layers = sk.nn.Sequential((lambda x: x + 1, lambda x: x * 2))
         >>> print(layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0)))
         [4 6 8]
+
+    Note:
+        Layer might be a function or a class with a `__call__` method, additionally
+        it might have a key argument for random number generation.
     """
 
     # allow list then cast to tuple avoid mutability issues
-    layers: tuple[Any, ...] = pytc.field(callbacks=[IsInstance((tuple, list)), tuple])
+    layers: tuple[Any, ...] = sk.field(callbacks=[IsInstance((tuple, list)), tuple])
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         for key, layer in zip(jr.split(key, len(self.layers)), self.layers):

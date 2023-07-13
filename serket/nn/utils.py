@@ -20,7 +20,8 @@ from typing import Any, Sequence, Tuple, Union
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytreeclass as pytc
+
+import serket as sk
 
 KernelSizeType = Union[int, Sequence[int]]
 StridesType = Union[int, Sequence[int]]
@@ -178,7 +179,7 @@ def canonicalize(value, ndim, *, name: str | None = None):
     raise ValueError(f"Expected int or tuple , got {value=}.")
 
 
-class Range(pytc.TreeClass):
+class Range(sk.TreeClass):
     """Check if the input is in the range [min_val, max_val]."""
 
     min_val: float = -float("inf")
@@ -190,7 +191,7 @@ class Range(pytc.TreeClass):
         raise ValueError(f"Not in range[{self.min_val}, {self.max_val}] got {value=}.")
 
 
-class IsInstance(pytc.TreeClass):
+class IsInstance(sk.TreeClass):
     """Check if the input is an instance of expected_type."""
 
     predicted_type: type | Sequence[type]
@@ -201,7 +202,7 @@ class IsInstance(pytc.TreeClass):
         raise TypeError(f"Expected {self.predicted_type}, got {type(value).__name__}")
 
 
-class ScalarLike(pytc.TreeClass):
+class ScalarLike(sk.TreeClass):
     """Check if the input is a scalar"""
 
     def __call__(self, value: Any):

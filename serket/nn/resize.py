@@ -19,14 +19,14 @@ import functools as ft
 from typing import Literal
 
 import jax
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn.utils import canonicalize, validate_spatial_ndim
 
 MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 
 
-class ResizeND(pytc.TreeClass):
+class ResizeND(sk.TreeClass):
     """
     Resize an image to a given size using a given interpolation method.
 
@@ -72,7 +72,7 @@ class ResizeND(pytc.TreeClass):
         ...
 
 
-class UpsampleND(pytc.TreeClass):
+class UpsampleND(sk.TreeClass):
     def __init__(
         self,
         scale: int | tuple[int, ...] = 1,
@@ -101,28 +101,29 @@ class UpsampleND(pytc.TreeClass):
 
 
 class Resize1D(ResizeND):
+    """Resize a 1D input to a given size using a given interpolation method.
+
+    Args:
+        size: the size of the output. if size is None, the output size is
+            calculated as input size * scale
+        method: the method of interpolation. Defaults to "nearest". choices are:
+        - "nearest": Nearest neighbor interpolation. The values of antialias
+            and precision are ignored.
+        - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
+            If antialias is True, uses a triangular filter when downsampling.
+        - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
+            cubic kernel.
+        - "lanczos3": Lanczos resampling, using a kernel of radius 3.
+        - "lanczos5": Lanczos resampling, using a kernel of radius 5.
+        antialias: whether to use antialiasing. Defaults to True.
+    """
+
     def __init__(
         self,
         size: int | tuple[int, ...],
         method: MethodKind = "nearest",
         antialias=True,
     ):
-        """Resize a 1D input to a given size using a given interpolation method.
-
-        Args:
-            size: the size of the output. if size is None, the output size is
-                calculated as input size * scale
-            method: the method of interpolation. Defaults to "nearest". choices are:
-            - "nearest": Nearest neighbor interpolation. The values of antialias
-                and precision are ignored.
-            - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
-                If antialias is True, uses a triangular filter when downsampling.
-            - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
-                cubic kernel.
-            - "lanczos3": Lanczos resampling, using a kernel of radius 3.
-            - "lanczos5": Lanczos resampling, using a kernel of radius 5.
-            antialias: whether to use antialiasing. Defaults to True.
-        """
         super().__init__(size=size, method=method, antialias=antialias)
 
     @property
@@ -131,28 +132,29 @@ class Resize1D(ResizeND):
 
 
 class Resize2D(ResizeND):
+    """Resize a 2D input to a given size using a given interpolation method.
+
+    Args:
+        size: the size of the output. if size is None, the output size is
+            calculated as input size * scale
+        method: the method of interpolation. Defaults to "nearest". choices are:
+        - "nearest": Nearest neighbor interpolation. The values of antialias
+            and precision are ignored.
+        - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
+            If antialias is True, uses a triangular filter when downsampling.
+        - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
+            cubic kernel.
+        - "lanczos3": Lanczos resampling, using a kernel of radius 3.
+        - "lanczos5": Lanczos resampling, using a kernel of radius 5.
+        antialias: whether to use antialiasing. Defaults to True.
+    """
+
     def __init__(
         self,
         size: int | tuple[int, ...],
         method: MethodKind = "nearest",
         antialias=True,
     ):
-        """Resize a 2D input to a given size using a given interpolation method.
-
-        Args:
-            size: the size of the output. if size is None, the output size is
-                calculated as input size * scale
-            method: the method of interpolation. Defaults to "nearest". choices are:
-            - "nearest": Nearest neighbor interpolation. The values of antialias
-                and precision are ignored.
-            - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
-                If antialias is True, uses a triangular filter when downsampling.
-            - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
-                cubic kernel.
-            - "lanczos3": Lanczos resampling, using a kernel of radius 3.
-            - "lanczos5": Lanczos resampling, using a kernel of radius 5.
-            antialias: whether to use antialiasing. Defaults to True.
-        """
         super().__init__(size=size, method=method, antialias=antialias)
 
     @property
@@ -161,28 +163,29 @@ class Resize2D(ResizeND):
 
 
 class Resize3D(ResizeND):
+    """Resize a 3D input to a given size using a given interpolation method.
+
+    Args:
+        size: the size of the output. if size is None, the output size is
+            calculated as input size * scale
+        method: the method of interpolation. Defaults to "nearest". choices are:
+        - "nearest": Nearest neighbor interpolation. The values of antialias
+            and precision are ignored.
+        - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
+            If antialias is True, uses a triangular filter when downsampling.
+        - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
+            cubic kernel.
+        - "lanczos3": Lanczos resampling, using a kernel of radius 3.
+        - "lanczos5": Lanczos resampling, using a kernel of radius 5.
+        antialias: whether to use antialiasing. Defaults to True.
+    """
+
     def __init__(
         self,
         size: int | tuple[int, ...],
         method: MethodKind = "nearest",
         antialias=True,
     ):
-        """Resize a 3D input to a given size using a given interpolation method.
-
-        Args:
-            size: the size of the output. if size is None, the output size is
-                calculated as input size * scale
-            method: the method of interpolation. Defaults to "nearest". choices are:
-            - "nearest": Nearest neighbor interpolation. The values of antialias
-                and precision are ignored.
-            - "linear", "bilinear", "trilinear", "triangle": Linear interpolation.
-                If antialias is True, uses a triangular filter when downsampling.
-            - "cubic", "bicubic", "tricubic": Cubic interpolation, using the Keys
-                cubic kernel.
-            - "lanczos3": Lanczos resampling, using a kernel of radius 3.
-            - "lanczos5": Lanczos resampling, using a kernel of radius 5.
-            antialias: whether to use antialiasing. Defaults to True.
-        """
         super().__init__(size=size, method=method, antialias=antialias)
 
     @property
@@ -191,13 +194,14 @@ class Resize3D(ResizeND):
 
 
 class Upsample1D(UpsampleND):
-    def __init__(self, scale: int, method: str = "nearest"):
-        """Upsample a 1D input to a given size using a given interpolation method.
+    """Upsample a 1D input to a given size using a given interpolation method.
 
-        Args:
-            scale: the scale of the output.
-            method: the method of interpolation. Defaults to "nearest".
-        """
+    Args:
+        scale: the scale of the output.
+        method: the method of interpolation. Defaults to "nearest".
+    """
+
+    def __init__(self, scale: int, method: str = "nearest"):
         super().__init__(scale=scale, method=method)
 
     @property
@@ -206,13 +210,14 @@ class Upsample1D(UpsampleND):
 
 
 class Upsample2D(UpsampleND):
-    def __init__(self, scale: int | tuple[int, int], method: str = "nearest"):
-        """Upsample a 2D input to a given size using a given interpolation method.
+    """Upsample a 2D input to a given size using a given interpolation method.
 
-        Args:
-            scale: the scale of the output.
-            method: the method of interpolation. Defaults to "nearest".
-        """
+    Args:
+        scale: the scale of the output.
+        method: the method of interpolation. Defaults to "nearest".
+    """
+
+    def __init__(self, scale: int | tuple[int, int], method: str = "nearest"):
         super().__init__(scale=scale, method=method)
 
     @property
@@ -221,13 +226,14 @@ class Upsample2D(UpsampleND):
 
 
 class Upsample3D(UpsampleND):
-    def __init__(self, scale: int | tuple[int, int, int], method: str = "nearest"):
-        """Upsample a 1D input to a given size using a given interpolation method.
+    """Upsample a 1D input to a given size using a given interpolation method.
 
-        Args:
-            scale: the scale of the output.
-            method: the method of interpolation. Defaults to "nearest".
-        """
+    Args:
+        scale: the scale of the output.
+        method: the method of interpolation. Defaults to "nearest".
+    """
+
+    def __init__(self, scale: int | tuple[int, int, int], method: str = "nearest"):
         super().__init__(scale=scale, method=method)
 
     @property

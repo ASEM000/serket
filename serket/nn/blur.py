@@ -19,33 +19,34 @@ import functools as ft
 
 import jax
 import jax.numpy as jnp
-import pytreeclass as pytc
 from jax import lax
 
+import serket as sk
 from serket.nn.convolution import DepthwiseConv2D
 from serket.nn.fft_convolution import DepthwiseFFTConv2D
 from serket.nn.utils import positive_int_cb, validate_axis_shape, validate_spatial_ndim
 
 
-class AvgBlur2D(pytc.TreeClass):
-    def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
-        """Average blur 2D layer
-        Args:
-            in_features: number of input channels
-            kernel_size: size of the convolving kernel
+class AvgBlur2D(sk.TreeClass):
+    """Average blur 2D layer
 
-        Example:
+    Args:
+        in_features: number of input channels.
+        kernel_size: size of the convolving kernel.
+
+    Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.nn.AvgBlur2D(in_features=1, kernel_size=3)
         >>> print(layer(jnp.ones((1,5,5))))
         [[[0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]
-          [0.6666667  1.         1.         1.         0.6666667 ]
-          [0.6666667  1.         1.         1.         0.6666667 ]
-          [0.6666667  1.         1.         1.         0.6666667 ]
-          [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
+        [0.6666667  1.         1.         1.         0.6666667 ]
+        [0.6666667  1.         1.         1.         0.6666667 ]
+        [0.6666667  1.         1.         1.         0.6666667 ]
+        [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
+    """
 
-        """
+    def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
         self.in_features = positive_int_cb(in_features)
         self.kernel_size = positive_int_cb(kernel_size)
 
@@ -82,26 +83,27 @@ class AvgBlur2D(pytc.TreeClass):
         return 2
 
 
-class GaussianBlur2D(pytc.TreeClass):
-    def __init__(self, in_features: int, kernel_size: int, *, sigma: float = 1.0):
-        """Apply Gaussian blur to a channel-first image.
+class GaussianBlur2D(sk.TreeClass):
+    """Apply Gaussian blur to a channel-first image.
 
-        Args:
-            in_features: number of input features
-            kernel_size: kernel size
-            sigma: sigma. Defaults to 1.
+    Args:
+        in_features: number of input features
+        kernel_size: kernel size
+        sigma: sigma. Defaults to 1.
 
-        Example:
+    Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.nn.GaussianBlur2D(in_features=1, kernel_size=3)
         >>> print(layer(jnp.ones((1,5,5))))
         [[[0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]
-          [0.7259314 1.        1.        1.        0.7259314]
-          [0.7259314 1.        1.        1.        0.7259314]
-          [0.7259314 1.        1.        1.        0.7259314]
-          [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
-        """
+        [0.7259314 1.        1.        1.        0.7259314]
+        [0.7259314 1.        1.        1.        0.7259314]
+        [0.7259314 1.        1.        1.        0.7259314]
+        [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
+    """
+
+    def __init__(self, in_features: int, kernel_size: int, *, sigma: float = 1.0):
         self.in_features = positive_int_cb(in_features)
         self.kernel_size = positive_int_cb(kernel_size)
 
@@ -143,24 +145,26 @@ class GaussianBlur2D(pytc.TreeClass):
         return 2
 
 
-class Filter2D(pytc.TreeClass):
-    def __init__(self, in_features: int, kernel: jax.Array):
-        """Apply 2D filter for each channel
-        Args:
-            in_features: number of input channels
-            kernel: kernel array
+class Filter2D(sk.TreeClass):
+    """Apply 2D filter for each channel
 
-        Example:
+    Args:
+        in_features: number of input channels.
+        kernel: kernel array.
+
+    Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.nn.Filter2D(in_features=1, kernel=jnp.ones((3,3)))
         >>> print(layer(jnp.ones((1,5,5))))
         [[[4. 6. 6. 6. 4.]
-          [6. 9. 9. 9. 6.]
-          [6. 9. 9. 9. 6.]
-          [6. 9. 9. 9. 6.]
-          [4. 6. 6. 6. 4.]]]
-        """
+        [6. 9. 9. 9. 6.]
+        [6. 9. 9. 9. 6.]
+        [6. 9. 9. 9. 6.]
+        [4. 6. 6. 6. 4.]]]
+    """
+
+    def __init__(self, in_features: int, kernel: jax.Array):
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
@@ -186,24 +190,26 @@ class Filter2D(pytc.TreeClass):
         return 2
 
 
-class FFTFilter2D(pytc.TreeClass):
-    def __init__(self, in_features: int, kernel: jax.Array):
-        """Apply 2D filter for each channel using FFT
-        Args:
-            in_features: number of input channels
-            kernel: kernel array
+class FFTFilter2D(sk.TreeClass):
+    """Apply 2D filter for each channel using FFT
 
-        Example:
+    Args:
+        in_features: number of input channels
+        kernel: kernel array
+
+    Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.nn.FFTFilter2D(in_features=1, kernel=jnp.ones((3,3)))
         >>> print(layer(jnp.ones((1,5,5))))
         [[[4.0000005 6.0000005 6.000001  6.0000005 4.0000005]
-          [6.0000005 9.        9.        9.        6.0000005]
-          [6.0000005 9.        9.        9.        6.0000005]
-          [6.0000005 9.        9.        9.        6.0000005]
-          [4.        6.0000005 6.0000005 6.0000005 4.       ]]]
-        """
+        [6.0000005 9.        9.        9.        6.0000005]
+        [6.0000005 9.        9.        9.        6.0000005]
+        [6.0000005 9.        9.        9.        6.0000005]
+        [4.        6.0000005 6.0000005 6.0000005 4.       ]]]
+    """
+
+    def __init__(self, in_features: int, kernel: jax.Array):
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 

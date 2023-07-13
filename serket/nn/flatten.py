@@ -16,16 +16,18 @@ from __future__ import annotations
 
 import jax
 import jax.numpy as jnp
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn.utils import IsInstance
 
 
-class Flatten(pytc.TreeClass):
-    """
+class Flatten(sk.TreeClass):
+    """Flatten an array from dim `start_dim` to `end_dim` (inclusive).
+
     Args:
         start_dim: the first dim to flatten
         end_dim: the last dim to flatten (inclusive)
+
     Returns:
         a function that flattens a jnp.ndarray
 
@@ -49,8 +51,8 @@ class Flatten(pytc.TreeClass):
         https://pytorch.org/docs/stable/generated/torch.nn.Flatten.html?highlight=flatten#torch.nn.Flatten
     """
 
-    start_dim: int = pytc.field(default=0, callbacks=[IsInstance(int)])
-    end_dim: int = pytc.field(default=-1, callbacks=[IsInstance(int)])
+    start_dim: int = sk.field(default=0, callbacks=[IsInstance(int)])
+    end_dim: int = sk.field(default=-1, callbacks=[IsInstance(int)])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         start_dim = self.start_dim + (0 if self.start_dim >= 0 else x.ndim)
@@ -58,12 +60,13 @@ class Flatten(pytc.TreeClass):
         return jax.lax.collapse(x, start_dim, end_dim)
 
 
-class Unflatten(pytc.TreeClass):
-    dim: int = pytc.field(default=0, callbacks=[IsInstance(int)])
-    shape: tuple = pytc.field(default=None, callbacks=[IsInstance(tuple)])
+class Unflatten(sk.TreeClass):
+    """Unflatten an array.
 
-    """
-    
+    Args:
+        dim: the dim to unflatten.
+        shape: the shape to unflatten to. accepts a tuple of ints.
+
     Example:
         >>> Unflatten(0, (1,2,3,4,5))(jnp.ones([120])).shape
         (1, 2, 3, 4, 5)
@@ -73,6 +76,9 @@ class Unflatten(pytc.TreeClass):
     Note:
         https://pytorch.org/docs/stable/generated/torch.nn.Unflatten.html?highlight=unflatten
     """
+
+    dim: int = sk.field(default=0, callbacks=[IsInstance(int)])
+    shape: tuple = sk.field(default=None, callbacks=[IsInstance(tuple)])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         shape = list(x.shape)

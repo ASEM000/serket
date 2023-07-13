@@ -18,23 +18,25 @@ import functools as ft
 
 import jax
 import jax.numpy as jnp
-import pytreeclass as pytc
 
+import serket as sk
 from serket.nn.utils import positive_int_cb, validate_spatial_ndim
 
 
-class HistogramEqualization2D(pytc.TreeClass):
-    def __init__(self, bins: int = 256):
-        """Apply histogram equalization to 2D spatial array channel wise
-        Args:
-            bins: number of bins. Defaults to 256.
+class HistogramEqualization2D(sk.TreeClass):
+    """Apply histogram equalization to 2D spatial array channel wise
 
-        Note:
-            https://en.wikipedia.org/wiki/Histogram_equalization
-            http://www.janeriksolem.net/histogram-equalization-with-python-and.html
-            https://scikit-image.org/docs/stable/api/skimage.exposure.html#skimage.exposure.equalize_hist
-            https://stackoverflow.com/questions/28518684/histogram-equalization-of-grayscale-images-with-numpy
-        """
+    Args:
+        bins: number of bins. Defaults to 256.
+
+    Note:
+        https://en.wikipedia.org/wiki/Histogram_equalization
+        http://www.janeriksolem.net/histogram-equalization-with-python-and.html
+        https://scikit-image.org/docs/stable/api/skimage.exposure.html#skimage.exposure.equalize_hist
+        https://stackoverflow.com/questions/28518684/histogram-equalization-of-grayscale-images-with-numpy
+    """
+
+    def __init__(self, bins: int = 256):
         self.bins = positive_int_cb(bins)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -51,7 +53,17 @@ class HistogramEqualization2D(pytc.TreeClass):
         return 2
 
 
-class PixelShuffle2D(pytc.TreeClass):
+class PixelShuffle2D(sk.TreeClass):
+    """Rearrange elements in a tensor.
+
+    Args:
+        upscale_factor: factor to increase spatial resolution by. accepts a
+            single integer or a tuple of length 2. defaults to 1.
+
+    Note:
+        https://arxiv.org/abs/1609.05158
+    """
+
     def __init__(self, upscale_factor: int | tuple[int, int] = 1):
         if isinstance(upscale_factor, int):
             if upscale_factor < 1:

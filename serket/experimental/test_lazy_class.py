@@ -17,8 +17,8 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import pytest
-import pytreeclass as pytc
 
+import serket as sk
 from serket.experimental import lazy_class
 
 
@@ -30,7 +30,7 @@ def test_lazy_class():
         infer_method_name="__call__",  # -> `infer_func` is applied to `__call__` method
         lazy_marker=None,  # -> `None` is used to indicate a lazy argument
     )
-    class LazyLinear(pytc.TreeClass):
+    class LazyLinear(sk.TreeClass):
         weight: jax.Array
         bias: jax.Array
 
