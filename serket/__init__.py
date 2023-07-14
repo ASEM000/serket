@@ -12,33 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pytreeclass._src.code_build import field, fields
-from pytreeclass._src.tree_base import TreeClass
-from pytreeclass._src.tree_index import AtIndexer, BaseKey
-from pytreeclass._src.tree_mask import (
+
+from pytreeclass import (
+    AtIndexer,
+    BaseKey,
+    Partial,
+    TreeClass,
+    bcmap,
+    field,
+    fields,
     freeze,
     is_frozen,
     is_nondiff,
-    tree_mask,
-    tree_unmask,
-    unfreeze,
-)
-from pytreeclass._src.tree_pprint import (
+    is_tree_equal,
     tree_diagram,
-    tree_indent,
+    tree_flatten_with_trace,
+    tree_leaves_with_trace,
+    tree_map_with_trace,
+    tree_mask,
     tree_mermaid,
     tree_repr,
     tree_repr_with_trace,
     tree_str,
     tree_summary,
-)
-from pytreeclass._src.tree_util import (
-    Partial,
-    bcmap,
-    is_tree_equal,
-    tree_flatten_with_trace,
-    tree_leaves_with_trace,
-    tree_map_with_trace,
+    tree_unmask,
+    unfreeze,
 )
 
 from . import nn
@@ -54,7 +52,6 @@ __all__ = (
     "tree_mermaid",
     "tree_repr",
     "tree_str",
-    "tree_indent",
     "tree_summary",
     # masking utils
     "is_nondiff",
