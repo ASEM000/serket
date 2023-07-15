@@ -977,7 +977,6 @@ class ScanRNN(sk.TreeClass):
         backward_cell: RNNCell | None = None,
         *,
         return_sequences: bool = False,
-        return_state: bool = False,
     ):
         if not isinstance(cell, RNNCell):
             raise TypeError(f"Expected {cell=} to be an instance of RNNCell.")
