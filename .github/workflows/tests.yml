@@ -22,8 +22,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install git+https://github.com/ASEM000/PyTreeClass
-          python -m pip install tensorflow
+          python -m pip install pytreeclass>=0.4.0
+          python -m pip install keras_core>=0.1.1
           python -m pip install pytest wheel optax jaxlib coverage kernex
       - name: Pytest Check
         run: |

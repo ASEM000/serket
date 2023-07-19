@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
+import operator as op
 from typing import Any, Sequence, Tuple, Union
 
 import jax
@@ -184,11 +185,17 @@ class Range(sk.TreeClass):
 
     min_val: float = -float("inf")
     max_val: float = float("inf")
+    min_inclusive: bool = True
+    max_inclusive: bool = True
 
     def __call__(self, value: Any):
-        if self.min_val <= value <= self.max_val:
+        lop, ls = (op.ge, "[") if self.min_inclusive else (op.gt, "(")
+        rop, rs = (op.le, "]") if self.max_inclusive else (op.lt, ")")
+
+        if lop(value, self.min_val) and rop(value, self.max_val):
             return value
-        raise ValueError(f"Not in range[{self.min_val}, {self.max_val}] got {value=}.")
+
+        raise ValueError(f"Not in {ls}{self.min_val}, {self.max_val}{rs} got {value=}.")
 
 
 class IsInstance(sk.TreeClass):

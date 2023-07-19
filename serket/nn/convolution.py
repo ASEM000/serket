@@ -81,24 +81,20 @@ class ConvND(sk.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        self.weight_init_func = resolve_init_func(weight_init_func)
-        self.bias_init_func = resolve_init_func(bias_init_func)
+
+        weight_init_func = resolve_init_func(weight_init_func)
+        bias_init_func = resolve_init_func(bias_init_func)
+
         self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
-            raise ValueError(
-                f"Expected out_features % groups == 0, \n"
-                f"got {self.out_features % self.groups}"
-            )
+            raise ValueError(f"{(out_features % groups == 0)=}")
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
-        self.weight = self.weight_init_func(key, weight_shape)
+        self.weight = weight_init_func(key, weight_shape)
 
-        if bias_init_func is None:
-            self.bias = None
-        else:
-            bias_shape = (out_features, *(1,) * self.spatial_ndim)
-            self.bias = self.bias_init_func(key, bias_shape)
+        bias_shape = (out_features, *(1,) * self.spatial_ndim)
+        self.bias = bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -432,24 +428,18 @@ class ConvNDTranspose(sk.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        self.weight_init_func = resolve_init_func(weight_init_func)
-        self.bias_init_func = resolve_init_func(bias_init_func)
+        weight_init_func = resolve_init_func(weight_init_func)
+        bias_init_func = resolve_init_func(bias_init_func)
         self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
-            raise ValueError(
-                "Expected out_features % groups == 0,"
-                f"got {self.out_features % self.groups}"
-            )
+            raise ValueError(f"{(self.out_features % self.groups ==0)=}")
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
-        self.weight = self.weight_init_func(key, weight_shape)
+        self.weight = weight_init_func(key, weight_shape)
 
-        if bias_init_func is None:
-            self.bias = None
-        else:
-            bias_shape = (out_features, *(1,) * self.spatial_ndim)
-            self.bias = self.bias_init_func(key, bias_shape)
+        bias_shape = (out_features, *(1,) * self.spatial_ndim)
+        self.bias = bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -774,19 +764,18 @@ class DepthwiseConvND(sk.TreeClass):
         self.padding = padding  # delayed canonicalization
         self.input_dilation = canonicalize(1, self.spatial_ndim, name="input_dilation")
         self.kernel_dilation = canonicalize(
-            1, self.spatial_ndim, name="kernel_dilation"
+            1,
+            self.spatial_ndim,
+            name="kernel_dilation",
         )
-        self.weight_init_func = resolve_init_func(weight_init_func)
-        self.bias_init_func = resolve_init_func(bias_init_func)
+        weight_init_func = resolve_init_func(weight_init_func)
+        bias_init_func = resolve_init_func(bias_init_func)
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
-        self.weight = self.weight_init_func(key, weight_shape)
+        self.weight = weight_init_func(key, weight_shape)
 
-        if bias_init_func is None:
-            self.bias = None
-        else:
-            bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
-            self.bias = self.bias_init_func(key, bias_shape)
+        bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
+        self.bias = bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -1359,8 +1348,8 @@ class ConvNDLocal(sk.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        self.weight_init_func = resolve_init_func(weight_init_func)
-        self.bias_init_func = resolve_init_func(bias_init_func)
+        weight_init_func = resolve_init_func(weight_init_func)
+        bias_init_func = resolve_init_func(bias_init_func)
 
         out_size = calculate_convolution_output_shape(
             shape=self.in_size,
@@ -1376,14 +1365,10 @@ class ConvNDLocal(sk.TreeClass):
             *out_size,
         )
 
-        self.weight = self.weight_init_func(key, weight_shape)
+        self.weight = weight_init_func(key, weight_shape)
 
         bias_shape = (self.out_features, *out_size)
-
-        if bias_init_func is None:
-            self.bias = None
-        else:
-            self.bias = self.bias_init_func(key, bias_shape)
+        self.bias = bias_init_func(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)

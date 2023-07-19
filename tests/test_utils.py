@@ -38,7 +38,7 @@ def test_canonicalize_init_func():
     assert resolve_init_func("xavier_uniform")(k, (2, 2)).shape == (2, 2)
 
     assert isinstance(resolve_init_func(jax.nn.initializers.he_normal()), jtu.Partial)
-    assert isinstance(resolve_init_func(None), type(None))
+    assert isinstance(resolve_init_func(None), jtu.Partial)
 
     with pytest.raises(ValueError):
         resolve_init_func("invalid")

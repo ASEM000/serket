@@ -62,7 +62,7 @@ inits = [
 init_map: dict[str, InitType] = dict(zip(get_args(InitLiteral), inits))
 
 
-def resolve_init_func(init_func: str | Callable) -> Callable:
+def resolve_init_func(init_func: str | InitFuncType) -> Callable:
     if isinstance(init_func, FunctionType):
         return jtu.Partial(init_func)
 
@@ -74,6 +74,6 @@ def resolve_init_func(init_func: str | Callable) -> Callable:
         raise ValueError(f"value must be one of ({', '.join(init_map.keys())})")
 
     if init_func is None:
-        return None
+        return jtu.Partial(lambda key, shape, dtype=None: None)
 
     raise ValueError("Value must be a string or a function.")

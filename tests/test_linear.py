@@ -26,7 +26,6 @@ from serket.nn import (
     GeneralLinear,
     Identity,
     Linear,
-    MergeLinear,
     Multilinear,
 )
 
@@ -144,20 +143,3 @@ def test_general_linear():
 
     with pytest.raises(ValueError):
         GeneralLinear(in_features=(1,), in_axes=(0, -3), out_features=5)
-
-
-def test_merge_linear():
-    layer1 = Linear(5, 6)  # 5 input features, 6 output features
-    layer2 = Linear(7, 6)  # 7 input features, 6 output features
-    merged_layer = MergeLinear(layer1, layer2)  # 12 input features, 6 output features
-    x1 = jnp.ones([1, 5])  # 1 sample, 5 features
-    x2 = jnp.ones([1, 7])  # 1 sample, 7 features
-    y = merged_layer(x1, x2)
-    z = layer1(x1) + layer2(x2)
-    npt.assert_allclose(y, z, atol=1e-6)
-
-    with pytest.raises(ValueError):
-        # output features of layer1 and layer2 mismatch
-        l1 = Linear(5, 6)
-        l2 = Linear(7, 8)
-        MergeLinear(l1, l2)

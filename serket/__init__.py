@@ -27,6 +27,7 @@ from pytreeclass import (
     is_tree_equal,
     tree_diagram,
     tree_flatten_with_trace,
+    tree_graph,
     tree_leaves_with_trace,
     tree_map_with_trace,
     tree_mask,
@@ -40,6 +41,8 @@ from pytreeclass import (
 )
 
 from . import nn
+from .nn.evaluation import tree_evaluation
+from .nn.state import tree_state
 
 __all__ = (
     # general utils
@@ -49,6 +52,7 @@ __all__ = (
     "fields",
     # pprint utils
     "tree_diagram",
+    "tree_graph",
     "tree_mermaid",
     "tree_repr",
     "tree_str",
@@ -72,7 +76,9 @@ __all__ = (
     "Partial",
     # serket
     "nn",
+    "tree_evaluation",
+    "tree_state",
 )
 
 
-__version__ = "0.2.0b7"
+__version__ = "0.4.0b1"
