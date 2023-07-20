@@ -23,7 +23,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
-import pytreeclass
+import serket
 import sphinxcontrib.katex as katex
 
 # -- Project information -----------------------------------------------------
@@ -125,46 +125,6 @@ katex_options = "macros: {" + katex_macros + "}"
 
 # Add LaTeX macros for LATEX builder
 latex_elements = {"preamble": latex_macros}
-
-
-# -- Source code links -------------------------------------------------------
-
-
-def linkcode_resolve(domain, info):
-    """Resolve a GitHub URL corresponding to Python object."""
-    if domain != "py":
-        return None
-
-    try:
-        mod = sys.modules[info["module"]]
-    except ImportError:
-        return None
-
-    obj = mod
-    try:
-        for attr in info["fullname"].split("."):
-            obj = getattr(obj, attr)
-    except AttributeError:
-        return None
-    else:
-        obj = inspect.unwrap(obj)
-
-    try:
-        filename = inspect.getsourcefile(obj)
-    except TypeError:
-        return None
-
-    try:
-        source, lineno = inspect.getsourcelines(obj)
-    except OSError:
-        return None
-
-    return "https://github.com/ASEM000/pytreeclass/blob/main/pytreeclass/%s#L%d#L%d" % (
-        os.path.relpath(filename, start=os.path.dirname(pytreeclass.__file__)),
-        lineno,
-        lineno + len(source) - 1,
-    )
-
 
 # -- nbsphinx configuration --------------------------------------------------
 
