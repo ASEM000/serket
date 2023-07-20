@@ -269,6 +269,7 @@ class FFTConv1D(FFTConvND):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.FFTConv1D(in_features=1, out_features=2, kernel_size=3)
         >>> # single sample
         >>> x = jnp.ones((1, 5))
@@ -361,6 +362,7 @@ class FFTConv2D(FFTConvND):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.FFTConv2D(in_features=1, out_features=2, kernel_size=3)
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5))
@@ -453,6 +455,7 @@ class FFTConv3D(FFTConvND):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.FFTConv3D(in_features=1, out_features=2, kernel_size=3)
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5, 5))
@@ -642,6 +645,7 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.FFTConv1DTranspose(1, 2, 3)
         >>> # single sample
         >>> x = jnp.ones((1, 5))
@@ -740,6 +744,7 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.FFTConv2DTranspose(1, 2, 3)
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5))
@@ -838,6 +843,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.FFTConv3DTranspose(1, 2, 3)
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5, 5))

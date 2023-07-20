@@ -179,6 +179,7 @@ class Conv1D(ConvND):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.Conv1D(in_features=1, out_features=2, kernel_size=3)
         >>> # single sample
         >>> x = jnp.ones((1, 5))
@@ -278,6 +279,7 @@ class Conv2D(ConvND):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.Conv2D(in_features=1, out_features=2, kernel_size=3)
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5))
@@ -377,6 +379,7 @@ class Conv3D(ConvND):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.Conv3D(in_features=1, out_features=2, kernel_size=3)
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5, 5))
@@ -558,6 +561,7 @@ class Conv1DTranspose(ConvNDTranspose):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.Conv1DTranspose(1, 2, 3)
         >>> # single sample
         >>> x = jnp.ones((1, 5))
@@ -656,6 +660,7 @@ class Conv2DTranspose(ConvNDTranspose):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.Conv2DTranspose(1, 2, 3)
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5))
@@ -754,6 +759,7 @@ class Conv3DTranspose(ConvNDTranspose):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax
         >>> layer = sk.nn.Conv3DTranspose(1, 2, 3)
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5, 5))

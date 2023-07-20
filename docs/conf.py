@@ -105,6 +105,9 @@ html_theme_options = {
 
 doctest_test_doctest_blocks = "true"
 doctest_global_setup = """
+import jax
+import jax.numpy as jnp
+import serket as sk
 """
 doctest_default_flags = (
     doctest.ELLIPSIS

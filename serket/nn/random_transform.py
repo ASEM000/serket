@@ -38,11 +38,10 @@ class RandomApply(sk.TreeClass):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> layer = RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=0.0)
+        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=0.0)
         >>> layer(jnp.ones((1, 10, 10))).shape
         (1, 10, 10)
-
-        >>> layer = RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=1.0)
+        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=1.0)
         >>> layer(jnp.ones((1, 10, 10))).shape
         (1, 5, 5)
 
