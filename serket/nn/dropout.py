@@ -29,7 +29,7 @@ from serket.nn.utils import Range, validate_spatial_ndim
 
 class Dropout(sk.TreeClass):
     """Randomly zeroes some of the elements of the input
-    tensor with probability :attr:`p` using samples from a Bernoulli
+    tensor with probability ``p`` using samples from a Bernoulli
     distribution.
 
     Args:
@@ -43,7 +43,7 @@ class Dropout(sk.TreeClass):
         >>> layer = layer.at["p"].set(0.0, is_leaf=sk.is_frozen)
 
     Note:
-        Use `p`= 0.0 to turn off dropout.
+        Use ``sk.tree_evaluation`` to turn off dropout during evaluation.
     """
 
     p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])

@@ -29,10 +29,11 @@ PyTree = Any
 
 class FNN(sk.TreeClass):
     """Fully connected neural network
+    
     Args:
         layers: Sequence of layer sizes
         act_func: a single Activation function to be applied between layers or
-            `len(layers)-2` Sequence of activation functions applied between
+            ``len(layers)-2`` Sequence of activation functions applied between
             layers.
         weight_init_func: Weight initializer function.
         bias_init_func: Bias initializer function. Defaults to lambda key,
@@ -47,11 +48,12 @@ class FNN(sk.TreeClass):
         (3, 2)
 
     Note:
-        - layers argument yields len(layers) - 1 linear layers with required
-            `len(layers)-2` activation functions, for example, `layers=[10, 5, 2]`
-            yields 2 linear layers with weight shapes (10, 5) and (5, 2)
-            and single activation function is applied between them.
-        - `FNN` uses python `for` loop to apply layers and activation functions.
+        - layers argument yields ``len(layers) - 1`` linear layers with required
+          ``len(layers)-2`` activation functions, for example, ``layers=[10, 5, 2]``
+          yields 2 linear layers with weight shapes (10, 5) and (5, 2)
+          and single activation function is applied between them.
+        - ``FNN`` uses python ``for`` loop to apply layers and activation functions.
+
     """
 
     def __init__(
@@ -120,14 +122,15 @@ class MLP(sk.TreeClass):
         key: Random number generator key.
 
     Note:
-        - MLP with `in_features`=1, `out_features`=2, `hidden_size`=4,
-        `num_hidden_layers`=2 is equivalent to `[1, 4, 4, 2]` which has one
-            input layer (1, 4), one intermediate  layer (4, 4), and one output
-            layer (4, 2) = `num_hidden_layers` + 1
-        - `MLP` exploits same input/out size for intermediate layers to use
-            `jax.lax.scan`, which offers better compilation speed for large
-            number of layers and producing a smaller `jaxpr` but could be
-            slower than equivalent `FNN` for small number of layers.
+        - ``MLP`` with ``in_features=1``, ``out_features=2``, ``hidden_size=4``,
+          ``num_hidden_layers=2`` is equivalent to ``[1, 4, 4, 2]`` which has one
+          input layer (1, 4), one intermediate  layer (4, 4), and one output
+          layer (4, 2) = ``num_hidden_layers + 1``
+        - ``MLP`` exploits same input/out size for intermediate layers to use
+          ``jax.lax.scan``, which offers better compilation speed for large
+          number of layers and producing a smaller ``jaxpr`` but could be
+          slower than equivalent `FNN` for small number of layers.
+
     """
 
     def __init__(
