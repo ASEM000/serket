@@ -90,14 +90,14 @@ class Crop2D(CropND):
         >>> x = jnp.arange(1, 26).reshape((1, 5, 5))
         >>> print(x)
         [[[ 1  2  3  4  5]
-            [ 6  7  8  9 10]
-            [11 12 13 14 15]
-            [16 17 18 19 20]
-            [21 22 23 24 25]]]
+          [ 6  7  8  9 10]
+          [11 12 13 14 15]
+          [16 17 18 19 20]
+          [21 22 23 24 25]]]
         >>> print(sk.nn.Crop2D(size=3, start=(2, 0))(x))
         [[[11 12 13]
-            [16 17 18]
-            [21 22 23]]]
+          [16 17 18]
+          [21 22 23]]]
     """
 
     def __init__(self, size: int | tuple[int, int], start: int | tuple[int, int]):

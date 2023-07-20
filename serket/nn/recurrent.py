@@ -100,7 +100,7 @@ class SimpleRNNCell(RNNCell):
         Example:
             >>> import serket as sk
             >>> import jax.numpy as jnp
-            >>> cell = SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
+            >>> cell = sk.nn.SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
             >>> rnn_state = sk.tree_state(cell)  # 20-dimensional hidden state
             >>> x = jnp.ones((10,)) # 10 features
             >>> result = cell(x, rnn_state)
@@ -174,7 +174,7 @@ class DenseCell(RNNCell):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = DenseCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
+        >>> cell = sk.nn.DenseCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
         >>> dummy_state = sk.tree_state(cell)  # 20-dimensional hidden state
         >>> x = jnp.ones((10,)) # 10 features
         >>> result = cell(x, dummy_state)
@@ -1006,14 +1006,14 @@ class ScanRNN(sk.TreeClass):
         return_sequences: whether to return the hidden state for each timestep.
 
     Example:
-        >>> cell = SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
-        >>> rnn = ScanRNN(cell)
+        >>> cell = sk.nn.SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
+        >>> rnn = sk.nn.ScanRNN(cell)
         >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
         >>> result, state = rnn(x)  # 20 features
         >>> print(result.shape)
         (20,)
-        >>> cell = SimpleRNNCell(10, 20)
-        >>> rnn = ScanRNN(cell, return_sequences=True)
+        >>> cell = sk.nn.SimpleRNNCell(10, 20)
+        >>> rnn = sk.nn.ScanRNN(cell, return_sequences=True)
         >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
         >>> result, state = rnn(x)  # 5 timesteps, 20 features
         >>> print(result.shape)
