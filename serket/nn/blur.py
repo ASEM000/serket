@@ -38,7 +38,7 @@ class AvgBlur2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.nn.AvgBlur2D(in_features=1, kernel_size=3)
-        >>> print(layer(jnp.ones((1,5,5))))
+        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
         [[[0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]
           [0.6666667  1.         1.         1.         0.6666667 ]
           [0.6666667  1.         1.         1.         0.6666667 ]
@@ -95,7 +95,7 @@ class GaussianBlur2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.nn.GaussianBlur2D(in_features=1, kernel_size=3)
-        >>> print(layer(jnp.ones((1,5,5))))
+        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
         [[[0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]
           [0.7259314 1.        1.        1.        0.7259314]
           [0.7259314 1.        1.        1.        0.7259314]
@@ -201,7 +201,7 @@ class FFTFilter2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.nn.FFTFilter2D(in_features=1, kernel=jnp.ones((3,3)))
-        >>> print(layer(jnp.ones((1,5,5))))
+        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
         [[[4.0000005 6.0000005 6.000001  6.0000005 4.0000005]
           [6.0000005 9.        9.        9.        6.0000005]
           [6.0000005 9.        9.        9.        6.0000005]

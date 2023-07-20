@@ -92,7 +92,7 @@ class Multilinear(sk.TreeClass):
         (1, 7)
 
         >>> # Trilinear layer
-        >>> layer = Multilinear((5,6,7), 8)
+        >>> layer = sk.nn.Multilinear((5,6,7), 8)
         >>> layer(jnp.ones((1,5)), jnp.ones((1,6)), jnp.ones((1,7))).shape
         (1, 8)
     """

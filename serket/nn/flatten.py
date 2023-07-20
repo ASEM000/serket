@@ -34,17 +34,17 @@ class Flatten(sk.TreeClass):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> Flatten(0,1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(0,1)(jnp.ones([1,2,3,4,5])).shape
         (2, 3, 4, 5)
-        >>> Flatten(0,2)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(0,2)(jnp.ones([1,2,3,4,5])).shape
         (6, 4, 5)
-        >>> Flatten(1,2)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(1,2)(jnp.ones([1,2,3,4,5])).shape
         (1, 6, 4, 5)
-        >>> Flatten(-1,-1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(-1,-1)(jnp.ones([1,2,3,4,5])).shape
         (1, 2, 3, 4, 5)
-        >>> Flatten(-2,-1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(-2,-1)(jnp.ones([1,2,3,4,5])).shape
         (1, 2, 3, 20)
-        >>> Flatten(-3,-1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(-3,-1)(jnp.ones([1,2,3,4,5])).shape
         (1, 2, 60)
 
     Note:
@@ -68,9 +68,11 @@ class Unflatten(sk.TreeClass):
         shape: the shape to unflatten to. accepts a tuple of ints.
 
     Example:
-        >>> Unflatten(0, (1,2,3,4,5))(jnp.ones([120])).shape
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> sk.nn.Unflatten(0, (1,2,3,4,5))(jnp.ones([120])).shape
         (1, 2, 3, 4, 5)
-        >>> Unflatten(2,(2,3))(jnp.ones([1,2,6])).shape
+        >>> sk.nn.Unflatten(2,(2,3))(jnp.ones([1,2,6])).shape
         (1, 2, 2, 3)
 
     Note:
