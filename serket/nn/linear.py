@@ -260,7 +260,7 @@ class GeneralLinear(sk.TreeClass):
 
 
 class Identity(sk.TreeClass):
-    """Identity layer"""
+    """Identity layer. Returns the input."""
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return x

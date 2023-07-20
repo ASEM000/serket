@@ -141,6 +141,7 @@ __all__ = (
     "Multilinear",
     "GeneralLinear",
     "Embedding",
+    "Identity",
     # Dropout
     "Dropout",
     "Dropout1D",

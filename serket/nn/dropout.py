@@ -163,6 +163,6 @@ class Dropout3D(DropoutND):
 
 @tree_evaluation.def_evalutation(Dropout)
 @tree_evaluation.def_evalutation(DropoutND)
-def dropout_evaluation(_):
+def dropout_evaluation(_) -> Identity:
     # dropout is a no-op during evaluation
     return Identity()
