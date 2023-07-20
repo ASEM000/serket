@@ -123,7 +123,9 @@ class RandomCutout1D(sk.TreeClass):
         https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
 
     Examples:
-        >>> print(RandomCutout1D(5)(jnp.ones((1, 10)) * 100))
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> print(sk.nn.RandomCutout1D(5)(jnp.ones((1, 10)) * 100))
         [[100. 100. 100. 100.   0.   0.   0.   0.   0. 100.]]
     """
 

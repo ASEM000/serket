@@ -143,7 +143,6 @@ class AdaptivePoolND(sk.TreeClass):
     def __init__(self, output_size: tuple[int, ...], *, func: Callable = None):
         """Apply pooling to the input with function `func` applied to the kernel.
 
-
         Args:
             kernel_size: size of the kernel
             strides: strides of the kernel
@@ -152,9 +151,11 @@ class AdaptivePoolND(sk.TreeClass):
 
         Note:
             The strides and kernel_size are calculated from the output_size as follows:
-            * stride_i = (input_size_i//output_size_i)
-            * kernel_size_i = input_size_i - (output_size_i-1)*stride_i
-            * padding_i = "valid"
+
+                - stride_i = (input_size_i//output_size_i)
+                - kernel_size_i = input_size_i - (output_size_i-1)*stride_i
+                - padding_i = "valid"
+
         """
         self.output_size = canonicalize(
             output_size, self.spatial_ndim, name="output_size"
@@ -213,6 +214,7 @@ class MaxPool1D(GeneralPoolND):
 
 class MaxPool2D(GeneralPoolND):
     """2D Max Pooling layer
+
     Args:
         kernel_size: size of the kernel
         strides: strides of the kernel
@@ -240,6 +242,7 @@ class MaxPool2D(GeneralPoolND):
 
 class MaxPool3D(GeneralPoolND):
     """3D Max Pooling layer
+
     Args:
         kernel_size: size of the kernel
         strides: strides of the kernel
@@ -267,6 +270,7 @@ class MaxPool3D(GeneralPoolND):
 
 class AvgPool1D(GeneralPoolND):
     """1D Average Pooling layer
+
     Args:
         kernel_size: size of the kernel
         strides: strides of the kernel
@@ -294,6 +298,7 @@ class AvgPool1D(GeneralPoolND):
 
 class AvgPool2D(GeneralPoolND):
     """2D Average Pooling layer
+
     Args:
         kernel_size: size of the kernel
         strides: strides of the kernel
@@ -321,6 +326,7 @@ class AvgPool2D(GeneralPoolND):
 
 class AvgPool3D(GeneralPoolND):
     """3D Average Pooling layer
+
     Args:
         kernel_size: size of the kernel
         strides: strides of the kernel
@@ -435,6 +441,7 @@ class LPPool3D(LPPoolND):
 
 class GlobalAvgPool1D(GlobalPoolND):
     """1D Global Average Pooling layer
+
     Args:
         keepdims: whether to keep the dimensions or not
     """
@@ -449,6 +456,7 @@ class GlobalAvgPool1D(GlobalPoolND):
 
 class GlobalAvgPool2D(GlobalPoolND):
     """2D Global Average Pooling layer
+
     Args:
         keepdims: whether to keep the dimensions or not
     """
@@ -463,6 +471,7 @@ class GlobalAvgPool2D(GlobalPoolND):
 
 class GlobalAvgPool3D(GlobalPoolND):
     """3D Global Average Pooling layer
+
     Args:
         keepdims: whether to keep the dimensions or not
     """
@@ -477,6 +486,7 @@ class GlobalAvgPool3D(GlobalPoolND):
 
 class GlobalMaxPool1D(GlobalPoolND):
     """1D Global Max Pooling layer
+
     Args:
         keepdims: whether to keep the dimensions or not
     """
@@ -491,6 +501,7 @@ class GlobalMaxPool1D(GlobalPoolND):
 
 class GlobalMaxPool2D(GlobalPoolND):
     """2D Global Max Pooling layer
+
     Args:
         keepdims: whether to keep the dimensions or not
     """
@@ -505,6 +516,7 @@ class GlobalMaxPool2D(GlobalPoolND):
 
 class GlobalMaxPool3D(GlobalPoolND):
     """3D Global Max Pooling layer
+
     Args:
         keepdims: whether to keep the dimensions or not
     """
@@ -519,6 +531,7 @@ class GlobalMaxPool3D(GlobalPoolND):
 
 class AdaptiveAvgPool1D(AdaptivePoolND):
     """1D Adaptive Average Pooling layer
+
     Args:
         output_size: size of the output
     """
@@ -533,6 +546,7 @@ class AdaptiveAvgPool1D(AdaptivePoolND):
 
 class AdaptiveAvgPool2D(AdaptivePoolND):
     """2D Adaptive Average Pooling layer
+
     Args:
         output_size: size of the output
     """
@@ -547,6 +561,7 @@ class AdaptiveAvgPool2D(AdaptivePoolND):
 
 class AdaptiveAvgPool3D(AdaptivePoolND):
     """3D Adaptive Average Pooling layer
+
     Args:
         output_size: size of the output
     """
@@ -561,6 +576,7 @@ class AdaptiveAvgPool3D(AdaptivePoolND):
 
 class AdaptiveMaxPool1D(AdaptivePoolND):
     """1D Adaptive Max Pooling layer
+
     Args:
         output_size: size of the output
     """
@@ -575,6 +591,7 @@ class AdaptiveMaxPool1D(AdaptivePoolND):
 
 class AdaptiveMaxPool2D(AdaptivePoolND):
     """2D Adaptive Max Pooling layer
+
     Args:
         output_size: size of the output
     """
@@ -589,6 +606,7 @@ class AdaptiveMaxPool2D(AdaptivePoolND):
 
 class AdaptiveMaxPool3D(AdaptivePoolND):
     """3D Adaptive Max Pooling layer
+
     Args:
         output_size: size of the output
     """

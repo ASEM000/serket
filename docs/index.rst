@@ -17,8 +17,8 @@ Install from pip::
     :caption: API Documentation
     :maxdepth: 1
     
-    API/base
-    API/pytc
+    API/api
+    API/pytreeclass
 
 Apache2.0 License.
 

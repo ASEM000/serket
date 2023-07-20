@@ -23,7 +23,6 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
-import serket
 import sphinxcontrib.katex as katex
 
 # -- Project information -----------------------------------------------------
@@ -96,6 +95,9 @@ html_theme_options = {
     "repository_url": "https://github.com/ASEM000/Serket",
     "use_repository_button": True,
     "collapse_navigation": False,
+    "navigation_depth": 4,
+    "globaltoc_collapse": True,
+    "globaltoc_maxdepth": None,
 }
 
 

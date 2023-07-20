@@ -85,7 +85,9 @@ class Multilinear(sk.TreeClass):
 
     Example:
         >>> # Bilinear layer
-        >>> layer = Multilinear((5,6), 7)
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.Multilinear((5,6), 7)
         >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
         (1, 7)
 
@@ -137,7 +139,9 @@ class Linear(Multilinear):
         key: key for the random number generator
 
     Example:
-        >>> layer = Linear(5, 6)
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.Linear(5, 6)
         >>> layer(jnp.ones((1,5))).shape
         (1, 6)
     """
@@ -172,7 +176,9 @@ class Bilinear(Multilinear):
         key: key for the random number generator
 
     Example:
-        >>> layer = Bilinear(5, 6, 7)
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.Bilinear(5, 6, 7)
         >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
         (1, 7)
     """
@@ -208,9 +214,12 @@ class GeneralLinear(sk.TreeClass):
         key: random key
 
     Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
         >>> x = jnp.ones([1, 2, 3, 4])
-        >>> layer = GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
-        >>> assert layer(x).shape == (3, 4, 5)
+        >>> layer = sk.nn.GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
+        >>> layer(x).shape
+        (3, 4, 5)
 
     Note:
         This layer is similar to to flax linen's DenseGeneral, the difference is that
@@ -266,6 +275,7 @@ class Embedding(sk.TreeClass):
         key: random key to initialize the weights.
 
     Example:
+        >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> # 10 words in the vocabulary, each word is represented by a 3 dimensional vector
         >>> table = sk.nn.Embedding(10,3)

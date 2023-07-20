@@ -29,7 +29,7 @@ PyTree = Any
 
 class FNN(sk.TreeClass):
     """Fully connected neural network
-    
+
     Args:
         layers: Sequence of layer sizes
         act_func: a single Activation function to be applied between layers or
@@ -120,6 +120,13 @@ class MLP(sk.TreeClass):
         weight_init_func: Weight initialization function.
         bias_init_func: Bias initialization function.
         key: Random number generator key.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> mlp = sk.nn.MLP(1, 2, hidden_size=4, num_hidden_layers=2)
+        >>> mlp(jnp.ones((3, 1))).shape
+        (3, 2)
 
     Note:
         - ``MLP`` with ``in_features=1``, ``out_features=2``, ``hidden_size=4``,

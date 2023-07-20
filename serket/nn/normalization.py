@@ -98,8 +98,8 @@ def group_norm(
 
 class LayerNorm(sk.TreeClass):
     """Layer Normalization
-    See: https://nn.labml.ai/normalization/layer_norm/index.html
-    transform the input by scaling and shifting to have zero mean and unit variance.
+
+    Transform the input by scaling and shifting to have zero mean and unit variance.
 
     Args:
         normalized_shape: the shape of the input to be normalized.
@@ -109,6 +109,9 @@ class LayerNorm(sk.TreeClass):
         beta_init_func: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
+
+    Note:
+        https://nn.labml.ai/normalization/layer_norm/index.html
     """
 
     eps: float = sk.field(callbacks=[Range(0, min_inclusive=False), ScalarLike()])
@@ -143,18 +146,21 @@ class LayerNorm(sk.TreeClass):
 
 class GroupNorm(sk.TreeClass):
     """Group Normalization
-    See: https://nn.labml.ai/normalization/group_norm/index.html
-    transform the input by scaling and shifting to have zero mean and unit variance.
+
+    Transform the input by scaling and shifting to have zero mean and unit variance.
 
     Args:
-        in_features : the shape of the input to be normalized.
-        groups : number of groups to separate the channels into.
-        eps : a value added to the denominator for numerical stability.
+        in_features: the shape of the input to be normalized.
+        groups: number of groups to separate the channels into.
+        eps: a value added to the denominator for numerical stability.
         gamma_init_func: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
         beta_init_func: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
+
+    Note:
+        https://nn.labml.ai/normalization/group_norm/index.html
     """
 
     eps: float = sk.field(callbacks=[Range(0), ScalarLike()])
@@ -192,17 +198,20 @@ class GroupNorm(sk.TreeClass):
 
 class InstanceNorm(GroupNorm):
     """Instance Normalization
-    See: https://nn.labml.ai/normalization/instance_norm/index.html
-    transform the input by scaling and shifting to have zero mean and unit variance.
+
+    Transform the input by scaling and shifting to have zero mean and unit variance.
 
     Args:
-        in_features : the shape of the input to be normalized.
-        eps : a value added to the denominator for numerical stability.
+        in_features: the shape of the input to be normalized.
+        eps: a value added to the denominator for numerical stability.
         gamma_init_func: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
         beta_init_func: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
+
+    Note:
+        https://nn.labml.ai/normalization/instance_norm/index.html
     """
 
     def __init__(
@@ -333,16 +342,16 @@ class BatchNorm(sk.TreeClass):
         ``running_var = momentum * running_var + (1 - momentum) * batch_var``
 
     Args:
-        in_features : the shape of the input to be normalized.
-        momentum : the value used for the ``running_mean`` and ``running_var``
+        in_features: the shape of the input to be normalized.
+        momentum: the value used for the ``running_mean`` and ``running_var``
             computation. must be a number between ``0`` and ``1``.
-        eps : a value added to the denominator for numerical stability.
+        eps: a value added to the denominator for numerical stability.
         gamma_init_func: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
         beta_init_func: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
-        evaluation : a boolean value that when set to True, this module will run in
+        evaluation: a boolean value that when set to True, this module will run in
             evaluation mode. In this case, this module will always use the running
             estimates of the batch statistics during training.
 
