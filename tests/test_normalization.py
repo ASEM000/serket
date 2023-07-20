@@ -12,15 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
+import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from serket.nn import GroupNorm, InstanceNorm, LayerNorm
+import serket as sk
+from serket.nn import BatchNorm, GroupNorm, InstanceNorm, LayerNorm
+
+os.environ["KERAS_BACKEND"] = "jax"
 
 
 def test_LayerNorm():
-    layer = LayerNorm((5, 2), affine=False)
+    layer = LayerNorm((5, 2), beta_init_func=None, gamma_init_func=None)
 
     x = jnp.array(
         [
@@ -96,7 +102,7 @@ def test_InstanceNorm():
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
-    layer = InstanceNorm(in_features=3, affine=False)
+    layer = InstanceNorm(in_features=3, gamma_init_func=None, beta_init_func=None)
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
@@ -210,10 +216,39 @@ def test_group_norm():
         layer = GroupNorm(in_features=-1, groups=0)
 
 
-# def test_lazy_normalization():
-#     layer = GroupNorm(None, groups=1)
-#     assert layer(jnp.ones([1, 2, 3, 4])).shape == (1, 2, 3, 4)
+@pytest.mark.parametrize("axis", [0, 1, 2, 3])
+def test_batchnorm(axis):
+    import math
 
-#     with pytest.raises(ConcretizationTypeError):
-#         layer = jax.jit(GroupNorm(None, groups=1))
-#         layer(jnp.ones([1, 2, 3, 4]))
+    from keras_core.layers import BatchNormalization
+
+    mat_jax = lambda n: jnp.arange(1, math.prod(n) + 1).reshape(*n).astype(jnp.float32)
+
+    x_keras = mat_jax((5, 10, 7, 8))
+
+    bn_keras = BatchNormalization(axis=axis, momentum=0.5, center=False, scale=False)
+
+    for i in range(5):
+        x_keras = bn_keras(x_keras, training=True)
+
+    bn_sk = BatchNorm(
+        x_keras.shape[axis],
+        momentum=0.5,
+        axis=axis,
+        beta_init_func=None,
+        gamma_init_func=None,
+    )
+    state = sk.tree_state(bn_sk)
+    x_sk = mat_jax((5, 10, 7, 8))
+
+    for _ in range(5):
+        x_sk, state = jax.vmap(bn_sk, in_axes=(0, None))(x_sk, state)
+
+    npt.assert_allclose(x_keras, x_sk, atol=1e-5)
+    npt.assert_allclose(bn_keras.moving_mean, state.running_mean, atol=1e-5)
+    npt.assert_allclose(bn_keras.moving_variance, state.running_var, rtol=1e-5)
+
+    x_keras = bn_keras(x_keras, training=False)
+    x_sk, _ = jax.vmap(bn_sk.at["evaluation"].set(True), in_axes=(0, None))(x_sk, state)
+
+    npt.assert_allclose(x_keras, x_sk, rtol=1e-5)

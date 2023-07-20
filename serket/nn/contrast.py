@@ -95,9 +95,10 @@ class RandomContrastND(sk.TreeClass):
             and len(contrast_range) == 2
             and contrast_range[0] <= contrast_range[1]
         ):
-            msg = "contrast_range must be a tuple of two floats, "
-            msg += "with the first one smaller than the second one."
-            raise ValueError(msg)
+            raise ValueError(
+                "`contrast_range` must be a tuple of two floats, "
+                "with the first one smaller than the second one."
+            )
 
         self.contrast_range = contrast_range
 

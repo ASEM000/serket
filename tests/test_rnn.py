@@ -114,10 +114,10 @@ def test_vanilla_rnn():
     )
 
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
-    cell = cell.at["in_and_hidden_to_hidden"].at["weight"].set(w_combined)
+    cell = cell.at["ih2h_weight"].set(w_combined)
     sk_layer = ScanRNN(cell)
     y = jnp.array([0.9637042, -0.8282256, 0.7314449])
-    npt.assert_allclose(sk_layer(x), y)
+    npt.assert_allclose(sk_layer(x)[0], y)
 
 
 def test_lstm():
@@ -228,12 +228,13 @@ def test_lstm():
         recurrent_weight_init_func="glorot_uniform",
     )
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
-    cell = cell.at["in_and_hidden_to_hidden"].at["weight"].set(w_combined)
-    cell = cell.at["in_and_hidden_to_hidden"].at["bias"].set(b_hidden_to_hidden)
+    cell = cell.at["ih2h_weight"].set(w_combined)
+    cell = cell.at["ih2h_bias"].set(b_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell, return_sequences=False)
+
     y = jnp.array([0.18658024, -0.6338659, 0.3445018])
-    npt.assert_allclose(y, sk_layer(x), atol=1e-5)
+    npt.assert_allclose(y, sk_layer(x)[0], atol=1e-5)
 
     w_in_to_hidden = jnp.array(
         [
@@ -327,8 +328,8 @@ def test_lstm():
 
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
 
-    cell = cell.at["in_and_hidden_to_hidden"].at["weight"].set(w_combined)
-    cell = cell.at["in_and_hidden_to_hidden"].at["bias"].set(b_hidden_to_hidden)
+    cell = cell.at["ih2h_weight"].set(w_combined)
+    cell = cell.at["ih2h_bias"].set(b_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell, return_sequences=True)
 
@@ -347,7 +348,7 @@ def test_lstm():
         ]
     )
 
-    npt.assert_allclose(y, sk_layer(x), atol=1e-5)
+    npt.assert_allclose(y, sk_layer(x)[0], atol=1e-5)
 
     cell = LSTMCell(
         in_features=in_features,
@@ -356,7 +357,7 @@ def test_lstm():
     )
 
     sk_layer = ScanRNN(cell, return_sequences=True)
-    assert sk_layer(x).shape == (10, 3)
+    assert sk_layer(x)[0].shape == (10, 3)
 
 
 def test_gru():
@@ -418,7 +419,7 @@ def test_gru():
     cell = cell.at["in_to_hidden"].at["weight"].set(w1)
     cell = cell.at["hidden_to_hidden"].at["weight"].set(w2)
     y = jnp.array([[-0.00142191, 0.11011646, 0.1613554]])
-    ypred = ScanRNN(cell, return_sequences=True)(jnp.ones([1, 1]))
+    ypred, _ = ScanRNN(cell, return_sequences=True)(jnp.ones([1, 1]))
     npt.assert_allclose(y, ypred, atol=1e-4)
 
 
@@ -586,7 +587,7 @@ def test_conv_lstm1d():
 
     x = jnp.ones([time_steps, in_features, *spatial_dim])
 
-    res_sk = ScanRNN(cell, return_sequences=False)(x)
+    res_sk, _ = ScanRNN(cell, return_sequences=False)(x)
 
     y = jnp.array(
         [
@@ -609,7 +610,7 @@ def test_conv_lstm1d():
         bias_init_func="zeros",
     )
 
-    res_sk = ScanRNN(cell, return_sequences=False)(x)
+    res_sk, _ = ScanRNN(cell, return_sequences=False)(x)
     assert res_sk.shape == (3, 3)
 
 
@@ -748,22 +749,16 @@ def test_bilstm():
     b_hidden_to_hidden_reverse = jnp.array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
 
     combined_w = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
-    cell = cell.at["in_and_hidden_to_hidden"].at["weight"].set(combined_w)
-    cell = cell.at["in_and_hidden_to_hidden"].at["bias"].set(b_hidden_to_hidden)
+    cell = cell.at["ih2h_weight"].set(combined_w)
+    cell = cell.at["ih2h_bias"].set(b_hidden_to_hidden)
 
     combined_w_reverse = jnp.concatenate(
         [w_in_to_hidden_reverse, w_hidden_to_hidden_reverse], axis=0
     )
-    reverse_cell = (
-        reverse_cell.at["in_and_hidden_to_hidden"].at["weight"].set(combined_w_reverse)
-    )
-    reverse_cell = (
-        reverse_cell.at["in_and_hidden_to_hidden"]
-        .at["bias"]
-        .set(b_hidden_to_hidden_reverse)
-    )
+    reverse_cell = reverse_cell.at["ih2h_weight"].set(combined_w_reverse)
+    reverse_cell = reverse_cell.at["ih2h_bias"].set(b_hidden_to_hidden_reverse)
 
-    res = ScanRNN(cell, backward_cell=reverse_cell, return_sequences=False)(x)
+    res, _ = ScanRNN(cell, backward_cell=reverse_cell, return_sequences=False)(x)
 
     y = jnp.array([0.35901642, 0.00826644, -0.3015435, -0.13661332])
 
@@ -794,6 +789,6 @@ def test_dense_cell():
         bias_init_func=None,
     )
     x = jnp.ones([10, 10])
-    res = ScanRNN(cell=cell)(x)
+    res, _ = ScanRNN(cell=cell)(x)
     # 1x10 @ 10x10 => 1x10
     npt.assert_allclose(res, jnp.ones([10]) * 10.0)

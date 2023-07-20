@@ -86,16 +86,8 @@ from .fft_convolution import (
 from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, MLP
-from .linear import (
-    Bilinear,
-    Embedding,
-    GeneralLinear,
-    Identity,
-    Linear,
-    MergeLinear,
-    Multilinear,
-)
-from .normalization import GroupNorm, InstanceNorm, LayerNorm
+from .linear import Bilinear, Embedding, GeneralLinear, Identity, Linear, Multilinear
+from .normalization import BatchNorm, GroupNorm, InstanceNorm, LayerNorm
 from .padding import Pad1D, Pad2D, Pad3D
 from .pooling import (
     AdaptiveAvgPool1D,
@@ -149,7 +141,6 @@ __all__ = (
     "Multilinear",
     "GeneralLinear",
     "Embedding",
-    "MergeLinear",
     # Dropout
     "Dropout",
     "Dropout1D",
@@ -215,6 +206,7 @@ __all__ = (
     "LayerNorm",
     "InstanceNorm",
     "GroupNorm",
+    "BatchNorm",
     # Blur
     "AvgBlur2D",
     "GaussianBlur2D",

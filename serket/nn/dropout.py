@@ -22,6 +22,8 @@ import jax.random as jr
 from jax import lax
 
 import serket as sk
+from serket.nn.evaluation import tree_evaluation
+from serket.nn.linear import Identity
 from serket.nn.utils import Range, validate_spatial_ndim
 
 
@@ -38,7 +40,7 @@ class Dropout(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> layer = sk.nn.Dropout(0.5)
         >>> # change `p` to 0.0 to turn off dropout
-        >>> layer = layer.at["p"].set(0.0, is_leaf=pytc.is_frozen)
+        >>> layer = layer.at["p"].set(0.0, is_leaf=sk.is_frozen)
 
     Note:
         Use `p`= 0.0 to turn off dropout.
@@ -157,3 +159,10 @@ class Dropout3D(DropoutND):
     @property
     def spatial_ndim(self) -> int:
         return 3
+
+
+@tree_evaluation.def_evalutation(Dropout)
+@tree_evaluation.def_evalutation(DropoutND)
+def dropout_evaluation(_):
+    # dropout is a no-op during evaluation
+    return Identity()
