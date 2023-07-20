@@ -35,12 +35,15 @@ pip install git+https://github.com/ASEM000/serket
 - `serket` aims to be the most intuitive and easy-to-use neural network library in `JAX`.
 - `serket` is fully transparent to `jax` transformation (e.g. `vmap`,`grad`,`jit`,...).
 
-Example:
+### Quick example
+
+
+#### Imports
 
 ```python
 import os
 os.environ["KERAS_BACKEND"] = "jax"
-from keras_core.datasets import mnist
+from keras_core.datasets import mnist  # for mnist only
 import jax
 import jax.numpy as jnp
 import functools as ft
@@ -52,13 +55,23 @@ import matplotlib.pyplot as plt  # for plotting the predictions
 EPOCHS = 1
 LR = 1e-3
 BATCH_SIZE = 128
+```
 
+#### Data preparation
+
+```python
 (x_train, y_train), _ = mnist.load_data()
 
 x_train = x_train.reshape(-1, 1, 28, 28).astype("float32") / 255.0
 x_train = jnp.array_split(x_train, x_train.shape[0] // BATCH_SIZE)
 y_train = jnp.array_split(y_train, y_train.shape[0] // BATCH_SIZE)
 
+```
+
+#### Model creation
+
+_**Style 1**_
+```python
 k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
 
 class ConvNet(sk.TreeClass):
@@ -75,7 +88,27 @@ class ConvNet(sk.TreeClass):
         return x
 
 nn = ConvNet()
+```
 
+_**Style 2**_
+```python
+k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
+
+nn = sk.nn.Sequential(
+    sk.nn.Conv2D(1, 32, 3, key=k1, padding="valid"),
+    jax.nn.relu,
+    sk.nn.MaxPool2D(2, 2),
+    sk.nn.Conv2D(32, 64, 3, key=k2, padding="valid"),
+    jax.nn.relu,
+    sk.nn.MaxPool2D(2, 2),
+    jnp.ravel,
+    sk.nn.Linear(1600, 10, key=k3),
+)
+```
+
+#### Training functions
+
+```python
 # 1) mask the non-jaxtype parameters
 nn = sk.tree_mask(nn)
 
@@ -118,6 +151,12 @@ def train_step(nn, optim_state, x, y):
     nn = optax.apply_updates(nn, updates)
     return nn, optim_state, (loss, logits)
 
+```
+
+#### Train and plot results
+
+```python
+
 for i in range(1, EPOCHS + 1):
     t0 = time.time()
     for j, (xb, yb) in enumerate(zip(x_train, y_train)):
@@ -131,6 +170,8 @@ for i in range(1, EPOCHS + 1):
             f"Time: {time.time() - t0:.3f}",
             end="\r",
         )
+        
+# Epoch: 001/001	Batch: 467/468	Batch loss: 2.040178e-01	Batch accuracy: 0.984375	Time: 19.284
 
 # 6) un-mask the trained network
 nn = sk.tree_unmask(nn)
@@ -148,6 +189,4 @@ for i, idx in zip(axes.flatten(), idxs):
     i.set_title(jnp.argmax(pred))
     i.set_xticks([])
     i.set_yticks([])
-
-# Epoch: 001/001	Batch: 467/468	Batch loss: 2.040178e-01	Batch accuracy: 0.984375	Time: 19.284
 ```

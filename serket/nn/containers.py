@@ -21,7 +21,6 @@ import jax
 import jax.random as jr
 
 import serket as sk
-from serket.nn.utils import IsInstance
 
 
 class Sequential(sk.TreeClass):
@@ -35,7 +34,7 @@ class Sequential(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import serket as sk
-        >>> layers = sk.nn.Sequential((lambda x: x + 1, lambda x: x * 2))
+        >>> layers = sk.nn.Sequential(lambda x: x + 1, lambda x: x * 2)
         >>> print(layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0)))
         [4 6 8]
 
@@ -45,7 +44,7 @@ class Sequential(sk.TreeClass):
     """
 
     # allow list then cast to tuple avoid mutability issues
-    layers: tuple[Any, ...] = sk.field(callbacks=[IsInstance((tuple, list)), tuple])
+    layers: tuple[Any, ...] = sk.field(kind="VAR_POS")
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         for key, layer in zip(jr.split(key, len(self.layers)), self.layers):
@@ -62,7 +61,7 @@ class Sequential(sk.TreeClass):
     @__getitem__.register(slice)
     def _(self, key: slice):
         # return a new Sequential object with the sliced layers
-        return type(self)(self.layers[key])
+        return type(self)(*self.layers[key])
 
     @__getitem__.register(int)
     def _(self, key: int):
