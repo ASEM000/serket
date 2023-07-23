@@ -39,7 +39,7 @@ class Sequential(sk.TreeClass):
         [4 6 8]
 
     Note:
-        Layer might be a function or a class with a `__call__` method, additionally
+        Layer might be a function or a class with a ``__call__`` method, additionally
         it might have a key argument for random number generation.
     """
 

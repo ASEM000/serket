@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import doctest
-import inspect
 import os
 import sys
 
@@ -137,3 +136,7 @@ nbsphinx_execute = "never"
 nbsphinx_codecell_lexer = "ipython"
 nbsphinx_kernel_name = "python"
 nbsphinx_timeout = 180
+
+# Tell sphinx-autodoc-typehints to generate stub parameter annotations including
+# types, even if the parameters aren't explicitly documented.
+always_document_param_types = True
