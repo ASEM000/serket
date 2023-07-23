@@ -37,61 +37,16 @@ pip install git+https://github.com/ASEM000/serket
 
 ### Quick example
 
-
-#### Imports
+For full examples see [here](https://serket.readthedocs.io/en/latest/examples.html) e.g. [Training 🚆 MNIST](https://serket.readthedocs.io/en/latest/notebooks/mnist.html), or [Training 🚆 Bidirectional-LSTM](https://serket.readthedocs.io/en/latest/notebooks/bilstm.html)
 
 ```python
-import os
-os.environ["KERAS_BACKEND"] = "jax"
-from keras_core.datasets import mnist  # for mnist only
-import jax
-import jax.numpy as jnp
-import functools as ft
-import optax  # for gradient optimization
+import jax, jax.numpy as jnp
 import serket as sk
-import time
-import matplotlib.pyplot as plt  # for plotting the predictions
+import optax
 
-EPOCHS = 1
-LR = 1e-3
-BATCH_SIZE = 128
-```
+x_train = ...
+y_train = ...
 
-#### Data preparation
-
-```python
-(x_train, y_train), _ = mnist.load_data()
-
-x_train = x_train.reshape(-1, 1, 28, 28).astype("float32") / 255.0
-x_train = jnp.array_split(x_train, x_train.shape[0] // BATCH_SIZE)
-y_train = jnp.array_split(y_train, y_train.shape[0] // BATCH_SIZE)
-
-```
-
-#### Model creation
-
-_**Style 1**_
-```python
-k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
-
-class ConvNet(sk.TreeClass):
-    conv1: sk.nn.Conv2D = sk.nn.Conv2D(1, 32, 3, key=k1, padding="valid")
-    pool1: sk.nn.MaxPool2D = sk.nn.MaxPool2D(2, 2)
-    conv2: sk.nn.Conv2D = sk.nn.Conv2D(32, 64, 3, key=k2, padding="valid")
-    pool2: sk.nn.MaxPool2D = sk.nn.MaxPool2D(2, 2)
-    linear: sk.nn.Linear = sk.nn.Linear(1600, 10, key=k3)
-
-    def __call__(self, x: jax.Array) -> jax.Array:
-        x = self.pool1(jax.nn.relu(self.conv1(x)))
-        x = self.pool2(jax.nn.relu(self.conv2(x)))
-        x = self.linear(jnp.ravel(x))
-        return x
-
-nn = ConvNet()
-```
-
-_**Style 2**_
-```python
 k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
 
 nn = sk.nn.Sequential(
@@ -104,15 +59,9 @@ nn = sk.nn.Sequential(
     jnp.ravel,
     sk.nn.Linear(1600, 10, key=k3),
 )
-```
 
-#### Training functions
 
-```python
-# 1) mask the non-jaxtype parameters
-nn = sk.tree_mask(nn)
-
-# 2) initialize the optimizer state
+nn = sk.tree_mask(nn)  # pass non-jaxtype through jax-transforms
 optim = optax.adam(LR)
 optim_state = optim.init(nn)
 
@@ -123,26 +72,16 @@ def softmax_cross_entropy(logits, onehot):
 
 @ft.partial(jax.grad, has_aux=True)
 def loss_func(nn, x, y):
-    # pass non-jaxtype over jax transformation
-    # using `tree_mask`/`tree_unmask` scheme
-    # 3) unmask the non-jaxtype parameters to be used in the computation
     nn = sk.tree_unmask(nn)
-
-    # 4) vectorize the computation over the batch dimension
-    # and get the logits
     logits = jax.vmap(nn)(x)
     onehot = jax.nn.one_hot(y, 10)
-
-    # 5) use the appropriate loss function
     loss = jnp.mean(softmax_cross_entropy(logits, onehot))
     return loss, (loss, logits)
-
 
 @jax.vmap
 def accuracy_func(logits, y):
     assert logits.shape == (10,)
     return jnp.argmax(logits) == y
-
 
 @jax.jit
 def train_step(nn, optim_state, x, y):
@@ -151,42 +90,9 @@ def train_step(nn, optim_state, x, y):
     nn = optax.apply_updates(nn, updates)
     return nn, optim_state, (loss, logits)
 
-```
+for j, (xb, yb) in enumerate(zip(x_train, y_train)):
+    nn, optim_state, (loss, logits) = train_step(nn, optim_state, xb, yb)
+    accuracy = jnp.mean(accuracy_func(logits, yb))
 
-#### Train and plot results
-
-```python
-
-for i in range(1, EPOCHS + 1):
-    t0 = time.time()
-    for j, (xb, yb) in enumerate(zip(x_train, y_train)):
-        nn, optim_state, (loss, logits) = train_step(nn, optim_state, xb, yb)
-        accuracy = jnp.mean(accuracy_func(logits, yb))
-        print(
-            f"Epoch: {i:003d}/{EPOCHS:003d}\t"
-            f"Batch: {j:003d}/{len(x_train):003d}\t"
-            f"Batch loss: {loss:3e}\t"
-            f"Batch accuracy: {accuracy:3f}\t"
-            f"Time: {time.time() - t0:.3f}",
-            end="\r",
-        )
-        
-# Epoch: 001/001	Batch: 467/468	Batch loss: 2.040178e-01	Batch accuracy: 0.984375	Time: 19.284
-
-# 6) un-mask the trained network
 nn = sk.tree_unmask(nn)
-
-# create 2x5 grid of images
-fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-idxs = jax.random.randint(k1, shape=(10,), minval=0, maxval=x_train[0].shape[0])
-
-for i, idx in zip(axes.flatten(), idxs):
-    # get the prediction
-    pred = nn(x_train[0][idx])
-    # plot the image
-    i.imshow(x_train[0][idx].reshape(28, 28), cmap="gray")
-    # set the title to be the prediction
-    i.set_title(jnp.argmax(pred))
-    i.set_xticks([])
-    i.set_yticks([])
 ```
