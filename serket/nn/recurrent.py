@@ -21,6 +21,8 @@ from typing import Any, Callable
 import jax
 import jax.numpy as jnp
 import jax.random as jr
+import jax.tree_util as jtu
+from jax.util import unzip2
 
 import serket as sk
 from serket.nn.activation import ActivationType, resolve_activation
@@ -174,8 +176,10 @@ class DenseCell(RNNCell):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.DenseCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
-        >>> dummy_state = sk.tree_state(cell)  # 20-dimensional hidden state
+        >>> # 10-dimensional input, 20-dimensional hidden state
+        >>> cell = sk.nn.DenseCell(10, 20)
+        >>> # 20-dimensional hidden state
+        >>> dummy_state = sk.tree_state(cell)
         >>> x = jnp.ones((10,)) # 10 features
         >>> result = cell(x, dummy_state)
         >>> result.hidden_state.shape  # 20 features
@@ -300,11 +304,6 @@ class LSTMCell(RNNCell):
         c = f * c + i * g
         h = o * self.act_func(c)
         return LSTMState(h, c)
-
-    def init_state(self, spatial_dim: tuple[int, ...]) -> LSTMState:
-        del spatial_dim
-        shape = (self.hidden_features,)
-        return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
     @property
     def spatial_ndim(self) -> int:
@@ -1001,62 +1000,85 @@ class ScanRNN(sk.TreeClass):
     """Scans RNN cell over a sequence.
 
     Args:
-        cell: the RNN cell to use.
-        backward_cell: the RNN cell to use for bidirectional scanning.
-        return_sequences: whether to return the hidden state for each timestep.
+        cells: the RNN cell(s) to use.
+        return_sequences: whether to return the output for each timestep.
+        return_state: whether to return the final state of the RNN cell(s).
+        reverse: a tuple of booleans indicating whether to reverse the input
+            sequence for each cell. for example, if `cells` is a tuple of
+            two cells, and `reverse=(True, False)`, then the first cell will
+            scan the input sequence in reverse, and the second cell will scan
+            the input sequence in the original order. or a single boolean
+            indicating whether to reverse the input sequence for all cells.
+            default is `False`.
 
     Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
         >>> cell = sk.nn.SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
-        >>> rnn = sk.nn.ScanRNN(cell)
+        >>> rnn = sk.nn.ScanRNN(cell, return_state=True)
         >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
         >>> result, state = rnn(x)  # 20 features
         >>> print(result.shape)
         (20,)
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
         >>> cell = sk.nn.SimpleRNNCell(10, 20)
-        >>> rnn = sk.nn.ScanRNN(cell, return_sequences=True)
+        >>> rnn = sk.nn.ScanRNN(cell, return_sequences=True, return_state=True)
         >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
         >>> result, state = rnn(x)  # 5 timesteps, 20 features
         >>> print(result.shape)
         (5, 20)
     """
 
-    # cell: RNN
-
     def __init__(
         self,
-        cell: RNNCell,
-        backward_cell: RNNCell | None = None,
-        *,
+        *cells: RNNCell,
         return_sequences: bool = False,
+        return_state: bool = False,
+        reverse: tuple[bool, ...] | bool = False,
     ):
-        if not isinstance(cell, RNNCell):
-            raise TypeError(f"Expected {cell=} to be an instance of RNNCell.")
+        cell0, *_ = cells
+        indim0,outdim0 = cell0.in_features, cell0.hidden_features
 
-        if not isinstance(backward_cell, (RNNCell, type(None))):
-            raise TypeError(f"Expected {backward_cell=} to be an instance of RNNCell.")
+        for cell in cells:
+            if not isinstance(cell, RNNCell):
+                raise TypeError(f"Expected {cell=} to be an instance of `RNNCell`.")
+            
+            if cell.in_features != indim0:
+                raise ValueError(f"{cell.in_features=} != {indim0=}.")
+            
+            if cell.hidden_features != outdim0:
+                raise ValueError(f"{cell.hidden_features=} != {outdim0=}.")
 
-        self.cell = cell
-        self.backward_cell = backward_cell
+        if isinstance(reverse, bool):
+            reverse = (reverse,) * len(cells)
+
+        if len(reverse) != len(cells):
+            raise ValueError(f"{len(reverse)=} != {len(cells)=}.")
+
+        self.cells: tuple[RNNCell, ...] | RNNCell = cells
         self.return_sequences = return_sequences
+        self.return_state = return_state
+        self.reverse = reverse
 
     def __call__(
         self,
         x: jax.Array,
         state: RNNState | None = None,
-        backward_state: RNNState | None = None,
         **k,
-    ) -> tuple[jax.Array, tuple[RNNState, RNNState] | RNNState]:
+    ) -> jax.Array | tuple[jax.Array, RNNState]:
         """Scans the RNN cell over a sequence.
 
         Args:
             x: the input sequence.
-            state: the initial state. if None, a zero state is used.
-            backward_state: the initial backward state. if None, a zero state is used.
+            state: the initial state. if None, state is initialized by the rule
+                defined using `tree_state`.
 
         Returns:
-            the output sequence and the final two states tuple if backward_cell
-            is not ``None``, otherwise return the final state of the forward
-            cell.
+            return the result and state if ``return_state`` is True. otherwise,
+             return only the result.
         """
 
         if not isinstance(state, (RNNState, type(None))):
@@ -1064,42 +1086,51 @@ class ScanRNN(sk.TreeClass):
 
         # non-spatial RNN : (time steps, in_features)
         # spatial RNN : (time steps, in_features, *spatial_dims)
+        cell0, *_ = self.cells
 
-        if x.ndim != self.cell.spatial_ndim + 2:
+        if x.ndim != cell0.spatial_ndim + 2:
             raise ValueError(
-                f"Expected x to have {self.cell.spatial_ndim + 2} dimensions corresponds to "
-                f"(timesteps, in_features, {'*'*self.cell.spatial_ndim}),"
+                f"Expected x to have {(cell0.spatial_ndim + 2)=} dimensions corresponds to "
+                f"(timesteps, in_features, {'*'*cell0.spatial_ndim}),"
                 f" got {x.ndim=}"
             )
 
-        if self.cell.in_features != x.shape[1]:
+        if cell0.in_features != x.shape[1]:
             raise ValueError(
-                f"Expected x to have shape (timesteps, {self.cell.in_features},"
-                f"{'*'*self.cell.spatial_ndim}), got {x.shape=}"
+                f"Expected x to have shape (timesteps, {cell0.in_features},"
+                f"{'*'*cell0.spatial_ndim}), got {x.shape=}"
             )
-        # pass a sample not the whole sequence
-        state = state or tree_state(self.cell, x[0])
 
-        if self.backward_cell is not None and backward_state is None:
-            # pass a sample not the whole sequence
-            backward_state = tree_state(self.backward_cell, x[0])
-
+        splits = len(self.cells)
+        state: RNNState = tree_state(self, array=x) if state is None else state
         scan_func = _accumulate_scan if self.return_sequences else _no_accumulate_scan
-        result, state = scan_func(x, self.cell, state)
 
-        states = state
+        result_states: list[tuple[jax.Array, RNNState]] = [
+            scan_func(x, ci, si, reverse=ri)
+            for ci, ri, si in zip(self.cells, self.reverse, _split(state, splits))
+        ]
 
-        if self.backward_cell is not None:
-            backward_result, backward_state = scan_func(
-                x,
-                self.backward_cell,
-                backward_state,
-            )
-            states = (state, backward_state)
-            concat_axis = int(self.return_sequences)
-            result = jnp.concatenate((result, backward_result), axis=concat_axis)
+        results, states = unzip2(result_states)
+        result = jnp.concatenate(results, axis=int(self.return_sequences))
 
-        return result, states
+        if self.return_state:
+            state: RNNState = _merge(states)
+            return result, state
+        return result
+
+
+def _split(state: RNNState, splits:int) -> list[RNNState]:
+    flat_arrays: list[jax.Array] = jtu.tree_leaves(state)
+    return [type(state)(*x) for x in zip(*(jnp.split(x, splits) for x in flat_arrays))]
+
+
+def _merge(states: list[RNNState]) -> RNNState:
+    # undo the split
+    return (
+        states[0]
+        if len(states) == 1
+        else jax.tree_map(lambda *x: jnp.concatenate([*x]), *states)
+    )
 
 
 def _accumulate_scan(
@@ -1134,3 +1165,9 @@ def _no_accumulate_scan(
     carry, _ = jax.lax.scan(scan_func, state, x)
     result = carry.hidden_state
     return result, carry
+
+
+@tree_state.def_state(ScanRNN)
+def rnn_init_state(rnn: ScanRNN, x: jax.Array | None) -> RNNState:
+    # should pass a single sample array to `tree_state`
+    return _merge(tree_state(rnn.cells, array=x))
