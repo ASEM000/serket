@@ -27,6 +27,7 @@ from serket.nn.linear import Identity
 from serket.nn.utils import Range, validate_spatial_ndim
 
 
+@sk.autoinit
 class Dropout(sk.TreeClass):
     """Randomly zeroes some of the elements of the input
     tensor with probability ``p`` using samples from a Bernoulli
@@ -56,6 +57,7 @@ class Dropout(sk.TreeClass):
         )
 
 
+@sk.autoinit
 class DropoutND(sk.TreeClass):
     """Drops full feature maps along the channel axis."""
 
@@ -79,24 +81,22 @@ class DropoutND(sk.TreeClass):
 
 
 class Dropout1D(DropoutND):
-    def __init__(self, p: float = 0.5):
-        """Drops full feature maps along the channel axis.
+    """Drops full feature maps along the channel axis.
 
-        Args:
-            p: fraction of an elements to be zeroed out.
+    Args:
+        p: fraction of an elements to be zeroed out.
 
-        Example:
-            >>> import serket as sk
-            >>> import jax.numpy as jnp
-            >>> layer = sk.nn.Dropout1D(0.5)
-            >>> print(layer(jnp.ones((1, 10))))
-            [[2. 2. 2. 2. 2. 2. 2. 2. 2. 2.]]
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.nn.Dropout1D(0.5)
+        >>> print(layer(jnp.ones((1, 10))))
+        [[2. 2. 2. 2. 2. 2. 2. 2. 2. 2.]]
 
-        Note:
-            https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
-            https://arxiv.org/abs/1411.4280
-        """
-        super().__init__(p=p)
+    Note:
+        https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
+        https://arxiv.org/abs/1411.4280
+    """
 
     @property
     def spatial_ndim(self) -> int:
@@ -104,28 +104,26 @@ class Dropout1D(DropoutND):
 
 
 class Dropout2D(DropoutND):
-    def __init__(self, p: float = 0.5):
-        """Drops full feature maps along the channel axis.
+    """Drops full feature maps along the channel axis.
 
-        Args:
-            p: fraction of an elements to be zeroed out.
+    Args:
+        p: fraction of an elements to be zeroed out.
 
-        Note:
-            https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
-            https://arxiv.org/abs/1411.4280
+    Note:
+        https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
+        https://arxiv.org/abs/1411.4280
 
-        Example:
-            >>> import serket as sk
-            >>> import jax.numpy as jnp
-            >>> layer = sk.nn.Dropout2D(0.5)
-            >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +NORMALIZE_WHITESPACE
-            [[[2. 2. 2. 2. 2.]
-             [2. 2. 2. 2. 2.]
-             [2. 2. 2. 2. 2.]
-             [2. 2. 2. 2. 2.]
-             [2. 2. 2. 2. 2.]]]
-        """
-        super().__init__(p=p)
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.nn.Dropout2D(0.5)
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +NORMALIZE_WHITESPACE
+        [[[2. 2. 2. 2. 2.]
+            [2. 2. 2. 2. 2.]
+            [2. 2. 2. 2. 2.]
+            [2. 2. 2. 2. 2.]
+            [2. 2. 2. 2. 2.]]]
+    """
 
     @property
     def spatial_ndim(self) -> int:
@@ -133,28 +131,26 @@ class Dropout2D(DropoutND):
 
 
 class Dropout3D(DropoutND):
-    def __init__(self, p: float = 0.5):
-        """Drops full feature maps along the channel axis.
+    """Drops full feature maps along the channel axis.
 
-        Args:
-            p: fraction of an elements to be zeroed out.
+    Args:
+        p: fraction of an elements to be zeroed out.
 
-        Example:
-            >>> import serket as sk
-            >>> import jax.numpy as jnp
-            >>> layer = sk.nn.Dropout3D(0.5)
-            >>> print(layer(jnp.ones((1, 2, 2, 2))))  # doctest: +NORMALIZE_WHITESPACE
-            [[[[2. 2.]
-            [2. 2.]]
-            <BLANKLINE>
-            [[2. 2.]
-            [2. 2.]]]]
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.nn.Dropout3D(0.5)
+        >>> print(layer(jnp.ones((1, 2, 2, 2))))  # doctest: +NORMALIZE_WHITESPACE
+        [[[[2. 2.]
+        [2. 2.]]
+        <BLANKLINE>
+        [[2. 2.]
+        [2. 2.]]]]
 
-        Note:
-            https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
-            https://arxiv.org/abs/1411.4280
-        """
-        super().__init__(p=p)
+    Note:
+        https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
+        https://arxiv.org/abs/1411.4280
+    """
 
     @property
     def spatial_ndim(self) -> int:

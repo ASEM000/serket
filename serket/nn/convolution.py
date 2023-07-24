@@ -194,35 +194,6 @@ class Conv1D(ConvND):
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 1
@@ -294,35 +265,6 @@ class Conv2D(ConvND):
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 2
@@ -393,35 +335,6 @@ class Conv3D(ConvND):
     Note:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:
@@ -576,35 +489,6 @@ class Conv1DTranspose(ConvNDTranspose):
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        output_padding: int = 0,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 1
@@ -675,35 +559,6 @@ class Conv2DTranspose(ConvNDTranspose):
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        output_padding: int = 0,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 2
@@ -773,35 +628,6 @@ class Conv3DTranspose(ConvNDTranspose):
     Note:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        output_padding: int = 0,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:
@@ -924,29 +750,6 @@ class DepthwiseConv1D(DepthwiseConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        depth_multiplier: int = 1,
-        strides: int = 1,
-        padding: PaddingType = "SAME",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            kernel_size=kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 1
@@ -1000,29 +803,6 @@ class DepthwiseConv2D(DepthwiseConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        depth_multiplier: int = 1,
-        strides: int = 1,
-        padding: PaddingType = "SAME",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            kernel_size=kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:
@@ -1078,29 +858,6 @@ class DepthwiseConv3D(DepthwiseConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        depth_multiplier: int = 1,
-        strides: int = 1,
-        padding: PaddingType = "SAME",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            kernel_size=kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:
@@ -1550,33 +1307,6 @@ class Conv1DLocal(ConvNDLocal):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        in_size: Sequence[int],
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            in_size=in_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 1
@@ -1634,33 +1364,6 @@ class Conv2DLocal(ConvNDLocal):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        in_size: Sequence[int],
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            in_size=in_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 2
@@ -1717,33 +1420,6 @@ class Conv3DLocal(ConvNDLocal):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        in_size: Sequence[int],
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            in_size=in_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:

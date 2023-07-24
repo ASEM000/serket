@@ -23,6 +23,7 @@ import jax.random as jr
 import serket as sk
 
 
+@sk.autoinit
 class Sequential(sk.TreeClass):
     """A sequential container for layers.
 

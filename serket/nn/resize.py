@@ -118,14 +118,6 @@ class Resize1D(ResizeND):
         antialias: whether to use antialiasing. Defaults to True.
     """
 
-    def __init__(
-        self,
-        size: int | tuple[int, ...],
-        method: MethodKind = "nearest",
-        antialias=True,
-    ):
-        super().__init__(size=size, method=method, antialias=antialias)
-
     @property
     def spatial_ndim(self) -> int:
         return 1
@@ -148,14 +140,6 @@ class Resize2D(ResizeND):
         - "lanczos5": Lanczos resampling, using a kernel of radius 5.
         antialias: whether to use antialiasing. Defaults to True.
     """
-
-    def __init__(
-        self,
-        size: int | tuple[int, ...],
-        method: MethodKind = "nearest",
-        antialias=True,
-    ):
-        super().__init__(size=size, method=method, antialias=antialias)
 
     @property
     def spatial_ndim(self) -> int:
@@ -180,14 +164,6 @@ class Resize3D(ResizeND):
         antialias: whether to use antialiasing. Defaults to True.
     """
 
-    def __init__(
-        self,
-        size: int | tuple[int, ...],
-        method: MethodKind = "nearest",
-        antialias=True,
-    ):
-        super().__init__(size=size, method=method, antialias=antialias)
-
     @property
     def spatial_ndim(self) -> int:
         return 3
@@ -200,9 +176,6 @@ class Upsample1D(UpsampleND):
         scale: the scale of the output.
         method: the method of interpolation. Defaults to "nearest".
     """
-
-    def __init__(self, scale: int, method: str = "nearest"):
-        super().__init__(scale=scale, method=method)
 
     @property
     def spatial_ndim(self) -> int:
@@ -217,9 +190,6 @@ class Upsample2D(UpsampleND):
         method: the method of interpolation. Defaults to "nearest".
     """
 
-    def __init__(self, scale: int | tuple[int, int], method: str = "nearest"):
-        super().__init__(scale=scale, method=method)
-
     @property
     def spatial_ndim(self) -> int:
         return 2
@@ -232,9 +202,6 @@ class Upsample3D(UpsampleND):
         scale: the scale of the output.
         method: the method of interpolation. Defaults to "nearest".
     """
-
-    def __init__(self, scale: int | tuple[int, int, int], method: str = "nearest"):
-        super().__init__(scale=scale, method=method)
 
     @property
     def spatial_ndim(self) -> int:

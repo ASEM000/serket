@@ -44,6 +44,7 @@ from serket.nn.utils import (
 # Non Spatial RNN
 
 
+@sk.autoinit
 class RNNState(sk.TreeClass):
     hidden_state: jax.Array
 
@@ -227,6 +228,7 @@ def dense_init_state(cell: DenseCell, _) -> DenseState:
     return DenseState(jnp.empty([cell.hidden_features]))
 
 
+@sk.autoinit
 class LSTMState(RNNState):
     cell_state: jax.Array
 
@@ -400,6 +402,7 @@ def gru_init_state(cell: GRUCell, _) -> GRUState:
 # Spatial RNN
 
 
+@sk.autoinit
 class ConvLSTMNDState(RNNState):
     cell_state: jax.Array
 

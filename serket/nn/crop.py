@@ -65,9 +65,6 @@ class Crop1D(CropND):
         [[2 3 4]]
     """
 
-    def __init__(self, size: int | tuple[int], start: int | tuple[int]):
-        super().__init__(size, start)
-
     @property
     def spatial_ndim(self) -> int:
         return 1
@@ -100,9 +97,6 @@ class Crop2D(CropND):
           [21 22 23]]]
     """
 
-    def __init__(self, size: int | tuple[int, int], start: int | tuple[int, int]):
-        super().__init__(size, start)
-
     @property
     def spatial_ndim(self) -> int:
         return 2
@@ -117,13 +111,6 @@ class Crop3D(CropND):
         start: start of the slice, either a single int or a tuple of three
             ints for start along each axis.
     """
-
-    def __init__(
-        self,
-        size: int | tuple[int, int, int],
-        start: int | tuple[int, int, int],
-    ):
-        super().__init__(size, start)
 
     @property
     def spatial_ndim(self) -> int:
@@ -162,9 +149,6 @@ class RandomCrop1D(RandomCropND):
             values are either a single int or a tuple of int denoting the size.
     """
 
-    def __init__(self, size: int | tuple[int]):
-        super().__init__(size)
-
     @property
     def spatial_ndim(self) -> int:
         return 1
@@ -178,9 +162,6 @@ class RandomCrop2D(RandomCropND):
             or a tuple of two ints denoting the size along each axis.
     """
 
-    def __init__(self, size: int | tuple[int, int]):
-        super().__init__(size)
-
     @property
     def spatial_ndim(self) -> int:
         return 2
@@ -193,9 +174,6 @@ class RandomCrop3D(RandomCropND):
         size: size of the slice in each axis. accepted values are either a single int
             or a tuple of three ints denoting the size along each axis.
     """
-
-    def __init__(self, size: int | tuple[int, int, int]):
-        super().__init__(size)
 
     @property
     def spatial_ndim(self) -> int:

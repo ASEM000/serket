@@ -71,6 +71,7 @@ class UpscaleBlock(sk.TreeClass):
         return self.conv(x)
 
 
+@sk.autoinit
 class UNetBlock(sk.TreeClass):
     """Vanilla UNet
 

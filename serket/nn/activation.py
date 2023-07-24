@@ -24,6 +24,7 @@ import serket as sk
 from serket.nn.utils import IsInstance, Range, ScalarLike
 
 
+@sk.autoinit
 class AdaptiveLeakyReLU(sk.TreeClass):
     """Leaky ReLU activation function
 
@@ -39,6 +40,7 @@ class AdaptiveLeakyReLU(sk.TreeClass):
         return jnp.maximum(0, self.a * x) - v * jnp.maximum(0, -self.a * x)
 
 
+@sk.autoinit
 class AdaptiveReLU(sk.TreeClass):
     """ReLU activation function with learnable parameters
     Note:
@@ -51,6 +53,7 @@ class AdaptiveReLU(sk.TreeClass):
         return jnp.maximum(0, self.a * x)
 
 
+@sk.autoinit
 class AdaptiveSigmoid(sk.TreeClass):
     """Sigmoid activation function with learnable `a` parameter
     Note:
@@ -63,6 +66,7 @@ class AdaptiveSigmoid(sk.TreeClass):
         return 1 / (1 + jnp.exp(-self.a * x))
 
 
+@sk.autoinit
 class AdaptiveTanh(sk.TreeClass):
     """Tanh activation function with learnable parameters
     Note:
@@ -76,6 +80,7 @@ class AdaptiveTanh(sk.TreeClass):
         return (jnp.exp(a * x) - jnp.exp(-a * x)) / (jnp.exp(a * x) + jnp.exp(-a * x))
 
 
+@sk.autoinit
 class CeLU(sk.TreeClass):
     """Celu activation function"""
 
@@ -85,6 +90,7 @@ class CeLU(sk.TreeClass):
         return jax.nn.celu(x, alpha=lax.stop_gradient(self.alpha))
 
 
+@sk.autoinit
 class ELU(sk.TreeClass):
     """Exponential linear unit"""
 
@@ -94,6 +100,7 @@ class ELU(sk.TreeClass):
         return jax.nn.elu(x, alpha=lax.stop_gradient(self.alpha))
 
 
+@sk.autoinit
 class GELU(sk.TreeClass):
     """Gaussian error linear unit"""
 
@@ -103,6 +110,7 @@ class GELU(sk.TreeClass):
         return jax.nn.gelu(x, approximate=self.approximate)
 
 
+@sk.autoinit
 class GLU(sk.TreeClass):
     """Gated linear unit"""
 
@@ -110,6 +118,7 @@ class GLU(sk.TreeClass):
         return jax.nn.glu(x)
 
 
+@sk.autoinit
 class HardShrink(sk.TreeClass):
     """Hard shrink activation function"""
 
@@ -120,6 +129,7 @@ class HardShrink(sk.TreeClass):
         return jnp.where(x > alpha, x, jnp.where(x < -alpha, x, 0.0))
 
 
+@sk.autoinit
 class HardSigmoid(sk.TreeClass):
     """Hard sigmoid activation function"""
 
@@ -127,6 +137,7 @@ class HardSigmoid(sk.TreeClass):
         return jax.nn.hard_sigmoid(x)
 
 
+@sk.autoinit
 class HardSwish(sk.TreeClass):
     """Hard swish activation function"""
 
@@ -134,6 +145,7 @@ class HardSwish(sk.TreeClass):
         return jax.nn.hard_swish(x)
 
 
+@sk.autoinit
 class HardTanh(sk.TreeClass):
     """Hard tanh activation function"""
 
@@ -141,6 +153,7 @@ class HardTanh(sk.TreeClass):
         return jax.nn.hard_tanh(x)
 
 
+@sk.autoinit
 class LogSigmoid(sk.TreeClass):
     """Log sigmoid activation function"""
 
@@ -148,6 +161,7 @@ class LogSigmoid(sk.TreeClass):
         return jax.nn.log_sigmoid(x)
 
 
+@sk.autoinit
 class LogSoftmax(sk.TreeClass):
     """Log softmax activation function"""
 
@@ -155,6 +169,7 @@ class LogSoftmax(sk.TreeClass):
         return jax.nn.log_softmax(x)
 
 
+@sk.autoinit
 class LeakyReLU(sk.TreeClass):
     """Leaky ReLU activation function"""
 
@@ -206,6 +221,7 @@ class SoftSign(sk.TreeClass):
         return x / (1 + jnp.abs(x))
 
 
+@sk.autoinit
 class SoftShrink(sk.TreeClass):
     """SoftShrink activation function"""
 
@@ -248,6 +264,7 @@ class TanhShrink(sk.TreeClass):
         return x - jax.nn.tanh(x)
 
 
+@sk.autoinit
 class ThresholdedReLU(sk.TreeClass):
     """Thresholded ReLU activation function."""
 
@@ -265,6 +282,7 @@ class Mish(sk.TreeClass):
         return x * jax.nn.tanh(jax.nn.softplus(x))
 
 
+@sk.autoinit
 class PReLU(sk.TreeClass):
     """Parametric ReLU activation function"""
 
@@ -274,6 +292,7 @@ class PReLU(sk.TreeClass):
         return jnp.where(x >= 0, x, x * self.a)
 
 
+@sk.autoinit
 class Snake(sk.TreeClass):
     """Snake activation function
 
