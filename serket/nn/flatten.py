@@ -21,6 +21,7 @@ import serket as sk
 from serket.nn.utils import IsInstance
 
 
+@sk.autoinit
 class Flatten(sk.TreeClass):
     """Flatten an array from dim `start_dim` to `end_dim` (inclusive).
 
@@ -60,6 +61,7 @@ class Flatten(sk.TreeClass):
         return jax.lax.collapse(x, start_dim, end_dim)
 
 
+@sk.autoinit
 class Unflatten(sk.TreeClass):
     """Unflatten an array.
 

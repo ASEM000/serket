@@ -18,6 +18,7 @@ from pytreeclass import (
     BaseKey,
     Partial,
     TreeClass,
+    autoinit,
     bcmap,
     field,
     fields,
@@ -25,6 +26,7 @@ from pytreeclass import (
     is_frozen,
     is_nondiff,
     is_tree_equal,
+    leafwise,
     tree_diagram,
     tree_flatten_with_trace,
     tree_graph,
@@ -50,6 +52,7 @@ __all__ = (
     "is_tree_equal",
     "field",
     "fields",
+    "autoinit",
     # pprint utils
     "tree_diagram",
     "tree_graph",
@@ -74,6 +77,7 @@ __all__ = (
     "tree_flatten_with_trace",
     "tree_repr_with_trace",
     "Partial",
+    "leafwise",
     # serket
     "nn",
     "tree_evaluation",
@@ -81,4 +85,4 @@ __all__ = (
 )
 
 
-__version__ = "0.4.0b1"
+__version__ = "0.5.0b1"

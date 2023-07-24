@@ -43,6 +43,7 @@ def random_contrast_nd(
     return adjust_contrast_nd(x, contrast_factor)
 
 
+@sk.autoinit
 class AdjustContrastND(sk.TreeClass):
     """Adjusts the contrast of an NDimage by scaling the pixel values by a factor.
 
@@ -71,14 +72,12 @@ class AdjustContrast2D(AdjustContrastND):
         contrast_factor: contrast factor to adjust the image by.
     """
 
-    def __init__(self, contrast_factor=1.0):
-        super().__init__(contrast_factor=contrast_factor)
-
     @property
     def spatial_ndim(self) -> int:
         return 2
 
 
+@sk.autoinit
 class RandomContrastND(sk.TreeClass):
     """Randomly adjusts the contrast of an image by scaling the pixel
     values by a factor.
@@ -130,9 +129,6 @@ class RandomContrast2D(RandomContrastND):
     Args:
         contrast_range: range of contrast factors to randomly sample from.
     """
-
-    def __init__(self, contrast_range=(0.5, 1)):
-        super().__init__(contrast_range=contrast_range)
 
     @property
     def spatial_ndim(self) -> int:

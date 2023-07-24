@@ -234,6 +234,7 @@ def test_batchnorm(axis):
     bn_sk = BatchNorm(
         x_keras.shape[axis],
         momentum=0.5,
+        eps=bn_keras.epsilon,
         axis=axis,
         beta_init_func=None,
         gamma_init_func=None,

@@ -233,6 +233,7 @@ class InstanceNorm(GroupNorm):
         )
 
 
+@sk.autoinit
 class BatchNormState(sk.TreeClass):
     running_mean: jax.Array
     running_var: jax.Array
@@ -309,7 +310,7 @@ def _(
     x: jax.Array,
     state: BatchNormState,
     momentum: float = 0.99,
-    eps: float = 1e-3,
+    eps: float = 1e-5,
     gamma: jax.Array | None = None,
     beta: jax.Array | None = None,
     evaluation: bool = True,
@@ -364,7 +365,7 @@ class BatchNorm(sk.TreeClass):
         in_features: int,
         *,
         momentum: float = 0.99,
-        eps: float = 1e-3,
+        eps: float = 1e-5,
         gamma_init_func: InitType = "ones",
         beta_init_func: InitType = "zeros",
         axis: int = 1,

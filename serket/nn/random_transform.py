@@ -26,7 +26,7 @@ from serket.nn.padding import Pad2D
 from serket.nn.resize import Resize2D
 from serket.nn.utils import Range
 
-
+@sk.autoinit
 class RandomApply(sk.TreeClass):
     """
     Randomly applies a layer with probability p.

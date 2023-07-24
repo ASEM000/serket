@@ -180,6 +180,7 @@ def canonicalize(value, ndim, *, name: str | None = None):
     raise ValueError(f"Expected int or tuple , got {value=}.")
 
 
+@sk.autoinit
 class Range(sk.TreeClass):
     """Check if the input is in the range [min_val, max_val]."""
 
@@ -198,6 +199,7 @@ class Range(sk.TreeClass):
         raise ValueError(f"Not in {ls}{self.min_val}, {self.max_val}{rs} got {value=}.")
 
 
+@sk.autoinit
 class IsInstance(sk.TreeClass):
     """Check if the input is an instance of expected_type."""
 

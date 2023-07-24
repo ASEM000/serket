@@ -49,8 +49,7 @@ class PadND(sk.TreeClass):
 
 
 class Pad1D(PadND):
-    """
-    Pad a 1D tensor.
+    """Pad a 1D tensor.
 
     Args:
         padding: padding to apply to each side of the input.
@@ -63,30 +62,24 @@ class Pad1D(PadND):
         https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
     """
 
-    def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
-        super().__init__(padding=padding, value=value)
-
     @property
     def spatial_ndim(self) -> int:
         return 1
 
 
 class Pad2D(PadND):
-    def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
-        """
-        Pad a 2D tensor.
+    """Pad a 2D tensor.
 
-        Args:
-            padding: padding to apply to each side of the input.
-            value: value to pad with. Defaults to 0.0.
+    Args:
+        padding: padding to apply to each side of the input.
+        value: value to pad with. Defaults to 0.0.
 
-        Note:
-            https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
-        """
-        super().__init__(padding=padding, value=value)
+    Note:
+        https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
+    """
 
     @property
     def spatial_ndim(self) -> int:
@@ -94,21 +87,18 @@ class Pad2D(PadND):
 
 
 class Pad3D(PadND):
-    def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
-        """
-        Pad a 3D tensor.
+    """Pad a 3D tensor.
 
-        Args:
-            padding: padding to apply to each side of the input.
-            value: value to pad with. Defaults to 0.0.
+    Args:
+        padding: padding to apply to each side of the input.
+        value: value to pad with. Defaults to 0.0.
 
-        Note:
-            https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
-        """
-        super().__init__(padding=padding, value=value)
+    Note:
+        https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
+    """
 
     @property
     def spatial_ndim(self) -> int:

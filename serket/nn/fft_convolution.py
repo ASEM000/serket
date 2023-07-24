@@ -235,17 +235,17 @@ class FFTConv1D(FFTConvND):
             output channels, for 3D convolution this is the number of output
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
-            
+
             - single integer for same kernel size in all dimensions.
             - sequence of integers for different kernel sizes in each dimension.
-        
+
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -253,12 +253,12 @@ class FFTConv1D(FFTConvND):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         kernel_dilation: Dilation of the convolutional kernel accepts:
-            
+
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -284,33 +284,6 @@ class FFTConv1D(FFTConvND):
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 1
@@ -328,17 +301,17 @@ class FFTConv2D(FFTConvND):
             output channels, for 3D convolution this is the number of output
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
-            
+
             - single integer for same kernel size in all dimensions.
             - sequence of integers for different kernel sizes in each dimension.
-        
+
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -346,12 +319,12 @@ class FFTConv2D(FFTConvND):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         kernel_dilation: Dilation of the convolutional kernel accepts:
-            
+
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -377,33 +350,6 @@ class FFTConv2D(FFTConvND):
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 2
@@ -421,17 +367,17 @@ class FFTConv3D(FFTConvND):
             output channels, for 3D convolution this is the number of output
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
-            
+
             - single integer for same kernel size in all dimensions.
             - sequence of integers for different kernel sizes in each dimension.
-        
+
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -439,12 +385,12 @@ class FFTConv3D(FFTConvND):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         kernel_dilation: Dilation of the convolutional kernel accepts:
-            
+
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -469,33 +415,6 @@ class FFTConv3D(FFTConvND):
     Note:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:
@@ -607,17 +526,17 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
             output channels, for 3D convolution this is the number of output
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
-            
+
             - single integer for same kernel size in all dimensions.
             - sequence of integers for different kernel sizes in each dimension.
-        
+
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -625,16 +544,16 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         output_padding: Padding of the output after convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
-        
+
         kernel_dilation: Dilation of the convolutional kernel accepts:
-            
+
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -660,35 +579,6 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        output_padding: int = 0,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 1
@@ -706,17 +596,17 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
             output channels, for 3D convolution this is the number of output
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
-            
+
             - single integer for same kernel size in all dimensions.
             - sequence of integers for different kernel sizes in each dimension.
-        
+
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -724,16 +614,16 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         output_padding: Padding of the output after convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
-        
+
         kernel_dilation: Dilation of the convolutional kernel accepts:
-            
+
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -759,35 +649,6 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        output_padding: int = 0,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 2
@@ -805,17 +666,17 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
             output channels, for 3D convolution this is the number of output
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
-            
+
             - single integer for same kernel size in all dimensions.
             - sequence of integers for different kernel sizes in each dimension.
-        
+
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -823,16 +684,16 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         output_padding: Padding of the output after convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
-        
+
         kernel_dilation: Dilation of the convolutional kernel accepts:
-            
+
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -857,35 +718,6 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
     Note:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        output_padding: int = 0,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            out_features=out_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            groups=groups,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:
@@ -965,7 +797,7 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
         kernel_size: Size of the convolutional kernel. accepts:
-            
+
             - single integer for same kernel size in all dimensions.
             - sequence of integers for different kernel sizes in each dimension.
 
@@ -973,12 +805,12 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -986,7 +818,7 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -1005,29 +837,6 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        depth_multiplier: int = 1,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            kernel_size=kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:
@@ -1050,12 +859,12 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -1063,7 +872,7 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -1082,29 +891,6 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        depth_multiplier: int = 1,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            kernel_size=kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:
@@ -1127,12 +913,12 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -1140,7 +926,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -1159,29 +945,6 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        depth_multiplier: int = 1,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            kernel_size=kernel_size,
-            depth_multiplier=depth_multiplier,
-            strides=strides,
-            padding=padding,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
 
     @property
     def spatial_ndim(self) -> int:
@@ -1211,12 +974,12 @@ class SeparableFFTConv1D(sk.TreeClass):
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -1224,7 +987,7 @@ class SeparableFFTConv1D(sk.TreeClass):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -1317,17 +1080,17 @@ class SeparableFFTConv2D(sk.TreeClass):
 
            - single integer for same kernel size in all dimnsions.
            - sequence of integers for different kernel sizes in each dimension.
-            
+
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -1335,7 +1098,7 @@ class SeparableFFTConv2D(sk.TreeClass):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
@@ -1427,17 +1190,17 @@ class SeparableFFTConv3D(sk.TreeClass):
 
            - single integer for same kernel size in all dimnsions.
            - sequence of integers for different kernel sizes in each dimension.
-            
+
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
-            
+
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
-        
+
         padding: Padding of the input before convolution. accepts:
-            
+
             - single integer for same padding in all dimensions.
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
@@ -1445,7 +1208,7 @@ class SeparableFFTConv3D(sk.TreeClass):
             - "same"/"SAME" for padding such that the output has the same shape
               as the input.
             - "valid"/"VALID" for no padding.
-        
+
         weight_init_func: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init_func: function to use for initializing the bias. defaults to
