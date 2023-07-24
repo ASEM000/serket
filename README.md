@@ -7,8 +7,6 @@
 [**Installation**](#Installation)
 |[**Description**](#Description)
 |[**Quick Example**](#QuickExample)
-|[**Freezing/Fine tuning**](#Freezing)
-|[**Filtering**](#Filtering)
 
 ![Tests](https://github.com/ASEM000/serket/actions/workflows/tests.yml/badge.svg)
 ![pyver](https://img.shields.io/badge/python-3.7%203.8%203.9%203.10-red)
@@ -35,7 +33,7 @@ pip install git+https://github.com/ASEM000/serket
 - `serket` aims to be the most intuitive and easy-to-use neural network library in `JAX`.
 - `serket` is fully transparent to `jax` transformation (e.g. `vmap`,`grad`,`jit`,...).
 
-### Quick example
+### 🏃 Quick example<a id="QuickExample"></a>
 
 For full examples see [here](https://serket.readthedocs.io/en/latest/examples.html) e.g. [Training 🚆 MNIST](https://serket.readthedocs.io/en/latest/notebooks/mnist.html), or [Training 🚆 Bidirectional-LSTM](https://serket.readthedocs.io/en/latest/notebooks/bilstm.html)
 
