@@ -1,6 +1,6 @@
-Advanced API
+➕ Advanced API
 ---------------------------------------
-.. currentmodule:: serket
+.. currentmodule:: pytreeclass
 
 .. autofunction:: bcmap
 .. autoclass:: Partial

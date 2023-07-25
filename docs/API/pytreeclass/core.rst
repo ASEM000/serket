@@ -1,7 +1,8 @@
-Core API
+🎯 Core API
 =============================
 
-.. currentmodule:: serket 
+
+.. currentmodule:: pytreeclass 
 
 .. autoclass:: TreeClass 
 .. autoclass:::members: at
