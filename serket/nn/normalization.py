@@ -414,7 +414,7 @@ def _(batchnorm: BatchNorm) -> BatchNorm:
 
 
 @tree_state.def_state(BatchNorm)
-def batchnorm_init_state(batchnorm: BatchNorm, _) -> BatchNormState:
+def batchnorm_init_state(batchnorm: BatchNorm) -> BatchNormState:
     running_mean = jnp.zeros([batchnorm.in_features])
     running_var = jnp.ones([batchnorm.in_features])
     return BatchNormState(running_mean, running_var)

@@ -951,7 +951,74 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         return 3
 
 
-class SeparableFFTConv1D(sk.TreeClass):
+class SeparableFFTConvND(sk.TreeClass):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        depth_multiplier: int = 1,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        depthwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_bias_init_func: InitType = "zeros",
+        key: jr.KeyArray = jr.PRNGKey(0),
+    ):
+        self.in_features = in_features
+        self.depth_multiplier = canonicalize(
+            depth_multiplier,
+            self.in_features,
+            name="depth_multiplier",
+        )
+
+        self.depthwise_conv = DepthwiseFFTConv1D(
+            in_features=in_features,
+            depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
+            key=key,
+        )
+
+        self.pointwise_conv = FFTConv1D(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+        )
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+    @property
+    @abc.abstractclassmethod
+    def spatial_ndim(self) -> int:
+        ...
+
+    @property
+    @abc.abstractclassmethod
+    def pointwise_convolution_layer(self):
+        ...
+
+    @property
+    @abc.abstractclassmethod
+    def depthwise_convolution_layer(self):
+        ...
+
+
+class SeparableFFTConv1D(SeparableFFTConvND):
     """1D Separable FFT convolution layer.
 
     Separable convolution is a depthwise convolution followed by a pointwise
@@ -1011,59 +1078,17 @@ class SeparableFFTConv1D(sk.TreeClass):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        depth_multiplier: int = 1,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        self.in_features = in_features
-        self.depth_multiplier = canonicalize(
-            depth_multiplier,
-            self.in_features,
-            name="depth_multiplier",
-        )
-
-        self.depthwise_conv = DepthwiseFFTConv1D(
-            in_features=in_features,
-            depth_multiplier=depth_multiplier,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            weight_init_func=depthwise_weight_init_func,
-            bias_init_func=None,  # no bias for lhs
-            key=key,
-        )
-
-        self.pointwise_conv = FFTConv1D(
-            in_features=in_features * depth_multiplier,
-            out_features=out_features,
-            kernel_size=1,
-            strides=strides,
-            padding=padding,
-            weight_init_func=pointwise_weight_init_func,
-            bias_init_func=pointwise_bias_init_func,
-            key=key,
-        )
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self.depthwise_conv(x)
-        x = self.pointwise_conv(x)
-        return x
-
     @property
     def spatial_ndim(self) -> int:
         return 1
+
+    @property
+    def pointwise_convolution_layer(self):
+        return FFTConv1D
+
+    @property
+    def depthwise_convolution_layer(self):
+        return DepthwiseFFTConv1D
 
 
 class SeparableFFTConv2D(sk.TreeClass):

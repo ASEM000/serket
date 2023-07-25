@@ -70,16 +70,17 @@ class PixelShuffle2D(sk.TreeClass):
                 raise ValueError("upscale_factor must be >= 1")
 
             self.upscale_factor = (upscale_factor, upscale_factor)
+            return
 
-        elif isinstance(upscale_factor, tuple):
+        if isinstance(upscale_factor, tuple):
             if len(upscale_factor) != 2:
                 raise ValueError("upscale_factor must be a tuple of length 2")
             if upscale_factor[0] < 1 or upscale_factor[1] < 1:
                 raise ValueError("upscale_factor must be >= 1")
             self.upscale_factor = upscale_factor
+            return
 
-        else:
-            raise ValueError("upscale_factor must be an integer or tuple of length 2")
+        raise ValueError("upscale_factor must be an integer or tuple of length 2")
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:

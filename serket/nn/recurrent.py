@@ -138,10 +138,6 @@ class SimpleRNNCell(RNNCell):
         self.ih2h_weight = jnp.concatenate([i2h.weight, h2h.weight], axis=0)
         self.ih2h_bias = i2h.bias
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 0
-
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: SimpleRNNState, **k) -> SimpleRNNState:
@@ -152,10 +148,9 @@ class SimpleRNNCell(RNNCell):
         h = ih @ self.ih2h_weight + self.ih2h_bias
         return SimpleRNNState(self.act_func(h))
 
-
-@tree_state.def_state(SimpleRNNCell)
-def simple_rnn_init_state(cell: SimpleRNNCell, _) -> SimpleRNNState:
-    return SimpleRNNState(jnp.zeros([cell.hidden_features]))
+    @property
+    def spatial_ndim(self) -> int:
+        return 0
 
 
 class DenseState(RNNState):
@@ -209,10 +204,6 @@ class DenseCell(RNNCell):
             key=key,
         )
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 0
-
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: DenseState, **k) -> DenseState:
@@ -222,10 +213,9 @@ class DenseCell(RNNCell):
         h = self.act_func(self.in_to_hidden(x))
         return DenseState(h)
 
-
-@tree_state.def_state(DenseCell)
-def dense_init_state(cell: DenseCell, _) -> DenseState:
-    return DenseState(jnp.empty([cell.hidden_features]))
+    @property
+    def spatial_ndim(self) -> int:
+        return 0
 
 
 @sk.autoinit
@@ -312,12 +302,6 @@ class LSTMCell(RNNCell):
         return 0
 
 
-@tree_state.def_state(LSTMCell)
-def lstm_init_state(cell: LSTMCell, _) -> LSTMState:
-    shape = [cell.hidden_features]
-    return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
-
-
 class GRUState(RNNState):
     ...
 
@@ -374,10 +358,6 @@ class GRUCell(RNNCell):
             key=k2,
         )
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 0
-
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: GRUState, **k) -> GRUState:
@@ -393,10 +373,9 @@ class GRUCell(RNNCell):
         h = (1 - u) * o + u * h
         return GRUState(hidden_state=h)
 
-
-@tree_state.def_state(GRUCell)
-def gru_init_state(cell: GRUCell, _) -> GRUState:
-    return GRUState(jnp.zeros([cell.hidden_features]))
+    @property
+    def spatial_ndim(self) -> int:
+        return 0
 
 
 # Spatial RNN
@@ -452,7 +431,7 @@ class ConvLSTMNDCell(RNNCell):
         self.act_func = resolve_activation(act_func)
         self.recurrent_act_func = resolve_activation(recurrent_act_func)
 
-        self.in_to_hidden = self.convolution(
+        self.in_to_hidden = self.convolution_layer(
             in_features,
             hidden_features * 4,
             kernel_size,
@@ -464,7 +443,7 @@ class ConvLSTMNDCell(RNNCell):
             key=k1,
         )
 
-        self.hidden_to_hidden = self.convolution(
+        self.hidden_to_hidden = self.convolution_layer(
             hidden_features,
             hidden_features * 4,
             kernel_size,
@@ -493,6 +472,11 @@ class ConvLSTMNDCell(RNNCell):
         h = o * self.act_func(c)
         return ConvLSTMNDState(h, c)
 
+    @property
+    @abc.abstractmethod
+    def convolution_layer(self):
+        ...
+
 
 class ConvLSTM1DCell(ConvLSTMNDCell):
     """1D Convolution LSTM cell that defines the update rule for the hidden state and cell state
@@ -520,7 +504,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         return 1
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.Conv1D
 
 
@@ -550,7 +534,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         return 1
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.FFTConv1D
 
 
@@ -580,7 +564,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         return 2
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.Conv2D
 
 
@@ -610,7 +594,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         return 2
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.FFTConv2D
 
 
@@ -640,7 +624,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         return 3
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.Conv3D
 
 
@@ -670,7 +654,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         return 3
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.FFTConv3D
 
 
@@ -720,7 +704,7 @@ class ConvGRUNDCell(RNNCell):
         self.act_func = resolve_activation(act_func)
         self.recurrent_act_func = resolve_activation(recurrent_act_func)
 
-        self.in_to_hidden = self.convolution(
+        self.in_to_hidden = self.convolution_layer(
             in_features,
             hidden_features * 3,
             kernel_size,
@@ -732,7 +716,7 @@ class ConvGRUNDCell(RNNCell):
             key=k1,
         )
 
-        self.hidden_to_hidden = self.convolution(
+        self.hidden_to_hidden = self.convolution_layer(
             hidden_features,
             hidden_features * 3,
             kernel_size,
@@ -757,6 +741,11 @@ class ConvGRUNDCell(RNNCell):
         o = self.act_func(xo + (e * ho))
         h = (1 - u) * o + u * h
         return ConvGRUNDState(hidden_state=h)
+
+    @property
+    @abc.abstractmethod
+    def convolution_layer(self):
+        ...
 
 
 class ConvGRU1DCell(ConvGRUNDCell):
@@ -783,7 +772,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         return 1
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.Conv1D
 
 
@@ -811,7 +800,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         return 1
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.FFTConv1D
 
 
@@ -840,7 +829,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         return 2
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.Conv2D
 
 
@@ -868,7 +857,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         return 2
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.FFTConv2D
 
 
@@ -895,7 +884,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         return 3
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.Conv3D
 
 
@@ -922,7 +911,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         return 3
 
     @property
-    def convolution(self):
+    def convolution_layer(self):
         return sk.nn.FFTConv3D
 
 
@@ -1102,6 +1091,27 @@ def _no_accumulate_scan(
 
 
 # register state handlers
+
+
+@tree_state.def_state(SimpleRNNCell)
+def simple_rnn_init_state(cell: SimpleRNNCell, _) -> SimpleRNNState:
+    return SimpleRNNState(jnp.zeros([cell.hidden_features]))
+
+
+@tree_state.def_state(DenseCell)
+def dense_init_state(cell: DenseCell, _) -> DenseState:
+    return DenseState(jnp.empty([cell.hidden_features]))
+
+
+@tree_state.def_state(LSTMCell)
+def lstm_init_state(cell: LSTMCell, _) -> LSTMState:
+    shape = [cell.hidden_features]
+    return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
+
+
+@tree_state.def_state(GRUCell)
+def gru_init_state(cell: GRUCell, _) -> GRUState:
+    return GRUState(jnp.zeros([cell.hidden_features]))
 
 
 def _check_rnn_cell_tree_state_input(cell: RNNCell, x):

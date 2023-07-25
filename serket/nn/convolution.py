@@ -864,7 +864,65 @@ class DepthwiseConv3D(DepthwiseConvND):
         return 3
 
 
-class SeparableConv1D(sk.TreeClass):
+class SeparableConvND(sk.TreeClass):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        kernel_size: KernelSizeType,
+        *,
+        depth_multiplier: int = 1,
+        strides: StridesType = 1,
+        padding: PaddingType = "SAME",
+        depthwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_weight_init_func: InitType = "glorot_uniform",
+        pointwise_bias_init_func: InitType = "zeros",
+        key: jr.KeyArray = jr.PRNGKey(0),
+    ):
+        self.depthwise_conv = self.depthwise_convolution_layer(
+            in_features=in_features,
+            depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            weight_init_func=depthwise_weight_init_func,
+            bias_init_func=None,  # no bias for lhs
+            key=key,
+        )
+
+        self.pointwise_conv = self.pointwise_convolution_layer(
+            in_features=in_features * depth_multiplier,
+            out_features=out_features,
+            kernel_size=1,
+            strides=strides,
+            padding=padding,
+            weight_init_func=pointwise_weight_init_func,
+            bias_init_func=pointwise_bias_init_func,
+            key=key,
+        )
+
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        ...
+
+    @property
+    @abc.abstractmethod
+    def pointwise_convolution_layer(self):
+        ...
+
+    @property
+    @abc.abstractmethod
+    def depthwise_convolution_layer(self):
+        ...
+
+
+class SeparableConv1D(SeparableConvND):
     """1D Separable convolution layer.
 
     Separable convolution is a depthwise convolution followed by a pointwise
@@ -924,53 +982,20 @@ class SeparableConv1D(sk.TreeClass):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        depth_multiplier: int = 1,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        self.depthwise_conv = DepthwiseConv1D(
-            in_features=in_features,
-            depth_multiplier=depth_multiplier,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            weight_init_func=depthwise_weight_init_func,
-            bias_init_func=None,  # no bias for lhs
-            key=key,
-        )
-
-        self.pointwise_conv = Conv1D(
-            in_features=in_features * depth_multiplier,
-            out_features=out_features,
-            kernel_size=1,
-            strides=strides,
-            padding=padding,
-            weight_init_func=pointwise_weight_init_func,
-            bias_init_func=pointwise_bias_init_func,
-            key=key,
-        )
-
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self.depthwise_conv(x)
-        x = self.pointwise_conv(x)
-        return x
-
     @property
     def spatial_ndim(self) -> int:
         return 1
 
+    @property
+    def pointwise_convolution_layer(self):
+        return Conv1D
 
-class SeparableConv2D(sk.TreeClass):
+    @property
+    def depthwise_convolution_layer(self):
+        return DepthwiseConv1D
+
+
+class SeparableConv2D(SeparableConvND):
     """2D Separable convolution layer.
 
     Separable convolution is a depthwise convolution followed by a pointwise
@@ -1029,53 +1054,20 @@ class SeparableConv2D(sk.TreeClass):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        depth_multiplier: int = 1,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        self.depthwise_conv = DepthwiseConv2D(
-            in_features=in_features,
-            depth_multiplier=depth_multiplier,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            weight_init_func=depthwise_weight_init_func,
-            bias_init_func=None,  # no bias for lhs
-            key=key,
-        )
-
-        self.pointwise_conv = Conv2D(
-            in_features=in_features * depth_multiplier,
-            out_features=out_features,
-            kernel_size=1,
-            strides=strides,
-            padding=padding,
-            weight_init_func=pointwise_weight_init_func,
-            bias_init_func=pointwise_bias_init_func,
-            key=key,
-        )
-
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self.depthwise_conv(x)
-        x = self.pointwise_conv(x)
-        return x
-
     @property
     def spatial_ndim(self) -> int:
         return 2
 
+    @property
+    def pointwise_convolution_layer(self):
+        return Conv2D
 
-class SeparableConv3D(sk.TreeClass):
+    @property
+    def depthwise_convolution_layer(self):
+        return DepthwiseConv2D
+
+
+class SeparableConv3D(SeparableConvND):
     """3D Separable convolution layer.
 
     Separable convolution is a depthwise convolution followed by a pointwise
@@ -1134,50 +1126,17 @@ class SeparableConv3D(sk.TreeClass):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        depth_multiplier: int = 1,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_bias_init_func: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        self.depthwise_conv = DepthwiseConv3D(
-            in_features=in_features,
-            depth_multiplier=depth_multiplier,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            weight_init_func=depthwise_weight_init_func,
-            bias_init_func=None,  # no bias for lhs
-            key=key,
-        )
-
-        self.pointwise_conv = Conv3D(
-            in_features=in_features * depth_multiplier,
-            out_features=out_features,
-            kernel_size=1,
-            strides=strides,
-            padding=padding,
-            weight_init_func=pointwise_weight_init_func,
-            bias_init_func=pointwise_bias_init_func,
-            key=key,
-        )
-
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self.depthwise_conv(x)
-        x = self.pointwise_conv(x)
-        return x
-
     @property
     def spatial_ndim(self) -> int:
         return 3
+
+    @property
+    def pointwise_convolution_layer(self):
+        return Conv3D
+
+    @property
+    def depthwise_convolution_layer(self):
+        return DepthwiseConv3D
 
 
 class ConvNDLocal(sk.TreeClass):
