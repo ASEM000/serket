@@ -18,5 +18,5 @@ sphinxcontrib-katex>=0.9.4
 typing-extensions>=4.5.0
 sphinx-copybutton>=0.5.1
 graphviz>=0.20.1
-pytreeclass>=0.4.0
+pytreeclass>=0.5.0
 kernex>=0.2.0

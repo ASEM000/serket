@@ -55,8 +55,8 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
         >>> tree = [1, 2, sk.nn.BatchNorm(5)]
         >>> sk.tree_state(tree)
         [NoState(), NoState(), BatchNormState(
-          running_mean=f32[5](μ=0.00, σ=0.00, ∈(0.00,0.00)),
-          running_var=f32[5](μ=1.00, σ=0.00, ∈(1.00,1.00))
+          running_mean=f32[5](μ=0.00, σ=0.00, ∈[0.00,0.00]),
+          running_var=f32[5](μ=1.00, σ=0.00, ∈[1.00,1.00])
         )]
 
     Example:
