@@ -965,6 +965,10 @@ class SeparableFFTConv1D(sk.TreeClass):
         in_features: Number of input feature maps, for 1D convolution this is the
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
+        out_features: Number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
            - single integer for same kernel size in all dimnsions.
@@ -1076,6 +1080,10 @@ class SeparableFFTConv2D(sk.TreeClass):
         in_features: Number of input feature maps, for 1D convolution this is the
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
+        out_features: Number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
            - single integer for same kernel size in all dimnsions.
@@ -1186,6 +1194,10 @@ class SeparableFFTConv3D(sk.TreeClass):
         in_features: Number of input feature maps, for 1D convolution this is the
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
+        out_features: Number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
            - single integer for same kernel size in all dimnsions.

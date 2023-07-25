@@ -1,6 +1,11 @@
 ``Serket`` NN API 
 ======================
 
+.. currentmodule:: serket
+
+.. autofunction:: tree_state
+.. autofunction:: tree_evaluation
+
 .. toctree::
    :maxdepth: 2
    :caption: API Documentation
@@ -17,3 +22,5 @@
    random_transforms
    activations
    recurrent
+
+

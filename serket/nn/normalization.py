@@ -278,6 +278,8 @@ def _batchnorm_impl(
 
     state = jax.lax.stop_gradient(state)
 
+    x = jax.lax.cond(evalution, jax.lax.stop_gradient, lambda x: x, x)
+
     if gamma is not None:
         output *= jnp.reshape(gamma, broadcast_shape)
 
@@ -332,15 +334,20 @@ def _(
 class BatchNorm(sk.TreeClass):
     """Applies normalization over batched inputs`
 
-    Works under ``jax.vmap(BatchNorm(...), in_axes=(0, None))``, otherwise will be a no-op.
+    .. warning::
+        Works under
+            - ``jax.vmap(BatchNorm(...), in_axes=(0, None))(x, state)``
+            - ``jax.vmap(BatchNorm(...))(x)``
+
+        otherwise will be a no-op.
 
     Evaluation behavior:
-        ``output = (x - running_mean) / sqrt(running_var + eps)``
+        - ``output = (x - running_mean) / sqrt(running_var + eps)``
 
     Training behavior:
-        ``output = (x - batch_mean) / sqrt(batch_var + eps)``
-        ``running_mean = momentum * running_mean + (1 - momentum) * batch_mean``
-        ``running_var = momentum * running_var + (1 - momentum) * batch_var``
+        - ``output = (x - batch_mean) / sqrt(batch_var + eps)``
+        - ``running_mean = momentum * running_mean + (1 - momentum) * batch_mean``
+        - ``running_var = momentum * running_var + (1 - momentum) * batch_var``
 
     Args:
         in_features: the shape of the input to be normalized.

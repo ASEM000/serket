@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Any
 
 import jax
 import jax.random as jr
@@ -23,7 +22,6 @@ import jax.random as jr
 import serket as sk
 
 
-@sk.autoinit
 class Sequential(sk.TreeClass):
     """A sequential container for layers.
 
@@ -44,14 +42,15 @@ class Sequential(sk.TreeClass):
         it might have a key argument for random number generation.
     """
 
-    # allow list then cast to tuple avoid mutability issues
-    layers: tuple[Any, ...] = sk.field(kind="VAR_POS")
+    def __init__(self, *layers):
+        self.layers = layers
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         for key, layer in zip(jr.split(key, len(self.layers)), self.layers):
             try:
                 x = layer(x, key=key)
             except TypeError:
+                # a `layer` or a `function` without a key argument
                 x = layer(x)
         return x
 

@@ -878,6 +878,10 @@ class SeparableConv1D(sk.TreeClass):
         in_features: Number of input feature maps, for 1D convolution this is the
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
+        out_features: Number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
             - single integer for same kernel size in all dimensions.
@@ -980,6 +984,10 @@ class SeparableConv2D(sk.TreeClass):
         in_features: Number of input feature maps, for 1D convolution this is the
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
+        out_features: Number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
             - single integer for same kernel size in all dimensions.
@@ -1081,6 +1089,10 @@ class SeparableConv3D(sk.TreeClass):
         in_features: Number of input feature maps, for 1D convolution this is the
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
+        out_features: Number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
             - single integer for same kernel size in all dimensions.
@@ -1267,6 +1279,10 @@ class Conv1DLocal(ConvNDLocal):
         in_features: Number of input feature maps, for 1D convolution this is the
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
+        out_features: Number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
             - single integer for same kernel size in all dimensions.
@@ -1324,6 +1340,10 @@ class Conv2DLocal(ConvNDLocal):
         in_features: Number of input feature maps, for 1D convolution this is the
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
+        out_features: Number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
             - single integer for same kernel size in all dimensions.
@@ -1381,6 +1401,10 @@ class Conv3DLocal(ConvNDLocal):
         in_features: Number of input feature maps, for 1D convolution this is the
             length of the input, for 2D convolution this is the number of input
             channels, for 3D convolution this is the number of input channels.
+        out_features: Number of output features maps, for 1D convolution this is
+            the length of the output, for 2D convolution this is the number of
+            output channels, for 3D convolution this is the number of output
+            channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
             - single integer for same kernel size in all dimensions.

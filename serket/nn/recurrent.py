@@ -437,7 +437,6 @@ class ConvLSTMNDCell(RNNCell):
         *,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
         kernel_dilation: DilationType = 1,
         weight_init_func: InitType = "glorot_uniform",
         bias_init_func: InitType = "zeros",
@@ -445,7 +444,6 @@ class ConvLSTMNDCell(RNNCell):
         act_func: ActivationType | None = "tanh",
         recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
-        conv_layer: Any = None,
     ):
         k1, k2 = jr.split(key, 2)
 
@@ -454,26 +452,24 @@ class ConvLSTMNDCell(RNNCell):
         self.act_func = resolve_activation(act_func)
         self.recurrent_act_func = resolve_activation(recurrent_act_func)
 
-        self.in_to_hidden = conv_layer(
+        self.in_to_hidden = self.convolution(
             in_features,
             hidden_features * 4,
             kernel_size,
             strides=strides,
             padding=padding,
-            input_dilation=input_dilation,
             kernel_dilation=kernel_dilation,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
         )
 
-        self.hidden_to_hidden = conv_layer(
+        self.hidden_to_hidden = self.convolution(
             hidden_features,
             hidden_features * 4,
             kernel_size,
             strides=strides,
             padding=padding,
-            input_dilation=input_dilation,
             kernel_dilation=kernel_dilation,
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
@@ -498,29 +494,6 @@ class ConvLSTMNDCell(RNNCell):
         return ConvLSTMNDState(h, c)
 
 
-@tree_state.def_state(ConvLSTMNDCell)
-def conv_lstm_init_state(cell: ConvLSTMNDCell, x: jax.Array | None) -> ConvLSTMNDState:
-    if not (hasattr(x, "ndim") and hasattr(x, "shape")):
-        raise TypeError(
-            f"Expected {x=} to have ndim and shape attributes.",
-            "To initialize the `ConvLSTMNDCell` state.\n"
-            "pass a single sample array to `tree_state` second argument.",
-        )
-
-    if x.ndim != cell.spatial_ndim + 1:
-        raise ValueError(
-            f"{x.ndim=} != {(cell.spatial_ndim + 1)=}.",
-            "Expected input to have shape (channel, *spatial_dim)."
-            "Pass a single sample array to `tree_state",
-        )
-
-    spatial_dim = x.shape[1:]
-    if len(spatial_dim) != cell.spatial_ndim:
-        raise ValueError(f"{len(spatial_dim)=} != {cell.spatial_ndim=}.")
-    shape = (cell.hidden_features, *spatial_dim)
-    return ConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
-
-
 class ConvLSTM1DCell(ConvLSTMNDCell):
     """1D Convolution LSTM cell that defines the update rule for the hidden state and cell state
 
@@ -530,7 +503,6 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        input_dilation: Dilation of the input
         kernel_dilation: Dilation of the convolutional kernel
         weight_init_func: Weight initialization function
         bias_init_func: Bias initialization function
@@ -543,43 +515,43 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        hidden_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
-        act_func: ActivationType | None = "tanh",
-        recurrent_act_func: ActivationType | None = "hard_sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            hidden_features=hidden_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            recurrent_weight_init_func=recurrent_weight_init_func,
-            act_func=act_func,
-            recurrent_act_func=recurrent_act_func,
-            key=key,
-            conv_layer=sk.nn.Conv1D,
-        )
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+    @property
+    def convolution(self):
+        return sk.nn.Conv1D
+
+
+class FFTConvLSTM1DCell(ConvLSTMNDCell):
+    """1D FFT Convolution LSTM cell that defines the update rule for the hidden state and cell state
+
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+
+    Note:
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+    """
 
     @property
     def spatial_ndim(self) -> int:
         return 1
+
+    @property
+    def convolution(self):
+        return sk.nn.FFTConv1D
 
 
 class ConvLSTM2DCell(ConvLSTMNDCell):
@@ -591,7 +563,6 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        input_dilation: Dilation of the input
         kernel_dilation: Dilation of the convolutional kernel
         weight_init_func: Weight initialization function
         bias_init_func: Bias initialization function
@@ -601,46 +572,46 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         key: PRNG key
 
     Note:
-        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        hidden_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
-        act_func: ActivationType | None = "tanh",
-        recurrent_act_func: ActivationType | None = "hard_sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            hidden_features=hidden_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            recurrent_weight_init_func=recurrent_weight_init_func,
-            act_func=act_func,
-            recurrent_act_func=recurrent_act_func,
-            key=key,
-            conv_layer=sk.nn.Conv2D,
-        )
 
     @property
     def spatial_ndim(self) -> int:
         return 2
+
+    @property
+    def convolution(self):
+        return sk.nn.Conv2D
+
+
+class FFTConvLSTM2DCell(ConvLSTMNDCell):
+    """2D FFT Convolution LSTM cell that defines the update rule for the hidden state and cell state
+
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+
+    Note:
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+    @property
+    def convolution(self):
+        return sk.nn.FFTConv2D
 
 
 class ConvLSTM3DCell(ConvLSTMNDCell):
@@ -652,7 +623,6 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        input_dilation: Dilation of the input
         kernel_dilation: Dilation of the convolutional kernel
         weight_init_func: Weight initialization function
         bias_init_func: Bias initialization function
@@ -662,46 +632,46 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         key: PRNG key
 
     Note:
-        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
     """
-
-    def __init__(
-        self,
-        in_features: int,
-        hidden_features: int,
-        kernel_size: KernelSizeType,
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
-        act_func: ActivationType | None = "tanh",
-        recurrent_act_func: ActivationType | None = "hard_sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            hidden_features=hidden_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            recurrent_weight_init_func=recurrent_weight_init_func,
-            act_func=act_func,
-            recurrent_act_func=recurrent_act_func,
-            key=key,
-            conv_layer=sk.nn.Conv3D,
-        )
 
     @property
     def spatial_ndim(self) -> int:
         return 3
+
+    @property
+    def convolution(self):
+        return sk.nn.Conv3D
+
+
+class FFTConvLSTM3DCell(ConvLSTMNDCell):
+    """3D FFT Convolution LSTM cell that defines the update rule for the hidden state and cell state
+
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+
+    Note:
+        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
+    @property
+    def convolution(self):
+        return sk.nn.FFTConv3D
 
 
 class ConvGRUNDState(RNNState):
@@ -717,7 +687,6 @@ class ConvGRUNDCell(RNNCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        input_dilation: Dilation of the input
         kernel_dilation: Dilation of the convolutional kernel
         weight_init_func: Weight initialization function
         bias_init_func: Bias initialization function
@@ -736,7 +705,6 @@ class ConvGRUNDCell(RNNCell):
         *,
         strides: StridesType = 1,
         padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
         kernel_dilation: DilationType = 1,
         weight_init_func: InitType = "glorot_uniform",
         bias_init_func: InitType = "zeros",
@@ -744,7 +712,6 @@ class ConvGRUNDCell(RNNCell):
         act_func: ActivationType | None = "tanh",
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
-        conv_layer: Any = None,
     ):
         k1, k2 = jr.split(key, 2)
 
@@ -753,26 +720,24 @@ class ConvGRUNDCell(RNNCell):
         self.act_func = resolve_activation(act_func)
         self.recurrent_act_func = resolve_activation(recurrent_act_func)
 
-        self.in_to_hidden = conv_layer(
+        self.in_to_hidden = self.convolution(
             in_features,
             hidden_features * 3,
             kernel_size,
             strides=strides,
             padding=padding,
-            input_dilation=input_dilation,
             kernel_dilation=kernel_dilation,
             weight_init_func=weight_init_func,
             bias_init_func=bias_init_func,
             key=k1,
         )
 
-        self.hidden_to_hidden = conv_layer(
+        self.hidden_to_hidden = self.convolution(
             hidden_features,
             hidden_features * 3,
             kernel_size,
             strides=strides,
             padding=padding,
-            input_dilation=input_dilation,
             kernel_dilation=kernel_dilation,
             weight_init_func=recurrent_weight_init_func,
             bias_init_func=None,
@@ -794,31 +759,6 @@ class ConvGRUNDCell(RNNCell):
         return ConvGRUNDState(hidden_state=h)
 
 
-@tree_state.def_state(ConvGRUNDCell)
-def conv_gru_init_state(cell: ConvGRUNDCell, x: jax.Array | None) -> ConvGRUNDState:
-    if not (hasattr(x, "ndim") and hasattr(x, "shape")):
-        # maybe the input is not an array
-        raise TypeError(
-            f"Expected {x=} to have ndim and shape attributes.",
-            "To initialize the `ConvGRUNDCell` state.\n"
-            "pass a single sample array to `tree_state` second argument.",
-        )
-
-    if x.ndim != cell.spatial_ndim + 1:
-        # channel, *spatial_dim
-        raise ValueError(
-            f"{x.ndim=} != {(cell.spatial_ndim + 1)=}.",
-            "Expected input to have shape (channel, *spatial_dim)."
-            "Pass a single sample array to `tree_state",
-        )
-
-    spatial_dim = x.shape[1:]
-    if len(spatial_dim) != cell.spatial_ndim:
-        raise ValueError(f"{len(spatial_dim)=} != {cell.spatial_ndim=}.")
-    shape = (cell.hidden_features, *spatial_dim)
-    return ConvGRUNDState(jnp.zeros(shape), jnp.zeros(shape))
-
-
 class ConvGRU1DCell(ConvGRUNDCell):
     """1D Convolution GRU cell that defines the update rule for the hidden state and cell state
 
@@ -828,7 +768,6 @@ class ConvGRU1DCell(ConvGRUNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        input_dilation: Dilation of the input
         kernel_dilation: Dilation of the convolutional kernel
         weight_init_func: Weight initialization function
         bias_init_func: Bias initialization function
@@ -839,54 +778,52 @@ class ConvGRU1DCell(ConvGRUNDCell):
         spatial_ndim: Number of spatial dimensions.
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        hidden_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
-        act_func: ActivationType | None = "tanh",
-        recurrent_act_func: ActivationType | None = "sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            hidden_features=hidden_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            recurrent_weight_init_func=recurrent_weight_init_func,
-            act_func=act_func,
-            recurrent_act_func=recurrent_act_func,
-            key=key,
-            conv_layer=sk.nn.Conv1D,
-        )
-
     @property
     def spatial_ndim(self) -> int:
         return 1
 
+    @property
+    def convolution(self):
+        return sk.nn.Conv1D
 
-class ConvGRU2DCell(ConvGRUNDCell):
-    """2D Convolution GRU cell that defines the update rule for the hidden state and cell state
+
+class FFTConvGRU1DCell(ConvGRUNDCell):
+    """1D FFT Convolution GRU cell that defines the update rule for the hidden state and cell state
+
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        input_dilation: Dilation of the input
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+        spatial_ndim: Number of spatial dimensions.
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+    @property
+    def convolution(self):
+        return sk.nn.FFTConv1D
+
+
+class ConvGRU2DCell(ConvGRUNDCell):
+    """2D Convolution GRU cell that defines the update rule for the hidden state and cell state
+
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
         weight_init_func: Weight initialization function
         bias_init_func: Bias initialization function
@@ -898,43 +835,41 @@ class ConvGRU2DCell(ConvGRUNDCell):
 
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        hidden_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
-        act_func: ActivationType | None = "tanh",
-        recurrent_act_func: ActivationType | None = "sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            hidden_features=hidden_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            recurrent_weight_init_func=recurrent_weight_init_func,
-            act_func=act_func,
-            recurrent_act_func=recurrent_act_func,
-            key=key,
-            conv_layer=sk.nn.Conv2D,
-        )
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+    @property
+    def convolution(self):
+        return sk.nn.Conv2D
+
+
+class FFTConvGRU2DCell(ConvGRUNDCell):
+    """2D FFT Convolution GRU cell that defines the update rule for the hidden state and cell state
+
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+        spatial_ndim: Number of spatial dimensions.
+    """
 
     @property
     def spatial_ndim(self) -> int:
         return 2
+
+    @property
+    def convolution(self):
+        return sk.nn.FFTConv2D
 
 
 class ConvGRU3DCell(ConvGRUNDCell):
@@ -946,7 +881,6 @@ class ConvGRU3DCell(ConvGRUNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        input_dilation: Dilation of the input
         kernel_dilation: Dilation of the convolutional kernel
         weight_init_func: Weight initialization function
         bias_init_func: Bias initialization function
@@ -956,44 +890,40 @@ class ConvGRU3DCell(ConvGRUNDCell):
         key: PRNG key
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        hidden_features: int,
-        kernel_size: int | tuple[int, ...],
-        *,
-        strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        input_dilation: DilationType = 1,
-        kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
-        act_func: ActivationType | None = "tanh",
-        recurrent_act_func: ActivationType | None = "sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            in_features=in_features,
-            hidden_features=hidden_features,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            input_dilation=input_dilation,
-            kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            recurrent_weight_init_func=recurrent_weight_init_func,
-            act_func=act_func,
-            recurrent_act_func=recurrent_act_func,
-            key=key,
-            conv_layer=sk.nn.Conv3D,
-            spatial_ndim=3,
-        )
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
+    @property
+    def convolution(self):
+        return sk.nn.Conv3D
+
+
+class FFTConvGRU3DCell(ConvGRUNDCell):
+    """3D Convolution GRU cell that defines the update rule for the hidden state and cell state
+
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of output features
+        kernel_size: Size of the convolutional kernel
+        strides: Stride of the convolution
+        padding: Padding of the convolution
+        kernel_dilation: Dilation of the convolutional kernel
+        weight_init_func: Weight initialization function
+        bias_init_func: Bias initialization function
+        recurrent_weight_init_func: Recurrent weight initialization function
+        act_func: Activation function
+        recurrent_act_func: Recurrent activation function
+        key: PRNG key
+    """
 
     @property
     def spatial_ndim(self) -> int:
         return 3
+
+    @property
+    def convolution(self):
+        return sk.nn.FFTConv3D
 
 
 # Scanning API
@@ -1095,7 +1025,7 @@ class ScanRNN(sk.TreeClass):
         if x.ndim != cell0.spatial_ndim + 2:
             raise ValueError(
                 f"Expected x to have {(cell0.spatial_ndim + 2)=} dimensions corresponds to "
-                f"(timesteps, in_features, {'*'*cell0.spatial_ndim}),"
+                f"(timesteps, in_features, {','.join('...'*cell0.spatial_ndim)}),"
                 f" got {x.ndim=}"
             )
 
@@ -1171,7 +1101,46 @@ def _no_accumulate_scan(
     return result, carry
 
 
+# register state handlers
+
+
+def _check_rnn_cell_tree_state_input(cell: RNNCell, x):
+    if not (hasattr(x, "ndim") and hasattr(x, "shape")):
+        raise TypeError(
+            f"Expected {x=} to have `ndim` and `shape` attributes.",
+            f"To initialize the `{type(cell).__name__}` state.\n",
+            "Pass a single sample array to `tree_state(..., array=)`.",
+        )
+
+    if x.ndim != cell.spatial_ndim + 1:
+        raise ValueError(
+            f"{x.ndim=} != {(cell.spatial_ndim + 1)=}.",
+            f"Expected input to have `shape` (in_features, {'...'*cell.spatial_dim})."
+            "Pass a single sample array to `tree_state",
+        )
+
+    spatial_dim = x.shape[1:]
+    if len(spatial_dim) != cell.spatial_ndim:
+        raise ValueError(f"{len(spatial_dim)=} != {cell.spatial_ndim=}.")
+
+    return x
+
+
+@tree_state.def_state(ConvLSTMNDCell)
+def conv_lstm_init_state(cell: ConvLSTMNDCell, x: Any) -> ConvLSTMNDState:
+    x = _check_rnn_cell_tree_state_input(cell, x)
+    shape = (cell.hidden_features, *x.shape[1:])
+    return ConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
+
+
+@tree_state.def_state(ConvGRUNDCell)
+def conv_gru_init_state(cell: ConvGRUNDCell, x: Any) -> ConvGRUNDState:
+    x = _check_rnn_cell_tree_state_input(cell, x)
+    shape = (cell.hidden_features, *x.shape[1:])
+    return ConvGRUNDState(jnp.zeros(shape), jnp.zeros(shape))
+
+
 @tree_state.def_state(ScanRNN)
-def rnn_init_state(rnn: ScanRNN, x: jax.Array | None) -> RNNState:
+def scan_rnn_init_state(rnn: ScanRNN, x: Any) -> RNNState:
     # should pass a single sample array to `tree_state`
     return _merge(tree_state(rnn.cells, array=x))

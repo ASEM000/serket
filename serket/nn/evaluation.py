@@ -17,24 +17,23 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable
 
 import jax
 
-T = TypeVar("T")
 
-
-def tree_evaluation(tree: T) -> T:
+def tree_evaluation(tree):
     """Modify tree layers to disable any trainning related behavior.
 
-    For example, `Dropout` layers drop probability is set to 0.0. and `BatchNorm`
-    layer `track_running_stats` is set to False when evaluating the tree.
+    For example, :class:`nn.Dropout` layer is replaced by an :class:`nn.Identity` layer
+    and :class:`nn.BatchNorm` layer ``evaluation`` is set to ``True`` when
+    evaluating the tree.
 
     Args:
         tree: A tree of layers.
 
     Returns:
-        A tree of layers with evaluation behavior.
+        A tree of layers with evaluation behavior of same structure as ``tree``.
 
     Example:
         >>> # dropout is replaced by an identity layer in evaluation mode

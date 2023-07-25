@@ -37,14 +37,14 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
     """Build state for a tree of layers.
 
     Some layers require state to be initialized before training. For example,
-    `BatchNorm` layers require `running_mean` and `running_var` to be initialized
+    :class:`nn.BatchNorm` layers requires ``running_mean`` and ``running_var`` to be initialized
     before training. This function initializes the state for a tree of layers,
     based on the layer defined ``state`` rule using ``tree_state.def_state``.
 
     Args:
         tree: A tree of layers.
-        array: An array to use for initializing state required by some layers
-            (e.g. ConvGRUNDCell). default: ``None``.
+        array: (Optional) array to use for initializing state required by some layers
+            (e.g. :class:`nn.ConvGRU1DCell`). default: ``None``.
 
     Returns:
         A tree of state leaves if it has state, otherwise ``None``.
@@ -67,8 +67,7 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
         ...    pass
         >>> # state function accept the `layer` and optional input array as arguments
         >>> @sk.tree_state.def_state(LayerWithState)
-        ... def _(leaf, _):
-        ...    del _  # array is not used
+        ... def _(leaf):
         ...    return "some state"
         >>> sk.tree_state(LayerWithState())
         'some state'
@@ -81,8 +80,13 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
         types.discard(object)
         return isinstance(x, tuple(types))
 
-    def dispatch_func(node):
-        return tree_state.state_dispatcher(node, array)
+    def dispatch_func(leaf):
+        try:
+            # single argument
+            return tree_state.state_dispatcher(leaf)
+        except TypeError:
+            # with optional array argument
+            return tree_state.state_dispatcher(leaf, array)
 
     return jax.tree_map(dispatch_func, tree, is_leaf=is_leaf)
 

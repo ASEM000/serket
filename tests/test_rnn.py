@@ -71,6 +71,7 @@ import pytest
 from serket.nn.recurrent import (  # ConvGRU1DCell,; ConvGRU2DCell,; ConvGRU3DCell,; ConvLSTM2DCell,; ConvLSTM3DCell,
     ConvLSTM1DCell,
     DenseCell,
+    FFTConvLSTM1DCell,
     GRUCell,
     LSTMCell,
     ScanRNN,
@@ -423,7 +424,8 @@ def test_gru():
     npt.assert_allclose(y, ypred, atol=1e-4)
 
 
-def test_conv_lstm1d():
+@pytest.mark.parametrize("layer", [ConvLSTM1DCell, FFTConvLSTM1DCell])
+def test_conv_lstm1d(layer):
     w_in_to_hidden = jnp.array(
         [
             [
@@ -570,7 +572,7 @@ def test_conv_lstm1d():
     # return_sequences=False,data_format='channels_first'))(inp)
     # rnn = tf.keras.Model(inputs=inp, outputs=rnn)
 
-    cell = ConvLSTM1DCell(
+    cell = layer(
         in_features=in_features,
         hidden_features=hidden_features,
         recurrent_act_func="sigmoid",
@@ -599,7 +601,7 @@ def test_conv_lstm1d():
 
     assert jnp.allclose(res_sk, y, atol=1e-5)
 
-    cell = ConvLSTM1DCell(
+    cell = layer(
         in_features=in_features,
         hidden_features=hidden_features,
         recurrent_act_func="sigmoid",
