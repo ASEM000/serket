@@ -30,6 +30,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install .
           pip install -r docs/requirements.txt
+
+      - name: Add Graphviz to PATH
+        run: |
+          echo "/usr/bin" >> $GITHUB_PATH
+
       - name: Test doctests
         run: |
           cd docs
