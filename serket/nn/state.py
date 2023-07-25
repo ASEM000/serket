@@ -75,9 +75,9 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
         'some state'
     """
 
+    types: set[type] = set(tree_state.state_dispatcher.registry) - {object}
+
     def is_leaf(x: Callable[[Any], bool]) -> bool:
-        types = set(tree_state.state_dispatcher.registry.keys())
-        types.discard(object)
         return isinstance(x, tuple(types))
 
     def dispatch_func(leaf):

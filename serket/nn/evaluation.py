@@ -45,9 +45,9 @@ def tree_evaluation(tree):
         Identity()
     """
 
+    types: set[type] = set(tree_evaluation.evaluation_dispatcher.registry) - {object}
+
     def is_leaf(x: Callable[[Any], bool]) -> bool:
-        types = set(tree_evaluation.evaluation_dispatcher.registry.keys())
-        types.discard(object)
         return isinstance(x, tuple(types))
 
     return jax.tree_map(tree_evaluation.evaluation_dispatcher, tree, is_leaf=is_leaf)
