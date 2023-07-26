@@ -21,10 +21,9 @@ import jax.random as jr
 from jax.lax import stop_gradient
 
 import serket as sk
-from serket.nn.crop import RandomCrop2D
-from serket.nn.padding import Pad2D
-from serket.nn.resize import Resize2D
+from serket.nn.reshape import Pad2D, RandomCrop2D, Resize2D
 from serket.nn.utils import Range
+
 
 @sk.autoinit
 class RandomApply(sk.TreeClass):
@@ -45,9 +44,9 @@ class RandomApply(sk.TreeClass):
         >>> layer(jnp.ones((1, 10, 10))).shape
         (1, 5, 5)
 
-    Note:
-        https://pytorch.org/vision/main/_modules/torchvision/transforms/transforms.html#RandomApply
-        Use sk.nn.Sequential to apply multiple layers.
+    Reference:
+        - https://pytorch.org/vision/main/_modules/torchvision/transforms/transforms.html#RandomApply
+        - Use :func:`nn.Sequential` to apply multiple layers.
     """
 
     layer: Any
@@ -65,14 +64,16 @@ class RandomZoom2D(sk.TreeClass):
         height_factor: tuple[float, float] = (0.0, 1.0),
         width_factor: tuple[float, float] = (0.0, 1.0),
     ):
-        """
+        """Randomly zooms an image.
+
+        Positive values are zoom in, negative values are zoom out.
+
         Args:
             height_factor: (min, max)
             width_factor: (min, max)
 
-        Note:
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
-            Positive values are zoom in, negative values are zoom out.
+        Reference:
+            - https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
         """
         if not (isinstance(height_factor, tuple) and len(height_factor) == 2):
             raise ValueError("height_factor must be a tuple of length 2")

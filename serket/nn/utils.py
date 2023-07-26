@@ -16,11 +16,12 @@ from __future__ import annotations
 
 import functools as ft
 import operator as op
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Callable, Sequence, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
 import numpy as np
+from typing_extensions import ParamSpec
 
 import serket as sk
 
@@ -28,6 +29,9 @@ KernelSizeType = Union[int, Sequence[int]]
 StridesType = Union[int, Sequence[int]]
 PaddingType = Union[str, int, Sequence[int], Sequence[Tuple[int, int]]]
 DilationType = Union[int, Sequence[int]]
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 @ft.lru_cache(maxsize=128)
@@ -250,48 +254,57 @@ def positive_int_cb(value):
     return value
 
 
-def validate_spatial_ndim(call_wrapper, attribute_name: str):
+def recursive_getattr(obj, attr: Sequence[str]):
+    if len(attr) == 1:
+        return getattr(obj, attr[0])
+    return recursive_getattr(getattr(obj, attr[0]), attr[1:])
+
+
+def validate_spatial_ndim(func: Callable[P, T], attribute_name: str) -> Callable[P, T]:
     """Decorator to validate spatial input shape."""
+    attribute_list: Sequence[str] = attribute_name.split(".")
 
     def check_spatial_in_shape(x, spatial_ndim: int) -> None:
-        spatial_tuple = ("rows", "cols", "depths")
         if x.ndim != spatial_ndim + 1:
-            # the extra dimension is for the input features (channels)
+            spatial = {", ".join(("rows", "cols", "depths")[:spatial_ndim])}
             raise ValueError(
-                f"Input must be a {spatial_ndim+1}D tensor in shape of "
-                f"(in_features, {', '.join(spatial_tuple[:spatial_ndim])}), "
-                f"but got {x.shape}.\n"
+                f"Input should satisfy:\n"
+                f"- {spatial_ndim+1=} dimension, got {x.ndim=}.\n"
+                f"- shape of (in_features, {spatial}), got {x.shape=}.\n"
                 + (
                     # maybe the user apply the layer on a batched input
-                    "To apply on batched input, use `jax.vmap(layer)(input)`."
+                    "To apply on batched input, use `jax.vmap(...)(input)`."
                     if x.ndim == spatial_ndim + 2
                     else ""
                 )
             )
         return x
 
-    @ft.wraps(call_wrapper)
+    @ft.wraps(func)
     def wrapper(self, array, *a, **k):
-        array = check_spatial_in_shape(array, getattr(self, attribute_name))
-        return call_wrapper(self, array, *a, **k)
+        array = check_spatial_in_shape(array, recursive_getattr(self, attribute_list))
+        return func(self, array, *a, **k)
 
     return wrapper
 
 
-def validate_axis_shape(call_wrapper, *, attribute_name: str, axis: int = 0):
+def validate_axis_shape(
+    func: Callable[P, T],
+    *,
+    attribute_name: str,
+    axis: int = 0,
+) -> Callable[P, T]:
     """Decorator to validate input features."""
+    attribute_list = attribute_name.split(".")
 
     def check_axis_shape(x, in_features: int, axis: int) -> None:
         if x.shape[axis] != in_features:
-            raise ValueError(
-                f"Specified {in_features=} ,"
-                f"but got input with input_features={x.shape[axis]}."
-            )
+            raise ValueError(f"Specified {in_features=}, got {x.shape[axis]=}.")
         return x
 
-    @ft.wraps(call_wrapper)
+    @ft.wraps(func)
     def wrapper(self, array, *a, **k):
-        check_axis_shape(array, getattr(self, attribute_name), axis)
-        return call_wrapper(self, array, *a, **k)
+        check_axis_shape(array, recursive_getattr(self, attribute_list), axis)
+        return func(self, array, *a, **k)
 
     return wrapper

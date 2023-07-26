@@ -47,19 +47,16 @@ class AvgBlur2D(sk.TreeClass):
     """
 
     def __init__(self, in_features: int, kernel_size: int | tuple[int, int]):
-        self.in_features = positive_int_cb(in_features)
-        self.kernel_size = positive_int_cb(kernel_size)
+        weight = jnp.ones(kernel_size)
+        weight = weight / jnp.sum(weight)
+        weight = weight[:, None]
+        weight = jnp.repeat(weight[None, None], in_features, axis=0)
 
-        w = jnp.ones(kernel_size)
-        w = w / jnp.sum(w)
-        w = w[:, None]
-        w = jnp.repeat(w[None, None], in_features, axis=0)
-
-        self.in_features = in_features
         self.conv1 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(kernel_size, 1),
             padding="same",
+            weight_init_func=lambda *_: weight,
             bias_init_func=None,
         )
 
@@ -67,14 +64,12 @@ class AvgBlur2D(sk.TreeClass):
             in_features=in_features,
             kernel_size=(1, kernel_size),
             padding="same",
+            weight_init_func=lambda *_: jnp.moveaxis(weight, 2, 3),
             bias_init_func=None,
         )
 
-        self.conv1 = self.conv1.at["weight"].set(w)
-        self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))  # transpose
-
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_axis_shape, attribute_name="conv1.in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv2(self.conv1(x)))
 
@@ -104,24 +99,21 @@ class GaussianBlur2D(sk.TreeClass):
     """
 
     def __init__(self, in_features: int, kernel_size: int, *, sigma: float = 1.0):
-        self.in_features = positive_int_cb(in_features)
-        self.kernel_size = positive_int_cb(kernel_size)
-
-        self.in_features = in_features
-        self.kernel_size = kernel_size
+        kernel_size = positive_int_cb(kernel_size)
         self.sigma = sigma
 
         x = jnp.linspace(-(kernel_size - 1) / 2.0, (kernel_size - 1) / 2.0, kernel_size)
-        w = jnp.exp(-0.5 * jnp.square(x) * jax.lax.rsqrt(self.sigma))
+        weight = jnp.exp(-0.5 * jnp.square(x) * jax.lax.rsqrt(self.sigma))
 
-        w = w / jnp.sum(w)
-        w = w[:, None]
+        weight = weight / jnp.sum(weight)
+        weight = weight[:, None]
 
-        w = jnp.repeat(w[None, None], in_features, axis=0)
+        weight = jnp.repeat(weight[None, None], in_features, axis=0)
         self.conv1 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(kernel_size, 1),
             padding="same",
+            weight_init_func=lambda *_: weight,
             bias_init_func=None,
         )
 
@@ -129,14 +121,12 @@ class GaussianBlur2D(sk.TreeClass):
             in_features=in_features,
             kernel_size=(1, kernel_size),
             padding="same",
+            weight_init_func=lambda *_: jnp.moveaxis(weight, 2, 3),
             bias_init_func=None,
         )
 
-        self.in_features = in_features
-
-        self.conv1 = self.conv1.at["weight"].set(w)
-        self.conv2 = self.conv2.at["weight"].set(jnp.moveaxis(w, 2, 3))
-
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="conv1.in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv1(self.conv2(x)))
 
@@ -168,20 +158,20 @@ class Filter2D(sk.TreeClass):
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
-        self.in_features = positive_int_cb(in_features)
-        self.kernel = jnp.stack([kernel] * in_features, axis=0)
-        self.kernel = self.kernel[:, None]
+        in_features = positive_int_cb(in_features)
+        weight = jnp.stack([kernel] * in_features, axis=0)
+        weight = weight[:, None]
 
         self.conv = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=kernel.shape,
             padding="same",
+            weight_init_func=lambda *_: weight,
             bias_init_func=None,
         )
-        self.conv = self.conv.at["weight"].set(self.kernel)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_axis_shape, attribute_name="conv.in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv(x))
 
@@ -213,20 +203,20 @@ class FFTFilter2D(sk.TreeClass):
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
-        self.in_features = positive_int_cb(in_features)
-        self.kernel = jnp.stack([kernel] * in_features, axis=0)
-        self.kernel = self.kernel[:, None]
+        in_features = positive_int_cb(in_features)
+        weight = jnp.stack([kernel] * in_features, axis=0)
+        weight = weight[:, None]
 
         self.conv = DepthwiseFFTConv2D(
             in_features=in_features,
             kernel_size=kernel.shape,
             padding="same",
+            weight_init_func=lambda *_: weight,
             bias_init_func=None,
         )
-        self.conv = self.conv.at["weight"].set(self.kernel)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_axis_shape, attribute_name="conv.in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return lax.stop_gradient(self.conv(x))
 

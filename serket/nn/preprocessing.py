@@ -29,11 +29,11 @@ class HistogramEqualization2D(sk.TreeClass):
     Args:
         bins: number of bins. Defaults to 256.
 
-    Note:
-        https://en.wikipedia.org/wiki/Histogram_equalization
-        http://www.janeriksolem.net/histogram-equalization-with-python-and.html
-        https://scikit-image.org/docs/stable/api/skimage.exposure.html#skimage.exposure.equalize_hist
-        https://stackoverflow.com/questions/28518684/histogram-equalization-of-grayscale-images-with-numpy
+    References:
+        - https://en.wikipedia.org/wiki/Histogram_equalization
+        - http://www.janeriksolem.net/histogram-equalization-with-python-and.html
+        - https://scikit-image.org/docs/stable/api/skimage.exposure.html#skimage.exposure.equalize_hist
+        - https://stackoverflow.com/questions/28518684/histogram-equalization-of-grayscale-images-with-numpy
     """
 
     def __init__(self, bins: int = 256):
@@ -60,8 +60,8 @@ class PixelShuffle2D(sk.TreeClass):
         upscale_factor: factor to increase spatial resolution by. accepts a
             single integer or a tuple of length 2. defaults to 1.
 
-    Note:
-        https://arxiv.org/abs/1609.05158
+    References:
+        - https://arxiv.org/abs/1609.05158
     """
 
     def __init__(self, upscale_factor: int | tuple[int, int] = 1):

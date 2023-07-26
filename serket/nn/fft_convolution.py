@@ -37,7 +37,7 @@ from serket.nn.utils import (
 )
 
 
-@jax.jit
+@ft.partial(jax.jit, inline=True)
 def _ungrouped_matmul(x, y) -> jax.Array:
     alpha = "".join(map(str, range(max(x.ndim, y.ndim))))
     lhs = "a" + alpha[: x.ndim - 1]
@@ -46,7 +46,7 @@ def _ungrouped_matmul(x, y) -> jax.Array:
     return jnp.einsum(f"{lhs},{rhs}->{out}", x, y)
 
 
-@ft.partial(jax.jit, static_argnums=(2,))
+@ft.partial(jax.jit, static_argnums=(2,), inline=True)
 def _grouped_matmul(x, y, groups) -> jax.Array:
     b, c, *s = x.shape  # batch, channels, spatial
     o, i, *k = y.shape  # out_channels, in_channels, kernel
@@ -60,7 +60,7 @@ def grouped_matmul(x, y, groups: int = 1):
     return _ungrouped_matmul(x, y) if groups == 1 else _grouped_matmul(x, y, groups)
 
 
-@ft.partial(jax.jit, static_argnums=(1, 2))
+@ft.partial(jax.jit, static_argnums=(1, 2), inline=True)
 def _intersperse_along_axis(x: jax.Array, dilation: int, axis: int) -> jax.Array:
     shape = list(x.shape)
     shape[axis] = (dilation) * shape[axis] - (dilation - 1)
@@ -69,7 +69,7 @@ def _intersperse_along_axis(x: jax.Array, dilation: int, axis: int) -> jax.Array
     return z
 
 
-@ft.partial(jax.jit, static_argnums=(1, 2))
+@ft.partial(jax.jit, static_argnums=(1, 2), inline=True)
 def _general_intersperse(
     x: jax.Array,
     dilation: tuple[int, ...],
@@ -80,7 +80,7 @@ def _general_intersperse(
     return x
 
 
-@ft.partial(jax.jit, static_argnums=(1,))
+@ft.partial(jax.jit, static_argnums=(1,), inline=True)
 def _general_pad(x: jax.Array, pad_width: tuple[tuple[int, int], ...]) -> jax.Array:
     """Pad the input with `pad_width` on each side. Negative value will lead to cropping.
     Example:
@@ -101,7 +101,7 @@ def _general_pad(x: jax.Array, pad_width: tuple[tuple[int, int], ...]) -> jax.Ar
     return jnp.pad(x, [(max(lhs, 0), max(rhs, 0)) for (lhs, rhs) in (pad_width)])
 
 
-@ft.partial(jax.jit, static_argnums=(2, 3, 4, 5))
+@ft.partial(jax.jit, static_argnums=(2, 3, 4, 5), inline=True)
 def fft_conv_general_dilated(
     x: jax.Array,
     w: jax.Array,
@@ -280,7 +280,7 @@ class FFTConv1D(FFTConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5)
 
-    Note:
+    References:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
@@ -346,8 +346,8 @@ class FFTConv2D(FFTConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    References:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -412,8 +412,8 @@ class FFTConv3D(FFTConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    References:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -575,8 +575,8 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    References:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -645,8 +645,8 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    References:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -715,8 +715,8 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    References:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -833,7 +833,7 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
 
-    Note:
+    References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -887,7 +887,7 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
 
-    Note:
+    References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -941,7 +941,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
 
-    Note:
+    References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -1073,7 +1073,7 @@ class SeparableFFTConv1D(SeparableFFTConvND):
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
-    Note:
+    References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -1145,7 +1145,7 @@ class SeparableFFTConv2D(sk.TreeClass):
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
-    Note:
+    References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -1259,7 +1259,7 @@ class SeparableFFTConv3D(sk.TreeClass):
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
-    Note:
+    References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """

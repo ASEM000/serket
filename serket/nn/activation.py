@@ -28,7 +28,7 @@ from serket.nn.utils import IsInstance, Range, ScalarLike
 class AdaptiveLeakyReLU(sk.TreeClass):
     """Leaky ReLU activation function
 
-    Note:
+    Reference:
         https://arxiv.org/pdf/1906.01170.pdf.
     """
 
@@ -43,7 +43,8 @@ class AdaptiveLeakyReLU(sk.TreeClass):
 @sk.autoinit
 class AdaptiveReLU(sk.TreeClass):
     """ReLU activation function with learnable parameters
-    Note:
+
+    Reference:
         https://arxiv.org/pdf/1906.01170.pdf.
     """
 
@@ -56,7 +57,8 @@ class AdaptiveReLU(sk.TreeClass):
 @sk.autoinit
 class AdaptiveSigmoid(sk.TreeClass):
     """Sigmoid activation function with learnable `a` parameter
-    Note:
+
+    Reference:
         https://arxiv.org/pdf/1906.01170.pdf.
     """
 
@@ -69,7 +71,8 @@ class AdaptiveSigmoid(sk.TreeClass):
 @sk.autoinit
 class AdaptiveTanh(sk.TreeClass):
     """Tanh activation function with learnable parameters
-    Note:
+
+    Reference:
         https://arxiv.org/pdf/1906.01170.pdf.
     """
 
@@ -299,7 +302,7 @@ class Snake(sk.TreeClass):
     Args:
         a: scalar (frequency) parameter of the activation function, default is 1.0.
 
-    Note:
+    Reference:
         https://arxiv.org/pdf/2006.08195.pdf.
     """
 

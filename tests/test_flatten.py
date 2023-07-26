@@ -14,7 +14,7 @@
 
 import jax.numpy as jnp
 
-from serket.nn.flatten import Flatten, Unflatten
+from serket.nn.reshape import Flatten, Unflatten
 
 
 def test_flatten():

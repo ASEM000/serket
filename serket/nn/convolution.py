@@ -190,8 +190,8 @@ class Conv1D(ConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    Reference:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -261,8 +261,8 @@ class Conv2D(ConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    Reference:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -332,8 +332,8 @@ class Conv3D(ConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    Reference:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -485,8 +485,8 @@ class Conv1DTranspose(ConvNDTranspose):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    Reference:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -555,8 +555,8 @@ class Conv2DTranspose(ConvNDTranspose):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    Reference:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -625,8 +625,8 @@ class Conv3DTranspose(ConvNDTranspose):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5, 5)
 
-    Note:
-        https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
+    Reference:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
     @property
@@ -745,7 +745,7 @@ class DepthwiseConv1D(DepthwiseConvND):
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
 
-    Note:
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -799,7 +799,7 @@ class DepthwiseConv2D(DepthwiseConvND):
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
 
-    Note:
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -854,7 +854,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
 
-    Note:
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -977,7 +977,7 @@ class SeparableConv1D(SeparableConvND):
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
-    Note:
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -1049,7 +1049,7 @@ class SeparableConv2D(SeparableConvND):
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
-    Note:
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -1121,7 +1121,7 @@ class SeparableConv3D(SeparableConvND):
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
-    Note:
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -1277,7 +1277,7 @@ class Conv1DLocal(ConvNDLocal):
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
-    Note:
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -1338,7 +1338,7 @@ class Conv2DLocal(ConvNDLocal):
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
-    Note:
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -1399,7 +1399,7 @@ class Conv3DLocal(ConvNDLocal):
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
-    Note:
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """

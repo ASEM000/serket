@@ -19,7 +19,6 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jax import lax
 
 import serket as sk
 from serket.nn.utils import canonicalize, positive_int_cb, validate_spatial_ndim
@@ -116,17 +115,17 @@ class RandomCutout1D(sk.TreeClass):
     Args:
         shape: shape of the cutout. accepts an int or a tuple of int.
         cutout_count: number of holes. Defaults to 1.
-        fill_value: fill_value to fill. Defaults to 0.
-
-    Note:
-        https://arxiv.org/abs/1708.04552
-        https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
+        fill_value: ``fill_value`` to fill the cutout region. Defaults to 0.
 
     Examples:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> print(sk.nn.RandomCutout1D(5)(jnp.ones((1, 10)) * 100))
         [[100. 100. 100. 100.   0.   0.   0.   0.   0. 100.]]
+
+    Reference:
+        - https://arxiv.org/abs/1708.04552
+        - https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
     """
 
     def __init__(
@@ -142,7 +141,7 @@ class RandomCutout1D(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         out = random_cutout_1d(x, self.shape, self.cutout_count, self.fill_value, key)
-        return lax.stop_gradient(out)
+        return jax.lax.stop_gradient(out)
 
     @property
     def spatial_ndim(self) -> int:
@@ -155,11 +154,11 @@ class RandomCutout2D(sk.TreeClass):
     Args:
         shape: shape of the cutout. accepts int or a two element tuple.
         cutout_count: number of holes. Defaults to 1.
-        fill_value: fill_value to fill. Defaults to 0.
+        fill_value: ``fill_value`` to fill the cutout region. Defaults to 0.
 
-    Note:
-        https://arxiv.org/abs/1708.04552
-        https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
+    Reference:
+        - https://arxiv.org/abs/1708.04552
+        - https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
     """
 
     def __init__(
@@ -175,7 +174,7 @@ class RandomCutout2D(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         out = random_cutout_2d(x, self.shape, self.cutout_count, self.fill_value, key)
-        return lax.stop_gradient(out)
+        return jax.lax.stop_gradient(out)
 
     @property
     def spatial_ndim(self) -> int:

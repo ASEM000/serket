@@ -18,9 +18,10 @@
    convolution
    normalization
    image_filtering
-   misc
+   reshaping
    random_transforms
    activations
    recurrent
+   misc
 
 

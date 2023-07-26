@@ -26,9 +26,6 @@ from serket.nn.utils import validate_spatial_ndim
 class FlipLeftRight2D(sk.TreeClass):
     """Flip channels left to right.
 
-    Note:
-        https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
-
     Examples:
         >>> import jax.numpy as jnp
         >>> import serket as sk
@@ -42,6 +39,9 @@ class FlipLeftRight2D(sk.TreeClass):
         [[[3 2 1]
           [6 5 4]
           [9 8 7]]]
+
+    References:
+        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -57,9 +57,6 @@ class FlipLeftRight2D(sk.TreeClass):
 class FlipUpDown2D(sk.TreeClass):
     """Flip channels up to down.
 
-    Note:
-        https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
-
     Examples:
         >>> import jax.numpy as jnp
         >>> import serket as sk
@@ -73,6 +70,9 @@ class FlipUpDown2D(sk.TreeClass):
         [[[7 8 9]
           [4 5 6]
           [1 2 3]]]
+
+    References:
+        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")

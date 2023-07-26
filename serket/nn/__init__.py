@@ -46,7 +46,6 @@ from .activation import (
     ThresholdedReLU,
 )
 from .blocks import UNetBlock, VGG16Block, VGG19Block
-from .blur import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
 from .containers import Sequential
 from .contrast import AdjustContrast2D, RandomContrast2D
 from .convolution import (
@@ -66,7 +65,6 @@ from .convolution import (
     SeparableConv2D,
     SeparableConv3D,
 )
-from .crop import Crop1D, Crop2D, Crop3D, RandomCrop1D, RandomCrop2D, RandomCrop3D
 from .cutout import RandomCutout1D, RandomCutout2D
 from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D
 from .fft_convolution import (
@@ -83,12 +81,11 @@ from .fft_convolution import (
     SeparableFFTConv2D,
     SeparableFFTConv3D,
 )
-from .flatten import Flatten, Unflatten
 from .flip import FlipLeftRight2D, FlipUpDown2D
 from .fully_connected import FNN, MLP
+from .image_filter import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
 from .linear import Bilinear, Embedding, GeneralLinear, Identity, Linear, Multilinear
 from .normalization import BatchNorm, GroupNorm, InstanceNorm, LayerNorm
-from .padding import Pad1D, Pad2D, Pad3D
 from .pooling import (
     AdaptiveAvgPool1D,
     AdaptiveAvgPool2D,
@@ -133,7 +130,25 @@ from .recurrent import (
     ScanRNN,
     SimpleRNNCell,
 )
-from .resize import Resize1D, Resize2D, Resize3D, Upsample1D, Upsample2D, Upsample3D
+from .reshape import (
+    Crop1D,
+    Crop2D,
+    Crop3D,
+    Flatten,
+    Pad1D,
+    Pad2D,
+    Pad3D,
+    RandomCrop1D,
+    RandomCrop2D,
+    RandomCrop3D,
+    Resize1D,
+    Resize2D,
+    Resize3D,
+    Unflatten,
+    Upsample1D,
+    Upsample2D,
+    Upsample3D,
+)
 
 __all__ = (
     "blocks",

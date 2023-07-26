@@ -45,13 +45,6 @@ def random_contrast_nd(
 
 @sk.autoinit
 class AdjustContrastND(sk.TreeClass):
-    """Adjusts the contrast of an NDimage by scaling the pixel values by a factor.
-
-    Note:
-        https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
-        https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
-    """
-
     contrast_factor: float = 1.0
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -66,10 +59,11 @@ class AdjustContrastND(sk.TreeClass):
 
 
 class AdjustContrast2D(AdjustContrastND):
-    """Adjusts the contrast of an image by scaling the pixel values by a factor.
+    """Adjusts the contrast of an 2D input by scaling the pixel values by a factor.
 
-    Args:
-        contrast_factor: contrast factor to adjust the image by.
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
+        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
     @property
@@ -77,17 +71,7 @@ class AdjustContrast2D(AdjustContrastND):
         return 2
 
 
-@sk.autoinit
 class RandomContrastND(sk.TreeClass):
-    """Randomly adjusts the contrast of an image by scaling the pixel
-    values by a factor.
-
-    Args:
-        contrast_range: range of contrast factors to randomly sample from.
-    """
-
-    contrast_range: tuple
-
     def __init__(self, contrast_range=(0.5, 1)):
         if not (
             isinstance(contrast_range, tuple)
@@ -123,11 +107,11 @@ class RandomContrastND(sk.TreeClass):
 
 
 class RandomContrast2D(RandomContrastND):
-    """Randomly adjusts the contrast of an image by scaling the pixel
-    values by a factor.
+    """Randomly adjusts the contrast of an 1D input by scaling the pixel values by a factor.
 
-    Args:
-        contrast_range: range of contrast factors to randomly sample from.
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
+        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
     @property

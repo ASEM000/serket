@@ -278,13 +278,13 @@ def _batchnorm_impl(
 
     state = jax.lax.stop_gradient(state)
 
-    x = jax.lax.cond(evalution, jax.lax.stop_gradient, lambda x: x, x)
-
     if gamma is not None:
         output *= jnp.reshape(gamma, broadcast_shape)
 
     if beta is not None:
         output += jnp.reshape(beta, broadcast_shape)
+
+    output = jax.lax.cond(evalution, jax.lax.stop_gradient, lambda x: x, output)
 
     return output, state
 
@@ -341,13 +341,14 @@ class BatchNorm(sk.TreeClass):
 
         otherwise will be a no-op.
 
-    Evaluation behavior:
-        - ``output = (x - running_mean) / sqrt(running_var + eps)``
-
     Training behavior:
         - ``output = (x - batch_mean) / sqrt(batch_var + eps)``
         - ``running_mean = momentum * running_mean + (1 - momentum) * batch_mean``
         - ``running_var = momentum * running_var + (1 - momentum) * batch_var``
+
+    For evaluation, use :func:`.tree_evaluation` to convert the layer to
+    :class:`nn.EvalNorm`.
+
 
     Args:
         in_features: the shape of the input to be normalized.
@@ -404,7 +405,6 @@ class BatchNorm(sk.TreeClass):
         gamma_init_func: InitType = "ones",
         beta_init_func: InitType = "zeros",
         axis: int = 1,
-        evaluation: bool = False,
         key: jr.KeyArray = jr.PRNGKey(0),
     ) -> None:
         self.in_features = in_features
@@ -413,7 +413,6 @@ class BatchNorm(sk.TreeClass):
         self.gamma = resolve_init_func(gamma_init_func)(key, (in_features,))
         self.beta = resolve_init_func(beta_init_func)(key, (in_features,))
         self.axis = axis
-        self.evaluation = evaluation
 
     def __call__(
         self,
@@ -430,15 +429,108 @@ class BatchNorm(sk.TreeClass):
             self.eps,
             self.gamma,
             self.beta,
-            self.evaluation,
+            False,
+            self.axis,
+        )
+        return x, state
+
+
+class EvalNorm(sk.TreeClass):
+    """Applies normalization evlaution step over batched inputs`
+
+    This layer intended to be the evaluation step of :class:`nn.BatchNorm`.
+    and to be used with ``jax.vmap``. It will be a no-op when unbatched.
+
+    .. warning::
+        Works under
+            - ``jax.vmap(BatchNorm(...), in_axes=(0, None))(x, state)``
+            - ``jax.vmap(BatchNorm(...))(x)``
+
+        otherwise will be a no-op.
+
+    Evaluation behavior:
+        - ``output = (x - running_mean) / sqrt(running_var + eps)``
+
+    Args:
+        in_features: the shape of the input to be normalized.
+        momentum: the value used for the ``running_mean`` and ``running_var``
+            computation. must be a number between ``0`` and ``1``. this value
+            is ignored in evaluation mode, but kept for conversion to
+            :class:`nn.BatchNorm`.
+        eps: a value added to the denominator for numerical stability.
+        gamma_init_func: a function to initialize the scale. Defaults to ones.
+            if None, the scale is not trainable.
+        beta_init_func: a function to initialize the shift. Defaults to zeros.
+            if None, the shift is not trainable.
+        axis: the axis that should be normalized. Defaults to 1.
+        evaluation: a boolean value that when set to True, this module will run in
+            evaluation mode. In this case, this module will always use the running
+            estimates of the batch statistics during training.
+
+    Example:
+        >>> import jax
+        >>> import serket as sk
+        >>> bn = sk.nn.BatchNorm(10)
+        >>> state = sk.tree_state(bn)
+        >>> x = jax.random.uniform(jax.random.PRNGKey(0), shape=(5, 10))
+        >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
+        >>> # convert to evaluation mode
+        >>> bn = sk.tree_evaluation(bn)
+        >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
+
+    Note:
+        https://keras.io/api/layers/normalization_layers/batch_normalization/
+    """
+
+    def __init__(
+        self,
+        in_features: int,
+        *,
+        momentum: float = 0.99,
+        eps: float = 1e-5,
+        gamma_init_func: InitType = "ones",
+        beta_init_func: InitType = "zeros",
+        axis: int = 1,
+        key: jr.KeyArray = jr.PRNGKey(0),
+    ) -> None:
+        self.in_features = in_features
+        self.momentum = momentum
+        self.eps = eps
+        self.gamma = resolve_init_func(gamma_init_func)(key, (in_features,))
+        self.beta = resolve_init_func(beta_init_func)(key, (in_features,))
+        self.axis = axis
+
+    def __call__(
+        self,
+        x: jax.Array,
+        state: BatchNormState | None = None,
+        **k,
+    ) -> jax.Array:
+        state = sk.tree_state(self) if state is None else state
+
+        x, state = batchnorm(
+            x,
+            state,
+            0.0,
+            self.eps,
+            self.gamma,
+            self.beta,
+            True,
             self.axis,
         )
         return x, state
 
 
 @tree_evaluation.def_evalutation(BatchNorm)
-def _(batchnorm: BatchNorm) -> BatchNorm:
-    return batchnorm.at["evaluation"].set(True)
+def _(batchnorm: BatchNorm) -> EvalNorm:
+    return EvalNorm(
+        in_features=batchnorm.in_features,
+        momentum=batchnorm.momentum,
+        eps=batchnorm.eps,
+        gamma_init_func=lambda *_: batchnorm.gamma,
+        beta_init_func=lambda *_: batchnorm.beta,
+        axis=batchnorm.axis,
+    )
 
 
 @tree_state.def_state(BatchNorm)

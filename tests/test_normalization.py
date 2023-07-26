@@ -250,6 +250,6 @@ def test_batchnorm(axis):
     npt.assert_allclose(bn_keras.moving_variance, state.running_var, rtol=1e-5)
 
     x_keras = bn_keras(x_keras, training=False)
-    x_sk, _ = jax.vmap(bn_sk.at["evaluation"].set(True), in_axes=(0, None))(x_sk, state)
+    x_sk, _ = jax.vmap(sk.tree_evaluation(bn_sk), in_axes=(0, None))(x_sk, state)
 
     npt.assert_allclose(x_keras, x_sk, rtol=1e-5)

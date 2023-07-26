@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from types import FunctionType
-from typing import Any, Callable, Literal, Union, get_args
+from typing import Callable, Literal, TypeVar, Union, get_args
 
 import jax
 import jax.nn.initializers as ji
@@ -37,8 +37,8 @@ InitLiteral = Literal[
     "orthogonal",
 ]
 
-Shape = Any
-Dtype = Any
+Shape = TypeVar("Shape")
+Dtype = TypeVar("Dtype")
 InitFuncType = Callable[[jr.KeyArray, Shape, Dtype], jax.Array]
 InitType = Union[InitLiteral, InitFuncType]
 

@@ -41,9 +41,6 @@ from serket.nn.utils import (
 """Defines RNN related classes."""
 
 
-# Non Spatial RNN
-
-
 @sk.autoinit
 class RNNState(sk.TreeClass):
     hidden_state: jax.Array
@@ -110,8 +107,8 @@ class SimpleRNNCell(RNNCell):
             >>> result.hidden_state.shape  # 20 features
             (20,)
 
-        Note:
-            https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
+        Reference:
+            - https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
         """
         k1, k2 = jr.split(key, 2)
 
@@ -236,9 +233,9 @@ class LSTMCell(RNNCell):
         recurrent_act_func: the activation function to use for the cell state update
         key: the key to use to initialize the weights
 
-    Note:
-        https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTMCell
-        https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTMCell
+        - https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
     """
 
     def __init__(
@@ -319,8 +316,8 @@ class GRUCell(RNNCell):
         recurrent_act_func: the activation function to use for the cell state update
         key: the key to use to initialize the weights
 
-    Note:
-        https://keras.io/api/layers/recurrent_layers/gru/
+    Reference:
+        - https://keras.io/api/layers/recurrent_layers/gru/
     """
 
     def __init__(
@@ -378,9 +375,6 @@ class GRUCell(RNNCell):
         return 0
 
 
-# Spatial RNN
-
-
 @sk.autoinit
 class ConvLSTMNDState(RNNState):
     cell_state: jax.Array
@@ -404,8 +398,8 @@ class ConvLSTMNDCell(RNNCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
-    Note:
-        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
     """
 
     def __init__(
@@ -495,7 +489,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
-    Note:
+    Reference:
         https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
     """
 
@@ -525,8 +519,8 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
-    Note:
-        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
     """
 
     @property
@@ -555,8 +549,8 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
-    Note:
-        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
     """
 
     @property
@@ -585,8 +579,8 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
-    Note:
-        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
     """
 
     @property
@@ -615,8 +609,8 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
-    Note:
-        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
     """
 
     @property
@@ -645,8 +639,8 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
-    Note:
-        https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
     """
 
     @property
@@ -821,7 +815,6 @@ class ConvGRU2DCell(ConvGRUNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
         spatial_ndim: Number of spatial dimensions.
-
     """
 
     @property
@@ -1025,7 +1018,7 @@ class ScanRNN(sk.TreeClass):
             )
 
         splits = len(self.cells)
-        state: RNNState = tree_state(self, array=x[0]) if state is None else state
+        state: RNNState = tree_state(self, array=x) if state is None else state
         scan_func = _accumulate_scan if self.return_sequences else _no_accumulate_scan
 
         result_states: list[tuple[jax.Array, RNNState]] = [
@@ -1153,4 +1146,4 @@ def conv_gru_init_state(cell: ConvGRUNDCell, x: Any) -> ConvGRUNDState:
 @tree_state.def_state(ScanRNN)
 def scan_rnn_init_state(rnn: ScanRNN, x: Any) -> RNNState:
     # should pass a single sample array to `tree_state`
-    return _merge(tree_state(rnn.cells, array=x))
+    return _merge(tree_state(rnn.cells, array=x[0]))

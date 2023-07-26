@@ -14,7 +14,7 @@
 
 import jax.numpy as jnp
 
-from serket.nn.crop import (
+from serket.nn.reshape import (
     Crop1D,
     Crop2D,
     Crop3D,
