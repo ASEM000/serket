@@ -26,8 +26,8 @@ from jax.util import unzip2
 
 import serket as sk
 from serket.nn.activation import ActivationType, resolve_activation
+from serket.nn.custom_transform import tree_state
 from serket.nn.initialization import InitType
-from serket.nn.state import tree_state
 from serket.nn.utils import (
     DilationType,
     KernelSizeType,
@@ -1107,26 +1107,26 @@ def gru_init_state(cell: GRUCell, _) -> GRUState:
     return GRUState(jnp.zeros([cell.hidden_features]))
 
 
-def _check_rnn_cell_tree_state_input(cell: RNNCell, x):
-    if not (hasattr(x, "ndim") and hasattr(x, "shape")):
+def _check_rnn_cell_tree_state_input(cell: RNNCell, array):
+    if not (hasattr(array, "ndim") and hasattr(array, "shape")):
         raise TypeError(
-            f"Expected {x=} to have `ndim` and `shape` attributes.",
+            f"Expected {array=} to have `ndim` and `shape` attributes.",
             f"To initialize the `{type(cell).__name__}` state.\n",
             "Pass a single sample array to `tree_state(..., array=)`.",
         )
 
-    if x.ndim != cell.spatial_ndim + 1:
+    if array.ndim != cell.spatial_ndim + 1:
         raise ValueError(
-            f"{x.ndim=} != {(cell.spatial_ndim + 1)=}.",
+            f"{array.ndim=} != {(cell.spatial_ndim + 1)=}.",
             f"Expected input to have `shape` (in_features, {'...'*cell.spatial_dim})."
             "Pass a single sample array to `tree_state",
         )
 
-    spatial_dim = x.shape[1:]
+    spatial_dim = array.shape[1:]
     if len(spatial_dim) != cell.spatial_ndim:
         raise ValueError(f"{len(spatial_dim)=} != {cell.spatial_ndim=}.")
 
-    return x
+    return array
 
 
 @tree_state.def_state(ConvLSTMNDCell)

@@ -498,3 +498,142 @@ class RandomCrop3D(RandomCropND):
     @property
     def spatial_ndim(self) -> int:
         return 3
+
+
+class FlipLeftRight2D(sk.TreeClass):
+    """Flip channels left to right.
+
+    Examples:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> x = jnp.arange(1,10).reshape(1,3, 3)
+        >>> print(x)
+        [[[1 2 3]
+          [4 5 6]
+          [7 8 9]]]
+
+        >>> print(sk.nn.FlipLeftRight2D()(x))
+        [[[3 2 1]
+          [6 5 4]
+          [9 8 7]]]
+
+    Reference:
+        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
+    """
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        flip = lambda x: jnp.flip(x, axis=1)
+        return jax.vmap(flip)(x)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class FlipUpDown2D(sk.TreeClass):
+    """Flip channels up to down.
+
+    Examples:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> x = jnp.arange(1,10).reshape(1,3, 3)
+        >>> print(x)
+        [[[1 2 3]
+          [4 5 6]
+          [7 8 9]]]
+
+        >>> print(sk.nn.FlipUpDown2D()(x))
+        [[[7 8 9]
+          [4 5 6]
+          [1 2 3]]]
+
+    Reference:
+        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
+    """
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        flip = lambda x: jnp.flip(x, axis=0)
+        return jax.vmap(flip)(x)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class RandomZoom2D(sk.TreeClass):
+    def __init__(
+        self,
+        height_factor: tuple[float, float] = (0.0, 1.0),
+        width_factor: tuple[float, float] = (0.0, 1.0),
+    ):
+        """Randomly zooms an image.
+
+        Positive values are zoom in, negative values are zoom out.
+
+        Args:
+            height_factor: (min, max)
+            width_factor: (min, max)
+
+        Reference:
+            - https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
+        """
+        if not (isinstance(height_factor, tuple) and len(height_factor) == 2):
+            raise ValueError("`height_factor` must be a tuple of length 2")
+
+        if not (isinstance(width_factor, tuple) and len(width_factor) == 2):
+            raise ValueError("`width_factor` must be a tuple of length 2")
+
+        self.height_factor = height_factor
+        self.width_factor = width_factor
+
+    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
+        k1, k2, k3, k4 = jr.split(key, 4)
+
+        height_factor = jr.uniform(
+            k1,
+            shape=(),
+            minval=self.height_factor[0],
+            maxval=self.height_factor[1],
+        )
+        width_factor = jr.uniform(
+            k2,
+            shape=(),
+            minval=self.width_factor[0],
+            maxval=self.width_factor[1],
+        )
+
+        height_factor, width_factor = jax.lax.stop_gradient(
+            (height_factor, width_factor)
+        )
+
+        r, c = x.shape[1:3]  # R = rows, C = cols
+        rr = int(r * (1 + height_factor))  # RR = resized rows,
+        cc = int(c * (1 + width_factor))  # CC = resized cols
+
+        if height_factor > 0:
+            # zoom in rows
+            x = Resize2D((rr, c))(x)
+            x = RandomCrop2D((r, c))(x, key=k3)
+
+        if width_factor > 0:
+            # zoom in cols
+            x = Resize2D((r, cc))(x)
+            x = RandomCrop2D((r, c))(x, key=k4)
+
+        if height_factor < 0:
+            # zoom out rows
+            x = Resize2D((rr, c))(x)
+            x = Pad2D((((r - rr) // 2, (r - rr) - ((r - rr) // 2)), (0, 0)))(x)
+
+        if width_factor < 0:
+            # zoom out cols
+            x = Resize2D((r, cc))(x)
+            x = Pad2D(((0, 0), ((c - cc) // 2, (c - cc) - (c - cc) // 2)))(x)
+
+        return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2

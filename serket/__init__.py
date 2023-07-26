@@ -43,8 +43,7 @@ from pytreeclass import (
 )
 
 from . import nn
-from .nn.evaluation import tree_evaluation
-from .nn.state import tree_state
+from .nn.custom_transform import tree_evaluation, tree_state
 
 __all__ = (
     # general utils

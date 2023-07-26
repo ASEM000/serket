@@ -46,8 +46,7 @@ from .activation import (
     ThresholdedReLU,
 )
 from .blocks import UNetBlock, VGG16Block, VGG19Block
-from .containers import Sequential
-from .contrast import AdjustContrast2D, RandomContrast2D
+from .containers import RandomApply, Sequential
 from .convolution import (
     Conv1D,
     Conv1DLocal,
@@ -61,13 +60,6 @@ from .convolution import (
     DepthwiseConv1D,
     DepthwiseConv2D,
     DepthwiseConv3D,
-    SeparableConv1D,
-    SeparableConv2D,
-    SeparableConv3D,
-)
-from .cutout import RandomCutout1D, RandomCutout2D
-from .dropout import Dropout, Dropout1D, Dropout2D, Dropout3D
-from .fft_convolution import (
     DepthwiseFFTConv1D,
     DepthwiseFFTConv2D,
     DepthwiseFFTConv3D,
@@ -77,14 +69,41 @@ from .fft_convolution import (
     FFTConv2DTranspose,
     FFTConv3D,
     FFTConv3DTranspose,
+    SeparableConv1D,
+    SeparableConv2D,
+    SeparableConv3D,
     SeparableFFTConv1D,
     SeparableFFTConv2D,
     SeparableFFTConv3D,
 )
-from .flip import FlipLeftRight2D, FlipUpDown2D
-from .fully_connected import FNN, MLP
-from .image_filter import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
-from .linear import Bilinear, Embedding, GeneralLinear, Identity, Linear, Multilinear
+from .dropout import (
+    Dropout,
+    Dropout1D,
+    Dropout2D,
+    Dropout3D,
+    RandomCutout1D,
+    RandomCutout2D,
+)
+from .image_filter import (
+    AdjustContrast2D,
+    AvgBlur2D,
+    FFTFilter2D,
+    Filter2D,
+    GaussianBlur2D,
+    HistogramEqualization2D,
+    PixelShuffle2D,
+    RandomContrast2D,
+)
+from .linear import (
+    FNN,
+    MLP,
+    Bilinear,
+    Embedding,
+    GeneralLinear,
+    Identity,
+    Linear,
+    Multilinear,
+)
 from .normalization import BatchNorm, GroupNorm, InstanceNorm, LayerNorm
 from .pooling import (
     AdaptiveAvgPool1D,
@@ -109,8 +128,6 @@ from .pooling import (
     MaxPool2D,
     MaxPool3D,
 )
-from .preprocessing import HistogramEqualization2D, PixelShuffle2D
-from .random_transform import RandomApply, RandomZoom2D
 from .recurrent import (
     ConvGRU1DCell,
     ConvGRU2DCell,
@@ -135,12 +152,15 @@ from .reshape import (
     Crop2D,
     Crop3D,
     Flatten,
+    FlipLeftRight2D,
+    FlipUpDown2D,
     Pad1D,
     Pad2D,
     Pad3D,
     RandomCrop1D,
     RandomCrop2D,
     RandomCrop3D,
+    RandomZoom2D,
     Resize1D,
     Resize2D,
     Resize3D,

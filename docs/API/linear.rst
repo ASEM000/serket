@@ -8,3 +8,6 @@ Linear
 .. autoclass:: Multilinear
 .. autoclass:: GeneralLinear
 .. autoclass:: Embedding
+
+.. autoclass:: FNN
+.. autoclass:: MLP

@@ -132,7 +132,6 @@ class HardShrink(sk.TreeClass):
         return jnp.where(x > alpha, x, jnp.where(x < -alpha, x, 0.0))
 
 
-@sk.autoinit
 class HardSigmoid(sk.TreeClass):
     """Hard sigmoid activation function"""
 
@@ -140,7 +139,6 @@ class HardSigmoid(sk.TreeClass):
         return jax.nn.hard_sigmoid(x)
 
 
-@sk.autoinit
 class HardSwish(sk.TreeClass):
     """Hard swish activation function"""
 
@@ -148,7 +146,6 @@ class HardSwish(sk.TreeClass):
         return jax.nn.hard_swish(x)
 
 
-@sk.autoinit
 class HardTanh(sk.TreeClass):
     """Hard tanh activation function"""
 
@@ -156,7 +153,6 @@ class HardTanh(sk.TreeClass):
         return jax.nn.hard_tanh(x)
 
 
-@sk.autoinit
 class LogSigmoid(sk.TreeClass):
     """Log sigmoid activation function"""
 
@@ -164,7 +160,6 @@ class LogSigmoid(sk.TreeClass):
         return jax.nn.log_sigmoid(x)
 
 
-@sk.autoinit
 class LogSoftmax(sk.TreeClass):
     """Log softmax activation function"""
 
@@ -397,6 +392,6 @@ def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
 
         raise ValueError(
             f"Unknown activation function {act_func=}, "
-            f"available activations are {list(act_map.keys())}"
+            f"available activations are {list(act_map)}"
         )
     return act_func

@@ -4,3 +4,4 @@ Containers
     
 
 .. autoclass:: Sequential
+.. autoclass:: RandomApply

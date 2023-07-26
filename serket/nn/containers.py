@@ -15,11 +15,13 @@
 from __future__ import annotations
 
 import functools as ft
+from typing import Any
 
 import jax
 import jax.random as jr
 
 import serket as sk
+from serket.nn.utils import Range
 
 
 class Sequential(sk.TreeClass):
@@ -75,3 +77,36 @@ class Sequential(sk.TreeClass):
 
     def __reversed__(self):
         return reversed(self.layers)
+
+
+@sk.autoinit
+class RandomApply(sk.TreeClass):
+    """
+    Randomly applies a layer with probability p.
+
+    Args:
+        layer: layer to apply.
+        p: probability of applying the layer
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=0.0)
+        >>> layer(jnp.ones((1, 10, 10))).shape
+        (1, 10, 10)
+        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=1.0)
+        >>> layer(jnp.ones((1, 10, 10))).shape
+        (1, 5, 5)
+
+    Reference:
+        - https://pytorch.org/vision/main/_modules/torchvision/transforms/transforms.html#RandomApply
+        - Use :func:`nn.Sequential` to apply multiple layers.
+    """
+
+    layer: Any
+    p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
+
+    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):
+        if not jr.bernoulli(key, jax.lax.stop_gradient(self.p)):
+            return x
+        return self.layer(x)

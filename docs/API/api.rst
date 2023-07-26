@@ -10,7 +10,6 @@
    :maxdepth: 2
    :caption: API Documentation
 
-   fully_connected
    linear
    dropout
    containers

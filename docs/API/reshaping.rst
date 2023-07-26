@@ -18,7 +18,11 @@ Reshaping
 .. autoclass:: Crop1D
 .. autoclass:: Crop2D
 .. autoclass:: Crop3D
+.. autoclass:: RandomCrop1D
+.. autoclass:: RandomCrop2D
+.. autoclass:: RandomCrop3D
 
 .. autoclass:: Flatten
 .. autoclass:: Unflatten
 
+.. autoclass:: RandomZoom2D

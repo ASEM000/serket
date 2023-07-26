@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Define dispatchers for custom tree state."""
+"""Define dispatchers for custom tree transformations."""
 
 from __future__ import annotations
 
@@ -75,10 +75,10 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
         'some state'
     """
 
-    types: set[type] = set(tree_state.state_dispatcher.registry) - {object}
+    types = tuple(set(tree_state.state_dispatcher.registry) - {object})
 
     def is_leaf(x: Callable[[Any], bool]) -> bool:
-        return isinstance(x, tuple(types))
+        return isinstance(x, types)
 
     def dispatch_func(leaf):
         try:
@@ -93,3 +93,38 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
 
 tree_state.state_dispatcher = ft.singledispatch(NoState)
 tree_state.def_state = tree_state.state_dispatcher.register
+
+
+def tree_evaluation(tree):
+    """Modify tree layers to disable any trainning related behavior.
+
+    For example, :class:`nn.Dropout` layer is replaced by an :class:`nn.Identity` layer
+    and :class:`nn.BatchNorm` layer ``evaluation`` is set to ``True`` when
+    evaluating the tree.
+
+    Args:
+        tree: A tree of layers.
+
+    Returns:
+        A tree of layers with evaluation behavior of same structure as ``tree``.
+
+    Example:
+        >>> # dropout is replaced by an identity layer in evaluation mode
+        >>> # by registering `tree_evaluation.def_evaluation(sk.nn.Dropout, sk.nn.Identity)`
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.Dropout(0.5)
+        >>> sk.tree_evaluation(layer)
+        Identity()
+    """
+
+    types = tuple(set(tree_evaluation.evaluation_dispatcher.registry) - {object})
+
+    def is_leaf(x: Callable[[Any], bool]) -> bool:
+        return isinstance(x, types)
+
+    return jax.tree_map(tree_evaluation.evaluation_dispatcher, tree, is_leaf=is_leaf)
+
+
+tree_evaluation.evaluation_dispatcher = ft.singledispatch(lambda x: x)
+tree_evaluation.def_evalutation = tree_evaluation.evaluation_dispatcher.register
