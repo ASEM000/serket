@@ -1145,5 +1145,7 @@ def conv_gru_init_state(cell: ConvGRUNDCell, x: Any) -> ConvGRUNDState:
 
 @tree_state.def_state(ScanRNN)
 def scan_rnn_init_state(rnn: ScanRNN, x: Any) -> RNNState:
+    if not hasattr(x, "shape") or not hasattr(x, "ndim"):
+        raise TypeError("Pass an array to `tree_state(..., array=...)`.")
     # should pass a single sample array to `tree_state`
     return _merge(tree_state(rnn.cells, array=x[0]))

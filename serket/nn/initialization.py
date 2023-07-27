@@ -68,9 +68,7 @@ def resolve_init_func(init_func: str | InitFuncType) -> Callable:
 
     if isinstance(init_func, str):
         if init_func in init_map:
-            func = init_map[init_func]
-            func = jtu.Partial(func)
-            return func
+            return jtu.Partial(init_map[init_func])
         raise ValueError(f"value must be one of ({', '.join(init_map.keys())})")
 
     if init_func is None:

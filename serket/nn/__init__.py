@@ -84,7 +84,7 @@ from .dropout import (
     RandomCutout1D,
     RandomCutout2D,
 )
-from .image_filter import (
+from .image import (
     AdjustContrast2D,
     AvgBlur2D,
     FFTFilter2D,

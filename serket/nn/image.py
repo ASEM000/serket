@@ -24,6 +24,8 @@ from jax import lax
 
 import serket as sk
 from serket.nn.convolution import DepthwiseConv2D, DepthwiseFFTConv2D
+from serket.nn.custom_transform import tree_evaluation
+from serket.nn.linear import Identity
 from serket.nn.utils import positive_int_cb, validate_axis_shape, validate_spatial_ndim
 
 
@@ -352,7 +354,7 @@ class RandomContrast2D(sk.TreeClass):
         - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
-    def __init__(self, contrast_range=(0.5, 1)):
+    def __init__(self, contrast_range: tuple[float, float] = (0.5, 1)):
         if not (
             isinstance(contrast_range, tuple)
             and len(contrast_range) == 2
@@ -366,19 +368,14 @@ class RandomContrast2D(sk.TreeClass):
         self.contrast_range = contrast_range
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(
-        self,
-        x: jax.Array,
-        *,
-        key: jr.KeyArray = jr.PRNGKey(0),
-        **k,
-    ) -> jax.Array:
-        return random_contrast_nd(
-            x,
-            lax.stop_gradient(self.contrast_range),
-            key=key,
-        )
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
+        return random_contrast_nd(x, lax.stop_gradient(self.contrast_range), key=key)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
+
+
+@tree_evaluation.def_evaluation(RandomContrast2D)
+def tree_evaluation_random_contrast2d(_: RandomContrast2D):
+    return Identity()
