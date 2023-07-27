@@ -33,17 +33,6 @@ def layer_norm(
     eps: float,
     normalized_shape: int | tuple[int],
 ) -> jax.Array:
-    """Layer Normalization
-    See: https://nn.labml.ai/normalization/layer_norm/index.html
-    transform the input by scaling and shifting to have zero mean and unit variance.
-
-    Args:
-        x: input array
-        gamma: scale
-        beta: shift
-        eps: a value added to the denominator for numerical stability.
-        normalized_shape: the shape of the input to be normalized.
-    """
     dims = tuple(range(len(x.shape) - len(normalized_shape), len(x.shape)))
 
     μ = jnp.mean(x, axis=dims, keepdims=True)
@@ -67,17 +56,6 @@ def group_norm(
     eps: float,
     groups: int,
 ) -> jax.Array:
-    """Group Normalization
-    See: https://nn.labml.ai/normalization/group_norm/index.html
-    transform the input by scaling and shifting to have zero mean and unit variance.
-
-    Args:
-        x: input array
-        gamma: scale Array
-        beta: shift Array
-        eps: a value added to the denominator for numerical stability.
-        groups: number of groups to separate the channels into
-    """
     # split channels into groups
     xx = x.reshape(groups, -1)
     μ = jnp.mean(xx, axis=-1, keepdims=True)
@@ -520,11 +498,11 @@ class EvalNorm(sk.TreeClass):
         return x, state
 
 
-@tree_evaluation.def_evalutation(BatchNorm)
+@tree_evaluation.def_evaluation(BatchNorm)
 def _(batchnorm: BatchNorm) -> EvalNorm:
     return EvalNorm(
         in_features=batchnorm.in_features,
-        momentum=batchnorm.momentum,
+        momentum=batchnorm.momentum,  # ignored
         eps=batchnorm.eps,
         gamma_init_func=lambda *_: batchnorm.gamma,
         beta_init_func=lambda *_: batchnorm.beta,

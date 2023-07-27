@@ -18,9 +18,11 @@ import functools as ft
 from typing import Any
 
 import jax
+import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
+from serket.nn.custom_transform import tree_evaluation
 from serket.nn.utils import Range
 
 
@@ -107,6 +109,9 @@ class RandomApply(sk.TreeClass):
     p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
 
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):
-        if not jr.bernoulli(key, jax.lax.stop_gradient(self.p)):
-            return x
-        return self.layer(x)
+        return jnp.where(jr.bernoulli(key, self.p), self.layer(x), x)
+
+
+@tree_evaluation.def_evaluation(RandomApply)
+def tree_evaluation_random_apply(layer: RandomApply):
+    return layer.layer

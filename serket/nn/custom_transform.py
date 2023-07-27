@@ -127,4 +127,4 @@ def tree_evaluation(tree):
 
 
 tree_evaluation.evaluation_dispatcher = ft.singledispatch(lambda x: x)
-tree_evaluation.def_evalutation = tree_evaluation.evaluation_dispatcher.register
+tree_evaluation.def_evaluation = tree_evaluation.evaluation_dispatcher.register

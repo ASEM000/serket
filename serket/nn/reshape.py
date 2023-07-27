@@ -23,6 +23,8 @@ import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
+from serket.nn.custom_transform import tree_evaluation
+from serket.nn.linear import Identity
 from serket.nn.utils import (
     IsInstance,
     canonicalize,
@@ -437,22 +439,27 @@ class Crop3D(CropND):
         return 3
 
 
+def random_crop_nd(
+    x: jax.Array,
+    *,
+    crop_size: tuple[int, ...],
+    key: jr.KeyArray,
+) -> jax.Array:
+    start: tuple[int, ...] = tuple(
+        jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)
+        for i, s in enumerate(crop_size)
+    )
+    return jax.lax.dynamic_slice(x, start, crop_size)
+
+
 class RandomCropND(sk.TreeClass):
     def __init__(self, size: int | tuple[int, ...]):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        start = tuple(
-            jr.randint(
-                key,
-                shape=(),
-                minval=0,
-                maxval=x.shape[i] - s,
-            )
-            for i, s in enumerate(self.size)
-        )
-        return jax.lax.dynamic_slice(x, (0, *start), (x.shape[0], *self.size))
+        crop_size = [x.shape[0], *self.size]
+        return random_crop_nd(x, crop_size=crop_size, key=key)
 
     @property
     @abc.abstractmethod
@@ -523,8 +530,7 @@ class FlipLeftRight2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        flip = lambda x: jnp.flip(x, axis=1)
-        return jax.vmap(flip)(x)
+        return jax.vmap(lambda x: jnp.flip(x, axis=1))(x)
 
     @property
     def spatial_ndim(self) -> int:
@@ -554,12 +560,47 @@ class FlipUpDown2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        flip = lambda x: jnp.flip(x, axis=0)
-        return jax.vmap(flip)(x)
+        return jax.vmap(lambda x: jnp.flip(x, axis=0))(x)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
+
+
+def _zoom_axis(
+    x: jax.Array,
+    factor: float,
+    key: jr.KeyArray,
+    axis: int,
+) -> jax.Array:
+    if factor == 0:
+        return x
+
+    axis_size = x.shape[axis]
+    dtype = x.dtype
+    resized_axis_size = int(axis_size * (1 + factor))
+
+    def zoom_in(x):
+        shape = list(x.shape)
+        resized_shape = list(shape)
+        resized_shape[axis] = resized_axis_size
+        x = jax.image.resize(x, shape=resized_shape, method="linear")
+        x = random_crop_nd(x, crop_size=shape, key=key)
+        return x.astype(dtype)
+
+    def zoom_out(x):
+        shape = list(x.shape)
+        resized_shape = list(shape)
+        resized_shape[axis] = resized_axis_size
+        x = jax.image.resize(x, shape=resized_shape, method="linear")
+        pad_width = [(0, 0)] * len(x.shape)
+        left = (axis_size - resized_axis_size) // 2
+        right = axis_size - resized_axis_size - left
+        pad_width[axis] = (left, right)
+        x = jnp.pad(x, pad_width=pad_width)
+        return x.astype(dtype)
+
+    return zoom_out(x) if factor < 0 else zoom_in(x)
 
 
 class RandomZoom2D(sk.TreeClass):
@@ -568,9 +609,9 @@ class RandomZoom2D(sk.TreeClass):
         height_factor: tuple[float, float] = (0.0, 1.0),
         width_factor: tuple[float, float] = (0.0, 1.0),
     ):
-        """Randomly zooms an image.
+        """Randomly zooms a channle-first image tensor.
 
-        Positive values are zoom in, negative values are zoom out.
+        Positive values are zoom in, negative values are zoom out, and 0 is no zoom.
 
         Args:
             height_factor: (min, max)
@@ -588,6 +629,7 @@ class RandomZoom2D(sk.TreeClass):
         self.height_factor = height_factor
         self.width_factor = width_factor
 
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         k1, k2, k3, k4 = jr.split(key, 4)
 
@@ -608,32 +650,18 @@ class RandomZoom2D(sk.TreeClass):
             (height_factor, width_factor)
         )
 
-        r, c = x.shape[1:3]  # R = rows, C = cols
-        rr = int(r * (1 + height_factor))  # RR = resized rows,
-        cc = int(c * (1 + width_factor))  # CC = resized cols
-
-        if height_factor > 0:
-            # zoom in rows
-            x = Resize2D((rr, c))(x)
-            x = RandomCrop2D((r, c))(x, key=k3)
-
-        if width_factor > 0:
-            # zoom in cols
-            x = Resize2D((r, cc))(x)
-            x = RandomCrop2D((r, c))(x, key=k4)
-
-        if height_factor < 0:
-            # zoom out rows
-            x = Resize2D((rr, c))(x)
-            x = Pad2D((((r - rr) // 2, (r - rr) - ((r - rr) // 2)), (0, 0)))(x)
-
-        if width_factor < 0:
-            # zoom out cols
-            x = Resize2D((r, cc))(x)
-            x = Pad2D(((0, 0), ((c - cc) // 2, (c - cc) - (c - cc) // 2)))(x)
-
+        x = _zoom_axis(x, height_factor, k3, axis=1)
+        x = _zoom_axis(x, width_factor, k4, axis=2)
         return x
 
     @property
     def spatial_ndim(self) -> int:
         return 2
+
+
+@tree_evaluation.def_evaluation(RandomCrop1D)
+@tree_evaluation.def_evaluation(RandomCrop2D)
+@tree_evaluation.def_evaluation(RandomCrop3D)
+@tree_evaluation.def_evaluation(RandomZoom2D)
+def random_transform_eval(_) -> Identity:
+    return Identity()

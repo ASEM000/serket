@@ -380,10 +380,10 @@ class RandomCutout2D(sk.TreeClass):
         return 2
 
 
-@tree_evaluation.def_evalutation(RandomCutout1D)
-@tree_evaluation.def_evalutation(RandomCutout2D)
-@tree_evaluation.def_evalutation(Dropout)
-@tree_evaluation.def_evalutation(DropoutND)
+@tree_evaluation.def_evaluation(RandomCutout1D)
+@tree_evaluation.def_evaluation(RandomCutout2D)
+@tree_evaluation.def_evaluation(Dropout)
+@tree_evaluation.def_evaluation(DropoutND)
 def dropout_evaluation(_) -> Identity:
     # dropout is a no-op during evaluation
     return Identity()
