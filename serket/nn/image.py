@@ -58,16 +58,16 @@ class AvgBlur2D(sk.TreeClass):
             in_features=in_features,
             kernel_size=(kernel_size, 1),
             padding="same",
-            weight_init_func=lambda *_: weight,
-            bias_init_func=None,
+            weight_init=lambda *_: weight,
+            bias_init=None,
         )
 
         self.conv2 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(1, kernel_size),
             padding="same",
-            weight_init_func=lambda *_: jnp.moveaxis(weight, 2, 3),
-            bias_init_func=None,
+            weight_init=lambda *_: jnp.moveaxis(weight, 2, 3),
+            bias_init=None,
         )
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -115,16 +115,16 @@ class GaussianBlur2D(sk.TreeClass):
             in_features=in_features,
             kernel_size=(kernel_size, 1),
             padding="same",
-            weight_init_func=lambda *_: weight,
-            bias_init_func=None,
+            weight_init=lambda *_: weight,
+            bias_init=None,
         )
 
         self.conv2 = DepthwiseConv2D(
             in_features=in_features,
             kernel_size=(1, kernel_size),
             padding="same",
-            weight_init_func=lambda *_: jnp.moveaxis(weight, 2, 3),
-            bias_init_func=None,
+            weight_init=lambda *_: jnp.moveaxis(weight, 2, 3),
+            bias_init=None,
         )
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -168,8 +168,8 @@ class Filter2D(sk.TreeClass):
             in_features=in_features,
             kernel_size=kernel.shape,
             padding="same",
-            weight_init_func=lambda *_: weight,
-            bias_init_func=None,
+            weight_init=lambda *_: weight,
+            bias_init=None,
         )
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -213,8 +213,8 @@ class FFTFilter2D(sk.TreeClass):
             in_features=in_features,
             kernel_size=kernel.shape,
             padding="same",
-            weight_init_func=lambda *_: weight,
-            bias_init_func=None,
+            weight_init=lambda *_: weight,
+            bias_init=None,
         )
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")

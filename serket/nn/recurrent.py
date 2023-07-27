@@ -80,9 +80,9 @@ class SimpleRNNCell(RNNCell):
         in_features: int,
         hidden_features: int,
         *,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
+        recurrent_weight_init: InitType = "orthogonal",
         act_func: ActivationType = jax.nn.tanh,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -91,9 +91,9 @@ class SimpleRNNCell(RNNCell):
         Args:
             in_features: the number of input features
             hidden_features: the number of hidden features
-            weight_init_func: the function to use to initialize the weights
-            bias_init_func: the function to use to initialize the bias
-            recurrent_weight_init_func: the function to use to initialize the recurrent weights
+            weight_init: the function to use to initialize the weights
+            bias_init: the function to use to initialize the bias
+            recurrent_weight_init: the function to use to initialize the recurrent weights
             act_func: the activation function to use for the hidden state update
             key: the key to use to initialize the weights
 
@@ -119,16 +119,16 @@ class SimpleRNNCell(RNNCell):
         i2h = sk.nn.Linear(
             in_features,
             hidden_features,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
+            weight_init=weight_init,
+            bias_init=bias_init,
             key=k1,
         )
 
         h2h = sk.nn.Linear(
             hidden_features,
             hidden_features,
-            weight_init_func=recurrent_weight_init_func,
-            bias_init_func=None,
+            weight_init=recurrent_weight_init,
+            bias_init=None,
             key=k2,
         )
 
@@ -160,8 +160,8 @@ class DenseCell(RNNCell):
     Args:
         in_features: the number of input features
         hidden_features: the number of hidden features
-        weight_init_func: the function to use to initialize the weights
-        bias_init_func: the function to use to initialize the bias
+        weight_init: the function to use to initialize the weights
+        bias_init: the function to use to initialize the bias
         act_func: the activation function to use for the hidden state update,
             use `None` for no activation
         key: the key to use to initialize the weights
@@ -184,8 +184,8 @@ class DenseCell(RNNCell):
         in_features: int,
         hidden_features: int,
         *,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         act_func: ActivationType = jax.nn.tanh,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -196,8 +196,8 @@ class DenseCell(RNNCell):
         self.in_to_hidden = sk.nn.Linear(
             in_features,
             hidden_features,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
+            weight_init=weight_init,
+            bias_init=bias_init,
             key=key,
         )
 
@@ -226,9 +226,9 @@ class LSTMCell(RNNCell):
     Args:
         in_features: the number of input features
         hidden_features: the number of hidden features
-        weight_init_func: the function to use to initialize the weights
-        bias_init_func: the function to use to initialize the bias
-        recurrent_weight_init_func: the function to use to initialize the recurrent weights
+        weight_init: the function to use to initialize the weights
+        bias_init: the function to use to initialize the bias
+        recurrent_weight_init: the function to use to initialize the recurrent weights
         act_func: the activation function to use for the hidden state update
         recurrent_act_func: the activation function to use for the cell state update
         key: the key to use to initialize the weights
@@ -243,9 +243,9 @@ class LSTMCell(RNNCell):
         in_features: int,
         hidden_features: int,
         *,
-        weight_init_func: str | Callable = "glorot_uniform",
-        bias_init_func: str | Callable | None = "zeros",
-        recurrent_weight_init_func: str | Callable = "orthogonal",
+        weight_init: str | Callable = "glorot_uniform",
+        bias_init: str | Callable | None = "zeros",
+        recurrent_weight_init: str | Callable = "orthogonal",
         act_func: str | Callable[[Any], Any] | None = "tanh",
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
@@ -260,16 +260,16 @@ class LSTMCell(RNNCell):
         i2h = sk.nn.Linear(
             in_features,
             hidden_features * 4,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
+            weight_init=weight_init,
+            bias_init=bias_init,
             key=k1,
         )
 
         h2h = sk.nn.Linear(
             hidden_features,
             hidden_features * 4,
-            weight_init_func=recurrent_weight_init_func,
-            bias_init_func=None,
+            weight_init=recurrent_weight_init,
+            bias_init=None,
             key=k2,
         )
 
@@ -309,9 +309,9 @@ class GRUCell(RNNCell):
     Args:
         in_features: the number of input features
         hidden_features: the number of hidden features
-        weight_init_func: the function to use to initialize the weights
-        bias_init_func: the function to use to initialize the bias
-        recurrent_weight_init_func: the function to use to initialize the recurrent weights
+        weight_init: the function to use to initialize the weights
+        bias_init: the function to use to initialize the bias
+        recurrent_weight_init: the function to use to initialize the recurrent weights
         act_func: the activation function to use for the hidden state update
         recurrent_act_func: the activation function to use for the cell state update
         key: the key to use to initialize the weights
@@ -325,9 +325,9 @@ class GRUCell(RNNCell):
         in_features: int,
         hidden_features: int,
         *,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
+        recurrent_weight_init: InitType = "orthogonal",
         act_func: ActivationType | None = "tanh",
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
@@ -342,16 +342,16 @@ class GRUCell(RNNCell):
         self.in_to_hidden = sk.nn.Linear(
             in_features,
             hidden_features * 3,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
+            weight_init=weight_init,
+            bias_init=bias_init,
             key=k1,
         )
 
         self.hidden_to_hidden = sk.nn.Linear(
             hidden_features,
             hidden_features * 3,
-            weight_init_func=recurrent_weight_init_func,
-            bias_init_func=None,
+            weight_init=recurrent_weight_init,
+            bias_init=None,
             key=k2,
         )
 
@@ -391,9 +391,9 @@ class ConvLSTMNDCell(RNNCell):
         padding: Padding of the convolution
         input_dilation: Dilation of the input
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -409,11 +409,11 @@ class ConvLSTMNDCell(RNNCell):
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
+        padding: PaddingType = "same",
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
+        recurrent_weight_init: InitType = "orthogonal",
         act_func: ActivationType | None = "tanh",
         recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
@@ -432,8 +432,8 @@ class ConvLSTMNDCell(RNNCell):
             strides=strides,
             padding=padding,
             kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
+            weight_init=weight_init,
+            bias_init=bias_init,
             key=k1,
         )
 
@@ -444,8 +444,8 @@ class ConvLSTMNDCell(RNNCell):
             strides=strides,
             padding=padding,
             kernel_dilation=kernel_dilation,
-            weight_init_func=recurrent_weight_init_func,
-            bias_init_func=None,
+            weight_init=recurrent_weight_init,
+            bias_init=None,
             key=k2,
         )
 
@@ -482,9 +482,9 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -512,9 +512,9 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -542,9 +542,9 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -572,9 +572,9 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -602,9 +602,9 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -632,9 +632,9 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -666,9 +666,9 @@ class ConvGRUNDCell(RNNCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -682,11 +682,11 @@ class ConvGRUNDCell(RNNCell):
         kernel_size: int | tuple[int, ...],
         *,
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
+        padding: PaddingType = "same",
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
-        recurrent_weight_init_func: InitType = "orthogonal",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
+        recurrent_weight_init: InitType = "orthogonal",
         act_func: ActivationType | None = "tanh",
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
@@ -705,8 +705,8 @@ class ConvGRUNDCell(RNNCell):
             strides=strides,
             padding=padding,
             kernel_dilation=kernel_dilation,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
+            weight_init=weight_init,
+            bias_init=bias_init,
             key=k1,
         )
 
@@ -717,8 +717,8 @@ class ConvGRUNDCell(RNNCell):
             strides=strides,
             padding=padding,
             kernel_dilation=kernel_dilation,
-            weight_init_func=recurrent_weight_init_func,
-            bias_init_func=None,
+            weight_init=recurrent_weight_init,
+            bias_init=None,
             key=k2,
         )
 
@@ -752,9 +752,9 @@ class ConvGRU1DCell(ConvGRUNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -780,9 +780,9 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -808,9 +808,9 @@ class ConvGRU2DCell(ConvGRUNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -836,9 +836,9 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -864,9 +864,9 @@ class ConvGRU3DCell(ConvGRUNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
@@ -891,9 +891,9 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         strides: Stride of the convolution
         padding: Padding of the convolution
         kernel_dilation: Dilation of the convolutional kernel
-        weight_init_func: Weight initialization function
-        bias_init_func: Bias initialization function
-        recurrent_weight_init_func: Recurrent weight initialization function
+        weight_init: Weight initialization function
+        bias_init: Bias initialization function
+        recurrent_weight_init: Recurrent weight initialization function
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key

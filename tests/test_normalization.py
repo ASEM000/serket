@@ -26,7 +26,7 @@ os.environ["KERAS_BACKEND"] = "jax"
 
 
 def test_LayerNorm():
-    layer = LayerNorm((5, 2), beta_init_func=None, gamma_init_func=None)
+    layer = LayerNorm((5, 2), bias_init=None, weight_init=None)
 
     x = jnp.array(
         [
@@ -102,7 +102,7 @@ def test_InstanceNorm():
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
-    layer = InstanceNorm(in_features=3, gamma_init_func=None, beta_init_func=None)
+    layer = InstanceNorm(in_features=3, weight_init=None, bias_init=None)
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
@@ -236,8 +236,8 @@ def test_batchnorm(axis):
         momentum=0.5,
         eps=bn_keras.epsilon,
         axis=axis,
-        beta_init_func=None,
-        gamma_init_func=None,
+        bias_init=None,
+        weight_init=None,
     )
     state = sk.tree_state(bn_sk)
     x_sk = mat_jax((5, 10, 7, 8))

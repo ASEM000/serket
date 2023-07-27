@@ -19,15 +19,7 @@ import numpy.testing as npt
 import pytest
 
 import serket as sk
-from serket.nn import (
-    FNN,
-    Bilinear,
-    Embedding,
-    GeneralLinear,
-    Identity,
-    Linear,
-    Multilinear,
-)
+from serket.nn import FNN, Embedding, GeneralLinear, Identity, Linear, Multilinear
 
 
 def test_embed():
@@ -56,8 +48,8 @@ def test_linear():
     nn = FNN(
         [1, 128, 128, 1],
         act_func="relu",
-        weight_init_func="he_normal",
-        bias_init_func="ones",
+        weight_init="he_normal",
+        bias_init="ones",
     )
 
     nn = sk.tree_mask(nn)
@@ -67,7 +59,7 @@ def test_linear():
 
     npt.assert_allclose(jnp.array(4.933563e-05), value, atol=1e-3)
 
-    layer = Linear(1, 1, bias_init_func=None)
+    layer = Linear(1, 1, bias_init=None)
     w = jnp.array([[-0.31568417]])
     layer = layer.at["weight"].set(w)
     y = jnp.array([[-0.31568417]])
@@ -91,12 +83,12 @@ def test_bilinear():
     x1 = jnp.array([[-0.7676, -0.7205, -0.0586]])
     x2 = jnp.array([[0.4600, -0.2508, 0.0115, 0.6155]])
     y = jnp.array([[-0.3001916, 0.28336674]])
-    layer = Bilinear(3, 4, 2, bias_init_func=None)
+    layer = Multilinear((3, 4), 2, bias_init=None)
     layer = layer.at["weight"].set(W)
 
     npt.assert_allclose(y, layer(x1, x2), atol=1e-4)
 
-    layer = Bilinear(3, 4, 2, bias_init_func="zeros")
+    layer = Multilinear((3, 4), 2, bias_init="zeros")
     layer = layer.at["weight"].set(W)
 
     npt.assert_allclose(y, layer(x1, x2), atol=1e-4)

@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import jax
-import numpy.testing as npt
 import jax.numpy as jnp
+import numpy.testing as npt
+
 from serket.nn import FNN, MLP
 
 
@@ -34,7 +35,7 @@ def test_fnn():
     y = jax.nn.relu(y)
     y = y @ w3
 
-    l1 = FNN([1, 5, 3, 4], act_func=("tanh", "relu"), bias_init_func=None)
+    l1 = FNN([1, 5, 3, 4], act_func=("tanh", "relu"), bias_init=None)
     l1 = l1.at["layers"].at[0].at["weight"].set(w1)
     l1 = l1.at["layers"].at[1].at["weight"].set(w2)
     l1 = l1.at["layers"].at[2].at["weight"].set(w3)
@@ -49,7 +50,7 @@ def test_mlp():
         hidden_size=10,
         num_hidden_layers=2,
         act_func=("relu", "tanh"),
-        bias_init_func=None,
+        bias_init=None,
     )
 
     x = jax.random.normal(jax.random.PRNGKey(0), (10, 1))

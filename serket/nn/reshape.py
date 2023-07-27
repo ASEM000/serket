@@ -641,18 +641,14 @@ class RandomZoom2D(sk.TreeClass):
         )
         width_factor = jr.uniform(
             k2,
-            shape=(),
+            (),
             minval=self.width_factor[0],
             maxval=self.width_factor[1],
         )
 
-        height_factor, width_factor = jax.lax.stop_gradient(
-            (height_factor, width_factor)
-        )
-
         x = _zoom_axis(x, height_factor, k3, axis=1)
         x = _zoom_axis(x, width_factor, k4, axis=2)
-        return x
+        return jax.lax.stop_gradient(x)
 
     @property
     def spatial_ndim(self) -> int:

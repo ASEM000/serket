@@ -81,9 +81,9 @@ class LayerNorm(sk.TreeClass):
     Args:
         normalized_shape: the shape of the input to be normalized.
         eps: a value added to the denominator for numerical stability.
-        gamma_init_func: a function to initialize the scale. Defaults to ones.
+        weight_init: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
-        beta_init_func: a function to initialize the shift. Defaults to zeros.
+        bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
 
@@ -98,8 +98,8 @@ class LayerNorm(sk.TreeClass):
         normalized_shape: int | tuple[int, ...],
         *,
         eps: float = 1e-5,
-        gamma_init_func: InitType = "ones",
-        beta_init_func: InitType = "zeros",
+        weight_init: InitType = "ones",
+        bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         self.normalized_shape = (
@@ -108,10 +108,10 @@ class LayerNorm(sk.TreeClass):
             else (normalized_shape,)
         )
         self.eps = eps
-        self.gamma = resolve_init_func(gamma_init_func)(key, self.normalized_shape)
-        self.beta = resolve_init_func(beta_init_func)(key, self.normalized_shape)
+        self.gamma = resolve_init_func(weight_init)(key, self.normalized_shape)
+        self.beta = resolve_init_func(bias_init)(key, self.normalized_shape)
 
-    def __call__(self, x: jax.Array, **kwargs) -> jax.Array:
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         return layer_norm(
             x,
             gamma=self.gamma,
@@ -130,9 +130,9 @@ class GroupNorm(sk.TreeClass):
         in_features: the shape of the input to be normalized.
         groups: number of groups to separate the channels into.
         eps: a value added to the denominator for numerical stability.
-        gamma_init_func: a function to initialize the scale. Defaults to ones.
+        weight_init: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
-        beta_init_func: a function to initialize the shift. Defaults to zeros.
+        bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
 
@@ -148,8 +148,8 @@ class GroupNorm(sk.TreeClass):
         *,
         groups: int,
         eps: float = 1e-5,
-        gamma_init_func: InitType = "ones",
-        beta_init_func: InitType = "zeros",
+        weight_init: InitType = "ones",
+        bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         self.in_features = positive_int_cb(in_features)
@@ -160,8 +160,8 @@ class GroupNorm(sk.TreeClass):
         if in_features % groups != 0:
             raise ValueError(f"{in_features} must be divisible by {groups=}.")
 
-        self.gamma = resolve_init_func(gamma_init_func)(key, (in_features,))
-        self.beta = resolve_init_func(beta_init_func)(key, (in_features,))
+        self.gamma = resolve_init_func(weight_init)(key, (in_features,))
+        self.beta = resolve_init_func(bias_init)(key, (in_features,))
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return group_norm(
@@ -181,9 +181,9 @@ class InstanceNorm(GroupNorm):
     Args:
         in_features: the shape of the input to be normalized.
         eps: a value added to the denominator for numerical stability.
-        gamma_init_func: a function to initialize the scale. Defaults to ones.
+        weight_init: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
-        beta_init_func: a function to initialize the shift. Defaults to zeros.
+        bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
 
@@ -196,16 +196,16 @@ class InstanceNorm(GroupNorm):
         in_features: int,
         *,
         eps: float = 1e-5,
-        gamma_init_func: InitType = "ones",
-        beta_init_func: InitType = "zeros",
+        weight_init: InitType = "ones",
+        bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         super().__init__(
             in_features=in_features,
             groups=in_features,
             eps=eps,
-            gamma_init_func=gamma_init_func,
-            beta_init_func=beta_init_func,
+            weight_init=weight_init,
+            bias_init=bias_init,
             key=key,
         )
 
@@ -332,9 +332,9 @@ class BatchNorm(sk.TreeClass):
         momentum: the value used for the ``running_mean`` and ``running_var``
             computation. must be a number between ``0`` and ``1``.
         eps: a value added to the denominator for numerical stability.
-        gamma_init_func: a function to initialize the scale. Defaults to ones.
+        weight_init: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
-        beta_init_func: a function to initialize the shift. Defaults to zeros.
+        bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
         evaluation: a boolean value that when set to True, this module will run in
@@ -379,16 +379,16 @@ class BatchNorm(sk.TreeClass):
         *,
         momentum: float = 0.99,
         eps: float = 1e-5,
-        gamma_init_func: InitType = "ones",
-        beta_init_func: InitType = "zeros",
+        weight_init: InitType = "ones",
+        bias_init: InitType = "zeros",
         axis: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ) -> None:
         self.in_features = in_features
         self.momentum = momentum
         self.eps = eps
-        self.gamma = resolve_init_func(gamma_init_func)(key, (in_features,))
-        self.beta = resolve_init_func(beta_init_func)(key, (in_features,))
+        self.gamma = resolve_init_func(weight_init)(key, (in_features,))
+        self.beta = resolve_init_func(bias_init)(key, (in_features,))
         self.axis = axis
 
     def __call__(
@@ -435,9 +435,9 @@ class EvalNorm(sk.TreeClass):
             is ignored in evaluation mode, but kept for conversion to
             :class:`nn.BatchNorm`.
         eps: a value added to the denominator for numerical stability.
-        gamma_init_func: a function to initialize the scale. Defaults to ones.
+        weight_init: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
-        beta_init_func: a function to initialize the shift. Defaults to zeros.
+        bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
         evaluation: a boolean value that when set to True, this module will run in
@@ -465,16 +465,16 @@ class EvalNorm(sk.TreeClass):
         *,
         momentum: float = 0.99,
         eps: float = 1e-5,
-        gamma_init_func: InitType = "ones",
-        beta_init_func: InitType = "zeros",
+        weight_init: InitType = "ones",
+        bias_init: InitType = "zeros",
         axis: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ) -> None:
         self.in_features = in_features
         self.momentum = momentum
         self.eps = eps
-        self.gamma = resolve_init_func(gamma_init_func)(key, (in_features,))
-        self.beta = resolve_init_func(beta_init_func)(key, (in_features,))
+        self.gamma = resolve_init_func(weight_init)(key, (in_features,))
+        self.beta = resolve_init_func(bias_init)(key, (in_features,))
         self.axis = axis
 
     def __call__(
@@ -504,8 +504,8 @@ def _(batchnorm: BatchNorm) -> EvalNorm:
         in_features=batchnorm.in_features,
         momentum=batchnorm.momentum,  # ignored
         eps=batchnorm.eps,
-        gamma_init_func=lambda *_: batchnorm.gamma,
-        beta_init_func=lambda *_: batchnorm.beta,
+        weight_init=lambda *_: batchnorm.gamma,
+        bias_init=lambda *_: batchnorm.beta,
         axis=batchnorm.axis,
     )
 

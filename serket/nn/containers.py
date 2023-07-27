@@ -18,7 +18,6 @@ import functools as ft
 from typing import Any
 
 import jax
-import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
@@ -54,7 +53,6 @@ class Sequential(sk.TreeClass):
             try:
                 x = layer(x, key=key)
             except TypeError:
-                # a `layer` or a `function` without a key argument
                 x = layer(x)
         return x
 
@@ -109,7 +107,8 @@ class RandomApply(sk.TreeClass):
     p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
 
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):
-        return jnp.where(jr.bernoulli(key, self.p), self.layer(x), x)
+        p = jax.lax.stop_gradient(self.p)
+        return self.layer(x) if jr.bernoulli(key, p) else x
 
 
 @tree_evaluation.def_evaluation(RandomApply)

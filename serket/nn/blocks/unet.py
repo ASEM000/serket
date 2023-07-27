@@ -40,14 +40,14 @@ class DoubleConvBlock(sk.TreeClass):
             out_features=out_features,
             kernel_size=3,
             padding=1,
-            bias_init_func=None,
+            bias_init=None,
         )
         self.conv2 = sk.nn.Conv2D(
             in_features=out_features,
             out_features=out_features,
             kernel_size=3,
             padding=1,
-            bias_init_func=None,
+            bias_init=None,
         )
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:

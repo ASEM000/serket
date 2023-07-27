@@ -389,9 +389,5 @@ def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
     if isinstance(act_func, str):
         if act_func in act_map:
             return act_map[act_func]()
-
-        raise ValueError(
-            f"Unknown activation function {act_func=}, "
-            f"available activations are {list(act_map)}"
-        )
+        raise ValueError(f"Unknown {act_func=}, available activations: {list(act_map)}")
     return act_func

@@ -94,16 +94,7 @@ from .image import (
     PixelShuffle2D,
     RandomContrast2D,
 )
-from .linear import (
-    FNN,
-    MLP,
-    Bilinear,
-    Embedding,
-    GeneralLinear,
-    Identity,
-    Linear,
-    Multilinear,
-)
+from .linear import FNN, MLP, Embedding, GeneralLinear, Identity, Linear, Multilinear
 from .normalization import BatchNorm, GroupNorm, InstanceNorm, LayerNorm
 from .pooling import (
     AdaptiveAvgPool1D,
@@ -177,7 +168,6 @@ __all__ = (
     "MLP",
     # Linear
     "Linear",
-    "Bilinear",
     "Identity",
     "Multilinear",
     "GeneralLinear",

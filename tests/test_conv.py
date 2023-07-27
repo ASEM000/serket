@@ -145,7 +145,7 @@
 #             padding=pi,
 #             kernel_dilation=ddi,
 #             groups=gi,
-#             bias_init_func=None,
+#             bias_init=None,
 #         )
 
 #         tf_weight = tf_conv.weights[0].numpy()

@@ -32,8 +32,8 @@
 # w_hidden_to_hidden = jnp.array(rnn.weights[1].numpy())
 # b_hidden_to_hidden = jnp.array(rnn.weights[2].numpy())
 # x = jnp.ones([time_steps, in_features])
-# cell = LSTMCell(in_features, hidden_features, recurrent_weight_init_func="glorot_uniform", bias_init_func="zeros",
-#  weight_init_func="glorot_uniform")
+# cell = LSTMCell(in_features, hidden_features, recurrent_weight_init="glorot_uniform", bias_init="zeros",
+#  weight_init="glorot_uniform")
 # cell = cell.at["in_to_hidden.weight"].set(w_in_to_hidden)
 # cell = cell.at["hidden_to_hidden.weight"].set(w_hidden_to_hidden)
 # cell = cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden)
@@ -111,7 +111,7 @@ def test_vanilla_rnn():
     cell = SimpleRNNCell(
         in_features=in_features,
         hidden_features=hidden_features,
-        recurrent_weight_init_func="glorot_uniform",
+        recurrent_weight_init="glorot_uniform",
     )
 
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
@@ -226,7 +226,7 @@ def test_lstm():
     cell = LSTMCell(
         in_features=in_features,
         hidden_features=hidden_features,
-        recurrent_weight_init_func="glorot_uniform",
+        recurrent_weight_init="glorot_uniform",
     )
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
     cell = cell.at["ih2h_weight"].set(w_combined)
@@ -324,7 +324,7 @@ def test_lstm():
     cell = LSTMCell(
         in_features=in_features,
         hidden_features=hidden_features,
-        recurrent_weight_init_func="glorot_uniform",
+        recurrent_weight_init="glorot_uniform",
     )
 
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
@@ -354,7 +354,7 @@ def test_lstm():
     cell = LSTMCell(
         in_features=in_features,
         hidden_features=hidden_features,
-        recurrent_weight_init_func="glorot_uniform",
+        recurrent_weight_init="glorot_uniform",
     )
 
     sk_layer = ScanRNN(cell, return_sequences=True)
@@ -416,7 +416,7 @@ def test_gru():
         ]
     )
 
-    cell = GRUCell(1, 3, bias_init_func=None)
+    cell = GRUCell(1, 3, bias_init=None)
     cell = cell.at["in_to_hidden"].at["weight"].set(w1)
     cell = cell.at["hidden_to_hidden"].at["weight"].set(w2)
     y = jnp.array([[-0.00142191, 0.11011646, 0.1613554]])
@@ -578,9 +578,9 @@ def test_conv_lstm1d(layer):
         recurrent_act_func="sigmoid",
         kernel_size=3,
         padding="same",
-        weight_init_func="glorot_uniform",
-        recurrent_weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
+        weight_init="glorot_uniform",
+        recurrent_weight_init="glorot_uniform",
+        bias_init="zeros",
     )
 
     cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
@@ -607,9 +607,9 @@ def test_conv_lstm1d(layer):
         recurrent_act_func="sigmoid",
         kernel_size=3,
         padding="same",
-        weight_init_func="glorot_uniform",
-        recurrent_weight_init_func="glorot_uniform",
-        bias_init_func="zeros",
+        weight_init="glorot_uniform",
+        recurrent_weight_init="glorot_uniform",
+        bias_init="zeros",
     )
 
     res_sk = ScanRNN(cell, return_sequences=False)(x)
@@ -787,8 +787,8 @@ def test_dense_cell():
         in_features=10,
         hidden_features=10,
         act_func=lambda x: x,
-        weight_init_func="ones",
-        bias_init_func=None,
+        weight_init="ones",
+        bias_init=None,
     )
     x = jnp.ones([10, 10])
     res = ScanRNN(cell)(x)

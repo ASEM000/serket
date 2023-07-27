@@ -239,7 +239,7 @@ def canonicalize_cb(value, ndim, name: str | None = None):
         return jnp.repeat(value, ndim)
     if isinstance(value, tuple):
         if len(value) != ndim:
-            raise ValueError(f"{len(value)} != {ndim} for {name=} and {value=}.")
+            raise ValueError(f"{len(value)=} != {ndim=}.")
         return tuple(value)
 
     raise ValueError(f"Expected int/tuple for {name=} and {value=}.")
@@ -250,14 +250,16 @@ def positive_int_cb(value):
     if not isinstance(value, int):
         raise ValueError(f"value must be an integer, got {type(value).__name__}")
     if value <= 0:
-        raise ValueError(f"value must be positive, got {value!r}")
+        raise ValueError(f"{value=} must be positive.")
     return value
 
 
 def recursive_getattr(obj, attr: Sequence[str]):
-    if len(attr) == 1:
-        return getattr(obj, attr[0])
-    return recursive_getattr(getattr(obj, attr[0]), attr[1:])
+    return (
+        getattr(obj, attr[0])
+        if len(attr) == 1
+        else recursive_getattr(getattr(obj, attr[0]), attr[1:])
+    )
 
 
 def validate_spatial_ndim(func: Callable[P, T], attribute_name: str) -> Callable[P, T]:

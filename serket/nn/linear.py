@@ -94,8 +94,8 @@ class Multilinear(sk.TreeClass):
     Args:
         in_features: number of input features for each input
         out_features: number of output features
-        weight_init_func: function to initialize the weights
-        bias_init_func: function to initialize the bias
+        weight_init: function to initialize the weights
+        bias_init: function to initialize the bias
         key: key for the random number generator
 
     Example:
@@ -117,25 +117,23 @@ class Multilinear(sk.TreeClass):
         in_features: int | tuple[int, ...] | None,
         out_features: int,
         *,
-        weight_init_func: InitType = "he_normal",
-        bias_init_func: InitType = "ones",
+        weight_init: InitType = "he_normal",
+        bias_init: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         if not isinstance(in_features, (tuple, int)):
             raise ValueError(f"Expected tuple or int for {in_features=}.")
 
+        k1, k2 = jr.split(key)
+
         self.in_features = in_features
         self.out_features = out_features
+        weight_init = resolve_init_func(weight_init)
+        bias_init = resolve_init_func(bias_init)
 
-        weight_init_func = resolve_init_func(weight_init_func)
-        bias_init_func = resolve_init_func(bias_init_func)
-
-        weight_shape = (*self.in_features, out_features)
-        self.weight = weight_init_func(key, weight_shape)
-
-        self.bias = (
-            None if bias_init_func is None else bias_init_func(key, (out_features,))
-        )
+        weight_shape = (*in_features, out_features)
+        self.weight = weight_init(k1, weight_shape)
+        self.bias = bias_init(k2, (out_features,))
 
     def __call__(self, *x, **k) -> jax.Array:
         einsum_string = _multilinear_einsum_string(len(self.in_features))
@@ -149,8 +147,8 @@ class Linear(Multilinear):
     Args:
         in_features: number of input features
         out_features: number of output features
-        weight_init_func: function to initialize the weights
-        bias_init_func: function to initialize the bias
+        weight_init: function to initialize the weights
+        bias_init: function to initialize the bias
         key: key for the random number generator
 
     Example:
@@ -166,53 +164,15 @@ class Linear(Multilinear):
         in_features: int,
         out_features: int,
         *,
-        weight_init_func: InitType = "he_normal",
-        bias_init_func: InitType = "ones",
+        weight_init: InitType = "he_normal",
+        bias_init: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         super().__init__(
             (in_features,),
             out_features,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
-            key=key,
-        )
-
-
-class Bilinear(Multilinear):
-    """Bilinear layer
-
-    Args:
-        in1_features: number of input features for the first input
-        in2_features: number of input features for the second input
-        out_features: number of output features
-        weight_init_func: function to initialize the weights
-        bias_init_func: function to initialize the bias
-        key: key for the random number generator
-
-    Example:
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> layer = sk.nn.Bilinear(5, 6, 7)
-        >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
-        (1, 7)
-    """
-
-    def __init__(
-        self,
-        in1_features: int,
-        in2_features: int,
-        out_features: int,
-        *,
-        weight_init_func: InitType = "he_normal",
-        bias_init_func: InitType = "ones",
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
-        super().__init__(
-            (in1_features, in2_features),
-            out_features,
-            weight_init_func=weight_init_func,
-            bias_init_func=bias_init_func,
+            weight_init=weight_init,
+            bias_init=bias_init,
             key=key,
         )
 
@@ -224,8 +184,8 @@ class GeneralLinear(sk.TreeClass):
         in_features: number of input features corresponding to in_axes
         out_features: number of output features
         in_axes: axes to apply the linear layer to
-        weight_init_func: weight initialization function
-        bias_init_func: bias initialization function
+        weight_init: weight initialization function
+        bias_init: bias initialization function
         key: random key
 
     Example:
@@ -247,8 +207,8 @@ class GeneralLinear(sk.TreeClass):
         out_features: int,
         *,
         in_axes: tuple[int, ...],
-        weight_init_func: InitType = "he_normal",
-        bias_init_func: InitType = "ones",
+        weight_init: InitType = "he_normal",
+        bias_init: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         self.in_features = IsInstance(tuple)(in_features)
@@ -261,10 +221,12 @@ class GeneralLinear(sk.TreeClass):
                 f"got {len(in_axes)=} and {len(in_features)=}"
             )
 
-        weight_init_func = resolve_init_func(weight_init_func)
-        bias_init_func = resolve_init_func(bias_init_func)
-        self.weight = weight_init_func(key, (*self.in_features, self.out_features))
-        self.bias = bias_init_func(key, (self.out_features,))
+        k1, k2 = jr.split(key)
+
+        weight_init = resolve_init_func(weight_init)
+        bias_init = resolve_init_func(bias_init)
+        self.weight = weight_init(k1, (*self.in_features, self.out_features))
+        self.bias = bias_init(k2, (self.out_features,))
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         # ensure negative axes
@@ -333,8 +295,8 @@ class FNN(sk.TreeClass):
         act_func: a single Activation function to be applied between layers or
             ``len(layers)-2`` Sequence of activation functions applied between
             layers.
-        weight_init_func: Weight initializer function.
-        bias_init_func: Bias initializer function. Defaults to lambda key,
+        weight_init: Weight initializer function.
+        bias_init: Bias initializer function. Defaults to lambda key,
             shape: jnp.ones(shape).
         key: Random key for weight and bias initialization.
 
@@ -359,8 +321,8 @@ class FNN(sk.TreeClass):
         layers: Sequence[int],
         *,
         act_func: ActivationType | tuple[ActivationType, ...] = "tanh",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         keys = jr.split(key, len(layers) - 1)
@@ -379,8 +341,8 @@ class FNN(sk.TreeClass):
                 in_features=di,
                 out_features=do,
                 key=ki,
-                weight_init_func=weight_init_func,
-                bias_init_func=bias_init_func,
+                weight_init=weight_init,
+                bias_init=bias_init,
             )
             for (ki, di, do) in (zip(keys, layers[:-1], layers[1:]))
         )
@@ -455,8 +417,8 @@ class MLP(sk.TreeClass):
         hidden_size: Number of hidden units in each hidden layer.
         num_hidden_layers: Number of hidden layers including the output layer.
         act_func: Activation function.
-        weight_init_func: Weight initialization function.
-        bias_init_func: Bias initialization function.
+        weight_init: Weight initialization function.
+        bias_init: Bias initialization function.
         key: Random number generator key.
 
     Example:
@@ -505,8 +467,8 @@ class MLP(sk.TreeClass):
         hidden_size: int,
         num_hidden_layers: int,
         act_func: ActivationType | tuple[ActivationType, ...] = "tanh",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         if hidden_size < 1:
@@ -521,7 +483,7 @@ class MLP(sk.TreeClass):
         else:
             self.act_func = resolve_activation(act_func)
 
-        kwargs = dict(weight_init_func=weight_init_func, bias_init_func=bias_init_func)
+        kwargs = dict(weight_init=weight_init, bias_init=bias_init)
 
         def batched_linear(key) -> Batched[Linear]:
             return sk.tree_mask(Linear(hidden_size, hidden_size, key=key, **kwargs))

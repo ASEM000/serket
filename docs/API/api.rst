@@ -10,17 +10,16 @@
    :maxdepth: 2
    :caption: API Documentation
 
-   linear
-   dropout
-   containers
-   pooling
-   convolution
-   normalization
-   image_filtering
-   reshaping
-   random_transforms
    activations
+   containers
+   convolution
+   dropout
+   image
+   linear
+   normalization
+   pooling
    recurrent
+   reshaping
    misc
 
 

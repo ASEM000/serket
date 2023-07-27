@@ -54,11 +54,11 @@ class ConvND(sk.TreeClass):
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
+        padding: PaddingType = "same",
         input_dilation: DilationType = 1,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -82,8 +82,8 @@ class ConvND(sk.TreeClass):
             name="kernel_dilation",
         )
 
-        weight_init_func = resolve_init_func(weight_init_func)
-        bias_init_func = resolve_init_func(bias_init_func)
+        weight_init = resolve_init_func(weight_init)
+        bias_init = resolve_init_func(bias_init)
 
         self.groups = positive_int_cb(groups)
 
@@ -91,10 +91,10 @@ class ConvND(sk.TreeClass):
             raise ValueError(f"{(out_features % groups == 0)=}")
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
-        self.weight = weight_init_func(key, weight_shape)
+        self.weight = weight_init(key, weight_shape)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init_func(key, bias_shape)
+        self.bias = bias_init(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -169,9 +169,9 @@ class Conv1D(ConvND):
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -240,9 +240,9 @@ class Conv2D(ConvND):
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -311,9 +311,9 @@ class Conv3D(ConvND):
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -349,11 +349,11 @@ class ConvNDTranspose(sk.TreeClass):
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
+        padding: PaddingType = "same",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -374,18 +374,18 @@ class ConvNDTranspose(sk.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        weight_init_func = resolve_init_func(weight_init_func)
-        bias_init_func = resolve_init_func(bias_init_func)
+        weight_init = resolve_init_func(weight_init)
+        bias_init = resolve_init_func(bias_init)
         self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(self.out_features % self.groups ==0)=}")
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
-        self.weight = weight_init_func(key, weight_shape)
+        self.weight = weight_init(key, weight_shape)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init_func(key, bias_shape)
+        self.bias = bias_init(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -464,9 +464,9 @@ class Conv1DTranspose(ConvNDTranspose):
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -534,9 +534,9 @@ class Conv2DTranspose(ConvNDTranspose):
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -604,9 +604,9 @@ class Conv3DTranspose(ConvNDTranspose):
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -642,9 +642,9 @@ class DepthwiseConvND(sk.TreeClass):
         *,
         depth_multiplier: int = 1,
         strides: int = 1,
-        padding: PaddingType = "SAME",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        padding: PaddingType = "same",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         self.in_features = positive_int_cb(in_features)
@@ -660,14 +660,14 @@ class DepthwiseConvND(sk.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        weight_init_func = resolve_init_func(weight_init_func)
-        bias_init_func = resolve_init_func(bias_init_func)
+        weight_init = resolve_init_func(weight_init)
+        bias_init = resolve_init_func(bias_init)
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
-        self.weight = weight_init_func(key, weight_shape)
+        self.weight = weight_init(key, weight_shape)
 
         bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init_func(key, bias_shape)
+        self.bias = bias_init(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -731,9 +731,9 @@ class DepthwiseConv1D(DepthwiseConvND):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -785,9 +785,9 @@ class DepthwiseConv2D(DepthwiseConvND):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -840,9 +840,9 @@ class DepthwiseConv3D(DepthwiseConvND):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -873,10 +873,10 @@ class SeparableConvND(sk.TreeClass):
         *,
         depth_multiplier: int = 1,
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_bias_init_func: InitType = "zeros",
+        padding: PaddingType = "same",
+        depthwise_weight_init: InitType = "glorot_uniform",
+        pointwise_weight_init: InitType = "glorot_uniform",
+        pointwise_bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         self.depthwise_conv = self.depthwise_convolution_layer(
@@ -885,8 +885,8 @@ class SeparableConvND(sk.TreeClass):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            weight_init_func=depthwise_weight_init_func,
-            bias_init_func=None,  # no bias for lhs
+            weight_init=depthwise_weight_init,
+            bias_init=None,  # no bias for lhs
             key=key,
         )
 
@@ -896,8 +896,8 @@ class SeparableConvND(sk.TreeClass):
             kernel_size=1,
             strides=strides,
             padding=padding,
-            weight_init_func=pointwise_weight_init_func,
-            bias_init_func=pointwise_bias_init_func,
+            weight_init=pointwise_weight_init,
+            bias_init=pointwise_bias_init,
             key=key,
         )
 
@@ -963,9 +963,9 @@ class SeparableConv1D(SeparableConvND):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -1036,9 +1036,9 @@ class SeparableConv2D(SeparableConvND):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -1108,9 +1108,9 @@ class SeparableConv3D(SeparableConvND):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -1148,11 +1148,11 @@ class ConvNDLocal(sk.TreeClass):
         *,
         in_size: Sequence[int],
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
+        padding: PaddingType = "same",
         input_dilation: DilationType = 1,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         # checked by callbacks
@@ -1179,8 +1179,8 @@ class ConvNDLocal(sk.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        weight_init_func = resolve_init_func(weight_init_func)
-        bias_init_func = resolve_init_func(bias_init_func)
+        weight_init = resolve_init_func(weight_init)
+        bias_init = resolve_init_func(bias_init)
 
         out_size = calculate_convolution_output_shape(
             shape=self.in_size,
@@ -1196,10 +1196,10 @@ class ConvNDLocal(sk.TreeClass):
             *out_size,
         )
 
-        self.weight = weight_init_func(key, weight_shape)
+        self.weight = weight_init(key, weight_shape)
 
         bias_shape = (self.out_features, *out_size)
-        self.bias = bias_init_func(key, bias_shape)
+        self.bias = bias_init(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -1264,9 +1264,9 @@ class Conv1DLocal(ConvNDLocal):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -1325,9 +1325,9 @@ class Conv2DLocal(ConvNDLocal):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -1386,9 +1386,9 @@ class Conv3DLocal(ConvNDLocal):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: Function to use for initializing the weights. defaults
+        weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: Function to use for initializing the bias. defaults to
+        bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -1530,10 +1530,10 @@ class FFTConvND(sk.TreeClass):
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
+        padding: PaddingType = "same",
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -1551,8 +1551,8 @@ class FFTConvND(sk.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        weight_init_func = resolve_init_func(weight_init_func)
-        bias_init_func = resolve_init_func(bias_init_func)
+        weight_init = resolve_init_func(weight_init)
+        bias_init = resolve_init_func(bias_init)
         self.groups = positive_int_cb(groups)
 
         if self.out_features % self.groups != 0:
@@ -1560,10 +1560,10 @@ class FFTConvND(sk.TreeClass):
             raise ValueError(msg)
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
-        self.weight = weight_init_func(key, weight_shape)
+        self.weight = weight_init(key, weight_shape)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init_func(key, bias_shape)
+        self.bias = bias_init(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -1622,18 +1622,18 @@ class FFTConv1D(FFTConvND):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
         kernel_dilation: Dilation of the convolutional kernel accepts:
 
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -1688,18 +1688,18 @@ class FFTConv2D(FFTConvND):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
         kernel_dilation: Dilation of the convolutional kernel accepts:
 
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -1754,18 +1754,18 @@ class FFTConv3D(FFTConvND):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
         kernel_dilation: Dilation of the convolutional kernel accepts:
 
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -1801,11 +1801,11 @@ class FFTConvNDTranspose(sk.TreeClass):
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
+        padding: PaddingType = "same",
         output_padding: int = 0,
         kernel_dilation: DilationType = 1,
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
@@ -1828,8 +1828,8 @@ class FFTConvNDTranspose(sk.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        weight_init_func = resolve_init_func(weight_init_func)
-        bias_init_func = resolve_init_func(bias_init_func)
+        weight_init = resolve_init_func(weight_init)
+        bias_init = resolve_init_func(bias_init)
         self.groups = positive_int_cb(groups)
 
         if self.in_features % self.groups != 0:
@@ -1839,13 +1839,13 @@ class FFTConvNDTranspose(sk.TreeClass):
             )
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
-        self.weight = weight_init_func(key, weight_shape)
+        self.weight = weight_init(key, weight_shape)
 
-        if bias_init_func is None:
+        if bias_init is None:
             self.bias = None
         else:
             bias_shape = (out_features, *(1,) * self.spatial_ndim)
-            self.bias = bias_init_func(key, bias_shape)
+            self.bias = bias_init(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -1913,9 +1913,9 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
         output_padding: Padding of the output after convolution. accepts:
 
@@ -1926,9 +1926,9 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -1983,9 +1983,9 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
         output_padding: Padding of the output after convolution. accepts:
 
@@ -1996,9 +1996,9 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -2053,9 +2053,9 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
         output_padding: Padding of the output after convolution. accepts:
 
@@ -2066,9 +2066,9 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
             - single integer for same dilation in all dimensions.
             - sequence of integers for different dilation in each dimension.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
         key: key to use for initializing the weights. defaults to ``0``.
@@ -2104,9 +2104,9 @@ class DepthwiseFFTConvND(sk.TreeClass):
         *,
         depth_multiplier: int = 1,
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        weight_init_func: InitType = "glorot_uniform",
-        bias_init_func: InitType = "zeros",
+        padding: PaddingType = "same",
+        weight_init: InitType = "glorot_uniform",
+        bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         self.in_features = positive_int_cb(in_features)
@@ -2122,14 +2122,14 @@ class DepthwiseFFTConvND(sk.TreeClass):
             self.spatial_ndim,
             name="kernel_dilation",
         )
-        weight_init_func = resolve_init_func(weight_init_func)
-        bias_init_func = resolve_init_func(bias_init_func)
+        weight_init = resolve_init_func(weight_init)
+        bias_init = resolve_init_func(bias_init)
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
-        self.weight = weight_init_func(key, weight_shape)
+        self.weight = weight_init(key, weight_shape)
 
         bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init_func(key, bias_shape)
+        self.bias = bias_init(key, bias_shape)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -2187,13 +2187,13 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -2241,13 +2241,13 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -2295,13 +2295,13 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -2332,10 +2332,10 @@ class SeparableFFTConvND(sk.TreeClass):
         *,
         depth_multiplier: int = 1,
         strides: StridesType = 1,
-        padding: PaddingType = "SAME",
-        depthwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_weight_init_func: InitType = "glorot_uniform",
-        pointwise_bias_init_func: InitType = "zeros",
+        padding: PaddingType = "same",
+        depthwise_weight_init: InitType = "glorot_uniform",
+        pointwise_weight_init: InitType = "glorot_uniform",
+        pointwise_bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         self.in_features = in_features
@@ -2351,8 +2351,8 @@ class SeparableFFTConvND(sk.TreeClass):
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            weight_init_func=depthwise_weight_init_func,
-            bias_init_func=None,  # no bias for lhs
+            weight_init=depthwise_weight_init,
+            bias_init=None,  # no bias for lhs
             key=key,
         )
 
@@ -2362,8 +2362,8 @@ class SeparableFFTConvND(sk.TreeClass):
             kernel_size=1,
             strides=strides,
             padding=padding,
-            weight_init_func=pointwise_weight_init_func,
-            bias_init_func=pointwise_bias_init_func,
+            weight_init=pointwise_weight_init,
+            bias_init=pointwise_bias_init,
             key=key,
         )
 
@@ -2427,13 +2427,13 @@ class SeparableFFTConv1D(SeparableFFTConvND):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -2500,13 +2500,13 @@ class SeparableFFTConv2D(SeparableFFTConvND):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
@@ -2572,13 +2572,13 @@ class SeparableFFTConv3D(SeparableFFTConvND):
             - tuple of integers for different padding in each dimension.
             - tuple of a tuple of two integers for before and after padding in
               each dimension.
-            - "same"/"SAME" for padding such that the output has the same shape
+            - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
-            - "valid"/"VALID" for no padding.
+            - ``valid``/``VALID`` for no padding.
 
-        weight_init_func: function to use for initializing the weights. defaults
+        weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
-        bias_init_func: function to use for initializing the bias. defaults to
+        bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
