@@ -24,7 +24,7 @@ from jax import lax
 
 import serket as sk
 from serket.nn.convolution import DepthwiseConv2D, DepthwiseFFTConv2D
-from serket.nn.custom_transform import tree_evaluation
+from serket.nn.custom_transform import tree_eval
 from serket.nn.linear import Identity
 from serket.nn.utils import positive_int_cb, validate_axis_shape, validate_spatial_ndim
 
@@ -376,6 +376,6 @@ class RandomContrast2D(sk.TreeClass):
         return 2
 
 
-@tree_evaluation.def_evaluation(RandomContrast2D)
-def tree_evaluation_random_contrast2d(_: RandomContrast2D):
+@tree_eval.def_eval(RandomContrast2D)
+def tree_eval_random_contrast2d(_: RandomContrast2D):
     return Identity()

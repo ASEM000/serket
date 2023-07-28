@@ -1087,23 +1087,23 @@ def _no_accumulate_scan(
 
 
 @tree_state.def_state(SimpleRNNCell)
-def simple_rnn_init_state(cell: SimpleRNNCell, _) -> SimpleRNNState:
+def simple_rnn_init_state(cell: SimpleRNNCell) -> SimpleRNNState:
     return SimpleRNNState(jnp.zeros([cell.hidden_features]))
 
 
 @tree_state.def_state(DenseCell)
-def dense_init_state(cell: DenseCell, _) -> DenseState:
+def dense_init_state(cell: DenseCell) -> DenseState:
     return DenseState(jnp.empty([cell.hidden_features]))
 
 
 @tree_state.def_state(LSTMCell)
-def lstm_init_state(cell: LSTMCell, _) -> LSTMState:
+def lstm_init_state(cell: LSTMCell) -> LSTMState:
     shape = [cell.hidden_features]
     return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
 @tree_state.def_state(GRUCell)
-def gru_init_state(cell: GRUCell, _) -> GRUState:
+def gru_init_state(cell: GRUCell) -> GRUState:
     return GRUState(jnp.zeros([cell.hidden_features]))
 
 

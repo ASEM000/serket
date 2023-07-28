@@ -22,7 +22,7 @@ import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
-from serket.nn.custom_transform import tree_evaluation
+from serket.nn.custom_transform import tree_eval
 from serket.nn.linear import Identity
 from serket.nn.utils import Range, canonicalize, positive_int_cb, validate_spatial_ndim
 
@@ -45,11 +45,11 @@ class Dropout(sk.TreeClass):
         >>> layer = layer.at["p"].set(0.0, is_leaf=sk.is_frozen)
 
     Note:
-        Use :func:`.tree_evaluation` to turn off dropout during evaluation.
+        Use :func:`.tree_eval` to turn off dropout during evaluation.
 
         >>> import serket as sk
         >>> layers = sk.nn.Sequential(sk.nn.Dropout(0.5), sk.nn.Linear(10, 10))
-        >>> sk.tree_evaluation(layers)
+        >>> sk.tree_eval(layers)
         Sequential(
             layers=(
                 Identity(),
@@ -108,11 +108,11 @@ class Dropout1D(DropoutND):
         [[2. 2. 2. 2. 2. 2. 2. 2. 2. 2.]]
 
     Note:
-        Use :func:`.tree_evaluation` to turn off dropout during evaluation.
+        Use :func:`.tree_eval` to turn off dropout during evaluation.
 
         >>> import serket as sk
         >>> layers = sk.nn.Sequential(sk.nn.Dropout1D(0.5), sk.nn.Linear(10, 10))
-        >>> sk.tree_evaluation(layers)
+        >>> sk.tree_eval(layers)
         Sequential(
             layers=(
                 Identity(),
@@ -153,11 +153,11 @@ class Dropout2D(DropoutND):
             [2. 2. 2. 2. 2.]]]
 
     Note:
-        Use :func:`.tree_evaluation` to turn off dropout during evaluation.
+        Use :func:`.tree_eval` to turn off dropout during evaluation.
 
         >>> import serket as sk
         >>> layers = sk.nn.Sequential(sk.nn.Dropout2D(0.5), sk.nn.Linear(10, 10))
-        >>> sk.tree_evaluation(layers)
+        >>> sk.tree_eval(layers)
         Sequential(
             layers=(
                 Identity(),
@@ -198,11 +198,11 @@ class Dropout3D(DropoutND):
         [2. 2.]]]]
 
     Note:
-        Use :func:`.tree_evaluation` to turn off dropout during evaluation.
+        Use :func:`.tree_eval` to turn off dropout during evaluation.
 
         >>> import serket as sk
         >>> layers = sk.nn.Sequential(sk.nn.Dropout2D(0.5), sk.nn.Linear(10, 10))
-        >>> sk.tree_evaluation(layers)
+        >>> sk.tree_eval(layers)
         Sequential(
             layers=(
                 Identity(),
@@ -311,7 +311,7 @@ class RandomCutout1D(sk.TreeClass):
         fill_value: ``fill_value`` to fill the cutout region. Defaults to 0.
 
     Note:
-        Use :func:`.tree_evaluation` to turn off the cutout during evaluation.
+        Use :func:`.tree_eval` to turn off the cutout during evaluation.
 
     Examples:
         >>> import jax.numpy as jnp
@@ -353,7 +353,7 @@ class RandomCutout2D(sk.TreeClass):
         fill_value: ``fill_value`` to fill the cutout region. Defaults to 0.
 
     Note:
-        Use :func:`.tree_evaluation` to turn off the cutout during evaluation.
+        Use :func:`.tree_eval` to turn off the cutout during evaluation.
 
     Reference:
         - https://arxiv.org/abs/1708.04552
@@ -380,10 +380,9 @@ class RandomCutout2D(sk.TreeClass):
         return 2
 
 
-@tree_evaluation.def_evaluation(RandomCutout1D)
-@tree_evaluation.def_evaluation(RandomCutout2D)
-@tree_evaluation.def_evaluation(Dropout)
-@tree_evaluation.def_evaluation(DropoutND)
+@tree_eval.def_eval(RandomCutout1D)
+@tree_eval.def_eval(RandomCutout2D)
+@tree_eval.def_eval(Dropout)
+@tree_eval.def_eval(DropoutND)
 def dropout_evaluation(_) -> Identity:
-    # dropout is a no-op during evaluation
     return Identity()

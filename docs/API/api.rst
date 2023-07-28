@@ -4,7 +4,7 @@
 .. currentmodule:: serket
 
 .. autofunction:: tree_state
-.. autofunction:: tree_evaluation
+.. autofunction:: tree_eval
 
 .. toctree::
    :maxdepth: 2

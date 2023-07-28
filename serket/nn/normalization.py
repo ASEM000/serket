@@ -20,7 +20,7 @@ import jax.random as jr
 from jax.custom_batching import custom_vmap
 
 import serket as sk
-from serket.nn.custom_transform import tree_evaluation, tree_state
+from serket.nn.custom_transform import tree_eval, tree_state
 from serket.nn.initialization import InitType, resolve_init_func
 from serket.nn.utils import Range, ScalarLike, positive_int_cb
 
@@ -323,7 +323,7 @@ class BatchNorm(sk.TreeClass):
         - ``running_mean = momentum * running_mean + (1 - momentum) * batch_mean``
         - ``running_var = momentum * running_var + (1 - momentum) * batch_var``
 
-    For evaluation, use :func:`.tree_evaluation` to convert the layer to
+    For evaluation, use :func:`.tree_eval` to convert the layer to
     :class:`nn.EvalNorm`.
 
 
@@ -452,7 +452,7 @@ class EvalNorm(sk.TreeClass):
         >>> x = jax.random.uniform(jax.random.PRNGKey(0), shape=(5, 10))
         >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
         >>> # convert to evaluation mode
-        >>> bn = sk.tree_evaluation(bn)
+        >>> bn = sk.tree_eval(bn)
         >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
 
     Note:
@@ -498,7 +498,7 @@ class EvalNorm(sk.TreeClass):
         return x, state
 
 
-@tree_evaluation.def_evaluation(BatchNorm)
+@tree_eval.def_eval(BatchNorm)
 def _(batchnorm: BatchNorm) -> EvalNorm:
     return EvalNorm(
         in_features=batchnorm.in_features,

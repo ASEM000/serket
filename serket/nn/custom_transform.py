@@ -95,7 +95,7 @@ tree_state.state_dispatcher = ft.singledispatch(NoState)
 tree_state.def_state = tree_state.state_dispatcher.register
 
 
-def tree_evaluation(tree):
+def tree_eval(tree):
     """Modify tree layers to disable any trainning related behavior.
 
     For example, :class:`nn.Dropout` layer is replaced by an :class:`nn.Identity` layer
@@ -110,21 +110,21 @@ def tree_evaluation(tree):
 
     Example:
         >>> # dropout is replaced by an identity layer in evaluation mode
-        >>> # by registering `tree_evaluation.def_evaluation(sk.nn.Dropout, sk.nn.Identity)`
+        >>> # by registering `tree_eval.def_eval(sk.nn.Dropout, sk.nn.Identity)`
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> layer = sk.nn.Dropout(0.5)
-        >>> sk.tree_evaluation(layer)
+        >>> sk.tree_eval(layer)
         Identity()
     """
 
-    types = tuple(set(tree_evaluation.evaluation_dispatcher.registry) - {object})
+    types = tuple(set(tree_eval.eval_dispatcher.registry) - {object})
 
     def is_leaf(x: Callable[[Any], bool]) -> bool:
         return isinstance(x, types)
 
-    return jax.tree_map(tree_evaluation.evaluation_dispatcher, tree, is_leaf=is_leaf)
+    return jax.tree_map(tree_eval.eval_dispatcher, tree, is_leaf=is_leaf)
 
 
-tree_evaluation.evaluation_dispatcher = ft.singledispatch(lambda x: x)
-tree_evaluation.def_evaluation = tree_evaluation.evaluation_dispatcher.register
+tree_eval.eval_dispatcher = ft.singledispatch(lambda x: x)
+tree_eval.def_eval = tree_eval.eval_dispatcher.register

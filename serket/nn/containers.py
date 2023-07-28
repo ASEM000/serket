@@ -21,7 +21,7 @@ import jax
 import jax.random as jr
 
 import serket as sk
-from serket.nn.custom_transform import tree_evaluation
+from serket.nn.custom_transform import tree_eval
 from serket.nn.utils import Range
 
 
@@ -111,6 +111,6 @@ class RandomApply(sk.TreeClass):
         return self.layer(x) if jr.bernoulli(key, p) else x
 
 
-@tree_evaluation.def_evaluation(RandomApply)
-def tree_evaluation_random_apply(layer: RandomApply):
+@tree_eval.def_eval(RandomApply)
+def tree_eval_random_apply(layer: RandomApply):
     return layer.layer

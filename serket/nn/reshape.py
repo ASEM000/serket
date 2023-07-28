@@ -23,7 +23,7 @@ import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
-from serket.nn.custom_transform import tree_evaluation
+from serket.nn.custom_transform import tree_eval
 from serket.nn.linear import Identity
 from serket.nn.utils import (
     IsInstance,
@@ -655,9 +655,9 @@ class RandomZoom2D(sk.TreeClass):
         return 2
 
 
-@tree_evaluation.def_evaluation(RandomCrop1D)
-@tree_evaluation.def_evaluation(RandomCrop2D)
-@tree_evaluation.def_evaluation(RandomCrop3D)
-@tree_evaluation.def_evaluation(RandomZoom2D)
+@tree_eval.def_eval(RandomCrop1D)
+@tree_eval.def_eval(RandomCrop2D)
+@tree_eval.def_eval(RandomCrop3D)
+@tree_eval.def_eval(RandomZoom2D)
 def random_transform_eval(_) -> Identity:
     return Identity()

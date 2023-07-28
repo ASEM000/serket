@@ -43,7 +43,7 @@ from pytreeclass import (
 )
 
 from . import nn
-from .nn.custom_transform import tree_evaluation, tree_state
+from .nn.custom_transform import tree_eval, tree_state
 
 __all__ = (
     # general utils
@@ -79,7 +79,7 @@ __all__ = (
     "leafwise",
     # serket
     "nn",
-    "tree_evaluation",
+    "tree_eval",
     "tree_state",
 )
 
