@@ -67,7 +67,7 @@
 #             kernel_size=ki,
 #             strides=si,
 #             padding=pi,
-#             kernel_dilation=ddi,
+#             dilation=ddi,
 #             groups=gi,
 #         )
 
@@ -143,7 +143,7 @@
 #             kernel_size=ki,
 #             strides=si,
 #             padding=pi,
-#             kernel_dilation=ddi,
+#             dilation=ddi,
 #             groups=gi,
 #             bias_init=None,
 #         )

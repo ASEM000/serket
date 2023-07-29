@@ -51,15 +51,15 @@ class Dropout(sk.TreeClass):
         >>> layers = sk.nn.Sequential(sk.nn.Dropout(0.5), sk.nn.Linear(10, 10))
         >>> sk.tree_eval(layers)
         Sequential(
-            layers=(
-                Identity(),
-                Linear(
-                in_features=(10),
-                out_features=10,
-                weight=f32[10,10](μ=0.04, σ=0.43, ∈[-0.86,0.95]),
-                bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
-                )
+          layers=(
+            Identity(),
+            Linear(
+              in_features=(10),
+              out_features=10,
+              weight=f32[10,10](μ=0.01, σ=0.45, ∈[-0.96,0.95]),
+              bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
             )
+          )
         )
     """
 
@@ -114,15 +114,15 @@ class Dropout1D(DropoutND):
         >>> layers = sk.nn.Sequential(sk.nn.Dropout1D(0.5), sk.nn.Linear(10, 10))
         >>> sk.tree_eval(layers)
         Sequential(
-            layers=(
-                Identity(),
-                Linear(
-                in_features=(10),
-                out_features=10,
-                weight=f32[10,10](μ=0.04, σ=0.43, ∈[-0.86,0.95]),
-                bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
-                )
+          layers=(
+            Identity(),
+            Linear(
+              in_features=(10),
+              out_features=10,
+              weight=f32[10,10](μ=0.01, σ=0.45, ∈[-0.96,0.95]),
+              bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
             )
+          )
         )
 
     Reference:
@@ -159,15 +159,15 @@ class Dropout2D(DropoutND):
         >>> layers = sk.nn.Sequential(sk.nn.Dropout2D(0.5), sk.nn.Linear(10, 10))
         >>> sk.tree_eval(layers)
         Sequential(
-            layers=(
-                Identity(),
-                Linear(
-                in_features=(10),
-                out_features=10,
-                weight=f32[10,10](μ=0.04, σ=0.43, ∈[-0.86,0.95]),
-                bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
-                )
+          layers=(
+            Identity(),
+            Linear(
+              in_features=(10),
+              out_features=10,
+              weight=f32[10,10](μ=0.01, σ=0.45, ∈[-0.96,0.95]),
+              bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
             )
+          )
         )
 
     Reference:
@@ -204,15 +204,15 @@ class Dropout3D(DropoutND):
         >>> layers = sk.nn.Sequential(sk.nn.Dropout2D(0.5), sk.nn.Linear(10, 10))
         >>> sk.tree_eval(layers)
         Sequential(
-            layers=(
-                Identity(),
-                Linear(
-                in_features=(10),
-                out_features=10,
-                weight=f32[10,10](μ=0.04, σ=0.43, ∈[-0.86,0.95]),
-                bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
-                )
+          layers=(
+            Identity(),
+            Linear(
+              in_features=(10),
+              out_features=10,
+              weight=f32[10,10](μ=0.01, σ=0.45, ∈[-0.96,0.95]),
+              bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
             )
+          )
         )
 
     Reference:
