@@ -389,8 +389,7 @@ class ConvLSTMNDCell(RNNCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        input_dilation: Dilation of the input
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -410,7 +409,7 @@ class ConvLSTMNDCell(RNNCell):
         *,
         strides: StridesType = 1,
         padding: PaddingType = "same",
-        kernel_dilation: DilationType = 1,
+        dilation: DilationType = 1,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         recurrent_weight_init: InitType = "orthogonal",
@@ -431,7 +430,7 @@ class ConvLSTMNDCell(RNNCell):
             kernel_size,
             strides=strides,
             padding=padding,
-            kernel_dilation=kernel_dilation,
+            dilation=dilation,
             weight_init=weight_init,
             bias_init=bias_init,
             key=k1,
@@ -443,7 +442,7 @@ class ConvLSTMNDCell(RNNCell):
             kernel_size,
             strides=strides,
             padding=padding,
-            kernel_dilation=kernel_dilation,
+            dilation=dilation,
             weight_init=recurrent_weight_init,
             bias_init=None,
             key=k2,
@@ -481,7 +480,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -511,7 +510,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -541,7 +540,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -571,7 +570,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -601,7 +600,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -631,7 +630,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -665,7 +664,7 @@ class ConvGRUNDCell(RNNCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -683,7 +682,7 @@ class ConvGRUNDCell(RNNCell):
         *,
         strides: StridesType = 1,
         padding: PaddingType = "same",
-        kernel_dilation: DilationType = 1,
+        dilation: DilationType = 1,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         recurrent_weight_init: InitType = "orthogonal",
@@ -704,7 +703,7 @@ class ConvGRUNDCell(RNNCell):
             kernel_size,
             strides=strides,
             padding=padding,
-            kernel_dilation=kernel_dilation,
+            dilation=dilation,
             weight_init=weight_init,
             bias_init=bias_init,
             key=k1,
@@ -716,7 +715,7 @@ class ConvGRUNDCell(RNNCell):
             kernel_size,
             strides=strides,
             padding=padding,
-            kernel_dilation=kernel_dilation,
+            dilation=dilation,
             weight_init=recurrent_weight_init,
             bias_init=None,
             key=k2,
@@ -751,7 +750,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -779,7 +778,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -807,7 +806,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -835,7 +834,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -863,7 +862,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
@@ -890,7 +889,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
-        kernel_dilation: Dilation of the convolutional kernel
+        dilation: Dilation of the convolutional kernel
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function

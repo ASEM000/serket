@@ -115,13 +115,13 @@ def test_conv1D():
         ]
     )
 
-    layer = Conv1D(1, 2, 3, padding=2, strides=1, kernel_dilation=2)
+    layer = Conv1D(1, 2, 3, padding=2, strides=1, dilation=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
 
     npt.assert_allclose(layer(x), y)
 
-    layer = Conv1D(1, 2, 3, padding=2, strides=1, kernel_dilation=2, bias_init=None)
+    layer = Conv1D(1, 2, 3, padding=2, strides=1, dilation=2, bias_init=None)
     layer = layer.at["weight"].set(w)
     npt.assert_allclose(layer(x), y)
 
@@ -237,15 +237,13 @@ def test_conv1dtranspose():
 
     b = jnp.array([[[0.0]]])
 
-    layer = Conv1DTranspose(4, 1, 3, padding=2, strides=1, kernel_dilation=2)
+    layer = Conv1DTranspose(4, 1, 3, padding=2, strides=1, dilation=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
     y = jnp.array([[0.27022034, 0.24495776, -0.00368674]])
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
-    layer = Conv1DTranspose(
-        4, 1, 3, padding=2, strides=1, kernel_dilation=2, bias_init=None
-    )
+    layer = Conv1DTranspose(4, 1, 3, padding=2, strides=1, dilation=2, bias_init=None)
     layer = layer.at["weight"].set(w)
     y = jnp.array([[0.27022034, 0.24495776, -0.00368674]])
     npt.assert_allclose(layer(x), y, atol=1e-5)
@@ -299,7 +297,7 @@ def test_conv2dtranspose():
 
     b = jnp.array([[[0.0]]])
 
-    layer = Conv2DTranspose(3, 1, 3, padding=2, strides=1, kernel_dilation=2)
+    layer = Conv2DTranspose(3, 1, 3, padding=2, strides=1, dilation=2)
 
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
@@ -317,9 +315,7 @@ def test_conv2dtranspose():
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
-    layer = Conv2DTranspose(
-        3, 1, 3, padding=2, strides=1, kernel_dilation=2, bias_init=None
-    )
+    layer = Conv2DTranspose(3, 1, 3, padding=2, strides=1, dilation=2, bias_init=None)
 
     layer = layer.at["weight"].set(w)
 
@@ -488,7 +484,7 @@ def test_conv3dtranspose():
 
     b = jnp.array([[[[0.0]]]])
 
-    layer = Conv3DTranspose(4, 1, 3, padding=2, strides=1, kernel_dilation=2)
+    layer = Conv3DTranspose(4, 1, 3, padding=2, strides=1, dilation=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
 
@@ -516,9 +512,7 @@ def test_conv3dtranspose():
 
     npt.assert_allclose(y, layer(x), atol=1e-5)
 
-    layer = Conv3DTranspose(
-        4, 1, 3, padding=2, strides=1, kernel_dilation=2, bias_init=None
-    )
+    layer = Conv3DTranspose(4, 1, 3, padding=2, strides=1, dilation=2, bias_init=None)
     layer = layer.at["weight"].set(w)
 
     y = jnp.array(

@@ -535,8 +535,8 @@ def test_fft_conv():
 
     x = jnp.ones([10, 1])
     npt.assert_allclose(
-        FFTConv1D(10, 1, 3, kernel_dilation=2)(x),
-        Conv1D(10, 1, 3, kernel_dilation=2)(x),
+        FFTConv1D(10, 1, 3, dilation=2)(x),
+        Conv1D(10, 1, 3, dilation=2)(x),
         atol=1e-5,
     )
 
@@ -547,14 +547,14 @@ def test_fft_conv():
 
     x = jnp.ones([10, 10, 10])
     npt.assert_allclose(
-        FFTConv2D(10, 1, 3, kernel_dilation=3)(x),
-        Conv2D(10, 1, 3, kernel_dilation=3)(x),
+        FFTConv2D(10, 1, 3, dilation=3)(x),
+        Conv2D(10, 1, 3, dilation=3)(x),
         atol=1e-5,
     )
     x = jnp.ones([7, 8, 9])
     npt.assert_allclose(
-        FFTConv2D(7, 1, 3, kernel_dilation=2)(x),
-        Conv2D(7, 1, 3, kernel_dilation=2)(x),
+        FFTConv2D(7, 1, 3, dilation=2)(x),
+        Conv2D(7, 1, 3, dilation=2)(x),
         atol=1e-5,
     )
 
@@ -565,8 +565,8 @@ def test_fft_conv():
 
     x = jnp.ones([7, 8, 9, 10])
     npt.assert_allclose(
-        FFTConv3D(7, 1, 3, kernel_dilation=(1, 2, 3))(x),
-        Conv3D(7, 1, 3, kernel_dilation=(1, 2, 3))(x),
+        FFTConv3D(7, 1, 3, dilation=(1, 2, 3))(x),
+        Conv3D(7, 1, 3, dilation=(1, 2, 3))(x),
         atol=1e-5,
     )
 
@@ -596,8 +596,8 @@ def test_conv_transpose():
 
     x = jnp.ones([10, 4])
     npt.assert_allclose(
-        Conv1DTranspose(10, 4, 3, kernel_dilation=2)(x),
-        FFTConv1DTranspose(10, 4, 3, kernel_dilation=2)(x),
+        Conv1DTranspose(10, 4, 3, dilation=2)(x),
+        FFTConv1DTranspose(10, 4, 3, dilation=2)(x),
         atol=1e-5,
     )
 
@@ -608,8 +608,8 @@ def test_conv_transpose():
 
     x = jnp.ones([10, 4, 4, 4])
     npt.assert_allclose(
-        Conv3DTranspose(10, 4, 3, kernel_dilation=2)(x),
-        FFTConv3DTranspose(10, 4, 3, kernel_dilation=2)(x),
+        Conv3DTranspose(10, 4, 3, dilation=2)(x),
+        FFTConv3DTranspose(10, 4, 3, dilation=2)(x),
         atol=1e-5,
     )
 

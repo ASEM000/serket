@@ -70,7 +70,11 @@ def calculate_convolution_output_shape(
     )
 
 
-def same_padding_along_dim(in_dim: int, kernel_size: int, stride: int):
+def same_padding_along_dim(
+    in_dim: int,
+    kernel_size: int,
+    stride: int,
+) -> tuple[int, int]:
     # https://www.tensorflow.org/api_docs/python/tf/nn#notes_on_padding_2
     # di: input dimension
     # ki: kernel size
@@ -88,7 +92,8 @@ def resolve_tuple_padding(
     padding: PaddingType,
     kernel_size: KernelSizeType,
     strides: StridesType,
-):
+) -> tuple[tuple[int, int], ...]:
+    del in_dim, strides
     if len(padding) != len(kernel_size):
         raise ValueError(f"Length mismatch {len(kernel_size)=}!={len(padding)=}.")
 
@@ -100,20 +105,8 @@ def resolve_tuple_padding(
 
         elif isinstance(item, tuple):
             if len(item) != 2:
-                # ex: padding = ((1, 2), (3, 4), (5, 6))
                 raise ValueError(f"Expected tuple of length 2, got {len(item)=}")
             resolved_padding[i] = item
-
-        elif isinstance(item, str):
-            if item.lower() == "same":
-                di, ki, si = in_dim[i], kernel_size[i], strides[i]
-                resolved_padding[i] = same_padding_along_dim(di, ki, si)
-
-            elif item.lower() == "valid":
-                resolved_padding[i] = (0, 0)
-
-            else:
-                raise ValueError("Invalid padding, must be in [`same`, `valid`].")
 
     return tuple(resolved_padding)
 

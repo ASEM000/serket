@@ -16,6 +16,8 @@
   - `gamma_init_func` -> `weight_init`
   - `beta_init_func` -> `bias_init`
 - `MLP` produces smaller `jaxprs` and are faster to compile. for my use case -higher order differentiation through `PINN`- the new `MLP` is faster to compile.
+- `kernel_dilation` -> `dilation`
+- `input_dilation` -> Removed.
 
 ### Additions
 
