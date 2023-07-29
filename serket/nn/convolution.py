@@ -193,7 +193,7 @@ class BaseConvND(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self.convolution_operation(jnp.expand_dims(x, 0))
+        x = self._convolution_operation(jnp.expand_dims(x, 0))
         if self.bias is None:
             return jnp.squeeze(x, 0)
         return jnp.squeeze((x + self.bias), 0)
@@ -205,13 +205,13 @@ class BaseConvND(sk.TreeClass):
         ...
 
     @abc.abstractmethod
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         """Convolution operation."""
         ...
 
 
 class ConvND(BaseConvND):
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[2:],
             padding=self.padding,
@@ -429,7 +429,7 @@ class Conv3D(ConvND):
 
 
 class FFTConvND(BaseConvND):
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[2:],
             padding=self.padding,
@@ -690,10 +690,10 @@ class BaseConvNDTranspose(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        y = self.convolution_operation(jnp.expand_dims(x, 0))
+        x = self._convolution_operation(jnp.expand_dims(x, 0))
         if self.bias is None:
-            return jnp.squeeze(y, 0)
-        return jnp.squeeze(y + self.bias, 0)
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze(x + self.bias, 0)
 
     @property
     @abc.abstractmethod
@@ -703,7 +703,7 @@ class BaseConvNDTranspose(sk.TreeClass):
 
 
 class ConvNDTranspose(BaseConvNDTranspose):
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[2:],
             padding=self.padding,
@@ -941,7 +941,7 @@ class Conv3DTranspose(ConvNDTranspose):
 
 
 class FFTConvNDTranspose(BaseConvNDTranspose):
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[2:],
             padding=self.padding,
@@ -1209,10 +1209,10 @@ class BaseDepthwiseConvND(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        y = self.convolution_operation(jnp.expand_dims(x, 0))
+        x = self._convolution_operation(jnp.expand_dims(x, 0))
         if self.bias is None:
-            return jnp.squeeze(y, 0)
-        return jnp.squeeze((y + self.bias), 0)
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
     @property
     @abc.abstractmethod
@@ -1221,12 +1221,12 @@ class BaseDepthwiseConvND(sk.TreeClass):
         ...
 
     @abc.abstractmethod
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         ...
 
 
 class DepthwiseConvND(BaseDepthwiseConvND):
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[2:],
             padding=self.padding,
@@ -1409,7 +1409,7 @@ class DepthwiseConv3D(DepthwiseConvND):
 
 
 class DepthwiseFFTConvND(BaseDepthwiseConvND):
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[2:],
             padding=self.padding,
@@ -1604,7 +1604,7 @@ class SeparableConvND(sk.TreeClass):
         pointwise_bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.depthwise_conv = self.depthwise_convolution_layer(
+        self.depthwise_conv = self._depthwise_convolution_layer(
             in_features=in_features,
             depth_multiplier=depth_multiplier,
             kernel_size=kernel_size,
@@ -1615,7 +1615,7 @@ class SeparableConvND(sk.TreeClass):
             key=key,
         )
 
-        self.pointwise_conv = self.pointwise_convolution_layer(
+        self.pointwise_conv = self._pointwise_convolution_layer(
             in_features=in_features * depth_multiplier,
             out_features=out_features,
             kernel_size=1,
@@ -1638,12 +1638,12 @@ class SeparableConvND(sk.TreeClass):
 
     @property
     @abc.abstractmethod
-    def pointwise_convolution_layer(self):
+    def _pointwise_convolution_layer(self) -> type[BaseDepthwiseConvND]:
         ...
 
     @property
     @abc.abstractmethod
-    def depthwise_convolution_layer(self):
+    def _depthwise_convolution_layer(self) -> type[BaseDepthwiseConvND]:
         ...
 
 
@@ -1712,11 +1712,11 @@ class SeparableConv1D(SeparableConvND):
         return 1
 
     @property
-    def pointwise_convolution_layer(self):
+    def _pointwise_convolution_layer(self):
         return Conv1D
 
     @property
-    def depthwise_convolution_layer(self):
+    def _depthwise_convolution_layer(self):
         return DepthwiseConv1D
 
 
@@ -1784,11 +1784,11 @@ class SeparableConv2D(SeparableConvND):
         return 2
 
     @property
-    def pointwise_convolution_layer(self):
+    def _pointwise_convolution_layer(self):
         return Conv2D
 
     @property
-    def depthwise_convolution_layer(self):
+    def _depthwise_convolution_layer(self):
         return DepthwiseConv2D
 
 
@@ -1856,11 +1856,11 @@ class SeparableConv3D(SeparableConvND):
         return 3
 
     @property
-    def pointwise_convolution_layer(self):
+    def _pointwise_convolution_layer(self):
         return Conv3D
 
     @property
-    def depthwise_convolution_layer(self):
+    def _depthwise_convolution_layer(self):
         return DepthwiseConv3D
 
 
@@ -1929,11 +1929,11 @@ class SeparableFFTConv1D(SeparableConvND):
         return 1
 
     @property
-    def pointwise_convolution_layer(self):
+    def _pointwise_convolution_layer(self):
         return FFTConv1D
 
     @property
-    def depthwise_convolution_layer(self):
+    def _depthwise_convolution_layer(self):
         return DepthwiseFFTConv1D
 
 
@@ -2001,11 +2001,11 @@ class SeparableFFTConv2D(SeparableConvND):
         return 2
 
     @property
-    def pointwise_convolution_layer(self):
+    def _pointwise_convolution_layer(self):
         return FFTConv2D
 
     @property
-    def depthwise_convolution_layer(self):
+    def _depthwise_convolution_layer(self):
         return DepthwiseFFTConv2D
 
 
@@ -2073,11 +2073,11 @@ class SeparableFFTConv3D(SeparableConvND):
         return 3
 
     @property
-    def pointwise_convolution_layer(self):
+    def _pointwise_convolution_layer(self):
         return FFTConv3D
 
     @property
-    def depthwise_convolution_layer(self):
+    def _depthwise_convolution_layer(self):
         return DepthwiseFFTConv3D
 
 
@@ -2133,10 +2133,10 @@ class BaseConvNDLocal(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        y = self.convolution_operation(jnp.expand_dims(x, 0))
+        x = self._convolution_operation(jnp.expand_dims(x, 0))
         if self.bias is None:
-            return jnp.squeeze(y, 0)
-        return jnp.squeeze((y + self.bias), 0)
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
     @property
     @abc.abstractmethod
@@ -2145,12 +2145,12 @@ class BaseConvNDLocal(sk.TreeClass):
         ...
 
     @abc.abstractmethod
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         ...
 
 
 class ConvNDLocal(BaseConvNDLocal):
-    def convolution_operation(self, x: jax.Array) -> jax.Array:
+    def _convolution_operation(self, x: jax.Array) -> jax.Array:
         return jax.lax.conv_general_dilated_local(
             lhs=x,
             rhs=self.weight,
