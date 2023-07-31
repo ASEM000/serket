@@ -247,6 +247,17 @@ def positive_int_cb(value):
     return value
 
 
+def positive_int_or_none_cb(value):
+    """Return if value is a positive integer, otherwise raise an error."""
+    if value is None:
+        return value
+    if not isinstance(value, int):
+        raise ValueError(f"value must be an integer, got {type(value).__name__}")
+    if value <= 0:
+        raise ValueError(f"{value=} must be positive.")
+    return value
+
+
 def recursive_getattr(obj, attr: Sequence[str]):
     return (
         getattr(obj, attr[0])
@@ -293,6 +304,9 @@ def validate_axis_shape(
     attribute_list = attribute_name.split(".")
 
     def check_axis_shape(x, in_features: int, axis: int) -> None:
+        if in_features is None:
+            # lazy initialization
+            return x
         if x.shape[axis] != in_features:
             raise ValueError(f"Specified {in_features=}, got {x.shape[axis]=}.")
         return x
@@ -303,3 +317,22 @@ def validate_axis_shape(
         return func(self, array, *a, **k)
 
     return wrapper
+
+
+def lazy_call(
+    func: Callable[P, T],
+    is_lazy: Callable[..., bool],
+    updates: dict[str, Callable[..., Any]],
+) -> Callable[P, T]:
+    @ft.wraps(func)
+    def inner(self, *a, **k):
+        if not is_lazy(self):
+            return func(self, *a, **k)
+
+        kwargs = dict(vars(self))
+        for key, update in updates.items():
+            kwargs[key] = update(self, *a, **k)
+        getattr(type(self), "__init__")(self, **kwargs)
+        return func(self, *a, **k)
+
+    return inner

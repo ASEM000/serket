@@ -81,8 +81,7 @@ class Sequential(sk.TreeClass):
 
 @sk.autoinit
 class RandomApply(sk.TreeClass):
-    """
-    Randomly applies a layer with probability p.
+    """Randomly applies a layer with probability p.
 
     Args:
         layer: layer to apply.

@@ -37,7 +37,9 @@ from serket.nn.utils import (
     calculate_transpose_padding,
     canonicalize,
     delayed_canonicalize_padding,
+    lazy_call,
     positive_int_cb,
+    positive_int_or_none_cb,
     validate_axis_shape,
     validate_spatial_ndim,
 )
@@ -152,6 +154,25 @@ def fft_conv_general_dilated(
     return jax.lax.slice(z, start, end, (1, 1, *strides))
 
 
+def is_lazy(instance, *_, **__) -> bool:
+    return instance.in_features is None
+
+
+def infer_in_features(instance, x, *_, **__) -> int:
+    return x.shape[0]
+
+
+def infer_in_size(instance, x, *_, **__) -> tuple[int, ...]:
+    return x.shape[1:]
+
+
+def infer_key(instance, *_, **__) -> jr.KeyArray:
+    return instance.key
+
+
+conv_updates = {"key": infer_key, "in_features": infer_in_features}
+
+
 class BaseConvND(sk.TreeClass):
     def __init__(
         self,
@@ -167,36 +188,40 @@ class BaseConvND(sk.TreeClass):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = positive_int_or_none_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(
-            kernel_size, self.spatial_ndim, name="kernel_size"
+            kernel_size,
+            self.spatial_ndim,
+            name="kernel_size",
         )
         self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding
         self.dilation = canonicalize(dilation, self.spatial_ndim, name="dilation")
 
-        weight_init = resolve_init_func(weight_init)
-        bias_init = resolve_init_func(bias_init)
+        self.weight_init = weight_init
+        self.bias_init = bias_init
 
         self.groups = positive_int_cb(groups)
+
+        if in_features is None:
+            # store the key for lazy initialization only
+            self.key = key
+            # going to be initialized lazily
+            return
+
+        if "key" in vars(self):
+            # coming from lazy initialization
+            del self.key
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(out_features % groups == 0)=}")
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
-        self.weight = weight_init(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init(key, bias_shape)
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self._convolution_operation(jnp.expand_dims(x, 0))
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze((x + self.bias), 0)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
     @property
     @abc.abstractmethod
@@ -204,23 +229,21 @@ class BaseConvND(sk.TreeClass):
         """Number of spatial dimensions of the convolutional layer."""
         ...
 
-    @abc.abstractmethod
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
-        """Convolution operation."""
-        ...
-
 
 class ConvND(BaseConvND):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
-        return jax.lax.conv_general_dilated(
-            lhs=x,
+        x = jax.lax.conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             window_strides=self.strides,
             padding=padding,
@@ -228,6 +251,10 @@ class ConvND(BaseConvND):
             dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
             feature_group_count=self.groups,
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
 
 class Conv1D(ConvND):
@@ -429,22 +456,29 @@ class Conv3D(ConvND):
 
 
 class FFTConvND(BaseConvND):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
-        return fft_conv_general_dilated(
-            lhs=x,
+        x = fft_conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             strides=self.strides,
             padding=padding,
             groups=self.groups,
             dilation=self.dilation,
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
 
 class FFTConv1D(FFTConvND):
@@ -661,7 +695,7 @@ class BaseConvNDTranspose(sk.TreeClass):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = positive_int_or_none_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(
             kernel_size, self.spatial_ndim, name="kernel_size"
@@ -674,26 +708,27 @@ class BaseConvNDTranspose(sk.TreeClass):
             name="output_padding",
         )
         self.dilation = canonicalize(dilation, self.spatial_ndim, name="dilation")
-        weight_init = resolve_init_func(weight_init)
-        bias_init = resolve_init_func(bias_init)
+        self.weight_init = weight_init
+        self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
+
+        if in_features is None:
+            # store the key for lazy initialization only
+            self.key = key
+            return
+
+        if "key" in vars(self):
+            # coming from lazy initialization
+            del self.key
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(self.out_features % self.groups ==0)=}")
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
-        self.weight = weight_init(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init(key, bias_shape)
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self._convolution_operation(jnp.expand_dims(x, 0))
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze(x + self.bias, 0)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
     @property
     @abc.abstractmethod
@@ -703,9 +738,12 @@ class BaseConvNDTranspose(sk.TreeClass):
 
 
 class ConvNDTranspose(BaseConvNDTranspose):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
@@ -718,16 +756,18 @@ class ConvNDTranspose(BaseConvNDTranspose):
             input_dilation=self.dilation,
         )
 
-        # breakpoint()
-
-        return jax.lax.conv_transpose(
-            lhs=x,
+        x = jax.lax.conv_transpose(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             strides=self.strides,
             padding=transposed_padding,
             rhs_dilation=self.dilation,
             dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze(x + self.bias, 0)
 
 
 class Conv1DTranspose(ConvNDTranspose):
@@ -941,9 +981,12 @@ class Conv3DTranspose(ConvNDTranspose):
 
 
 class FFTConvNDTranspose(BaseConvNDTranspose):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
@@ -956,14 +999,17 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
             input_dilation=self.dilation,
         )
 
-        return fft_conv_general_dilated(
-            lhs=x,
+        x = fft_conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             strides=self.strides,
             padding=transposed_padding,
             dilation=self.dilation,
             groups=1,
         )
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze(x + self.bias, 0)
 
 
 class FFTConv1DTranspose(FFTConvNDTranspose):
@@ -1189,30 +1235,32 @@ class BaseDepthwiseConvND(sk.TreeClass):
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = positive_int_or_none_cb(in_features)
         self.kernel_size = canonicalize(
-            kernel_size, self.spatial_ndim, name="kernel_size"
+            kernel_size,
+            self.spatial_ndim,
+            name="kernel_size",
         )
         self.depth_multiplier = positive_int_cb(depth_multiplier)
         self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding  # delayed canonicalization
         self.dilation = canonicalize(1, self.spatial_ndim, name="dilation")
-        weight_init = resolve_init_func(weight_init)
-        bias_init = resolve_init_func(bias_init)
+        self.weight_init = weight_init
+        self.bias_init = bias_init
+
+        if in_features is None:
+            # store the key for lazy initialization only
+            self.key = key
+            return
+        if "key" in vars(self):
+            # coming from lazy initialization
+            del self.key
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
-        self.weight = weight_init(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
 
         bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init(key, bias_shape)
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self._convolution_operation(jnp.expand_dims(x, 0))
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze((x + self.bias), 0)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
     @property
     @abc.abstractmethod
@@ -1220,22 +1268,21 @@ class BaseDepthwiseConvND(sk.TreeClass):
         """Number of spatial dimensions of the convolutional layer."""
         ...
 
-    @abc.abstractmethod
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
-        ...
-
 
 class DepthwiseConvND(BaseDepthwiseConvND):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
-        return jax.lax.conv_general_dilated(
-            lhs=x,
+        x = jax.lax.conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             window_strides=self.strides,
             padding=padding,
@@ -1243,6 +1290,10 @@ class DepthwiseConvND(BaseDepthwiseConvND):
             dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
             feature_group_count=self.in_features,
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
 
 class DepthwiseConv1D(DepthwiseConvND):
@@ -1409,22 +1460,29 @@ class DepthwiseConv3D(DepthwiseConvND):
 
 
 class DepthwiseFFTConvND(BaseDepthwiseConvND):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
-        return fft_conv_general_dilated(
-            lhs=x,
+        x = fft_conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             strides=self.strides,
             padding=padding,
             dilation=self.dilation,
             groups=self.in_features,
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
 
 class DepthwiseFFTConv1D(DepthwiseFFTConvND):
@@ -1604,6 +1662,31 @@ class SeparableConvND(sk.TreeClass):
         pointwise_bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
+        if in_features is None:
+            self.in_features = in_features
+            self.out_features = out_features
+            self.kernel_size = kernel_size
+            self.depth_multiplier = depth_multiplier
+            self.strides = strides
+            self.padding = padding
+            self.depthwise_weight_init = depthwise_weight_init
+            self.pointwise_weight_init = pointwise_weight_init
+            self.key = key
+            # going to lazy init
+            return
+
+        if hasattr(self, "key"):
+            # coming from lazy init
+            del self.in_features
+            del self.out_features
+            del self.kernel_size
+            del self.depth_multiplier
+            del self.strides
+            del self.padding
+            del self.depthwise_weight_init
+            del self.pointwise_weight_init
+            del self.key
+
         self.depthwise_conv = self._depthwise_convolution_layer(
             in_features=in_features,
             depth_multiplier=depth_multiplier,
@@ -1626,6 +1709,7 @@ class SeparableConvND(sk.TreeClass):
             key=key,
         )
 
+    @ft.partial(lazy_call, is_lazy=is_lazy, updates=conv_updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
@@ -2081,7 +2165,10 @@ class SeparableFFTConv3D(SeparableConvND):
         return DepthwiseFFTConv3D
 
 
-class BaseConvNDLocal(sk.TreeClass):
+convlocal_updates = {**conv_updates, "in_size": infer_in_size}
+
+
+class ConvNDLocal(sk.TreeClass):
     def __init__(
         self,
         in_features: int,
@@ -2096,20 +2183,44 @@ class BaseConvNDLocal(sk.TreeClass):
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        # checked by callbacks
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = positive_int_or_none_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(
-            kernel_size, self.spatial_ndim, name="kernel_size"
+            kernel_size,
+            self.spatial_ndim,
+            name="kernel_size",
         )
-        self.in_size = canonicalize(in_size, self.spatial_ndim, name="in_size")
+
+        if in_size is None:
+            self.in_size = None
+        else:
+            self.in_size = canonicalize(in_size, self.spatial_ndim, name="in_size")
+
         self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
-        self.padding = delayed_canonicalize_padding(
-            self.in_size, padding, self.kernel_size, self.strides
-        )
+
+        if in_size is None:
+            self.padding = padding
+
+        else:
+            self.padding = delayed_canonicalize_padding(
+                self.in_size,
+                padding,
+                self.kernel_size,
+                self.strides,
+            )
+
         self.dilation = canonicalize(dilation, self.spatial_ndim, name="dilation")
-        weight_init = resolve_init_func(weight_init)
-        bias_init = resolve_init_func(bias_init)
+        self.weight_init = weight_init
+        self.bias_init = bias_init
+
+        if self.in_features is None or self.in_size is None:
+            # going to lazy initialization
+            self.key = key
+            return
+
+        if "key" in vars(self):
+            # coming from lazy initialization
+            del self.key
 
         out_size = calculate_convolution_output_shape(
             shape=self.in_size,
@@ -2125,15 +2236,25 @@ class BaseConvNDLocal(sk.TreeClass):
             *out_size,
         )
 
-        self.weight = weight_init(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
 
         bias_shape = (self.out_features, *out_size)
-        self.bias = bias_init(key, bias_shape)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
+    @ft.partial(lazy_call, is_lazy=is_lazy, updates=convlocal_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self._convolution_operation(jnp.expand_dims(x, 0))
+        x = jax.lax.conv_general_dilated_local(
+            lhs=jnp.expand_dims(x, 0),
+            rhs=self.weight,
+            window_strides=self.strides,
+            padding=self.padding,
+            filter_shape=self.kernel_size,
+            rhs_dilation=self.dilation,
+            dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
+        )
+
         if self.bias is None:
             return jnp.squeeze(x, 0)
         return jnp.squeeze((x + self.bias), 0)
@@ -2143,23 +2264,6 @@ class BaseConvNDLocal(sk.TreeClass):
     def spatial_ndim(self) -> int:
         """Number of spatial dimensions of the convolutional layer."""
         ...
-
-    @abc.abstractmethod
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
-        ...
-
-
-class ConvNDLocal(BaseConvNDLocal):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
-        return jax.lax.conv_general_dilated_local(
-            lhs=x,
-            rhs=self.weight,
-            window_strides=self.strides,
-            padding=self.padding,
-            filter_shape=self.kernel_size,
-            rhs_dilation=self.dilation,
-            dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
-        )
 
 
 class Conv1DLocal(ConvNDLocal):
