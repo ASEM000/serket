@@ -319,7 +319,7 @@ def validate_axis_shape(
     return wrapper
 
 
-def lazy_call(
+def maybe_lazy_call(
     func: Callable[P, T],
     is_lazy: Callable[..., bool],
     updates: dict[str, Callable[..., Any]],
@@ -332,7 +332,12 @@ def lazy_call(
         kwargs = dict(vars(self))
         for key, update in updates.items():
             kwargs[key] = update(self, *a, **k)
+
+        # clear the instance information
+        vars(self).clear()
+        # re-initialize the instance
         getattr(type(self), "__init__")(self, **kwargs)
+        # call the decorated function
         return func(self, *a, **k)
 
     return inner
