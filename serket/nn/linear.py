@@ -595,13 +595,14 @@ class MLP(sk.TreeClass):
 
         kwargs = dict(weight_init=weight_init, bias_init=bias_init)
 
-        def batched_linear(key) -> Batched[Linear]:
+        @jax.vmap
+        def batched_linear(key: jr.KeyArray) -> Batched[Linear]:
             return sk.tree_mask(Linear(hidden_size, hidden_size, key=key, **kwargs))
 
-        self.layers = tuple(
-            [Linear(in_features, hidden_size, key=keys[0], **kwargs)]
-            + [sk.tree_unmask(jax.vmap(batched_linear)(keys[1:-1]))]
-            + [Linear(hidden_size, out_features, key=keys[-1], **kwargs)]
+        self.layers = (
+            Linear(in_features, hidden_size, key=keys[0], **kwargs),
+            sk.tree_unmask(batched_linear(keys[1:-1])),
+            Linear(hidden_size, out_features, key=keys[-1], **kwargs),
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=linear_updates)
