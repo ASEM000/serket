@@ -2128,19 +2128,6 @@ class SeparableConvND(sk.TreeClass):
         pointwise_bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        if in_features is None:
-            self.in_features = in_features
-            self.out_features = out_features
-            self.kernel_size = kernel_size
-            self.depth_multiplier = depth_multiplier
-            self.strides = strides
-            self.padding = padding
-            self.depthwise_weight_init = depthwise_weight_init
-            self.pointwise_weight_init = pointwise_weight_init
-            self.key = key
-            # going to lazy init
-            return
-
         self.depthwise_conv = self._depthwise_convolution_layer(
             in_features=in_features,
             depth_multiplier=depth_multiplier,
@@ -2163,7 +2150,6 @@ class SeparableConvND(sk.TreeClass):
             key=key,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
