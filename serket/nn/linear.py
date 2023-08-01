@@ -28,7 +28,7 @@ from serket.nn.activation import (
     resolve_activation,
 )
 from serket.nn.initialization import InitType, resolve_init_func
-from serket.nn.utils import maybe_lazy_call, positive_int_cb, positive_int_or_none_cb
+from serket.nn.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb
 
 T = TypeVar("T")
 
@@ -40,8 +40,12 @@ class Batched(Generic[T]):
 PyTree = Any
 
 
-def is_lazy(instance, *_, **__) -> bool:
+def is_lazy_call(instance, *_, **__) -> bool:
     return getattr(instance, "in_features", False) is None
+
+
+def is_lazy_init(_, in_features, *__, **___) -> bool:
+    return in_features is None
 
 
 def infer_multilinear_in_features(_, *x, **__) -> int | tuple[int, ...]:
@@ -150,6 +154,7 @@ class Multilinear(sk.TreeClass):
         (28, 56)
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: tuple[int, ...] | None,
@@ -164,10 +169,6 @@ class Multilinear(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
 
-        if in_features is None:
-            self.key = key
-            return
-
         if not isinstance(in_features, (tuple, int)):
             raise ValueError(f"Expected tuple or int for {in_features=}.")
 
@@ -176,7 +177,7 @@ class Multilinear(sk.TreeClass):
         self.weight = resolve_init_func(weight_init)(k1, weight_shape)
         self.bias = resolve_init_func(bias_init)(k2, (out_features,))
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=linear_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=linear_updates)
     def __call__(self, *x, **k) -> jax.Array:
         einsum_string = _multilinear_einsum_string(len(self.in_features))
         x = jnp.einsum(einsum_string, *x, self.weight)
@@ -245,10 +246,6 @@ class Linear(Multilinear):
         )
 
 
-def is_lazy(instance, *_, **__) -> bool:
-    return getattr(instance, "in_features", False) is None
-
-
 def infer_in_features(instance, x, **__) -> tuple[int, ...]:
     in_axes = getattr(instance, "in_axes", ())
     return tuple(x.shape[i] for i in in_axes)
@@ -300,6 +297,7 @@ class GeneralLinear(sk.TreeClass):
         (5, 12)
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: tuple[int, ...] | None,
@@ -316,10 +314,6 @@ class GeneralLinear(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
 
-        if in_features is None:
-            self.key = key
-            return
-
         if not (all(isinstance(i, int) for i in in_features)):
             raise ValueError(f"Expected tuple of ints for {in_features=}")
 
@@ -334,7 +328,7 @@ class GeneralLinear(sk.TreeClass):
         self.weight = resolve_init_func(weight_init)(k1, weight_shape)
         self.bias = resolve_init_func(bias_init)(k2, (self.out_features,))
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=general_linear_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=general_linear_updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         # ensure negative axes
         axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)
@@ -374,7 +368,7 @@ class Embedding(sk.TreeClass):
         out_features: int,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_or_none_cb(in_features)
+        self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.weight = jr.uniform(key, (self.in_features, self.out_features))
 
@@ -634,7 +628,6 @@ class MLP(sk.TreeClass):
             Linear(hidden_size, out_features, key=keys[-1], **kwargs),
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=linear_updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         l0, lm, lh = self.layers
 

@@ -417,7 +417,6 @@ def def_act_entry(key: str, act_func: ActivationClassType) -> None:
 
     Example:
         >>> import serket as sk
-        >>> import math
         >>> import jax.numpy as jnp
         >>> @sk.autoinit
         ... class MyTrainableActivation(sk.TreeClass):

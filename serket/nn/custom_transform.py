@@ -99,7 +99,7 @@ def tree_eval(tree):
     """Modify tree layers to disable any trainning related behavior.
 
     For example, :class:`nn.Dropout` layer is replaced by an :class:`nn.Identity` layer
-    and :class:`nn.BatchNorm` layer ``evaluation`` is set to ``True`` when
+    and :class:`nn.BatchNorm` layer is replaced by :class:`nn.EvalNorm` layer when
     evaluating the tree.
 
     Args:

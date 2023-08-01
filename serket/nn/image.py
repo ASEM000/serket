@@ -28,17 +28,22 @@ from serket.nn.custom_transform import tree_eval
 from serket.nn.linear import Identity
 from serket.nn.utils import (
     maybe_lazy_call,
+    maybe_lazy_init,
     positive_int_cb,
     validate_axis_shape,
     validate_spatial_ndim,
 )
 
 
-def is_lazy(instance, *_, **__) -> bool:
+def is_lazy_call(instance, *_, **__) -> bool:
     return getattr(instance, "in_features", False) is None
 
 
-def infer_in_features(instance, x, *_, **__) -> int:
+def is_lazy_init(_, in_features, *__, **___) -> bool:
+    return in_features is None
+
+
+def infer_in_features(_, x, *__, **___) -> int:
     return x.shape[0]
 
 
@@ -88,12 +93,8 @@ class AvgBlur2D(sk.TreeClass):
         >>> _, materialized_blur = lazy_blur.at["__call__"](jnp.ones((5, 2, 2)))
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(self, in_features: int | None, kernel_size: int | tuple[int, int]):
-        if in_features is None:
-            self.in_features = None
-            self.kernel_size = kernel_size
-            return
-
         weight = jnp.ones(kernel_size)
         weight = weight / jnp.sum(weight)
         weight = weight[:, None]
@@ -115,7 +116,7 @@ class AvgBlur2D(sk.TreeClass):
             bias_init=None,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=image_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="conv1.in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -170,13 +171,8 @@ class GaussianBlur2D(sk.TreeClass):
         >>> _, materialized_blur = lazy_blur.at["__call__"](jnp.ones((5, 2, 2)))
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(self, in_features: int, kernel_size: int, *, sigma: float = 1.0):
-        if in_features is None:
-            self.in_features = None
-            self.kernel_size = kernel_size
-            self.sigma = sigma
-            return
-
         kernel_size = positive_int_cb(kernel_size)
         self.sigma = sigma
 
@@ -203,7 +199,7 @@ class GaussianBlur2D(sk.TreeClass):
             bias_init=None,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=image_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="conv1.in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -233,12 +229,8 @@ class Filter2D(sk.TreeClass):
           [4. 6. 6. 6. 4.]]]
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(self, in_features: int, kernel: jax.Array):
-        if in_features is None:
-            self.in_features = None
-            self.kernel = kernel
-            return
-
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
@@ -254,7 +246,7 @@ class Filter2D(sk.TreeClass):
             bias_init=None,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=image_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="conv.in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -284,12 +276,8 @@ class FFTFilter2D(sk.TreeClass):
           [4.        6.0000005 6.0000005 6.0000005 4.       ]]]
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(self, in_features: int, kernel: jax.Array):
-        if in_features is None:
-            self.in_features = None
-            self.kernel = kernel
-            return
-
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
@@ -305,7 +293,7 @@ class FFTFilter2D(sk.TreeClass):
             bias_init=None,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=image_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="conv.in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:

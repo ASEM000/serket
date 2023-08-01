@@ -38,8 +38,8 @@ from serket.nn.utils import (
     canonicalize,
     delayed_canonicalize_padding,
     maybe_lazy_call,
+    maybe_lazy_init,
     positive_int_cb,
-    positive_int_or_none_cb,
     validate_axis_shape,
     validate_spatial_ndim,
 )
@@ -154,8 +154,12 @@ def fft_conv_general_dilated(
     return jax.lax.slice(z, start, end, (1, 1, *strides))
 
 
-def is_lazy(instance, *_, **__) -> bool:
+def is_lazy_call(instance, *_, **__) -> bool:
     return getattr(instance, "in_features", False) is None
+
+
+def is_lazy_init(_, in_features, *__, **___) -> bool:
+    return in_features is None
 
 
 def infer_in_features(instance, x, *_, **__) -> int:
@@ -166,6 +170,7 @@ conv_updates = dict(in_features=infer_in_features)
 
 
 class BaseConvND(sk.TreeClass):
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int | None,
@@ -180,7 +185,7 @@ class BaseConvND(sk.TreeClass):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_or_none_cb(in_features)
+        self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
@@ -189,10 +194,6 @@ class BaseConvND(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
-
-        if in_features is None:
-            self.key = key
-            return
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(out_features % groups == 0)=}")
@@ -211,7 +212,7 @@ class BaseConvND(sk.TreeClass):
 
 
 class ConvND(BaseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -520,7 +521,7 @@ class Conv3D(ConvND):
 
 
 class FFTConvND(BaseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -828,6 +829,7 @@ class FFTConv3D(FFTConvND):
 
 
 class BaseConvNDTranspose(sk.TreeClass):
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int | None,
@@ -843,7 +845,7 @@ class BaseConvNDTranspose(sk.TreeClass):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_or_none_cb(in_features)
+        self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
@@ -853,10 +855,6 @@ class BaseConvNDTranspose(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
-
-        if in_features is None:
-            self.key = key
-            return
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(self.out_features % self.groups ==0)=}")
@@ -876,7 +874,7 @@ class BaseConvNDTranspose(sk.TreeClass):
 
 
 class ConvNDTranspose(BaseConvNDTranspose):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -1203,7 +1201,7 @@ class Conv3DTranspose(ConvNDTranspose):
 
 
 class FFTConvNDTranspose(BaseConvNDTranspose):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -1529,6 +1527,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
 
 
 class BaseDepthwiseConvND(sk.TreeClass):
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int | None,
@@ -1541,17 +1540,13 @@ class BaseDepthwiseConvND(sk.TreeClass):
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_or_none_cb(in_features)
+        self.in_features = positive_int_cb(in_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.depth_multiplier = positive_int_cb(depth_multiplier)
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding  # delayed canonicalization
         self.weight_init = weight_init
         self.bias_init = bias_init
-
-        if in_features is None:
-            self.key = key
-            return
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
@@ -1567,7 +1562,7 @@ class BaseDepthwiseConvND(sk.TreeClass):
 
 
 class DepthwiseConvND(BaseDepthwiseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -1838,7 +1833,7 @@ class DepthwiseConv3D(DepthwiseConvND):
 
 
 class DepthwiseFFTConvND(BaseDepthwiseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -2106,6 +2101,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
 
 
 class SeparableConvND(sk.TreeClass):
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int | None,
@@ -2120,19 +2116,6 @@ class SeparableConvND(sk.TreeClass):
         pointwise_bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        if in_features is None:
-            self.in_features = in_features
-            self.out_features = out_features
-            self.kernel_size = kernel_size
-            self.depth_multiplier = depth_multiplier
-            self.strides = strides
-            self.padding = padding
-            self.depthwise_weight_init = depthwise_weight_init
-            self.pointwise_weight_init = pointwise_weight_init
-            self.pointwise_bias_init = pointwise_bias_init
-            self.key = key
-            return
-
         self.depthwise_conv = self._depthwise_convolution_layer(
             in_features=in_features,
             depth_multiplier=depth_multiplier,
@@ -2155,7 +2138,7 @@ class SeparableConvND(sk.TreeClass):
             key=key,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
@@ -2761,6 +2744,7 @@ convlocal_updates = {**dict(in_size=infer_in_size), **conv_updates}
 
 
 class ConvNDLocal(sk.TreeClass):
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int | None,
@@ -2775,34 +2759,22 @@ class ConvNDLocal(sk.TreeClass):
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_or_none_cb(in_features)
+        self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
-        self.in_size = (
-            canonicalize(in_size, self.spatial_ndim, name="in_size")
-            if in_size is not None
-            else None
-        )
+        self.in_size = canonicalize(in_size, self.spatial_ndim, name="in_size")
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
 
-        if in_size is None:
-            self.padding = padding
-
-        else:
-            self.padding = delayed_canonicalize_padding(
-                self.in_size,
-                padding,
-                self.kernel_size,
-                self.strides,
-            )
+        self.padding = delayed_canonicalize_padding(
+            self.in_size,
+            padding,
+            self.kernel_size,
+            self.strides,
+        )
 
         self.dilation = canonicalize(dilation, self.spatial_ndim, "dilation")
         self.weight_init = weight_init
         self.bias_init = bias_init
-
-        if self.in_features is None or self.in_size is None:
-            self.key = key
-            return
 
         out_size = calculate_convolution_output_shape(
             shape=self.in_size,
@@ -2823,7 +2795,7 @@ class ConvNDLocal(sk.TreeClass):
         bias_shape = (self.out_features, *out_size)
         self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=convlocal_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=convlocal_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:

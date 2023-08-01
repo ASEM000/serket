@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
+import inspect
 import operator as op
 from typing import Any, Callable, Sequence, Tuple, TypeVar, Union
 
@@ -247,17 +248,6 @@ def positive_int_cb(value):
     return value
 
 
-def positive_int_or_none_cb(value):
-    """Return if value is a positive integer, otherwise raise an error."""
-    if value is None:
-        return value
-    if not isinstance(value, int):
-        raise ValueError(f"value must be an integer, got {type(value).__name__}")
-    if value <= 0:
-        raise ValueError(f"{value=} must be positive.")
-    return value
-
-
 def recursive_getattr(obj, attr: Sequence[str]):
     return (
         getattr(obj, attr[0])
@@ -304,9 +294,6 @@ def validate_axis_shape(
     attribute_list = attribute_name.split(".")
 
     def check_axis_shape(x, in_features: int, axis: int) -> None:
-        if in_features is None:
-            # lazy initialization
-            return x
         if x.shape[axis] != in_features:
             raise ValueError(f"Specified {in_features=}, got {x.shape[axis]=}.")
         return x
@@ -319,26 +306,100 @@ def validate_axis_shape(
     return wrapper
 
 
+@ft.lru_cache(maxsize=128)
+def get_params(func: type) -> tuple[inspect.Parameter, ...]:
+    """Get the arguments of func."""
+    return tuple(inspect.signature(func).parameters.values())
+
+
+def maybe_lazy_init(
+    func: Callable[P, T],
+    is_lazy: Callable[..., bool],
+) -> Callable[P, T]:
+    """Sets input argumet to instance attribute if lazy initialization is ``True``.
+
+    Args:
+        func: The ``__init__`` method of a class.
+        is_lazy: A function that returns ``True`` if lazy initialization is ``True``.
+            the function accepts the same arguments as ``func``.
+
+    Returns:
+        The decorated ``__init__`` method.
+    """
+    # ignore the first argument (self)
+    _, *params = get_params(func)
+
+    @ft.wraps(func)
+    def inner(instance, *a, **k):
+        if not is_lazy(instance, *a, **k):
+            # continue with the original initialization
+            return func(instance, *a, **k)
+
+        kwargs = dict()
+
+        for i, p in enumerate(params):
+            if p.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
+                # positional argument or keyword argument are either
+                # found at the associated index or in the keyword arguments
+                kwargs[p.name] = a[i] if len(a) > i else k.get(p.name, p.default)
+            elif p.kind is inspect.Parameter.KEYWORD_ONLY:
+                # keyword only arguments are only found in the keyword arguments
+                # if not found, use the default value
+                kwargs[p.name] = k.get(p.name, p.default)
+            else:
+                # dont support positional only arguments, etc.
+                # not to complicate things
+                raise NotImplementedError(f"{p.kind=}")
+
+        for key, value in kwargs.items():
+            # set the attribute to the instance
+            # these will be reused to re-initialize the instance
+            # after the first call
+            setattr(instance, key, value)
+
+        # halt the initialization of the instance
+        # and move to the next call
+        return
+
+    return inner
+
+
 def maybe_lazy_call(
     func: Callable[P, T],
     is_lazy: Callable[..., bool],
     updates: dict[str, Callable[..., Any]],
 ) -> Callable[P, T]:
-    """Reinitialize the instance if it is lazy."""
+    """Reinitialize the instance if it is lazy.
+
+    Args:
+        func: The method to decorate that accepts the arguments needed to re-initialize
+            the instance.
+        is_lazy: A function that returns ``True`` if lazy initialization is ``True``.
+            the function accepts the same arguments as ``func``.
+        updates: A dictionary of updates to the instance attributes. this dictionary
+            maps the attribute name to a function that accepts the attribute value
+            and returns the updated value. the function accepts the same arguments
+            as ``func``.
+    """
 
     @ft.wraps(func)
     def inner(instance, *a, **k):
         if not is_lazy(instance, *a, **k):
             return func(instance, *a, **k)
 
+        # the instance variables are the input arguments
+        # to the ``__init__`` method
         kwargs = dict(vars(instance))
+
         for key, update in updates.items():
             kwargs[key] = update(instance, *a, **k)
 
-        # clear the instance information
         for key in kwargs:
+            # clear the instance information (i.e. the initial input arguments)
+            # use ``delattr`` to raise an error if the instance is immutable
             delattr(instance, key)
-        # re-initialize the instance
+
+        # re-initialize the instance with the resolved arguments
         getattr(type(instance), "__init__")(instance, **kwargs)
         # call the decorated function
         return func(instance, *a, **k)
