@@ -162,15 +162,7 @@ def infer_in_features(instance, x, *_, **__) -> int:
     return x.shape[0]
 
 
-def infer_in_size(instance, x, *_, **__) -> tuple[int, ...]:
-    return x.shape[1:]
-
-
-def infer_key(instance, *_, **__) -> jr.KeyArray:
-    return instance.key
-
-
-conv_updates = {"key": infer_key, "in_features": infer_in_features}
+conv_updates = dict(in_features=infer_in_features)
 
 
 class BaseConvND(sk.TreeClass):
@@ -2128,6 +2120,19 @@ class SeparableConvND(sk.TreeClass):
         pointwise_bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
+        if in_features is None:
+            self.in_features = in_features
+            self.out_features = out_features
+            self.kernel_size = kernel_size
+            self.depth_multiplier = depth_multiplier
+            self.strides = strides
+            self.padding = padding
+            self.depthwise_weight_init = depthwise_weight_init
+            self.pointwise_weight_init = pointwise_weight_init
+            self.pointwise_bias_init = pointwise_bias_init
+            self.key = key
+            return
+
         self.depthwise_conv = self._depthwise_convolution_layer(
             in_features=in_features,
             depth_multiplier=depth_multiplier,
@@ -2150,6 +2155,7 @@ class SeparableConvND(sk.TreeClass):
             key=key,
         )
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
@@ -2747,7 +2753,11 @@ class SeparableFFTConv3D(SeparableConvND):
         return DepthwiseFFTConv3D
 
 
-convlocal_updates = {**conv_updates, "in_size": infer_in_size}
+def infer_in_size(_, x, *__, **___) -> tuple[int, ...]:
+    return x.shape[1:]
+
+
+convlocal_updates = {**dict(in_size=infer_in_size), **conv_updates}
 
 
 class ConvNDLocal(sk.TreeClass):
