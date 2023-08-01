@@ -851,7 +851,7 @@ class BaseConvNDTranspose(sk.TreeClass):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = in_features
+        self.in_features = positive_int_or_none_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")

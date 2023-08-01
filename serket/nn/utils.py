@@ -324,21 +324,23 @@ def maybe_lazy_call(
     is_lazy: Callable[..., bool],
     updates: dict[str, Callable[..., Any]],
 ) -> Callable[P, T]:
-    @ft.wraps(func)
-    def inner(self, *a, **k):
-        if not is_lazy(self):
-            return func(self, *a, **k)
+    """Reinitialize the instance if it is lazy."""
 
-        kwargs = dict(vars(self))
+    @ft.wraps(func)
+    def inner(instance, *a, **k):
+        if not is_lazy(instance, *a, **k):
+            return func(instance, *a, **k)
+
+        kwargs = dict(vars(instance))
         for key, update in updates.items():
-            kwargs[key] = update(self, *a, **k)
+            kwargs[key] = update(instance, *a, **k)
 
         # clear the instance information
         for key in kwargs:
-            delattr(self, key)
+            delattr(instance, key)
         # re-initialize the instance
-        getattr(type(self), "__init__")(self, **kwargs)
+        getattr(type(instance), "__init__")(instance, **kwargs)
         # call the decorated function
-        return func(self, *a, **k)
+        return func(instance, *a, **k)
 
     return inner
