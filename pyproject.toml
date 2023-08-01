@@ -15,7 +15,7 @@ keywords = [
   "functional-programming",
   "machine-learning",
 ]
-dependencies = ["pytreeclass>=0.5.0"]
+dependencies = ["pytreeclass>=0.6.0"]
 
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -29,6 +29,8 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+readme = "README.md"
 
 [tool.setuptools.dynamic]
 version = { attr = "serket.__version__" }

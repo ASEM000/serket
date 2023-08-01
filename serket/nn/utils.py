@@ -164,7 +164,7 @@ def delayed_canonicalize_padding(
     )
 
 
-def canonicalize(value, ndim, *, name: str | None = None):
+def canonicalize(value, ndim, name: str | None = None):
     if isinstance(value, int):
         return (value,) * ndim
     if isinstance(value, jax.Array):
@@ -247,6 +247,17 @@ def positive_int_cb(value):
     return value
 
 
+def positive_int_or_none_cb(value):
+    """Return if value is a positive integer, otherwise raise an error."""
+    if value is None:
+        return value
+    if not isinstance(value, int):
+        raise ValueError(f"value must be an integer, got {type(value).__name__}")
+    if value <= 0:
+        raise ValueError(f"{value=} must be positive.")
+    return value
+
+
 def recursive_getattr(obj, attr: Sequence[str]):
     return (
         getattr(obj, attr[0])
@@ -264,7 +275,7 @@ def validate_spatial_ndim(func: Callable[P, T], attribute_name: str) -> Callable
             spatial = {", ".join(("rows", "cols", "depths")[:spatial_ndim])}
             raise ValueError(
                 f"Input should satisfy:\n"
-                f"- {spatial_ndim+1=} dimension, got {x.ndim=}.\n"
+                f"- {(spatial_ndim + 1)=} dimension, got {x.ndim=}.\n"
                 f"- shape of (in_features, {spatial}), got {x.shape=}.\n"
                 + (
                     # maybe the user apply the layer on a batched input
@@ -293,6 +304,9 @@ def validate_axis_shape(
     attribute_list = attribute_name.split(".")
 
     def check_axis_shape(x, in_features: int, axis: int) -> None:
+        if in_features is None:
+            # lazy initialization
+            return x
         if x.shape[axis] != in_features:
             raise ValueError(f"Specified {in_features=}, got {x.shape[axis]=}.")
         return x
@@ -303,3 +317,30 @@ def validate_axis_shape(
         return func(self, array, *a, **k)
 
     return wrapper
+
+
+def maybe_lazy_call(
+    func: Callable[P, T],
+    is_lazy: Callable[..., bool],
+    updates: dict[str, Callable[..., Any]],
+) -> Callable[P, T]:
+    """Reinitialize the instance if it is lazy."""
+
+    @ft.wraps(func)
+    def inner(instance, *a, **k):
+        if not is_lazy(instance, *a, **k):
+            return func(instance, *a, **k)
+
+        kwargs = dict(vars(instance))
+        for key, update in updates.items():
+            kwargs[key] = update(instance, *a, **k)
+
+        # clear the instance information
+        for key in kwargs:
+            delattr(instance, key)
+        # re-initialize the instance
+        getattr(type(instance), "__init__")(instance, **kwargs)
+        # call the decorated function
+        return func(instance, *a, **k)
+
+    return inner

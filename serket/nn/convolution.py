@@ -37,7 +37,9 @@ from serket.nn.utils import (
     calculate_transpose_padding,
     canonicalize,
     delayed_canonicalize_padding,
+    maybe_lazy_call,
     positive_int_cb,
+    positive_int_or_none_cb,
     validate_axis_shape,
     validate_spatial_ndim,
 )
@@ -152,10 +154,29 @@ def fft_conv_general_dilated(
     return jax.lax.slice(z, start, end, (1, 1, *strides))
 
 
+def is_lazy(instance, *_, **__) -> bool:
+    return getattr(instance, "in_features", False) is None
+
+
+def infer_in_features(instance, x, *_, **__) -> int:
+    return x.shape[0]
+
+
+def infer_in_size(instance, x, *_, **__) -> tuple[int, ...]:
+    return x.shape[1:]
+
+
+def infer_key(instance, *_, **__) -> jr.KeyArray:
+    return instance.key
+
+
+conv_updates = {"key": infer_key, "in_features": infer_in_features}
+
+
 class BaseConvND(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         out_features: int,
         kernel_size: KernelSizeType,
         *,
@@ -167,36 +188,28 @@ class BaseConvND(sk.TreeClass):
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = positive_int_or_none_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(
-            kernel_size, self.spatial_ndim, name="kernel_size"
-        )
-        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
+        self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
+        self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding
-        self.dilation = canonicalize(dilation, self.spatial_ndim, name="dilation")
-
-        weight_init = resolve_init_func(weight_init)
-        bias_init = resolve_init_func(bias_init)
-
+        self.dilation = canonicalize(dilation, self.spatial_ndim, "dilation")
+        self.weight_init = weight_init
+        self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
+
+        if in_features is None:
+            self.key = key
+            return
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(out_features % groups == 0)=}")
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
-        self.weight = weight_init(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init(key, bias_shape)
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self._convolution_operation(jnp.expand_dims(x, 0))
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze((x + self.bias), 0)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
     @property
     @abc.abstractmethod
@@ -204,23 +217,21 @@ class BaseConvND(sk.TreeClass):
         """Number of spatial dimensions of the convolutional layer."""
         ...
 
-    @abc.abstractmethod
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
-        """Convolution operation."""
-        ...
-
 
 class ConvND(BaseConvND):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
-        return jax.lax.conv_general_dilated(
-            lhs=x,
+        x = jax.lax.conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             window_strides=self.strides,
             padding=padding,
@@ -228,6 +239,10 @@ class ConvND(BaseConvND):
             dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
             feature_group_count=self.groups,
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
 
 class Conv1D(ConvND):
@@ -286,6 +301,34 @@ class Conv1D(ConvND):
         >>> x = jnp.ones((2, 1, 5))
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5)
+
+    Note:
+        :class:`.Conv1D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.Conv1D = sk.nn.Conv1D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.Conv1D = sk.nn.Conv1D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -353,6 +396,34 @@ class Conv2D(ConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5)
 
+    Note:
+        :class:`.Conv2D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.Conv2D = sk.nn.Conv2D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.Conv2D = sk.nn.Conv2D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
+
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
@@ -419,6 +490,34 @@ class Conv3D(ConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5, 5)
 
+    Note:
+        :class:`.Conv3D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.Conv3D = sk.nn.Conv3D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.Conv3D = sk.nn.Conv3D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
+
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
@@ -429,22 +528,29 @@ class Conv3D(ConvND):
 
 
 class FFTConvND(BaseConvND):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
-        return fft_conv_general_dilated(
-            lhs=x,
+        x = fft_conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             strides=self.strides,
             padding=padding,
             groups=self.groups,
             dilation=self.dilation,
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
 
 class FFTConv1D(FFTConvND):
@@ -503,6 +609,34 @@ class FFTConv1D(FFTConvND):
         >>> x = jnp.ones((2, 1, 5))
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5)
+
+    Note:
+        :class:`.FFTConv1D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.FFTConv1D = sk.nn.FFTConv1D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.FFTConv1D = sk.nn.FFTConv1D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
 
     References:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -570,6 +704,34 @@ class FFTConv2D(FFTConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5)
 
+    Note:
+        :class:`.FFTConv2D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.FFTConv2D = sk.nn.FFTConv2D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.FFTConv2D = sk.nn.FFTConv2D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
+
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
@@ -636,6 +798,34 @@ class FFTConv3D(FFTConvND):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5, 5)
 
+    Note:
+        :class:`.FFTConv3D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.FFTConv3D = sk.nn.FFTConv3D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.FFTConv3D = sk.nn.FFTConv3D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
+
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
@@ -648,52 +838,43 @@ class FFTConv3D(FFTConvND):
 class BaseConvNDTranspose(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         out_features: int,
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
         padding: PaddingType = "same",
-        output_padding: int = 0,
+        out_padding: int = 0,
         dilation: DilationType = 1,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = positive_int_or_none_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(
-            kernel_size, self.spatial_ndim, name="kernel_size"
-        )
-        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
+        self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
+        self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding  # delayed canonicalization
-        self.output_padding = canonicalize(
-            output_padding,
-            self.spatial_ndim,
-            name="output_padding",
-        )
-        self.dilation = canonicalize(dilation, self.spatial_ndim, name="dilation")
-        weight_init = resolve_init_func(weight_init)
-        bias_init = resolve_init_func(bias_init)
+        self.out_padding = canonicalize(out_padding, self.spatial_ndim, "out_padding")
+        self.dilation = canonicalize(dilation, self.spatial_ndim, "dilation")
+        self.weight_init = weight_init
+        self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
+
+        if in_features is None:
+            self.key = key
+            return
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(self.out_features % self.groups ==0)=}")
 
+        in_features = positive_int_cb(self.in_features)
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
-        self.weight = weight_init(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init(key, bias_shape)
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self._convolution_operation(jnp.expand_dims(x, 0))
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze(x + self.bias, 0)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
     @property
     @abc.abstractmethod
@@ -703,9 +884,12 @@ class BaseConvNDTranspose(sk.TreeClass):
 
 
 class ConvNDTranspose(BaseConvNDTranspose):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
@@ -713,21 +897,23 @@ class ConvNDTranspose(BaseConvNDTranspose):
 
         transposed_padding = calculate_transpose_padding(
             padding=padding,
-            extra_padding=self.output_padding,
+            extra_padding=self.out_padding,
             kernel_size=self.kernel_size,
             input_dilation=self.dilation,
         )
 
-        # breakpoint()
-
-        return jax.lax.conv_transpose(
-            lhs=x,
+        x = jax.lax.conv_transpose(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             strides=self.strides,
             padding=transposed_padding,
             rhs_dilation=self.dilation,
             dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze(x + self.bias, 0)
 
 
 class Conv1DTranspose(ConvNDTranspose):
@@ -761,7 +947,7 @@ class Conv1DTranspose(ConvNDTranspose):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        output_padding: padding of the output after convolution. accepts:
+        out_padding: padding of the output after convolution. accepts:
 
             - single integer for same padding in all dimensions.
 
@@ -790,6 +976,34 @@ class Conv1DTranspose(ConvNDTranspose):
         >>> x = jnp.ones((2, 1, 5))
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5)
+
+    Note:
+        :class:`.Conv1DTranspose` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.Conv1DTranspose = sk.nn.Conv1DTranspose(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.Conv1DTranspose = sk.nn.Conv1DTranspose(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -831,7 +1045,7 @@ class Conv2DTranspose(ConvNDTranspose):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        output_padding: padding of the output after convolution. accepts:
+        out_padding: padding of the output after convolution. accepts:
 
             - single integer for same padding in all dimensions.
 
@@ -860,6 +1074,34 @@ class Conv2DTranspose(ConvNDTranspose):
         >>> x = jnp.ones((2, 1, 5, 5))
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5)
+
+    Note:
+        :class:`.Conv2DTranspose` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.Conv2DTranspose = sk.nn.Conv2DTranspose(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.Conv2DTranspose = sk.nn.Conv2DTranspose(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -901,7 +1143,7 @@ class Conv3DTranspose(ConvNDTranspose):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        output_padding: padding of the output after convolution. accepts:
+        out_padding: padding of the output after convolution. accepts:
 
             - single integer for same padding in all dimensions.
 
@@ -931,6 +1173,34 @@ class Conv3DTranspose(ConvNDTranspose):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5, 5)
 
+    Note:
+        :class:`.Conv3DTranspose` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.Conv3DTranspose = sk.nn.Conv3DTranspose(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.Conv3DTranspose = sk.nn.Conv3DTranspose(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
+
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
@@ -941,9 +1211,12 @@ class Conv3DTranspose(ConvNDTranspose):
 
 
 class FFTConvNDTranspose(BaseConvNDTranspose):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
@@ -951,19 +1224,22 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
 
         transposed_padding = calculate_transpose_padding(
             padding=padding,
-            extra_padding=self.output_padding,
+            extra_padding=self.out_padding,
             kernel_size=self.kernel_size,
             input_dilation=self.dilation,
         )
 
-        return fft_conv_general_dilated(
-            lhs=x,
+        x = fft_conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             strides=self.strides,
             padding=transposed_padding,
             dilation=self.dilation,
             groups=1,
         )
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze(x + self.bias, 0)
 
 
 class FFTConv1DTranspose(FFTConvNDTranspose):
@@ -997,7 +1273,7 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        output_padding: Padding of the output after convolution. accepts:
+        out_padding: Padding of the output after convolution. accepts:
 
             - single integer for same padding in all dimensions.
 
@@ -1026,6 +1302,34 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         >>> x = jnp.ones((2, 1, 5))
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5)
+
+    Note:
+        :class:`.FFTConv1DTranspose` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.FFTConv1DTranspose = sk.nn.FFTConv1DTranspose(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.FFTConv1DTranspose = sk.nn.FFTConv1DTranspose(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1067,7 +1371,7 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        output_padding: Padding of the output after convolution. accepts:
+        out_padding: Padding of the output after convolution. accepts:
 
             - single integer for same padding in all dimensions.
 
@@ -1096,6 +1400,34 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         >>> x = jnp.ones((2, 1, 5, 5))
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5)
+
+    Note:
+        :class:`.FFTConv2DTranspose` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.FFTConv2DTranspose = sk.nn.FFTConv2DTranspose(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.FFTConv2DTranspose = sk.nn.FFTConv2DTranspose(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1137,7 +1469,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
               as the input.
             - ``valid``/``VALID`` for no padding.
 
-        output_padding: Padding of the output after convolution. accepts:
+        out_padding: Padding of the output after convolution. accepts:
 
             - single integer for same padding in all dimensions.
 
@@ -1167,6 +1499,34 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         >>> print(jax.vmap(layer)(x).shape)
         (2, 2, 5, 5, 5)
 
+    Note:
+        :class:`.FFTConv3DTranspose` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.FFTConv3DTranspose = sk.nn.FFTConv3DTranspose(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.FFTConv3DTranspose = sk.nn.FFTConv3DTranspose(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
+
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
@@ -1179,7 +1539,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
 class BaseDepthwiseConvND(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         kernel_size: KernelSizeType,
         *,
         depth_multiplier: int = 1,
@@ -1189,30 +1549,23 @@ class BaseDepthwiseConvND(sk.TreeClass):
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_cb(in_features)
-        self.kernel_size = canonicalize(
-            kernel_size, self.spatial_ndim, name="kernel_size"
-        )
+        self.in_features = positive_int_or_none_cb(in_features)
+        self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.depth_multiplier = positive_int_cb(depth_multiplier)
-        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
+        self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding  # delayed canonicalization
-        self.dilation = canonicalize(1, self.spatial_ndim, name="dilation")
-        weight_init = resolve_init_func(weight_init)
-        bias_init = resolve_init_func(bias_init)
+        self.weight_init = weight_init
+        self.bias_init = bias_init
+
+        if in_features is None:
+            self.key = key
+            return
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
-        self.weight = weight_init(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
 
         bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
-        self.bias = bias_init(key, bias_shape)
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self._convolution_operation(jnp.expand_dims(x, 0))
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze((x + self.bias), 0)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
     @property
     @abc.abstractmethod
@@ -1220,29 +1573,32 @@ class BaseDepthwiseConvND(sk.TreeClass):
         """Number of spatial dimensions of the convolutional layer."""
         ...
 
-    @abc.abstractmethod
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
-        ...
-
 
 class DepthwiseConvND(BaseDepthwiseConvND):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
-        return jax.lax.conv_general_dilated(
-            lhs=x,
+        x = jax.lax.conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             window_strides=self.strides,
             padding=padding,
-            rhs_dilation=self.dilation,
+            rhs_dilation=canonicalize(1, self.spatial_ndim, "dilation"),
             dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
             feature_group_count=self.in_features,
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
 
 class DepthwiseConv1D(DepthwiseConvND):
@@ -1281,13 +1637,40 @@ class DepthwiseConv1D(DepthwiseConvND):
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
-
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> l1 = sk.nn.DepthwiseConv1D(3, 3, depth_multiplier=2, strides=2)
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
+
+    Note:
+        :class:`.DepthwiseConv1D` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.DepthwiseConv1D = sk.nn.DepthwiseConv1D(None, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.DepthwiseConv1D = sk.nn.DepthwiseConv1D(None, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1335,13 +1718,40 @@ class DepthwiseConv2D(DepthwiseConvND):
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
-
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> l1 = sk.nn.DepthwiseConv2D(3, 3, depth_multiplier=2, strides=2)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
+
+    Note:
+        :class:`.DepthwiseConv2D` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.DepthwiseConv2D = sk.nn.DepthwiseConv2D(None, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.DepthwiseConv2D = sk.nn.DepthwiseConv2D(None, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1390,13 +1800,40 @@ class DepthwiseConv3D(DepthwiseConvND):
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
-
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> l1 = sk.nn.DepthwiseConv3D(3, 3, depth_multiplier=2, strides=2)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
+
+    Note:
+        :class:`.DepthwiseConv3D` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.DepthwiseConv3D = sk.nn.DepthwiseConv3D(None, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.DepthwiseConv3D = sk.nn.DepthwiseConv3D(None, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1409,22 +1846,29 @@ class DepthwiseConv3D(DepthwiseConvND):
 
 
 class DepthwiseFFTConvND(BaseDepthwiseConvND):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape[2:],
+            in_dim=x.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
-        return fft_conv_general_dilated(
-            lhs=x,
+        x = fft_conv_general_dilated(
+            lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,
             strides=self.strides,
             padding=padding,
-            dilation=self.dilation,
+            dilation=canonicalize(1, self.spatial_ndim, "dilation"),
             groups=self.in_features,
         )
+
+        if self.bias is None:
+            return jnp.squeeze(x, 0)
+        return jnp.squeeze((x + self.bias), 0)
 
 
 class DepthwiseFFTConv1D(DepthwiseFFTConvND):
@@ -1463,13 +1907,40 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
-
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> l1 = sk.nn.DepthwiseFFTConv1D(3, 3, depth_multiplier=2, strides=2)
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
+
+    Note:
+        :class:`.DepthwiseFFTConv1D` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.DepthwiseFFTConv1D = sk.nn.DepthwiseFFTConv1D(None, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.DepthwiseFFTConv1D = sk.nn.DepthwiseFFTConv1D(None, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1517,13 +1988,40 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
-
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> l1 = sk.nn.DepthwiseFFTConv2D(3, 3, depth_multiplier=2, strides=2)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
+
+    Note:
+        :class:`.DepthwiseFFTConv2D` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.DepthwiseFFTConv2D = sk.nn.DepthwiseFFTConv2D(None, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.DepthwiseFFTConv2D = sk.nn.DepthwiseFFTConv2D(None, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1571,7 +2069,6 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
-
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
@@ -1579,6 +2076,33 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
 
+    Note:
+        :class:`.DepthwiseFFTConv3D` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.DepthwiseFFTConv3D = sk.nn.DepthwiseFFTConv3D(None, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.DepthwiseFFTConv3D = sk.nn.DepthwiseFFTConv3D(None, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 5
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
@@ -1592,7 +2116,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
 class SeparableConvND(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         out_features: int,
         kernel_size: KernelSizeType,
         *,
@@ -1604,6 +2128,19 @@ class SeparableConvND(sk.TreeClass):
         pointwise_bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
+        if in_features is None:
+            self.in_features = in_features
+            self.out_features = out_features
+            self.kernel_size = kernel_size
+            self.depth_multiplier = depth_multiplier
+            self.strides = strides
+            self.padding = padding
+            self.depthwise_weight_init = depthwise_weight_init
+            self.pointwise_weight_init = pointwise_weight_init
+            self.key = key
+            # going to lazy init
+            return
+
         self.depthwise_conv = self._depthwise_convolution_layer(
             in_features=in_features,
             depth_multiplier=depth_multiplier,
@@ -1626,6 +2163,7 @@ class SeparableConvND(sk.TreeClass):
             key=key,
         )
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=conv_updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
@@ -1694,13 +2232,36 @@ class SeparableConv1D(SeparableConvND):
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
-
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> l1 = sk.nn.SeparableConv1D(3, 3, 3, depth_multiplier=2)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
+
+    Note:
+        :class:`.SeparableConv1D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.SeparableConv1D = sk.nn.SeparableConv1D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.SeparableConv1D = sk.nn.SeparableConv1D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1774,6 +2335,30 @@ class SeparableConv2D(SeparableConvND):
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
+    Note:
+        :class:`.SeparableConv2D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.SeparableConv2D = sk.nn.SeparableConv2D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.SeparableConv2D = sk.nn.SeparableConv2D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
@@ -1846,6 +2431,30 @@ class SeparableConv3D(SeparableConvND):
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
+    Note:
+        :class:`.SeparableConv3D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.SeparableConv3D = sk.nn.SeparableConv3D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.SeparableConv3D = sk.nn.SeparableConv3D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
@@ -1911,13 +2520,36 @@ class SeparableFFTConv1D(SeparableConvND):
             ``zeros``. set to ``None`` to not use a bias.
         key: key to use for initializing the weights. defaults to ``0``.
 
-
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> l1 = sk.nn.SeparableFFTConv1D(3, 3, 3, depth_multiplier=2)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
+
+    Note:
+        :class:`.SeparableFFTConv1D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.SeparableFFTConv1D = sk.nn.SeparableFFTConv1D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.SeparableFFTConv1D = sk.nn.SeparableFFTConv1D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1991,6 +2623,30 @@ class SeparableFFTConv2D(SeparableConvND):
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
+    Note:
+        :class:`.SeparableFFTConv2D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.SeparableFFTConv2D = sk.nn.SeparableFFTConv2D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.SeparableFFTConv2D = sk.nn.SeparableFFTConv2D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
@@ -2063,6 +2719,30 @@ class SeparableFFTConv3D(SeparableConvND):
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
+    Note:
+        :class:`.SeparableFFTConv3D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.SeparableFFTConv3D = sk.nn.SeparableFFTConv3D(None, 12, 3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.SeparableFFTConv3D = sk.nn.SeparableFFTConv3D(None, 1, 3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
@@ -2081,10 +2761,13 @@ class SeparableFFTConv3D(SeparableConvND):
         return DepthwiseFFTConv3D
 
 
-class BaseConvNDLocal(sk.TreeClass):
+convlocal_updates = {**conv_updates, "in_size": infer_in_size}
+
+
+class ConvNDLocal(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         out_features: int,
         kernel_size: KernelSizeType,
         *,
@@ -2096,20 +2779,34 @@ class BaseConvNDLocal(sk.TreeClass):
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        # checked by callbacks
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = positive_int_or_none_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(
-            kernel_size, self.spatial_ndim, name="kernel_size"
+        self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
+        self.in_size = (
+            canonicalize(in_size, self.spatial_ndim, name="in_size")
+            if in_size is not None
+            else None
         )
-        self.in_size = canonicalize(in_size, self.spatial_ndim, name="in_size")
-        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
-        self.padding = delayed_canonicalize_padding(
-            self.in_size, padding, self.kernel_size, self.strides
-        )
-        self.dilation = canonicalize(dilation, self.spatial_ndim, name="dilation")
-        weight_init = resolve_init_func(weight_init)
-        bias_init = resolve_init_func(bias_init)
+        self.strides = canonicalize(strides, self.spatial_ndim, "strides")
+
+        if in_size is None:
+            self.padding = padding
+
+        else:
+            self.padding = delayed_canonicalize_padding(
+                self.in_size,
+                padding,
+                self.kernel_size,
+                self.strides,
+            )
+
+        self.dilation = canonicalize(dilation, self.spatial_ndim, "dilation")
+        self.weight_init = weight_init
+        self.bias_init = bias_init
+
+        if self.in_features is None or self.in_size is None:
+            self.key = key
+            return
 
         out_size = calculate_convolution_output_shape(
             shape=self.in_size,
@@ -2125,15 +2822,25 @@ class BaseConvNDLocal(sk.TreeClass):
             *out_size,
         )
 
-        self.weight = weight_init(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
 
         bias_shape = (self.out_features, *out_size)
-        self.bias = bias_init(key, bias_shape)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy, updates=convlocal_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        x = self._convolution_operation(jnp.expand_dims(x, 0))
+        x = jax.lax.conv_general_dilated_local(
+            lhs=jnp.expand_dims(x, 0),
+            rhs=self.weight,
+            window_strides=self.strides,
+            padding=self.padding,
+            filter_shape=self.kernel_size,
+            rhs_dilation=self.dilation,
+            dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
+        )
+
         if self.bias is None:
             return jnp.squeeze(x, 0)
         return jnp.squeeze((x + self.bias), 0)
@@ -2144,23 +2851,6 @@ class BaseConvNDLocal(sk.TreeClass):
         """Number of spatial dimensions of the convolutional layer."""
         ...
 
-    @abc.abstractmethod
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
-        ...
-
-
-class ConvNDLocal(BaseConvNDLocal):
-    def _convolution_operation(self, x: jax.Array) -> jax.Array:
-        return jax.lax.conv_general_dilated_local(
-            lhs=x,
-            rhs=self.weight,
-            window_strides=self.strides,
-            padding=self.padding,
-            filter_shape=self.kernel_size,
-            rhs_dilation=self.dilation,
-            dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
-        )
-
 
 class Conv1DLocal(ConvNDLocal):
     """1D Local convolutional layer.
@@ -2168,7 +2858,6 @@ class Conv1DLocal(ConvNDLocal):
     Local convolutional layer is a convolutional layer where the convolution
     kernel is applied to a local region of the input. The kernel weights are
     *not* shared across the spatial dimensions of the input.
-
 
     Args:
         in_features: Number of input feature maps, for 1D convolution this is the
@@ -2213,6 +2902,35 @@ class Conv1DLocal(ConvNDLocal):
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
+    Note:
+        :class:`.Conv1DLocal` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> k1, k2 = jr.split(jr.PRNGKey(0))
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.Conv1DLocal = sk.nn.Conv1DLocal(None, 12, 3, in_size=None, key=k1)
+        ...    l2: sk.nn.Conv1DLocal = sk.nn.Conv1DLocal(None, 5, 3, in_size=None, key=k2)
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
+
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
@@ -2229,7 +2947,6 @@ class Conv2DLocal(ConvNDLocal):
     Local convolutional layer is a convolutional layer where the convolution
     kernel is applied to a local region of the input. This means that the kernel
     weights are *not* shared across the spatial dimensions of the input.
-
 
     Args:
         in_features: Number of input feature maps, for 1D convolution this is the
@@ -2274,6 +2991,35 @@ class Conv2DLocal(ConvNDLocal):
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
+    Note:
+        :class:`.Conv2DLocal` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> k1, k2 = jr.split(jr.PRNGKey(0))
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.Conv2DLocal = sk.nn.Conv2DLocal(None, 12, 3, in_size=None, key=k1)
+        ...    l2: sk.nn.Conv2DLocal = sk.nn.Conv2DLocal(None, 5, 3, in_size=None, key=k2)
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
+
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
@@ -2290,7 +3036,6 @@ class Conv3DLocal(ConvNDLocal):
     Local convolutional layer is a convolutional layer where the convolution
     kernel is applied to a local region of the input. This means that the kernel
     weights are *not* shared across the spatial dimensions of the input.
-
 
     Args:
         in_features: Number of input feature maps, for 1D convolution this is the
@@ -2334,6 +3079,35 @@ class Conv3DLocal(ConvNDLocal):
         >>> l1 = sk.nn.Conv3DLocal(3, 3, 3, in_size=(32, 32, 32))
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
+
+    Note:
+        :class:`.Conv3DLocal` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> k1, k2 = jr.split(jr.PRNGKey(0))
+        >>> @sk.autoinit
+        ... class CNN(sk.TreeClass):
+        ...    l1: sk.nn.Conv3DLocal = sk.nn.Conv3DLocal(None, 12, 3, in_size=None, key=k1)
+        ...    l2: sk.nn.Conv3DLocal = sk.nn.Conv3DLocal(None, 5, 3, in_size=None, key=k2)
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_cnn = CNN()
+        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        None None
+        >>> # materialize the layer
+        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        5 12
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
