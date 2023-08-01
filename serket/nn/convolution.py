@@ -176,7 +176,7 @@ conv_updates = {"key": infer_key, "in_features": infer_in_features}
 class BaseConvND(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         out_features: int,
         kernel_size: KernelSizeType,
         *,
@@ -190,18 +190,12 @@ class BaseConvND(sk.TreeClass):
     ):
         self.in_features = positive_int_or_none_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(
-            kernel_size,
-            self.spatial_ndim,
-            name="kernel_size",
-        )
-        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
+        self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
+        self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding
-        self.dilation = canonicalize(dilation, self.spatial_ndim, name="dilation")
-
+        self.dilation = canonicalize(dilation, self.spatial_ndim, "dilation")
         self.weight_init = weight_init
         self.bias_init = bias_init
-
         self.groups = positive_int_cb(groups)
 
         if in_features is None:
@@ -676,32 +670,26 @@ class FFTConv3D(FFTConvND):
 class BaseConvNDTranspose(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         out_features: int,
         kernel_size: KernelSizeType,
         *,
         strides: StridesType = 1,
         padding: PaddingType = "same",
-        output_padding: int = 0,
+        out_padding: int = 0,
         dilation: DilationType = 1,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
-        self.in_features = positive_int_or_none_cb(in_features)
+        self.in_features = in_features
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(
-            kernel_size, self.spatial_ndim, name="kernel_size"
-        )
-        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
+        self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
+        self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding  # delayed canonicalization
-        self.output_padding = canonicalize(
-            output_padding,
-            self.spatial_ndim,
-            name="output_padding",
-        )
-        self.dilation = canonicalize(dilation, self.spatial_ndim, name="dilation")
+        self.out_padding = canonicalize(out_padding, self.spatial_ndim, "out_padding")
+        self.dilation = canonicalize(dilation, self.spatial_ndim, "dilation")
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
@@ -713,6 +701,7 @@ class BaseConvNDTranspose(sk.TreeClass):
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(self.out_features % self.groups ==0)=}")
 
+        in_features = positive_int_cb(self.in_features)
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
         self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
 
@@ -740,7 +729,7 @@ class ConvNDTranspose(BaseConvNDTranspose):
 
         transposed_padding = calculate_transpose_padding(
             padding=padding,
-            extra_padding=self.output_padding,
+            extra_padding=self.out_padding,
             kernel_size=self.kernel_size,
             input_dilation=self.dilation,
         )
@@ -983,7 +972,7 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
 
         transposed_padding = calculate_transpose_padding(
             padding=padding,
-            extra_padding=self.output_padding,
+            extra_padding=self.out_padding,
             kernel_size=self.kernel_size,
             input_dilation=self.dilation,
         )
@@ -1214,7 +1203,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
 class BaseDepthwiseConvND(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         kernel_size: KernelSizeType,
         *,
         depth_multiplier: int = 1,
@@ -1225,15 +1214,11 @@ class BaseDepthwiseConvND(sk.TreeClass):
         key: jr.KeyArray = jr.PRNGKey(0),
     ):
         self.in_features = positive_int_or_none_cb(in_features)
-        self.kernel_size = canonicalize(
-            kernel_size,
-            self.spatial_ndim,
-            name="kernel_size",
-        )
+        self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.depth_multiplier = positive_int_cb(depth_multiplier)
-        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
+        self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding  # delayed canonicalization
-        self.dilation = canonicalize(1, self.spatial_ndim, name="dilation")
+        self.dilation = canonicalize(1, self.spatial_ndim, "dilation")
         self.weight_init = weight_init
         self.bias_init = bias_init
 
@@ -1635,7 +1620,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
 class SeparableConvND(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         out_features: int,
         kernel_size: KernelSizeType,
         *,
@@ -2144,7 +2129,7 @@ convlocal_updates = {**conv_updates, "in_size": infer_in_size}
 class ConvNDLocal(sk.TreeClass):
     def __init__(
         self,
-        in_features: int,
+        in_features: int | None,
         out_features: int,
         kernel_size: KernelSizeType,
         *,
@@ -2158,19 +2143,13 @@ class ConvNDLocal(sk.TreeClass):
     ):
         self.in_features = positive_int_or_none_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.kernel_size = canonicalize(
-            kernel_size,
-            self.spatial_ndim,
-            name="kernel_size",
-        )
-
+        self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.in_size = (
             canonicalize(in_size, self.spatial_ndim, name="in_size")
             if in_size is not None
             else None
         )
-
-        self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
+        self.strides = canonicalize(strides, self.spatial_ndim, "strides")
 
         if in_size is None:
             self.padding = padding
@@ -2183,7 +2162,7 @@ class ConvNDLocal(sk.TreeClass):
                 self.strides,
             )
 
-        self.dilation = canonicalize(dilation, self.spatial_ndim, name="dilation")
+        self.dilation = canonicalize(dilation, self.spatial_ndim, "dilation")
         self.weight_init = weight_init
         self.bias_init = bias_init
 

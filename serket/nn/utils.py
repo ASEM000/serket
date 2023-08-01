@@ -164,7 +164,7 @@ def delayed_canonicalize_padding(
     )
 
 
-def canonicalize(value, ndim, *, name: str | None = None):
+def canonicalize(value, ndim, name: str | None = None):
     if isinstance(value, int):
         return (value,) * ndim
     if isinstance(value, jax.Array):
@@ -275,7 +275,7 @@ def validate_spatial_ndim(func: Callable[P, T], attribute_name: str) -> Callable
             spatial = {", ".join(("rows", "cols", "depths")[:spatial_ndim])}
             raise ValueError(
                 f"Input should satisfy:\n"
-                f"- {spatial_ndim+1=} dimension, got {x.ndim=}.\n"
+                f"- {(spatial_ndim + 1)=} dimension, got {x.ndim=}.\n"
                 f"- shape of (in_features, {spatial}), got {x.shape=}.\n"
                 + (
                     # maybe the user apply the layer on a batched input
