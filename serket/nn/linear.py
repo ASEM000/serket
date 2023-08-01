@@ -566,6 +566,7 @@ class MLP(sk.TreeClass):
         >>> lazy_mlp = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_size=10)
         >>> _, materialized_mlp = lazy_mlp.at['__call__'](jnp.ones([1, 10]))
         >>> materialized_mlp.layers[0].in_features
+        (10,)
     """
 
     def __init__(
