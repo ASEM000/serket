@@ -334,7 +334,8 @@ def maybe_lazy_call(
             kwargs[key] = update(self, *a, **k)
 
         # clear the instance information
-        vars(self).clear()
+        for key in kwargs:
+            delattr(self, key)
         # re-initialize the instance
         getattr(type(self), "__init__")(self, **kwargs)
         # call the decorated function
