@@ -43,7 +43,9 @@ from pytreeclass import (
 )
 
 from . import nn
+from .nn.activation import def_act_entry
 from .nn.custom_transform import tree_eval, tree_state
+from .nn.initialization import def_init_entry
 
 __all__ = (
     # general utils
@@ -81,6 +83,8 @@ __all__ = (
     "nn",
     "tree_eval",
     "tree_state",
+    "def_init_entry",
+    "def_act_entry",
 )
 
 

@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Literal, Union, get_args
+from typing import Callable, Literal, Protocol, Union, get_args
 
 import jax
 import jax.numpy as jnp
@@ -383,6 +383,11 @@ ActivationFunctionType = Callable[[jax.typing.ArrayLike], jax.Array]
 ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 
 
+class ActivationClassType(Protocol):
+    def __call__(self, x: jax.typing.ArrayLike) -> jax.Array:
+        ...
+
+
 def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
     # in case the user passes a trainable activation function
     # we need to make a copy of it to avoid unpredictable side effects
@@ -391,3 +396,45 @@ def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
             return act_map[act_func]()
         raise ValueError(f"Unknown {act_func=}, available activations: {list(act_map)}")
     return act_func
+
+
+def def_act_entry(key: str, act_func: ActivationClassType) -> None:
+    """Register a custom activation function key for use in ``serket`` layers.
+
+    Args:
+        key: The key to register the function under.
+        act_func: a class with a ``__call__`` method that takes a single argument
+            and returns a ``jax`` array.
+
+    Note:
+        The registered key can be used in any of ``serket`` ``act_*`` arguments as
+        substitution for the function.
+
+    Note:
+        By design, activation functions can be passed directly to ``serket`` layers
+        with the ``act_func`` argument. This function is useful if you want to
+        represent activation functions as a string in a configuration file.
+
+    Example:
+        >>> import serket as sk
+        >>> import math
+        >>> import jax.numpy as jnp
+        >>> @sk.autoinit
+        ... class MyTrainableActivation(sk.TreeClass):
+        ...    my_param: float = 10.0
+        ...    def __call__(self, x):
+        ...        return x * self.my_param
+        >>> sk.def_act_entry("my_act", MyTrainableActivation)
+        >>> x = jnp.ones((1, 1))
+        >>> sk.nn.FNN([1, 1, 1], act_func="my_act", weight_init="ones", bias_init=None)(x)
+        Array([[10.]], dtype=float32)
+    """
+    if key in act_map:
+        raise ValueError(f"`init_key` {key=} already registered")
+
+    if not isinstance(act_func, type):
+        raise ValueError(f"Expected a class, got {act_func=}")
+    if not callable(act_func):
+        raise ValueError(f"Expected a class with a __call__ method, got {act_func=}")
+
+    act_map[key] = act_func

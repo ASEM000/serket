@@ -75,3 +75,51 @@ def resolve_init_func(init_func: str | InitFuncType) -> Callable:
         return jtu.Partial(lambda key, shape, dtype=None: None)
 
     raise ValueError("Value must be a string or a function.")
+
+
+def def_init_entry(key: str, init_func: InitFuncType) -> None:
+    """Register a custom initialization function key for use in ``serket`` layers.
+
+    Args:
+        key: The key to register the function under.
+        init_func: The function to register. must take three arguments: a key,
+            a shape, and a dtype, and return an array of the given shape and dtype.
+            dtype must have a default value.
+
+    Note:
+        By design initialization function can be passed directly to ``serket`` layers
+        without registration. This function is useful if you want to
+        represent initialization functions as a string in a configuration file.
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> import math
+        >>> def my_init_func(key, shape, dtype=jnp.float32):
+        ...     return jnp.arange(math.prod(shape), dtype=dtype).reshape(shape)
+        >>> sk.def_init_entry("my_init", my_init_func)
+        >>> sk.nn.Linear(1, 5, weight_init="my_init").weight
+        Array([[0., 1., 2., 3., 4.]], dtype=float32)
+    """
+    import inspect
+
+    signature = inspect.signature(init_func)
+
+    if key in init_map:
+        raise ValueError(f"`init_key` {key=} already registered")
+
+    if len(signature.parameters) != 3:
+        # verify its a three argument function
+        raise ValueError(f"`init_func` {len(signature.parameters)=} != 3")
+
+    argnames = list(dict(signature.parameters))
+
+    if argnames != ["key", "shape", "dtype"]:
+        # verify the names of the parameters
+        raise ValueError(f"`init_func` {argnames=} != ['key', 'shape', 'dtype']")
+
+    if signature.parameters["dtype"].default is inspect._empty:
+        raise ValueError("`init_func` `dtype` must have a default value")
+
+    init_map[key] = init_func
