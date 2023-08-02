@@ -17,6 +17,7 @@ from __future__ import annotations
 import functools as ft
 import inspect
 import operator as op
+from types import MethodType
 from typing import Any, Callable, Sequence, Tuple, TypeVar, Union
 
 import jax
@@ -307,7 +308,7 @@ def validate_axis_shape(
 
 
 @ft.lru_cache(maxsize=128)
-def get_params(func: type) -> tuple[inspect.Parameter, ...]:
+def get_params(func: MethodType) -> tuple[inspect.Parameter, ...]:
     """Get the arguments of func."""
     return tuple(inspect.signature(func).parameters.values())
 
@@ -316,7 +317,12 @@ def maybe_lazy_init(
     func: Callable[P, T],
     is_lazy: Callable[..., bool],
 ) -> Callable[P, T]:
-    """Sets input argumet to instance attribute if lazy initialization is ``True``.
+    """Sets input argumets to instance attribute if lazy initialization is ``True``.
+
+    The key idea is to store the input arguments to the instance attribute to
+    be used later when the instance is re-initialized using ``maybe_lazy_call``
+    decorator. ``maybe_lazy_call`` assumes that the input arguments are stored
+    in the instance attribute and can be retrieved using ``vars(instance)``.
 
     Args:
         func: The ``__init__`` method of a class.
@@ -364,7 +370,7 @@ def maybe_lazy_init(
     return inner
 
 
-LAZY_CALL_ERROR = """ 
+LAZY_CALL_ERROR = """\
 Cannot call ``{func_name}`` directly on a lazy layer.
 use ``layer.at['{func_name}'](...)`` instead to return a tuple of:
     - The layer output. 
@@ -378,7 +384,7 @@ Example:
     >>> _, materialized_layer = layer.at['{func_name}'](x)
     >>> materialized_layer(x)
     ...
-""".lstrip()
+"""
 
 
 def maybe_lazy_call(
@@ -387,6 +393,8 @@ def maybe_lazy_call(
     updates: dict[str, Callable[..., Any]],
 ) -> Callable[P, T]:
     """Reinitialize the instance if it is lazy.
+
+    Accompanying decorator for ``maybe_lazy_init``.
 
     Args:
         func: The method to decorate that accepts the arguments needed to re-initialize
@@ -399,7 +407,7 @@ def maybe_lazy_call(
             as ``func``.
     """
 
-    @ft.wraps(func)
+    # @ft.wraps(func)
     def inner(instance, *a, **k):
         if not is_lazy(instance, *a, **k):
             return func(instance, *a, **k)
