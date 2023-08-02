@@ -166,7 +166,7 @@ def infer_in_features(instance, x, *_, **__) -> int:
     return x.shape[0]
 
 
-conv_updates = dict(in_features=infer_in_features)
+updates = dict(in_features=infer_in_features)
 
 
 class BaseConvND(sk.TreeClass):
@@ -212,7 +212,7 @@ class BaseConvND(sk.TreeClass):
 
 
 class ConvND(BaseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -521,7 +521,7 @@ class Conv3D(ConvND):
 
 
 class FFTConvND(BaseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -874,7 +874,7 @@ class BaseConvNDTranspose(sk.TreeClass):
 
 
 class ConvNDTranspose(BaseConvNDTranspose):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -1201,7 +1201,7 @@ class Conv3DTranspose(ConvNDTranspose):
 
 
 class FFTConvNDTranspose(BaseConvNDTranspose):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -1562,7 +1562,7 @@ class BaseDepthwiseConvND(sk.TreeClass):
 
 
 class DepthwiseConvND(BaseDepthwiseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -1833,7 +1833,7 @@ class DepthwiseConv3D(DepthwiseConvND):
 
 
 class DepthwiseFFTConvND(BaseDepthwiseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -2138,7 +2138,7 @@ class SeparableConvND(sk.TreeClass):
             key=key,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=conv_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
@@ -2740,7 +2740,7 @@ def infer_in_size(_, x, *__, **___) -> tuple[int, ...]:
     return x.shape[1:]
 
 
-convlocal_updates = {**dict(in_size=infer_in_size), **conv_updates}
+updates = {**dict(in_size=infer_in_size), **updates}
 
 
 class ConvNDLocal(sk.TreeClass):
@@ -2795,7 +2795,7 @@ class ConvNDLocal(sk.TreeClass):
         bias_shape = (self.out_features, *out_size)
         self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=convlocal_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, **k) -> jax.Array:

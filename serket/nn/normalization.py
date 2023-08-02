@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import jax.random as jr
@@ -22,7 +24,13 @@ from jax.custom_batching import custom_vmap
 import serket as sk
 from serket.nn.custom_transform import tree_eval, tree_state
 from serket.nn.initialization import InitType, resolve_init_func
-from serket.nn.utils import Range, ScalarLike, positive_int_cb
+from serket.nn.utils import (
+    Range,
+    ScalarLike,
+    maybe_lazy_call,
+    maybe_lazy_init,
+    positive_int_cb,
+)
 
 
 def layer_norm(
@@ -73,6 +81,21 @@ def group_norm(
     return x̂
 
 
+def is_lazy_call(instance, *_, **__) -> bool:
+    return instance.normalized_shape is None
+
+
+def is_lazy_init(_, normalized_shape, *__, **___) -> bool:
+    return normalized_shape is None
+
+
+def infer_normalized_shape(instance, x, *_, **__) -> int:
+    return x.shape
+
+
+updates = dict(normalized_shape=infer_normalized_shape)
+
+
 class LayerNorm(sk.TreeClass):
     """Layer Normalization
 
@@ -88,14 +111,31 @@ class LayerNorm(sk.TreeClass):
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
 
     Note:
+        :class:`.LayerNorm` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``normalized_shape`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.ones((5,10))
+        >>> _, layer = sk.nn.LayerNorm(None).at['__call__'](x)
+        >>> layer(x).shape
+        (5, 10)
+
+    Reference:
         https://nn.labml.ai/normalization/layer_norm/index.html
     """
 
     eps: float = sk.field(callbacks=[Range(0, min_inclusive=False), ScalarLike()])
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
-        normalized_shape: int | tuple[int, ...],
+        normalized_shape: int | tuple[int, ...] | None,
         *,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
@@ -111,6 +151,7 @@ class LayerNorm(sk.TreeClass):
         self.gamma = resolve_init_func(weight_init)(key, self.normalized_shape)
         self.beta = resolve_init_func(bias_init)(key, self.normalized_shape)
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return layer_norm(
             x,
@@ -119,6 +160,21 @@ class LayerNorm(sk.TreeClass):
             eps=self.eps,
             normalized_shape=self.normalized_shape,
         )
+
+
+def is_lazy_call(instance, *_, **__) -> bool:
+    return instance.in_features is None
+
+
+def is_lazy_init(_, in_features, *__, **___) -> bool:
+    return in_features is None
+
+
+def infer_in_features(instance, x, *_, **__) -> int:
+    return x.shape[0]
+
+
+updates = dict(in_features=infer_in_features)
 
 
 class GroupNorm(sk.TreeClass):
@@ -136,12 +192,35 @@ class GroupNorm(sk.TreeClass):
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
 
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.ones((5,10))
+        >>> _, layer = sk.nn.GroupNorm(5, groups=1).at['__call__'](x)
+        >>> layer(x).shape
+        (5, 10)
+
     Note:
+        :class:`.GroupNorm` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.ones((5,10))
+        >>> _, layer = sk.nn.GroupNorm(None, groups=5).at['__call__'](x)
+        >>> layer(x).shape
+        (5, 10)
+
+    Reference:
         https://nn.labml.ai/normalization/group_norm/index.html
     """
 
-    eps: float = sk.field(callbacks=[Range(0), ScalarLike()])
-
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features,
@@ -154,7 +233,7 @@ class GroupNorm(sk.TreeClass):
     ):
         self.in_features = positive_int_cb(in_features)
         self.groups = positive_int_cb(groups)
-        self.eps = eps
+        self.eps = sk.field(callbacks=[Range(0), ScalarLike()])(eps)
 
         # needs more info for checking
         if in_features % groups != 0:
@@ -163,6 +242,7 @@ class GroupNorm(sk.TreeClass):
         self.gamma = resolve_init_func(weight_init)(key, (in_features,))
         self.beta = resolve_init_func(bias_init)(key, (in_features,))
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return group_norm(
             x=x,
@@ -187,10 +267,35 @@ class InstanceNorm(GroupNorm):
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
 
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.ones((5,10))
+        >>> _, layer = sk.nn.InstanceNorm(5).at['__call__'](x)
+        >>> layer(x).shape
+        (5, 10)
+
     Note:
+        :class:`.InstanceNorm` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.ones((5,10))
+        >>> _, layer = sk.nn.InstanceNorm(None).at['__call__'](x)
+        >>> layer(x).shape
+        (5, 10)
+
+    Reference:
         https://nn.labml.ai/normalization/instance_norm/index.html
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -308,6 +413,13 @@ def _(
     return output, (True, BatchNormState(True, True))
 
 
+def infer_in_features(instance, x, *_, **__) -> int:
+    return x.shape[instance.axis]
+
+
+updates = dict(in_features=infer_in_features)
+
+
 class BatchNorm(sk.TreeClass):
     """Applies normalization over batched inputs`
 
@@ -370,9 +482,27 @@ class BatchNorm(sk.TreeClass):
         >>> x, state = jax.vmap(tree, in_axes=(0, None))(x, state)
 
     Note:
+        :class:`.BatchNorm` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.ones((5,10))
+        >>> _, layer = sk.nn.BatchNorm(None).at['__call__'](x)
+        >>> x, state = jax.vmap(layer)(x)
+        >>> x.shape
+        (5, 10)
+
+    Reference:
         https://keras.io/api/layers/normalization_layers/batch_normalization/
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -391,12 +521,13 @@ class BatchNorm(sk.TreeClass):
         self.beta = resolve_init_func(bias_init)(key, (in_features,))
         self.axis = axis
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
         self,
         x: jax.Array,
         state: BatchNormState | None = None,
         **k,
-    ) -> jax.Array:
+    ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
 
         x, state = batchnorm(
@@ -455,10 +586,11 @@ class EvalNorm(sk.TreeClass):
         >>> bn = sk.tree_eval(bn)
         >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
 
-    Note:
+    Reference:
         https://keras.io/api/layers/normalization_layers/batch_normalization/
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -477,12 +609,13 @@ class EvalNorm(sk.TreeClass):
         self.beta = resolve_init_func(bias_init)(key, (in_features,))
         self.axis = axis
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
         self,
         x: jax.Array,
         state: BatchNormState | None = None,
         **k,
-    ) -> jax.Array:
+    ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
 
         x, state = batchnorm(

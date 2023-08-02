@@ -42,39 +42,42 @@ import jax, jax.numpy as jnp
 import serket as sk
 import optax
 
-x_train, y_train = ..., ...
+x_train, y_train = ..., ...  # samples, 1, 28, 28
 k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
 
-nn = sk.nn.Sequential(
-    sk.nn.Linear(28 * 28, 64, key=k1), jax.nn.relu,
-    sk.nn.Linear(64, 64, key=k2), jax.nn.relu,
+net = sk.nn.Sequential(
+    jnp.ravel,
+    sk.nn.Linear(28 * 28, 64, key=k1),
+    jax.nn.relu,
+    sk.nn.Linear(64, 64, key=k2),
+    jax.nn.relu,
     sk.nn.Linear(64, 10, key=k3),
 )
 
-nn = sk.tree_mask(nn)  # pass non-jaxtype through jax-transforms
+net = sk.tree_mask(net)  # pass non-jaxtype through jax-transforms
 optim = optax.adam(LR)
-optim_state = optim.init(nn)
+optim_state = optim.init(net)
 
 @ft.partial(jax.grad, has_aux=True)
-def loss_func(nn, x, y):
-    nn = sk.tree_unmask(nn)
-    logits = jax.vmap(nn)(x)
+def loss_func(net, x, y):
+    net = sk.tree_unmask(net)
+    logits = jax.vmap(net)(x)
     onehot = jax.nn.one_hot(y, 10)
     loss = jnp.mean(optax.softmax_cross_entropy(logits, onehot))
     return loss, (loss, logits)
 
 @jax.jit
-def train_step(nn, optim_state, x, y):
-    grads, (loss, logits) = loss_func(nn, x, y)
+def train_step(net, optim_state, x, y):
+    grads, (loss, logits) = loss_func(net, x, y)
     updates, optim_state = optim.update(grads, optim_state)
-    nn = optax.apply_updates(nn, updates)
-    return nn, optim_state, (loss, logits)
+    net = optax.apply_updates(net, updates)
+    return net, optim_state, (loss, logits)
 
 for j, (xb, yb) in enumerate(zip(x_train, y_train)):
-    nn, optim_state, (loss, logits) = train_step(nn, optim_state, xb, yb)
+    net, optim_state, (loss, logits) = train_step(net, optim_state, xb, yb)
     accuracy = accuracy_func(logits, y_train)
 
-nn = sk.tree_unmask(nn)
+net = sk.tree_unmask(net)
 ```
 
 #### Notable features:

@@ -52,7 +52,7 @@ def infer_multilinear_in_features(_, *x, **__) -> int | tuple[int, ...]:
     return x[0].shape[-1] if len(x) == 1 else tuple(xi.shape[-1] for xi in x)
 
 
-linear_updates = dict(in_features=infer_multilinear_in_features)
+updates = dict(in_features=infer_multilinear_in_features)
 
 
 @ft.lru_cache(maxsize=None)
@@ -177,7 +177,7 @@ class Multilinear(sk.TreeClass):
         self.weight = resolve_init_func(weight_init)(k1, weight_shape)
         self.bias = resolve_init_func(bias_init)(k2, (out_features,))
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=linear_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, *x, **k) -> jax.Array:
         einsum_string = _multilinear_einsum_string(len(self.in_features))
         x = jnp.einsum(einsum_string, *x, self.weight)
@@ -251,7 +251,7 @@ def infer_in_features(instance, x, **__) -> tuple[int, ...]:
     return tuple(x.shape[i] for i in in_axes)
 
 
-general_linear_updates = dict(in_features=infer_in_features)
+updates = dict(in_features=infer_in_features)
 
 
 class GeneralLinear(sk.TreeClass):
@@ -328,7 +328,7 @@ class GeneralLinear(sk.TreeClass):
         self.weight = resolve_init_func(weight_init)(k1, weight_shape)
         self.bias = resolve_init_func(bias_init)(k2, (self.out_features,))
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=general_linear_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         # ensure negative axes
         axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)

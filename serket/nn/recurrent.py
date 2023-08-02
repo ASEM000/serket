@@ -54,7 +54,7 @@ def infer_in_features(_, x: jax.Array, *__, **___) -> int:
     return x.shape[0]
 
 
-rnn_updates = dict(in_features=infer_in_features)
+updates = dict(in_features=infer_in_features)
 
 
 @sk.autoinit
@@ -169,7 +169,7 @@ class SimpleRNNCell(RNNCell):
         self.ih2h_weight = jnp.concatenate([i2h.weight, h2h.weight], axis=0)
         self.ih2h_bias = i2h.bias
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: SimpleRNNState, **k) -> SimpleRNNState:
@@ -254,7 +254,7 @@ class DenseCell(RNNCell):
             key=key,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: DenseState, **k) -> DenseState:
@@ -360,7 +360,7 @@ class LSTMCell(RNNCell):
         self.ih2h_weight = jnp.concatenate([i2h.weight, h2h.weight], axis=0)
         self.ih2h_bias = i2h.bias
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: LSTMState, **k) -> LSTMState:
@@ -470,7 +470,7 @@ class GRUCell(RNNCell):
             key=k2,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: GRUState, **k) -> GRUState:
@@ -545,7 +545,7 @@ class ConvLSTMNDCell(RNNCell):
             key=k2,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: ConvLSTMNDState, **k) -> ConvLSTMNDState:
@@ -964,7 +964,7 @@ class ConvGRUNDCell(RNNCell):
             key=k2,
         )
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: ConvGRUNDState, **k) -> ConvGRUNDState:
@@ -1349,7 +1349,7 @@ def is_lazy_call(instance, x, state=None, **_) -> bool:
     return lhs or rhs
 
 
-scan_updates = dict(cell=materialize_cell, backward_cell=materialize_backward_cell)
+updates = dict(cell=materialize_cell, backward_cell=materialize_backward_cell)
 
 
 class ScanRNN(sk.TreeClass):
@@ -1409,7 +1409,7 @@ class ScanRNN(sk.TreeClass):
         self.return_sequences = return_sequences
         self.return_state = return_state
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=scan_updates)
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
         self,
         x: jax.Array,
