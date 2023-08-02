@@ -263,13 +263,15 @@ def validate_spatial_ndim(func: Callable[P, T], attribute_name: str) -> Callable
 
     def check_spatial_in_shape(x, spatial_ndim: int) -> None:
         if x.ndim != spatial_ndim + 1:
-            spatial = {", ".join(("rows", "cols", "depths")[:spatial_ndim])}
+            spatial = ", ".join(("rows", "cols", "depths")[:spatial_ndim])
             raise ValueError(
+                f"Dimesion mismatch error.\n"
                 f"Input should satisfy:\n"
-                f"- {(spatial_ndim + 1)=} dimension, got {x.ndim=}.\n"
-                f"- shape of (in_features, {spatial}), got {x.shape=}.\n"
+                f"  - {(spatial_ndim + 1)=} dimension, but got {x.ndim=}.\n"
+                f"  - shape of (in_features, {spatial}), but got {x.shape=}.\n"
                 + (
                     # maybe the user apply the layer on a batched input
+                    "\nThe input should be unbatched (no batch dimension).\n"
                     "To apply on batched input, use `jax.vmap(...)(input)`."
                     if x.ndim == spatial_ndim + 2
                     else ""
