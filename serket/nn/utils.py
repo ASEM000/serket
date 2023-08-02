@@ -409,7 +409,7 @@ def maybe_lazy_call(
             as ``func``.
     """
 
-    # @ft.wraps(func)
+    @ft.wraps(func)
     def inner(instance, *a, **k):
         if not is_lazy(instance, *a, **k):
             return func(instance, *a, **k)
