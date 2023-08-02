@@ -367,7 +367,7 @@ def maybe_lazy_init(
 
         # halt the initialization of the instance
         # and move to the next call
-        return
+        return None
 
     return inner
 

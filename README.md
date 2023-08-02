@@ -35,7 +35,7 @@ pip install git+https://github.com/ASEM000/serket
 
 ### 🏃 Quick example<a id="QuickExample"></a>
 
-For full examples see [here](https://serket.readthedocs.io/en/latest/examples.html) e.g. [Training 🚆 MNIST](https://serket.readthedocs.io/en/latest/notebooks/mnist.html), or [Training 🚆 Bidirectional-LSTM](https://serket.readthedocs.io/en/latest/notebooks/bilstm.html)
+See [🧠 `serket` mental model](https://serket.readthedocs.io/en/latest/notebooks/mental_model.html) and for examples, see [Training 🚆 MNIST](https://serket.readthedocs.io/en/latest/notebooks/train_mnist.html), or [Training 🚆 Bidirectional-LSTM](https://serket.readthedocs.io/en/latest/notebooks/train_bilstm.html)
 
 ```python
 import jax, jax.numpy as jnp
@@ -273,7 +273,6 @@ net = sk.tree_unmask(net)
 </table>
 
 </details>
-
 
 <details><summary>🥱 Functional lazy initialization </summary>
 

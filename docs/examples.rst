@@ -5,5 +5,5 @@
     :caption: Examples
     :maxdepth: 1
 
-    notebooks/mnist
-    notebooks/bilstm
+    notebooks/train_mnist
+    notebooks/train_bilstm

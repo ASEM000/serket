@@ -1387,6 +1387,7 @@ class ScanRNN(sk.TreeClass):
         self,
         cell: RNNCell,
         backward_cell: RNNCell | None = None,
+        *,
         return_sequences: bool = False,
         return_state: bool = False,
     ):

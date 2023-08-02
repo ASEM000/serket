@@ -10,6 +10,12 @@
 .. |logo| image:: _static/kol.svg
     :height: 40px    
 
+.. toctree::
+    :caption: Introduction
+    :maxdepth: 1
+    
+    notebooks/mental_model
+
 
 🛠️ Installation
 ----------------
