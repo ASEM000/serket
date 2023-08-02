@@ -80,34 +80,37 @@ for j, (xb, yb) in enumerate(zip(x_train, y_train)):
 net = sk.tree_unmask(net)
 ```
 
-### 🧠 Neural network package: `serket.nn`
+<details> <summary> 🧠 Layers overview </summary>
 
 <table>
 
 <tr>
 
-<td>
+<td align="center">
 
 [Linear](https://serket.readthedocs.io/en/latest/API/linear.html)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
-- `Linear`, `Multilinear`, `GeneralLinear`, `Identity`, `FNN`, `MLP`, `Embedding`
+- `Linear`, `Multilinear`, `GeneralLinear`
+- `Identity`
+- `FNN`, `MLP`
+- `Embedding`
 
 </td>
 </tr>
 
 <tr>
 
-<td>
+<td align="center">
 
 [Convolution](https://serket.readthedocs.io/en/latest/API/convolution.html)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
 - `{Conv,FFTConv}{1D,2D,3D}`
 - `{Conv,FFTConv}{1D,2D,3D}Transpose`
@@ -120,13 +123,13 @@ net = sk.tree_unmask(net)
 
 <tr>
 
-<td>
+<td align="center">
 
 [Containers](https://serket.readthedocs.io/en/latest/API/containers.html)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
 - `Sequential`, `RandomApply`
 </td>
@@ -135,13 +138,13 @@ net = sk.tree_unmask(net)
 
 <tr>
 
-<td>
+<td align="center">
 
 [Pooling](https://serket.readthedocs.io/en/latest/API/pooling.html)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
 - `{Avg,Max,LP}Pool{1D,2D,3D}`
 - `Global{Avg,Max}Pool{1D,2D,3D}`
@@ -153,13 +156,13 @@ net = sk.tree_unmask(net)
 
 <tr>
 
-<td>
+<td align="center">
 
 [Reshaping](https://serket.readthedocs.io/en/latest/API/reshaping.html)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
 - `Flatten`, `Unflatten`
 - `Repeat{1D,2D,3D}`
@@ -175,13 +178,13 @@ net = sk.tree_unmask(net)
 
 <tr>
 
-<td>
+<td align="center">
 
 [Normalization](https://serket.readthedocs.io/en/latest/API/normalization.html)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
 - `{Layer,Instance,Group,Batch}Norm`
 
@@ -191,13 +194,13 @@ net = sk.tree_unmask(net)
 
 <tr>
 
-<td>
+<td align="center">
 
 [Image](https://serket.readthedocs.io/en/latest/API/image.html#)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
 - `{Avg,Gaussian}Blur2D`
 - `{Filter,FFTFilter}2D`
@@ -211,13 +214,13 @@ net = sk.tree_unmask(net)
 
 <tr>
 
-<td>
+<td align="center">
 
 [Dropout](https://serket.readthedocs.io/en/latest/API/dropout.html)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
 - `Dropout`
 - `Dropout{1D,2D,3D}`
@@ -229,13 +232,13 @@ net = sk.tree_unmask(net)
 
 <tr>
 
-<td>
+<td align="center">
 
 [Activations](https://serket.readthedocs.io/en/latest/API/activations.html)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
 - `Adaptive{LeakyReLU,ReLU,Sigmoid,Tanh}`
 - `CeLU`,`ELU`,`GELU`,`GLU`
@@ -251,13 +254,13 @@ net = sk.tree_unmask(net)
 
 <tr>
 
-<td>
+<td align="center">
 
 [Recurrent](https://serket.readthedocs.io/en/latest/API/recurrent.html)
 
 </td>
 
-<td>
+<td style="padding:0px">
 
 - `{Dense,SimpleRNN,LSTM,GRU}Cell`
 - `{Conv,FFTConv}{LSTM,GRU}{1D,2D,3D}Cell`
@@ -269,7 +272,8 @@ net = sk.tree_unmask(net)
 
 </table>
 
-#### Other features:
+</details>
+
 
 <details><summary>🥱 Functional lazy initialization </summary>
 
