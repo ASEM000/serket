@@ -22,7 +22,6 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import jax.tree_util as jtu
-from jax.util import unzip2
 
 import serket as sk
 from serket.nn.activation import ActivationType, resolve_activation
@@ -33,12 +32,29 @@ from serket.nn.utils import (
     KernelSizeType,
     PaddingType,
     StridesType,
+    maybe_lazy_call,
+    maybe_lazy_init,
     positive_int_cb,
     validate_axis_shape,
     validate_spatial_ndim,
 )
 
 """Defines RNN related classes."""
+
+
+def is_lazy_call(instance, *_, **__) -> bool:
+    return instance.in_features is None
+
+
+def is_lazy_init(_, in_features: int | None, *__, **___) -> bool:
+    return in_features is None
+
+
+def infer_in_features(_, x: jax.Array, *__, **___) -> int:
+    return x.shape[0]
+
+
+rnn_updates = dict(in_features=infer_in_features)
 
 
 @sk.autoinit
@@ -75,6 +91,7 @@ class SimpleRNNState(RNNState):
 
 
 class SimpleRNNCell(RNNCell):
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -107,6 +124,23 @@ class SimpleRNNCell(RNNCell):
             >>> result.hidden_state.shape  # 20 features
             (20,)
 
+        Note:
+            :class:`.SimpleRNNCell` supports lazy initialization, meaning that the
+            weights and biases are not initialized until the first call to the layer.
+            This is useful when the input shape is not known at initialization time.
+
+            To use lazy initialization, pass ``None`` as the ``in_features`` argument
+            and use the ``.at["calling_method_name"]`` attribute to call the layer
+            with an input of known shape.
+
+            >>> import serket as sk
+            >>> import jax.numpy as jnp
+            >>> lazy_layer = sk.nn.ScanRNN(sk.nn.SimpleRNNCell(None, 20), return_sequences=True)
+            >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
+            >>> _, materialized_layer = lazy_layer.at["__call__"](x)
+            >>> materialized_layer(x).shape
+            (5, 20)
+
         Reference:
             - https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
         """
@@ -135,6 +169,7 @@ class SimpleRNNCell(RNNCell):
         self.ih2h_weight = jnp.concatenate([i2h.weight, h2h.weight], axis=0)
         self.ih2h_bias = i2h.bias
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: SimpleRNNState, **k) -> SimpleRNNState:
@@ -177,8 +212,26 @@ class DenseCell(RNNCell):
         >>> result = cell(x, dummy_state)
         >>> result.hidden_state.shape  # 20 features
         (20,)
+
+    Note:
+        :class:`.DenseCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> lazy_layer = sk.nn.ScanRNN(sk.nn.DenseCell(None, 20), return_sequences=True)
+        >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
+        >>> _, materialized_layer = lazy_layer.at["__call__"](x)
+        >>> materialized_layer(x).shape
+        (5, 20)
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -201,6 +254,7 @@ class DenseCell(RNNCell):
             key=key,
         )
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: DenseState, **k) -> DenseState:
@@ -233,11 +287,41 @@ class LSTMCell(RNNCell):
         recurrent_act_func: the activation function to use for the cell state update
         key: the key to use to initialize the weights
 
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> # 10-dimensional input, 20-dimensional hidden state
+        >>> cell = sk.nn.LSTMCell(10, 20)
+        >>> # 20-dimensional hidden state
+        >>> dummy_state = sk.tree_state(cell)
+        >>> x = jnp.ones((10,)) # 10 features
+        >>> result = cell(x, dummy_state)
+        >>> result.hidden_state.shape  # 20 features
+        (20,)
+
+    Note:
+        :class:`.LSTMCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> lazy_layer = sk.nn.ScanRNN(sk.nn.LSTMCell(None, 20), return_sequences=True)
+        >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
+        >>> _, materialized_layer = lazy_layer.at["__call__"](x)
+        >>> materialized_layer(x).shape
+        (5, 20)
+
     Reference:
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTMCell
         - https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/recurrent.py
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -276,6 +360,7 @@ class LSTMCell(RNNCell):
         self.ih2h_weight = jnp.concatenate([i2h.weight, h2h.weight], axis=0)
         self.ih2h_bias = i2h.bias
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: LSTMState, **k) -> LSTMState:
@@ -316,10 +401,40 @@ class GRUCell(RNNCell):
         recurrent_act_func: the activation function to use for the cell state update
         key: the key to use to initialize the weights
 
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> # 10-dimensional input, 20-dimensional hidden state
+        >>> cell = sk.nn.GRUCell(10, 20)
+        >>> # 20-dimensional hidden state
+        >>> dummy_state = sk.tree_state(cell)
+        >>> x = jnp.ones((10,)) # 10 features
+        >>> result = cell(x, dummy_state)
+        >>> result.hidden_state.shape  # 20 features
+        (20,)
+
+    Note:
+        :class:`.GRUCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> lazy_layer = sk.nn.ScanRNN(sk.nn.GRUCell(None, 20), return_sequences=True)
+        >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
+        >>> _, materialized_layer = lazy_layer.at["__call__"](x)
+        >>> materialized_layer(x).shape
+        (5, 20)
+
     Reference:
         - https://keras.io/api/layers/recurrent_layers/gru/
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -355,6 +470,7 @@ class GRUCell(RNNCell):
             key=k2,
         )
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: GRUState, **k) -> GRUState:
@@ -381,26 +497,7 @@ class ConvLSTMNDState(RNNState):
 
 
 class ConvLSTMNDCell(RNNCell):
-    """Convolution LSTM cell that defines the update rule for the hidden state and cell state
-
-    Args:
-        in_features: Number of input features
-        hidden_features: Number of output features
-        kernel_size: Size of the convolutional kernel
-        strides: Stride of the convolution
-        padding: Padding of the convolution
-        dilation: Dilation of the convolutional kernel
-        weight_init: Weight initialization function
-        bias_init: Bias initialization function
-        recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
-        key: PRNG key
-
-    Reference:
-        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
-    """
-
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -448,6 +545,7 @@ class ConvLSTMNDCell(RNNCell):
             key=k2,
         )
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: ConvLSTMNDState, **k) -> ConvLSTMNDState:
@@ -488,6 +586,33 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvLSTM1DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4)
+
+    Note:
+        :class:`.ConvLSTM1DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvLSTM1DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4)
+
     Reference:
         https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
     """
@@ -517,6 +642,33 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvLSTM1DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4)
+
+    Note:
+        :class:`.FFTConvLSTM1DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvLSTM1DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4)
 
     Reference:
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
@@ -548,6 +700,33 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvLSTM2DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4, 4)
+
+    Note:
+        :class:`.ConvLSTM2DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvLSTM2DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4, 4)
+
     Reference:
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
     """
@@ -577,6 +756,33 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvLSTM2DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4, 4)
+
+    Note:
+        :class:`.FFTConvLSTM2DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvLSTM2DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4, 4)
 
     Reference:
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
@@ -608,6 +814,33 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvLSTM3DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4, 4, 4)
+
+    Note:
+        :class:`.ConvLSTM3DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvLSTM3DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4, 4, 4)
+
     Reference:
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
     """
@@ -638,6 +871,33 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
 
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvLSTM3DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4, 4, 4)
+
+    Note:
+        :class:`.FFTConvLSTM3DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvLSTM3DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4, 4, 4)
+
     Reference:
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
     """
@@ -656,24 +916,7 @@ class ConvGRUNDState(RNNState):
 
 
 class ConvGRUNDCell(RNNCell):
-    """Convolution GRU cell that defines the update rule for the hidden state and cell state
-
-    Args:
-        in_features: Number of input features
-        hidden_features: Number of output features
-        kernel_size: Size of the convolutional kernel
-        strides: Stride of the convolution
-        padding: Padding of the convolution
-        dilation: Dilation of the convolutional kernel
-        weight_init: Weight initialization function
-        bias_init: Bias initialization function
-        recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
-        key: PRNG key
-        spatial_ndim: Number of spatial dimensions.
-    """
-
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -721,7 +964,9 @@ class ConvGRUNDCell(RNNCell):
             key=k2,
         )
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=rnn_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: ConvGRUNDState, **k) -> ConvGRUNDState:
         if not isinstance(state, ConvGRUNDState):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
@@ -758,6 +1003,33 @@ class ConvGRU1DCell(ConvGRUNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
         spatial_ndim: Number of spatial dimensions.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvGRU1DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4)
+
+    Note:
+        :class:`.ConvGRU1DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvGRU1DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4)
     """
 
     @property
@@ -786,6 +1058,33 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
         spatial_ndim: Number of spatial dimensions.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvGRU1DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4)
+
+    Note:
+        :class:`.FFTConvGRU1DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvGRU1DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4)
     """
 
     @property
@@ -814,6 +1113,33 @@ class ConvGRU2DCell(ConvGRUNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
         spatial_ndim: Number of spatial dimensions.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvGRU2DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4, 4)
+
+    Note:
+        :class:`.ConvGRU2DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvGRU2DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4, 4)
     """
 
     @property
@@ -842,6 +1168,33 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         recurrent_act_func: Recurrent activation function
         key: PRNG key
         spatial_ndim: Number of spatial dimensions.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvGRU2DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4, 4)
+
+    Note:
+        :class:`.FFTConvGRU2DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvGRU2DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4, 4)
     """
 
     @property
@@ -869,6 +1222,33 @@ class ConvGRU3DCell(ConvGRUNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvGRU3DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4, 4, 4)
+
+    Note:
+        :class:`.ConvGRU3DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.ConvGRU3DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4, 4, 4)
     """
 
     @property
@@ -896,6 +1276,33 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvGRU3DCell(10, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer(x).shape
+        (1, 2, 4, 4, 4)
+
+    Note:
+        :class:`.FFTConvGRU3DCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> cell = sk.nn.FFTConvGRU3DCell(None, 2, 3)
+        >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
+        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> _, layer = layer.at["__call__"](x)  # materialize the layer
+        >>> layer(x).shape
+        (1, 2, 4, 4, 4)
     """
 
     @property
@@ -910,20 +1317,49 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
 # Scanning API
 
 
+def materialize_cell(instance, x: jax.Array, state=None, **__) -> RNNCell:
+    # in case of lazy initialization, we need to materialize the cell
+    # before it can be passed to the scan function
+    cell = instance.cell
+    state = state if state is not None else sk.tree_state(instance, x)
+    state = split_state(state, 2) if instance.backward_cell is not None else [state]
+    _, cell = cell.at["__call__"](x[0], state[0])
+    return cell
+
+
+def materialize_backward_cell(instance, x, state=None, **__) -> RNNCell | None:
+    if instance.backward_cell is None:
+        return None
+    cell = instance.cell
+    state = state if state is not None else sk.tree_state(instance, x)
+    state = split_state(state, 2) if instance.backward_cell is not None else [state]
+    _, cell = cell.at["__call__"](x[0], state[-1])
+    return cell
+
+
+def is_lazy_init(_, cell, backward_cell=None, **__) -> bool:
+    lhs = cell.in_features is None
+    rhs = getattr(backward_cell, "in_features", False) is None
+    return lhs or rhs
+
+
+def is_lazy_call(instance, x, state=None, **_) -> bool:
+    lhs = instance.cell.in_features is None
+    rhs = getattr(instance.backward_cell, "in_features", False) is None
+    return lhs or rhs
+
+
+scan_updates = dict(cell=materialize_cell, backward_cell=materialize_backward_cell)
+
+
 class ScanRNN(sk.TreeClass):
     """Scans RNN cell over a sequence.
 
     Args:
-        cells: the RNN cell(s) to use.
+        cell: the RNN cell to scan.
+        backward_cell: (optional) the backward RNN cell to scan in case of bidirectional RNN.
         return_sequences: whether to return the output for each timestep.
         return_state: whether to return the final state of the RNN cell(s).
-        reverse: a tuple of booleans indicating whether to reverse the input
-            sequence for each cell. for example, if `cells` is a tuple of
-            two cells, and `reverse=(True, False)`, then the first cell will
-            scan the input sequence in reverse, and the second cell will scan
-            the input sequence in the original order. or a single boolean
-            indicating whether to reverse the input sequence for all cells.
-            default is `False`.
 
     Example:
         >>> import jax.numpy as jnp
@@ -946,38 +1382,34 @@ class ScanRNN(sk.TreeClass):
         (5, 20)
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
-        *cells: RNNCell,
+        cell: RNNCell,
+        backward_cell: RNNCell | None = None,
         return_sequences: bool = False,
         return_state: bool = False,
-        reverse: tuple[bool, ...] | bool = False,
     ):
-        cell0, *_ = cells
+        if not isinstance(cell, RNNCell):
+            raise TypeError(f"Expected {cell=} to be an instance of `RNNCell`.")
 
-        for cell in cells:
-            if not isinstance(cell, RNNCell):
-                raise TypeError(f"Expected {cell=} to be an instance of `RNNCell`.")
-
-            if cell.in_features != cell0.in_features:
-                raise ValueError(f"{cell.in_features=} != {cell0.in_features=}.")
-
-            if cell.hidden_features != cell0.hidden_features:
+        if backward_cell is not None:
+            # bidirectional
+            if not isinstance(backward_cell, RNNCell):
+                raise TypeError(f"{backward_cell=} to be an instance of `RNNCell`.")
+            if cell.in_features != backward_cell.in_features:
+                raise ValueError(f"{cell.in_features=} != {backward_cell.in_features=}")
+            if cell.hidden_features != backward_cell.hidden_features:
                 raise ValueError(
-                    f"{cell.hidden_features=} != {cell0.hidden_features=}."
+                    f"{cell.hidden_features=} != {backward_cell.hidden_features=}."
                 )
 
-        if isinstance(reverse, bool):
-            reverse = (reverse,) * len(cells)
-
-        if len(reverse) != len(cells):
-            raise ValueError(f"{len(reverse)=} != {len(cells)=}.")
-
-        self.cells: tuple[RNNCell, ...] | RNNCell = cells
+        self.cell = cell
+        self.backward_cell = backward_cell
         self.return_sequences = return_sequences
         self.return_state = return_state
-        self.reverse = reverse
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=scan_updates)
     def __call__(
         self,
         x: jax.Array,
@@ -989,57 +1421,52 @@ class ScanRNN(sk.TreeClass):
         Args:
             x: the input sequence.
             state: the initial state. if None, state is initialized by the rule
-                defined using `tree_state`.
+                defined using :func:`.tree_state`.
 
         Returns:
             return the result and state if ``return_state`` is True. otherwise,
-             return only the result.
+            return only the result.
         """
 
         if not isinstance(state, (RNNState, type(None))):
             raise TypeError(f"Expected state to be an instance of RNNState, {state=}")
 
-        # non-spatial RNN : (time steps, in_features)
-        # spatial RNN : (time steps, in_features, *spatial_dims)
-        cell0, *_ = self.cells
-
-        if x.ndim != cell0.spatial_ndim + 2:
+        if x.ndim != self.cell.spatial_ndim + 2:
             raise ValueError(
-                f"Expected x to have {(cell0.spatial_ndim + 2)=} dimensions corresponds to "
-                f"(timesteps, in_features, {','.join('...'*cell0.spatial_ndim)}),"
+                f"Expected x to have {(self.cell.spatial_ndim + 2)=} dimensions corresponds to "
+                f"(timesteps, in_features, {','.join('...'*self.cell.spatial_ndim)}),"
                 f" got {x.ndim=}"
             )
 
-        if cell0.in_features != x.shape[1]:
+        if self.cell.in_features != x.shape[1]:
             raise ValueError(
-                f"Expected x to have shape (timesteps, {cell0.in_features},"
-                f"{'*'*cell0.spatial_ndim}), got {x.shape=}"
+                f"Expected x to have shape (timesteps, {self.cell.in_features},"
+                f"{'*'*self.cell.spatial_ndim}), got {x.shape=}"
             )
 
-        splits = len(self.cells)
-        state: RNNState = tree_state(self, array=x) if state is None else state
+        state: RNNState = tree_state(self, array=x)  # if state is None else state
         scan_func = _accumulate_scan if self.return_sequences else _no_accumulate_scan
 
-        result_states: list[tuple[jax.Array, RNNState]] = [
-            scan_func(x, ci, si, reverse=ri)
-            for ci, ri, si in zip(self.cells, self.reverse, _split(state, splits))
-        ]
+        if self.backward_cell is None:
+            result, state = scan_func(x, self.cell, state)
+            return (result, state) if self.return_state else result
 
-        results, states = unzip2(result_states)
-        result = jnp.concatenate(results, axis=int(self.return_sequences))
+        # bidirectional
+        lhs_state, rhs_state = split_state(state, splits=2)
+        lhs_result, lhs_state = scan_func(x, self.cell, lhs_state, False)
+        rhs_result, rhs_state = scan_func(x, self.backward_cell, rhs_state, True)
+        concat_axis = int(self.return_sequences)
+        result = jnp.concatenate((lhs_result, rhs_result), axis=concat_axis)
+        state: RNNState = concat_state((lhs_state, rhs_state))
+        return (result, state) if self.return_state else result
 
-        if self.return_state:
-            state: RNNState = _merge(states)
-            return result, state
-        return result
 
-
-def _split(state: RNNState, splits: int) -> list[RNNState]:
+def split_state(state: RNNState, splits: int) -> list[RNNState]:
     flat_arrays: list[jax.Array] = jtu.tree_leaves(state)
     return [type(state)(*x) for x in zip(*(jnp.split(x, splits) for x in flat_arrays))]
 
 
-def _merge(states: list[RNNState]) -> RNNState:
+def concat_state(states: list[RNNState]) -> RNNState:
     # undo the split
     return (
         states[0]
@@ -1109,20 +1536,19 @@ def gru_init_state(cell: GRUCell) -> GRUState:
 def _check_rnn_cell_tree_state_input(cell: RNNCell, array):
     if not (hasattr(array, "ndim") and hasattr(array, "shape")):
         raise TypeError(
-            f"Expected {array=} to have `ndim` and `shape` attributes.",
-            f"To initialize the `{type(cell).__name__}` state.\n",
-            "Pass a single sample array to `tree_state(..., array=)`.",
+            f"Expected {array=} to have `ndim` and `shape` attributes."
+            f"To initialize the `{type(cell).__name__}` state.\n"
+            "Pass a single sample array to `tree_state(..., array=)`."
         )
 
     if array.ndim != cell.spatial_ndim + 1:
         raise ValueError(
-            f"{array.ndim=} != {(cell.spatial_ndim + 1)=}.",
+            f"{array.ndim=} != {(cell.spatial_ndim + 1)=}."
             f"Expected input to have `shape` (in_features, {'...'*cell.spatial_dim})."
-            "Pass a single sample array to `tree_state",
+            "Pass a single sample array to `tree_state"
         )
 
-    spatial_dim = array.shape[1:]
-    if len(spatial_dim) != cell.spatial_ndim:
+    if len(spatial_dim := array.shape[1:]) != cell.spatial_ndim:
         raise ValueError(f"{len(spatial_dim)=} != {cell.spatial_ndim=}.")
 
     return array
@@ -1132,19 +1558,29 @@ def _check_rnn_cell_tree_state_input(cell: RNNCell, array):
 def conv_lstm_init_state(cell: ConvLSTMNDCell, x: Any) -> ConvLSTMNDState:
     x = _check_rnn_cell_tree_state_input(cell, x)
     shape = (cell.hidden_features, *x.shape[1:])
-    return ConvLSTMNDState(jnp.zeros(shape), jnp.zeros(shape))
+    zeros = jnp.zeros(shape).astype(x.dtype)
+    return ConvLSTMNDState(zeros, zeros)
 
 
 @tree_state.def_state(ConvGRUNDCell)
 def conv_gru_init_state(cell: ConvGRUNDCell, x: Any) -> ConvGRUNDState:
     x = _check_rnn_cell_tree_state_input(cell, x)
     shape = (cell.hidden_features, *x.shape[1:])
-    return ConvGRUNDState(jnp.zeros(shape), jnp.zeros(shape))
+    return ConvGRUNDState(jnp.zeros(shape).astype(x.dtype))
 
 
 @tree_state.def_state(ScanRNN)
-def scan_rnn_init_state(rnn: ScanRNN, x: Any) -> RNNState:
-    if not hasattr(x, "shape") or not hasattr(x, "ndim"):
-        raise TypeError("Pass an array to `tree_state(..., array=...)`.")
-    # should pass a single sample array to `tree_state`
-    return _merge(tree_state(rnn.cells, array=x[0]))
+def scan_rnn_init_state(rnn: ScanRNN, x: jax.Array | None = None) -> RNNState:
+    # the idea here is to combine the state of the forward and backward cells
+    # if backward cell exists. to have single state input for `ScanRNN` and
+    # single state output not to complicate the ``__call__`` signature on the
+    # user side.
+    x = [None] if x is None else x
+    # non-spatial cells don't need an input instead
+    # pass `None` to `tree_state`
+    # otherwise pass the a single time step input to the cells
+    return (
+        tree_state(rnn.cell, array=x[0])
+        if rnn.backward_cell is None
+        else concat_state(tree_state((rnn.cell, rnn.backward_cell), array=x[0]))
+    )

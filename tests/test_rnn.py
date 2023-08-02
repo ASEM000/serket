@@ -760,7 +760,7 @@ def test_bilstm():
     reverse_cell = reverse_cell.at["ih2h_weight"].set(combined_w_reverse)
     reverse_cell = reverse_cell.at["ih2h_bias"].set(b_hidden_to_hidden_reverse)
 
-    res = ScanRNN(cell, reverse_cell, reverse=(False, True), return_sequences=False)(x)
+    res = ScanRNN(cell, reverse_cell, return_sequences=False)(x)
 
     y = jnp.array([0.35901642, 0.00826644, -0.3015435, -0.13661332])
 
@@ -768,7 +768,7 @@ def test_bilstm():
 
 
 def test_rnn_error():
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         ScanRNN(None)
 
     with pytest.raises(TypeError):
