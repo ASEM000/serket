@@ -27,7 +27,7 @@ import jax.random as jr
 from jax.lax import ConvDimensionNumbers
 
 import serket as sk
-from serket.nn.initialization import InitType, resolve_init_func
+from serket.nn.initialization import DType, InitType, resolve_init_func
 from serket.nn.utils import (
     DilationType,
     KernelSizeType,
@@ -184,6 +184,7 @@ class BaseConvND(sk.TreeClass):
         bias_init: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
@@ -194,15 +195,16 @@ class BaseConvND(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
+        self.dtype = dtype
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(out_features % groups == 0)=}")
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
-        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape, dtype)
 
     @property
     @abc.abstractmethod
@@ -279,7 +281,9 @@ class Conv1D(ConvND):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype to use for the weights and bias. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax.numpy as jnp
@@ -373,7 +377,8 @@ class Conv2D(ConvND):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -467,7 +472,8 @@ class Conv3D(ConvND):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -587,7 +593,8 @@ class FFTConv1D(FFTConvND):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -681,7 +688,8 @@ class FFTConv2D(FFTConvND):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -775,7 +783,8 @@ class FFTConv3D(FFTConvND):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -844,6 +853,7 @@ class BaseConvNDTranspose(sk.TreeClass):
         bias_init: InitType = "zeros",
         groups: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
@@ -855,16 +865,17 @@ class BaseConvNDTranspose(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
+        self.dtype = dtype
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(self.out_features % self.groups ==0)=}")
 
         in_features = positive_int_cb(self.in_features)
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
-        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape, dtype)
 
     @property
     @abc.abstractmethod
@@ -951,7 +962,8 @@ class Conv1DTranspose(ConvNDTranspose):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1049,7 +1061,8 @@ class Conv2DTranspose(ConvNDTranspose):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1147,7 +1160,8 @@ class Conv3DTranspose(ConvNDTranspose):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1277,7 +1291,8 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1375,7 +1390,8 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1473,7 +1489,8 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1539,6 +1556,7 @@ class BaseDepthwiseConvND(sk.TreeClass):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
@@ -1547,12 +1565,13 @@ class BaseDepthwiseConvND(sk.TreeClass):
         self.padding = padding  # delayed canonicalization
         self.weight_init = weight_init
         self.bias_init = bias_init
+        self.dtype = dtype
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
-        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
-        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape, dtype)
 
     @property
     @abc.abstractmethod
@@ -1622,7 +1641,8 @@ class DepthwiseConv1D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1703,7 +1723,8 @@ class DepthwiseConv2D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1785,7 +1806,8 @@ class DepthwiseConv3D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1892,7 +1914,8 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1973,7 +1996,8 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2054,7 +2078,8 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2205,7 +2230,8 @@ class SeparableConv1D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2301,7 +2327,8 @@ class SeparableConv2D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2397,7 +2424,8 @@ class SeparableConv3D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2493,7 +2521,8 @@ class SeparableFFTConv1D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2589,7 +2618,8 @@ class SeparableFFTConv2D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2685,7 +2715,8 @@ class SeparableFFTConv3D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2758,12 +2789,14 @@ class ConvNDLocal(sk.TreeClass):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.in_size = canonicalize(in_size, self.spatial_ndim, name="in_size")
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
+        self.dtype = dtype
 
         self.padding = delayed_canonicalize_padding(
             self.in_size,
@@ -2790,10 +2823,10 @@ class ConvNDLocal(sk.TreeClass):
             *out_size,
         )
 
-        self.weight = resolve_init_func(self.weight_init)(key, weight_shape)
+        self.weight = resolve_init_func(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (self.out_features, *out_size)
-        self.bias = resolve_init_func(self.bias_init)(key, bias_shape)
+        self.bias = resolve_init_func(self.bias_init)(key, bias_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -2861,7 +2894,8 @@ class Conv1DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2950,7 +2984,8 @@ class Conv2DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -3039,7 +3074,8 @@ class Conv3DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``0``.
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp

@@ -27,7 +27,7 @@ from serket.nn.activation import (
     ActivationType,
     resolve_activation,
 )
-from serket.nn.initialization import InitType, resolve_init_func
+from serket.nn.initialization import DType, InitType, resolve_init_func
 from serket.nn.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb
 
 T = TypeVar("T")
@@ -112,6 +112,7 @@ class Multilinear(sk.TreeClass):
         weight_init: function to initialize the weights
         bias_init: function to initialize the bias
         key: key for the random number generator
+        dtype: dtype of the weights and bias. defaults to ``jnp.float32``.
 
     Example:
         >>> # Bilinear layer
@@ -163,19 +164,21 @@ class Multilinear(sk.TreeClass):
         weight_init: InitType = "he_normal",
         bias_init: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         self.in_features = in_features
         self.out_features = out_features
         self.weight_init = weight_init
         self.bias_init = bias_init
+        self.dtype = dtype
 
         if not isinstance(in_features, (tuple, int)):
             raise ValueError(f"Expected tuple or int for {in_features=}.")
 
         k1, k2 = jr.split(key)
         weight_shape = (*in_features, out_features)
-        self.weight = resolve_init_func(weight_init)(k1, weight_shape)
-        self.bias = resolve_init_func(bias_init)(k2, (out_features,))
+        self.weight = resolve_init_func(weight_init)(k1, weight_shape, dtype)
+        self.bias = resolve_init_func(bias_init)(k2, (out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, *x, **k) -> jax.Array:
@@ -193,6 +196,7 @@ class Linear(Multilinear):
         weight_init: function to initialize the weights
         bias_init: function to initialize the bias
         key: key for the random number generator
+        dtype: data type of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax.numpy as jnp
@@ -236,6 +240,7 @@ class Linear(Multilinear):
         weight_init: InitType = "he_normal",
         bias_init: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         super().__init__(
             in_features if in_features is None else (in_features,),
@@ -243,6 +248,7 @@ class Linear(Multilinear):
             weight_init=weight_init,
             bias_init=bias_init,
             key=key,
+            dtype=dtype,
         )
 
 
@@ -263,7 +269,8 @@ class GeneralLinear(sk.TreeClass):
         in_axes: axes to apply the linear layer to
         weight_init: weight initialization function
         bias_init: bias initialization function
-        key: random key
+        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax.numpy as jnp
@@ -307,12 +314,14 @@ class GeneralLinear(sk.TreeClass):
         weight_init: InitType = "he_normal",
         bias_init: InitType = "ones",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         self.in_features = in_features
         self.out_features = out_features
         self.in_axes = in_axes
         self.weight_init = weight_init
         self.bias_init = bias_init
+        self.dtype = dtype
 
         if not (all(isinstance(i, int) for i in in_features)):
             raise ValueError(f"Expected tuple of ints for {in_features=}")
@@ -325,8 +334,8 @@ class GeneralLinear(sk.TreeClass):
 
         k1, k2 = jr.split(key)
         weight_shape = (*in_features, out_features)
-        self.weight = resolve_init_func(weight_init)(k1, weight_shape)
-        self.bias = resolve_init_func(bias_init)(k2, (self.out_features,))
+        self.weight = resolve_init_func(weight_init)(k1, weight_shape, dtype)
+        self.bias = resolve_init_func(bias_init)(k2, (self.out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -400,6 +409,7 @@ class FNN(sk.TreeClass):
         bias_init: Bias initializer function. Defaults to lambda key,
             shape: jnp.ones(shape).
         key: Random key for weight and bias initialization.
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax.numpy as jnp
@@ -441,6 +451,7 @@ class FNN(sk.TreeClass):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         keys = jr.split(key, len(layers) - 1)
         num_hidden_layers = len(layers) - 2
@@ -460,6 +471,7 @@ class FNN(sk.TreeClass):
                 key=ki,
                 weight_init=weight_init,
                 bias_init=bias_init,
+                dtype=dtype,
             )
             for (ki, di, do) in (zip(keys, layers[:-1], layers[1:]))
         )
@@ -537,6 +549,7 @@ class MLP(sk.TreeClass):
         weight_init: Weight initialization function.
         bias_init: Bias initialization function.
         key: Random number generator key.
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax.numpy as jnp
@@ -603,6 +616,7 @@ class MLP(sk.TreeClass):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         if hidden_size < 1:
             raise ValueError(f"`{hidden_size=}` must be positive.")
@@ -616,7 +630,7 @@ class MLP(sk.TreeClass):
         else:
             self.act_func = resolve_activation(act_func)
 
-        kwargs = dict(weight_init=weight_init, bias_init=bias_init)
+        kwargs = dict(weight_init=weight_init, bias_init=bias_init, dtype=dtype)
 
         @jax.vmap
         def batched_linear(key: jr.KeyArray) -> Batched[Linear]:

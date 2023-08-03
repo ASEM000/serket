@@ -26,7 +26,7 @@ import jax.tree_util as jtu
 import serket as sk
 from serket.nn.activation import ActivationType, resolve_activation
 from serket.nn.custom_transform import tree_state
-from serket.nn.initialization import InitType
+from serket.nn.initialization import DType, InitType
 from serket.nn.utils import (
     DilationType,
     KernelSizeType,
@@ -102,6 +102,7 @@ class SimpleRNNCell(RNNCell):
         recurrent_weight_init: InitType = "orthogonal",
         act_func: ActivationType = jax.nn.tanh,
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         """Vanilla RNN cell that defines the update rule for the hidden state
 
@@ -113,6 +114,7 @@ class SimpleRNNCell(RNNCell):
             recurrent_weight_init: the function to use to initialize the recurrent weights
             act_func: the activation function to use for the hidden state update
             key: the key to use to initialize the weights
+            dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
         Example:
             >>> import serket as sk
@@ -156,6 +158,7 @@ class SimpleRNNCell(RNNCell):
             weight_init=weight_init,
             bias_init=bias_init,
             key=k1,
+            dtype=dtype,
         )
 
         h2h = sk.nn.Linear(
@@ -164,6 +167,7 @@ class SimpleRNNCell(RNNCell):
             weight_init=recurrent_weight_init,
             bias_init=None,
             key=k2,
+            dtype=dtype,
         )
 
         self.ih2h_weight = jnp.concatenate([i2h.weight, h2h.weight], axis=0)
@@ -200,6 +204,7 @@ class DenseCell(RNNCell):
         act_func: the activation function to use for the hidden state update,
             use `None` for no activation
         key: the key to use to initialize the weights
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -241,6 +246,7 @@ class DenseCell(RNNCell):
         bias_init: InitType = "zeros",
         act_func: ActivationType = jax.nn.tanh,
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
@@ -252,6 +258,7 @@ class DenseCell(RNNCell):
             weight_init=weight_init,
             bias_init=bias_init,
             key=key,
+            dtype=dtype,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
@@ -286,6 +293,7 @@ class LSTMCell(RNNCell):
         act_func: the activation function to use for the hidden state update
         recurrent_act_func: the activation function to use for the cell state update
         key: the key to use to initialize the weights
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -333,6 +341,7 @@ class LSTMCell(RNNCell):
         act_func: str | Callable[[Any], Any] | None = "tanh",
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         k1, k2 = jr.split(key, 2)
 
@@ -347,6 +356,7 @@ class LSTMCell(RNNCell):
             weight_init=weight_init,
             bias_init=bias_init,
             key=k1,
+            dtype=dtype,
         )
 
         h2h = sk.nn.Linear(
@@ -355,6 +365,7 @@ class LSTMCell(RNNCell):
             weight_init=recurrent_weight_init,
             bias_init=None,
             key=k2,
+            dtype=dtype,
         )
 
         self.ih2h_weight = jnp.concatenate([i2h.weight, h2h.weight], axis=0)
@@ -400,6 +411,7 @@ class GRUCell(RNNCell):
         act_func: the activation function to use for the hidden state update
         recurrent_act_func: the activation function to use for the cell state update
         key: the key to use to initialize the weights
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -446,6 +458,7 @@ class GRUCell(RNNCell):
         act_func: ActivationType | None = "tanh",
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         k1, k2 = jr.split(key, 2)
 
@@ -460,6 +473,7 @@ class GRUCell(RNNCell):
             weight_init=weight_init,
             bias_init=bias_init,
             key=k1,
+            dtype=dtype,
         )
 
         self.hidden_to_hidden = sk.nn.Linear(
@@ -468,6 +482,7 @@ class GRUCell(RNNCell):
             weight_init=recurrent_weight_init,
             bias_init=None,
             key=k2,
+            dtype=dtype,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
@@ -513,6 +528,7 @@ class ConvLSTMNDCell(RNNCell):
         act_func: ActivationType | None = "tanh",
         recurrent_act_func: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         k1, k2 = jr.split(key, 2)
 
@@ -531,6 +547,7 @@ class ConvLSTMNDCell(RNNCell):
             weight_init=weight_init,
             bias_init=bias_init,
             key=k1,
+            dtype=dtype,
         )
 
         self.hidden_to_hidden = self.convolution_layer(
@@ -543,6 +560,7 @@ class ConvLSTMNDCell(RNNCell):
             weight_init=recurrent_weight_init,
             bias_init=None,
             key=k2,
+            dtype=dtype,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
@@ -585,6 +603,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -642,6 +661,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -699,6 +719,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -756,6 +777,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -813,6 +835,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -870,6 +893,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -932,6 +956,7 @@ class ConvGRUNDCell(RNNCell):
         act_func: ActivationType | None = "tanh",
         recurrent_act_func: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         k1, k2 = jr.split(key, 2)
 
@@ -950,6 +975,7 @@ class ConvGRUNDCell(RNNCell):
             weight_init=weight_init,
             bias_init=bias_init,
             key=k1,
+            dtype=dtype,
         )
 
         self.hidden_to_hidden = self.convolution_layer(
@@ -962,6 +988,7 @@ class ConvGRUNDCell(RNNCell):
             weight_init=recurrent_weight_init,
             bias_init=None,
             key=k2,
+            dtype=dtype,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
@@ -1002,7 +1029,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
-        spatial_ndim: Number of spatial dimensions.
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -1057,7 +1084,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
-        spatial_ndim: Number of spatial dimensions.
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -1112,7 +1139,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
-        spatial_ndim: Number of spatial dimensions.
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -1167,7 +1194,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
-        spatial_ndim: Number of spatial dimensions.
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -1222,6 +1249,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -1276,6 +1304,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         act_func: Activation function
         recurrent_act_func: Recurrent activation function
         key: PRNG key
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk

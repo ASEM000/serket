@@ -23,7 +23,7 @@ from jax.custom_batching import custom_vmap
 
 import serket as sk
 from serket.nn.custom_transform import tree_eval, tree_state
-from serket.nn.initialization import InitType, resolve_init_func
+from serket.nn.initialization import DType, InitType, resolve_init_func
 from serket.nn.utils import (
     Range,
     ScalarLike,
@@ -109,6 +109,7 @@ class LayerNorm(sk.TreeClass):
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Note:
         :class:`.LayerNorm` supports lazy initialization, meaning that the
@@ -141,6 +142,7 @@ class LayerNorm(sk.TreeClass):
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         self.normalized_shape = (
             normalized_shape
@@ -148,8 +150,12 @@ class LayerNorm(sk.TreeClass):
             else (normalized_shape,)
         )
         self.eps = eps
-        self.gamma = resolve_init_func(weight_init)(key, self.normalized_shape)
-        self.beta = resolve_init_func(bias_init)(key, self.normalized_shape)
+        self.weight_init = weight_init
+        self.bias_init = bias_init
+        self.dtype = dtype
+
+        self.gamma = resolve_init_func(weight_init)(key, self.normalized_shape, dtype)
+        self.beta = resolve_init_func(bias_init)(key, self.normalized_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -191,6 +197,7 @@ class GroupNorm(sk.TreeClass):
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -230,6 +237,7 @@ class GroupNorm(sk.TreeClass):
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
         self.groups = positive_int_cb(groups)
@@ -239,15 +247,15 @@ class GroupNorm(sk.TreeClass):
         if in_features % groups != 0:
             raise ValueError(f"{in_features} must be divisible by {groups=}.")
 
-        self.gamma = resolve_init_func(weight_init)(key, (in_features,))
-        self.beta = resolve_init_func(bias_init)(key, (in_features,))
+        self.weight = resolve_init_func(weight_init)(key, (in_features,), dtype)
+        self.bias = resolve_init_func(bias_init)(key, (in_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return group_norm(
             x=x,
-            gamma=self.gamma,
-            beta=self.beta,
+            gamma=self.weight,
+            beta=self.bias,
             eps=self.eps,
             groups=self.groups,
         )
@@ -266,6 +274,7 @@ class InstanceNorm(GroupNorm):
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -304,6 +313,7 @@ class InstanceNorm(GroupNorm):
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ):
         super().__init__(
             in_features=in_features,
@@ -312,6 +322,7 @@ class InstanceNorm(GroupNorm):
             weight_init=weight_init,
             bias_init=bias_init,
             key=key,
+            dtype=dtype,
         )
 
 
@@ -449,9 +460,8 @@ class BatchNorm(sk.TreeClass):
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
-        evaluation: a boolean value that when set to True, this module will run in
-            evaluation mode. In this case, this module will always use the running
-            estimates of the batch statistics during training.
+        key: a random key to initialize the parameters.
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax
@@ -513,13 +523,18 @@ class BatchNorm(sk.TreeClass):
         bias_init: InitType = "zeros",
         axis: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ) -> None:
         self.in_features = in_features
         self.momentum = momentum
         self.eps = eps
-        self.gamma = resolve_init_func(weight_init)(key, (in_features,))
-        self.beta = resolve_init_func(bias_init)(key, (in_features,))
+        self.weight_init = weight_init
+        self.bias_init = bias_init
         self.axis = axis
+        self.dtype = dtype
+
+        self.weight = resolve_init_func(weight_init)(key, (in_features,), dtype=dtype)
+        self.bias = resolve_init_func(bias_init)(key, (in_features,), dtype=dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
@@ -535,8 +550,8 @@ class BatchNorm(sk.TreeClass):
             state,
             self.momentum,
             self.eps,
-            self.gamma,
-            self.beta,
+            self.weight,
+            self.bias,
             False,
             self.axis,
         )
@@ -571,9 +586,8 @@ class EvalNorm(sk.TreeClass):
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
-        evaluation: a boolean value that when set to True, this module will run in
-            evaluation mode. In this case, this module will always use the running
-            estimates of the batch statistics during training.
+        key: a random key to initialize the parameters.
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax
@@ -601,13 +615,16 @@ class EvalNorm(sk.TreeClass):
         bias_init: InitType = "zeros",
         axis: int = 1,
         key: jr.KeyArray = jr.PRNGKey(0),
+        dtype: DType = jnp.float32,
     ) -> None:
         self.in_features = in_features
         self.momentum = momentum
         self.eps = eps
-        self.gamma = resolve_init_func(weight_init)(key, (in_features,))
-        self.beta = resolve_init_func(bias_init)(key, (in_features,))
+        self.weight_init = weight_init
+        self.bias_init = bias_init
         self.axis = axis
+        self.weight = resolve_init_func(weight_init)(key, (in_features,), dtype)
+        self.bias = resolve_init_func(bias_init)(key, (in_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
@@ -623,8 +640,8 @@ class EvalNorm(sk.TreeClass):
             state,
             0.0,
             self.eps,
-            self.gamma,
-            self.beta,
+            self.weight,
+            self.bias,
             True,
             self.axis,
         )
@@ -637,8 +654,8 @@ def _(batchnorm: BatchNorm) -> EvalNorm:
         in_features=batchnorm.in_features,
         momentum=batchnorm.momentum,  # ignored
         eps=batchnorm.eps,
-        weight_init=lambda *_: batchnorm.gamma,
-        bias_init=lambda *_: batchnorm.beta,
+        weight_init=lambda *_: batchnorm.weight,
+        bias_init=lambda *_: batchnorm.bias,
         axis=batchnorm.axis,
     )
 

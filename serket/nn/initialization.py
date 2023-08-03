@@ -14,12 +14,13 @@
 from __future__ import annotations
 
 from types import FunctionType
-from typing import Callable, Literal, TypeVar, Union, get_args
+from typing import Any, Callable, Literal, Union, get_args
 
 import jax
 import jax.nn.initializers as ji
 import jax.random as jr
 import jax.tree_util as jtu
+import numpy as np
 
 InitLiteral = Literal[
     "he_normal",
@@ -37,9 +38,9 @@ InitLiteral = Literal[
     "orthogonal",
 ]
 
-Shape = TypeVar("Shape")
-Dtype = TypeVar("Dtype")
-InitFuncType = Callable[[jr.KeyArray, Shape, Dtype], jax.Array]
+Shape = tuple[int, ...]
+DType = Union[np.dtype, str, Any]
+InitFuncType = Callable[[jr.KeyArray, Shape, DType], jax.Array]
 InitType = Union[InitLiteral, InitFuncType]
 
 
