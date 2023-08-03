@@ -15,6 +15,7 @@
     :maxdepth: 1
     
     notebooks/mental_model
+    notebooks/train_eval
 
 
 🛠️ Installation
