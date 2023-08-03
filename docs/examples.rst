@@ -8,3 +8,4 @@
     notebooks/train_mnist
     notebooks/train_bilstm
     notebooks/train_mp
+    notebooks/fft_layers
