@@ -334,8 +334,6 @@ def maybe_lazy_init(
     Returns:
         The decorated ``__init__`` method.
     """
-    # ignore the first argument (self)
-    _, *params = get_params(func)
 
     @ft.wraps(func)
     def inner(instance, *a, **k):
@@ -345,14 +343,10 @@ def maybe_lazy_init(
 
         kwargs = dict()
 
-        for i, p in enumerate(params):
+        for i, p in enumerate(get_params(func)[1:]):
             if p.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
-                # positional argument or keyword argument are either
-                # found at the associated index or in the keyword arguments
                 kwargs[p.name] = a[i] if len(a) > i else k.get(p.name, p.default)
             elif p.kind is inspect.Parameter.KEYWORD_ONLY:
-                # keyword only arguments are only found in the keyword arguments
-                # if not found, use the default value
                 kwargs[p.name] = k.get(p.name, p.default)
             else:
                 # dont support positional only arguments, etc.
@@ -421,17 +415,19 @@ def maybe_lazy_call(
         for key, update in updates.items():
             kwargs[key] = update(instance, *a, **k)
 
-        for key in kwargs:
-            try:
+        try:
+            for key in kwargs:
                 # clear the instance information (i.e. the initial input arguments)
                 # use ``delattr`` to raise an error if the instance is immutable
+                # should raise an error if the instance is immutable
+                # which is marking the instance as lazy and immutable
                 delattr(instance, key)
-            except AttributeError:
-                # the instance is lazy and immutable
-                func_name = func.__name__
-                class_name = type(instance).__name__
-                kwargs = dict(func_name=func_name, class_name=class_name)
-                raise RuntimeError(LAZY_CALL_ERROR.format(**kwargs))
+        except AttributeError:
+            # the instance is lazy and immutable
+            func_name = func.__name__
+            class_name = type(instance).__name__
+            kwargs = dict(func_name=func_name, class_name=class_name)
+            raise RuntimeError(LAZY_CALL_ERROR.format(**kwargs))
 
         # re-initialize the instance with the resolved arguments
         getattr(type(instance), "__init__")(instance, **kwargs)
