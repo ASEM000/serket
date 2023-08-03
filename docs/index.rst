@@ -10,14 +10,7 @@
 .. |logo| image:: _static/kol.svg
     :height: 40px    
 
-.. toctree::
-    :caption: Introduction
-    :maxdepth: 1
-    
-    notebooks/mental_model
-    notebooks/train_eval
-    notebooks/layers_overview
-    notebooks/lazy_initialization
+
 
 
 🛠️ Installation
@@ -72,10 +65,18 @@ Install from github::
     nn = sk.tree_unmask(nn)
 
 
+.. toctree::
+    :caption: Introduction
+    :maxdepth: 1
+    
+    notebooks/mental_model
+    notebooks/train_eval
+    notebooks/layers_overview
+    notebooks/lazy_initialization
 
 .. toctree::
     :caption: Examples
-    :maxdepth: 1
+    :maxdepth: 2
     
     examples
 
