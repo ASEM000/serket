@@ -152,7 +152,6 @@ class LayerNorm(sk.TreeClass):
         self.eps = eps
         self.weight_init = weight_init
         self.bias_init = bias_init
-        self.dtype = dtype
 
         self.gamma = resolve_init_func(weight_init)(key, self.normalized_shape, dtype)
         self.beta = resolve_init_func(bias_init)(key, self.normalized_shape, dtype)
@@ -531,7 +530,6 @@ class BatchNorm(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.axis = axis
-        self.dtype = dtype
 
         self.weight = resolve_init_func(weight_init)(key, (in_features,), dtype=dtype)
         self.bias = resolve_init_func(bias_init)(key, (in_features,), dtype=dtype)

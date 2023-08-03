@@ -195,7 +195,6 @@ class BaseConvND(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
-        self.dtype = dtype
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(out_features % groups == 0)=}")
@@ -865,7 +864,6 @@ class BaseConvNDTranspose(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.groups = positive_int_cb(groups)
-        self.dtype = dtype
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(self.out_features % self.groups ==0)=}")
@@ -1565,7 +1563,6 @@ class BaseDepthwiseConvND(sk.TreeClass):
         self.padding = padding  # delayed canonicalization
         self.weight_init = weight_init
         self.bias_init = bias_init
-        self.dtype = dtype
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
         self.weight = resolve_init_func(self.weight_init)(key, weight_shape, dtype)
@@ -2796,7 +2793,6 @@ class ConvNDLocal(sk.TreeClass):
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.in_size = canonicalize(in_size, self.spatial_ndim, name="in_size")
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
-        self.dtype = dtype
 
         self.padding = delayed_canonicalize_padding(
             self.in_size,

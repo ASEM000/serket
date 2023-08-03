@@ -170,7 +170,6 @@ class Multilinear(sk.TreeClass):
         self.out_features = out_features
         self.weight_init = weight_init
         self.bias_init = bias_init
-        self.dtype = dtype
 
         if not isinstance(in_features, (tuple, int)):
             raise ValueError(f"Expected tuple or int for {in_features=}.")
@@ -321,7 +320,6 @@ class GeneralLinear(sk.TreeClass):
         self.in_axes = in_axes
         self.weight_init = weight_init
         self.bias_init = bias_init
-        self.dtype = dtype
 
         if not (all(isinstance(i, int) for i in in_features)):
             raise ValueError(f"Expected tuple of ints for {in_features=}")
