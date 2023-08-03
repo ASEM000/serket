@@ -336,38 +336,3 @@ y.shape
 ```
 
 </details>
-
-<!-- <details><summary>Evaluation behavior handling</summary>
-
-`serket` uses `functools` dispatching to modifiy a tree of layers to disable any training-related behavior during evaluation. It replaces certain layers, such as `Dropout` and `BatchNorm`, with equivalent layers that don't affect the model's output during evaluation.
-
-for example:
-
-```python
-# dropout is replaced by an identity layer in evaluation mode
-# by registering `tree_eval.def_eval(sk.nn.Dropout, sk.nn.Identity)`
-import jax.numpy as jnp
-import serket as sk
-layer = sk.nn.Dropout(0.5)
-sk.tree_eval(layer)
-# Identity()
-```
-
-Let's break down the code snippet and its purpose:
-
-1. The function `tree_eval(tree)` takes a tree of layers as input.
-2. The function replaces specific layers in the tree with evaluation-specific layers.
-
-Here are the modifications it makes to the tree:
-
-- If a `Dropout` layer is encountered in the tree, it is replaced with an `Identity` layer. The `Identity` layer is a simple layer that doesn't introduce any changes to the input, making it effectively a no-op during evaluation.
-
-- If a `BatchNorm` layer is encountered in the tree, it is replaced with an `EvalNorm` layer. The `EvalNorm` layer is designed to have the same behavior as `BatchNorm` during evaluation but not during training.
-
-The purpose of these replacements is to ensure that the evaluation behavior is part of the
-
-
-of the tree remains the same as its structure during training, without any additional randomness introduced by dropout layers or changes caused by batch normalization
-Th
-
-</details> -->

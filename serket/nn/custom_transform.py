@@ -47,7 +47,7 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
             (e.g. :class:`nn.ConvGRU1DCell`). default: ``None``.
 
     Returns:
-        A tree of state leaves if it has state, otherwise ``None``.
+        A tree of state leaves if it has state, otherwise ``NoState`` leaf.
 
     Example:
         >>> import jax.numpy as jnp
