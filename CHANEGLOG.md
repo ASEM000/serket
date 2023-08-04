@@ -16,6 +16,8 @@
 - `kernel_dilation` -> `dilation`
 - `input_dilation` -> Removed.
 - `p` -> `drop_rate` in all dropout layers
+- `FlipLeftRight2D` -> `HorizontalFlip2D`
+- `FlipUpDown2D` -> `VerticalFlip2D`
 
 ### Additions
 
