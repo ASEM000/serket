@@ -32,17 +32,17 @@ class Dropout(sk.TreeClass):
     """Drop some elements of the input tensor.
 
     Randomly zeroes some of the elements of the input tensor with
-    probability ``p`` using samples from a Bernoulli distribution.
+    probability ``drop_rate`` using samples from a Bernoulli distribution.
 
     Args:
-        p: probability of an element to be zeroed. Default: 0.5
+        drop_rate: probability of an element to be zeroed. Default: 0.5
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.nn.Dropout(0.5)
-        >>> # change `p` to 0.0 to turn off dropout
-        >>> layer = layer.at["p"].set(0.0, is_leaf=sk.is_frozen)
+        >>> print(layer(jnp.ones([10])))
+        [2. 0. 2. 2. 2. 2. 2. 2. 0. 0.]
 
     Note:
         Use :func:`.tree_eval` to turn off dropout during evaluation.
@@ -65,11 +65,11 @@ class Dropout(sk.TreeClass):
         )
     """
 
-    p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
+    drop_rate: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
 
     def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
         return jnp.where(
-            (keep_prop := jax.lax.stop_gradient(1 - self.p)) == 0.0,
+            (keep_prop := jax.lax.stop_gradient(1 - self.drop_rate)) == 0.0,
             jnp.zeros_like(x),
             jnp.where(jr.bernoulli(key, keep_prop, x.shape), x / keep_prop, 0),
         )
@@ -77,7 +77,7 @@ class Dropout(sk.TreeClass):
 
 @sk.autoinit
 class DropoutND(sk.TreeClass):
-    p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
+    drop_rate: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
@@ -85,7 +85,7 @@ class DropoutND(sk.TreeClass):
         shape = (x.shape[0], *([1] * (x.ndim - 1)))
 
         return jnp.where(
-            (keep_prop := jax.lax.stop_gradient(1 - self.p)) == 0.0,
+            (keep_prop := jax.lax.stop_gradient(1 - self.drop_rate)) == 0.0,
             jnp.zeros_like(x),
             jnp.where(jr.bernoulli(key, keep_prop, shape=shape), x / keep_prop, 0),
         )
@@ -100,7 +100,7 @@ class Dropout1D(DropoutND):
     """Drops full feature maps along the channel axis.
 
     Args:
-        p: fraction of an elements to be zeroed out.
+        drop_rate: fraction of an elements to be zeroed out.
 
     Example:
         >>> import serket as sk
@@ -143,7 +143,7 @@ class Dropout2D(DropoutND):
     """Drops full feature maps along the channel axis.
 
     Args:
-        p: fraction of an elements to be zeroed out.
+        drop_rate: fraction of an elements to be zeroed out.
 
     Example:
         >>> import serket as sk
@@ -190,7 +190,7 @@ class Dropout3D(DropoutND):
     """Drops full feature maps along the channel axis.
 
     Args:
-        p: fraction of an elements to be zeroed out.
+        drop_rate: fraction of an elements to be zeroed out.
 
     Example:
         >>> import serket as sk

@@ -15,6 +15,7 @@
 - `MLP` produces smaller `jaxprs` and are faster to compile. for my use case -higher order differentiation through `PINN`- the new `MLP` is faster to compile.
 - `kernel_dilation` -> `dilation`
 - `input_dilation` -> Removed.
+- `p` -> `drop_rate` in all dropout layers
 
 ### Additions
 

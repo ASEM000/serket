@@ -26,7 +26,7 @@ def test_dropout():
     layer = Dropout(1.0)
     npt.assert_allclose(layer(x), jnp.array([0.0, 0.0, 0.0, 0.0, 0.0]))
 
-    layer = layer.at["p"].set(0.0, is_leaf=sk.is_frozen)
+    layer = layer.at["drop_rate"].set(0.0, is_leaf=sk.is_frozen)
     npt.assert_allclose(layer(x), x)
 
     with pytest.raises(ValueError):
