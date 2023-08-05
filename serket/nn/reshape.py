@@ -507,7 +507,7 @@ class RandomCrop3D(RandomCropND):
         return 3
 
 
-class FlipLeftRight2D(sk.TreeClass):
+class HorizontalFlip2D(sk.TreeClass):
     """Flip channels left to right.
 
     Examples:
@@ -519,7 +519,7 @@ class FlipLeftRight2D(sk.TreeClass):
           [4 5 6]
           [7 8 9]]]
 
-        >>> print(sk.nn.FlipLeftRight2D()(x))
+        >>> print(sk.nn.HorizontalFlip2D()(x))
         [[[3 2 1]
           [6 5 4]
           [9 8 7]]]
@@ -537,7 +537,7 @@ class FlipLeftRight2D(sk.TreeClass):
         return 2
 
 
-class FlipUpDown2D(sk.TreeClass):
+class VerticalFlip2D(sk.TreeClass):
     """Flip channels up to down.
 
     Examples:
@@ -549,7 +549,7 @@ class FlipUpDown2D(sk.TreeClass):
           [4 5 6]
           [7 8 9]]]
 
-        >>> print(sk.nn.FlipUpDown2D()(x))
+        >>> print(sk.nn.VerticalFlip2D()(x))
         [[[7 8 9]
           [4 5 6]
           [1 2 3]]]
@@ -567,7 +567,7 @@ class FlipUpDown2D(sk.TreeClass):
         return 2
 
 
-def _zoom_axis(
+def zoom_axis(
     x: jax.Array,
     factor: float,
     key: jr.KeyArray,
@@ -603,19 +603,84 @@ def _zoom_axis(
     return zoom_out(x) if factor < 0 else zoom_in(x)
 
 
+class RandomZoom1D(sk.TreeClass):
+    def __init__(self, length_factor: tuple[int, int] = (0.0, 1.0)):
+        """Randomly zooms a 1D spatial tensor.
+
+        Positive values are zoom in, negative values are zoom out, and 0 is no zoom.
+
+        Args:
+            length_factor: (min, max)
+
+        Example:
+            >>> import serket as sk
+            >>> import jax.numpy as jnp
+            >>> import jax
+            >>> x = jnp.arange(1, 10).reshape(1, -1)
+            >>> # 0% zoom (unchanged)
+            >>> print(sk.nn.RandomZoom1D((0.0, 0.0))(x, key=jax.random.PRNGKey(1)))
+            [[1 2 3 4 5 6 7 8 9]]
+            >>> # 50%-100% probability of zoom
+            >>> length_factor = (0.5, 1.0)
+            >>> key = jax.random.PRNGKey(0)
+            >>> print(sk.nn.RandomZoom1D(length_factor=length_factor)(x, key=key))
+            [[4 4 5 5 6 6 7 8 8]]
+
+        Reference:
+            - https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
+        """
+        if not (isinstance(length_factor, tuple) and len(length_factor) == 2):
+            raise ValueError("`length_factor` must be a tuple of length 2")
+
+        self.length_factor = length_factor
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
+        k1, k2 = jr.split(key, 2)
+        low, high = self.length_factor
+        x = zoom_axis(x, jr.uniform(k1, minval=low, maxval=high), k2, axis=1)
+        return jax.lax.stop_gradient(x)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+
 class RandomZoom2D(sk.TreeClass):
     def __init__(
         self,
         height_factor: tuple[float, float] = (0.0, 1.0),
         width_factor: tuple[float, float] = (0.0, 1.0),
     ):
-        """Randomly zooms a channle-first image tensor.
+        """Randomly zooms a features-first 2D spatial tensor.
 
         Positive values are zoom in, negative values are zoom out, and 0 is no zoom.
 
         Args:
             height_factor: (min, max)
             width_factor: (min, max)
+
+        Example:
+            >>> import serket as sk
+            >>> import jax.numpy as jnp
+            >>> import jax
+            >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+            >>> # 0% zoom (unchanged)
+            >>> height_factor = (0.0, 0.0)
+            >>> width_factor = (0.0, 0.0)
+            >>> key = jax.random.PRNGKey(1)
+            >>> print(sk.nn.RandomZoom2D(height_factor=height_factor, width_factor=width_factor)(x, key=key))
+            [[1 2 3 4 5 6 7 8 9]]
+            >>> # 50%-100% probability of zoom
+            >>> height_factor = (0.5, 1.0)
+            >>> width_factor = (0.5, 1.0)
+            >>> key = jax.random.PRNGKey(0)
+            >>> print(sk.nn.RandomZoom2D(height_factor=height_factor, width_factor=width_factor)(x, key=key))
+            [[[ 1  2  3  3  4]
+            [ 2  3  4  4  5]
+            [ 5  6  7  7  8]
+            [ 8  9 10 10 11]
+            [11 12 13 13 14]]]
 
         Reference:
             - https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
@@ -632,22 +697,10 @@ class RandomZoom2D(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         k1, k2, k3, k4 = jr.split(key, 4)
-
-        height_factor = jr.uniform(
-            k1,
-            shape=(),
-            minval=self.height_factor[0],
-            maxval=self.height_factor[1],
-        )
-        width_factor = jr.uniform(
-            k2,
-            (),
-            minval=self.width_factor[0],
-            maxval=self.width_factor[1],
-        )
-
-        x = _zoom_axis(x, height_factor, k3, axis=1)
-        x = _zoom_axis(x, width_factor, k4, axis=2)
+        low, high = self.height_factor
+        x = zoom_axis(x, jr.uniform(k1, minval=low, maxval=high), k3, axis=1)
+        low, high == self.width_factor
+        x = zoom_axis(x, jr.uniform(k2, minval=low, maxval=high), k4, axis=2)
         return jax.lax.stop_gradient(x)
 
     @property
@@ -655,9 +708,59 @@ class RandomZoom2D(sk.TreeClass):
         return 2
 
 
+class RandomZoom3D(sk.TreeClass):
+    def __init__(
+        self,
+        height_factor: tuple[float, float] = (0.0, 1.0),
+        width_factor: tuple[float, float] = (0.0, 1.0),
+        depth_factor: tuple[float, float] = (0.0, 1.0),
+    ):
+        """Randomly zooms a features-first 3D spatial tensor.
+
+        Positive values are zoom in, negative values are zoom out, and 0 is no zoom.
+
+        Args:
+            height_factor: (min, max)
+            width_factor: (min, max)
+            depth_factor: (min, max)
+
+        Reference:
+            - https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
+        """
+        if not (isinstance(height_factor, tuple) and len(height_factor) == 2):
+            raise ValueError("`height_factor` must be a tuple of length 2")
+
+        if not (isinstance(width_factor, tuple) and len(width_factor) == 2):
+            raise ValueError("`width_factor` must be a tuple of length 2")
+
+        if not (isinstance(depth_factor, tuple) and len(depth_factor) == 2):
+            raise ValueError("`depth_factor` must be a tuple of length 2")
+
+        self.height_factor = height_factor
+        self.width_factor = width_factor
+        self.depth_factor = depth_factor
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
+        k1, k2, k3, k4, k5, k6 = jr.split(key, 4)
+        low, high = self.height_factor
+        x = zoom_axis(x, jr.uniform(k1, minval=low, maxval=high), k3, axis=1)
+        low, high == self.width_factor
+        x = zoom_axis(x, jr.uniform(k2, minval=low, maxval=high), k4, axis=2)
+        low, high == self.depth_factor
+        x = zoom_axis(x, jr.uniform(k5, minval=low, maxval=high), k6, axis=3)
+        return jax.lax.stop_gradient(x)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
+
 @tree_eval.def_eval(RandomCrop1D)
 @tree_eval.def_eval(RandomCrop2D)
 @tree_eval.def_eval(RandomCrop3D)
+@tree_eval.def_eval(RandomZoom1D)
 @tree_eval.def_eval(RandomZoom2D)
+@tree_eval.def_eval(RandomZoom3D)
 def random_transform_eval(_) -> Identity:
     return Identity()

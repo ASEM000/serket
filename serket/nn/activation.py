@@ -434,6 +434,6 @@ def def_act_entry(key: str, act_func: ActivationClassType) -> None:
     if not isinstance(act_func, type):
         raise ValueError(f"Expected a class, got {act_func=}")
     if not callable(act_func):
-        raise ValueError(f"Expected a class with a __call__ method, got {act_func=}")
+        raise ValueError(f"Expected a class with a `__call__` method, got {act_func=}")
 
     act_map[key] = act_func
