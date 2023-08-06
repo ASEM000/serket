@@ -115,7 +115,7 @@ def test_vanilla_rnn():
     )
 
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
-    cell = cell.at["ih2h_weight"].set(w_combined)
+    cell = cell.at["in_hidden_to_hidden_weight"].set(w_combined)
     sk_layer = ScanRNN(cell)
     y = jnp.array([0.9637042, -0.8282256, 0.7314449])
     npt.assert_allclose(sk_layer(x), y)
@@ -229,8 +229,8 @@ def test_lstm():
         recurrent_weight_init="glorot_uniform",
     )
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
-    cell = cell.at["ih2h_weight"].set(w_combined)
-    cell = cell.at["ih2h_bias"].set(b_hidden_to_hidden)
+    cell = cell.at["in_hidden_to_hidden_weight"].set(w_combined)
+    cell = cell.at["in_hidden_to_hidden_bias"].set(b_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell, return_sequences=False)
 
@@ -329,8 +329,8 @@ def test_lstm():
 
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
 
-    cell = cell.at["ih2h_weight"].set(w_combined)
-    cell = cell.at["ih2h_bias"].set(b_hidden_to_hidden)
+    cell = cell.at["in_hidden_to_hidden_weight"].set(w_combined)
+    cell = cell.at["in_hidden_to_hidden_bias"].set(b_hidden_to_hidden)
 
     sk_layer = ScanRNN(cell, return_sequences=True)
 
@@ -751,14 +751,16 @@ def test_bilstm():
     b_hidden_to_hidden_reverse = jnp.array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
 
     combined_w = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
-    cell = cell.at["ih2h_weight"].set(combined_w)
-    cell = cell.at["ih2h_bias"].set(b_hidden_to_hidden)
+    cell = cell.at["in_hidden_to_hidden_weight"].set(combined_w)
+    cell = cell.at["in_hidden_to_hidden_bias"].set(b_hidden_to_hidden)
 
     combined_w_reverse = jnp.concatenate(
-        [w_in_to_hidden_reverse, w_hidden_to_hidden_reverse], axis=0
+        [w_in_to_hidden_reverse, w_hidden_to_hidden_reverse]
     )
-    reverse_cell = reverse_cell.at["ih2h_weight"].set(combined_w_reverse)
-    reverse_cell = reverse_cell.at["ih2h_bias"].set(b_hidden_to_hidden_reverse)
+    reverse_cell = reverse_cell.at["in_hidden_to_hidden_weight"].set(combined_w_reverse)
+    reverse_cell = reverse_cell.at["in_hidden_to_hidden_bias"].set(
+        b_hidden_to_hidden_reverse
+    )
 
     res = ScanRNN(cell, reverse_cell, return_sequences=False)(x)
 

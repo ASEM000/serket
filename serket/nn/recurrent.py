@@ -170,8 +170,8 @@ class SimpleRNNCell(RNNCell):
             dtype=dtype,
         )
 
-        self.ih2h_weight = jnp.concatenate([i2h.weight, h2h.weight], axis=0)
-        self.ih2h_bias = i2h.bias
+        self.in_hidden_to_hidden_weight = jnp.concatenate([i2h.weight, h2h.weight])
+        self.in_hidden_to_hidden_bias = i2h.bias
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -181,7 +181,7 @@ class SimpleRNNCell(RNNCell):
             raise TypeError(f"Expected {state=} to be an instance of `SimpleRNNState`")
 
         ih = jnp.concatenate([x, state.hidden_state], axis=-1)
-        h = ih @ self.ih2h_weight + self.ih2h_bias
+        h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
         return SimpleRNNState(self.act_func(h))
 
     @property
@@ -368,8 +368,8 @@ class LSTMCell(RNNCell):
             dtype=dtype,
         )
 
-        self.ih2h_weight = jnp.concatenate([i2h.weight, h2h.weight], axis=0)
-        self.ih2h_bias = i2h.bias
+        self.in_hidden_to_hidden_weight = jnp.concatenate([i2h.weight, h2h.weight])
+        self.in_hidden_to_hidden_bias = i2h.bias
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -380,7 +380,7 @@ class LSTMCell(RNNCell):
 
         h, c = state.hidden_state, state.cell_state
         ih = jnp.concatenate([x, h], axis=-1)
-        h = ih @ self.ih2h_weight + self.ih2h_bias
+        h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
         i, f, g, o = jnp.split(h, 4, axis=-1)
         i = self.recurrent_act_func(i)
         f = self.recurrent_act_func(f)
