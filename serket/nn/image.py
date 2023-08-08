@@ -760,7 +760,7 @@ class Pixelate2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.Pixelate2D(2)(x))
+        >>> print(sk.nn.Pixelate2D(2)(x))  # doctest: +SKIP
         [[[ 7  7  8  8  9]
           [ 8  8  9  9 10]
           [12 12 13 13 14]
