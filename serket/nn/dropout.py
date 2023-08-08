@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import abc
 import functools as ft
+from typing import Literal
 
 import jax
 import jax.numpy as jnp
@@ -27,8 +28,45 @@ from serket.nn.linear import Identity
 from serket.nn.utils import Range, canonicalize, positive_int_cb, validate_spatial_ndim
 
 
+def dropout_nd(
+    x: jax.Array,
+    drop_rate,
+    key: jr.KeyArray,
+    drop_axes: tuple[int, ...] | Literal["..."] = ...,
+) -> jax.Array:
+    """Drop some elements of the input tensor."""
+    # drop_axes = None means dropout is applied to all axes
+    shape = (
+        x.shape
+        if drop_axes is ...
+        else (x.shape[i] if i in drop_axes else 1 for i in range(x.ndim))
+    )
+
+    return jnp.where(
+        (keep_prop := (1 - drop_rate)) == 0.0,
+        jnp.zeros_like(x),
+        jnp.where(jr.bernoulli(key, keep_prop, shape=shape), x / keep_prop, 0),
+    )
+
+
 @sk.autoinit
-class Dropout(sk.TreeClass):
+class GeneralDropout(sk.TreeClass):
+    """Drop some elements of the input tensor.
+
+    Args:
+        drop_rate: probability of an element to be zeroed. Default: 0.5
+        drop_axes: axes along which dropout is applied. default: ``...`` which means
+            dropout is applied to all axes.
+    """
+
+    drop_rate: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
+    drop_axes: tuple[int, ...] | Literal["..."] = ...
+
+    def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
+        return dropout_nd(x, jax.lax.stop_gradient(self.drop_rate), key, self.drop_axes)
+
+
+class Dropout(GeneralDropout):
     """Drop some elements of the input tensor.
 
     Randomly zeroes some of the elements of the input tensor with
@@ -65,14 +103,8 @@ class Dropout(sk.TreeClass):
         )
     """
 
-    drop_rate: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
-
-    def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        return jnp.where(
-            (keep_prop := jax.lax.stop_gradient(1 - self.drop_rate)) == 0.0,
-            jnp.zeros_like(x),
-            jnp.where(jr.bernoulli(key, keep_prop, x.shape), x / keep_prop, 0),
-        )
+    def __init__(self, drop_rate: float = 0.5):
+        super().__init__(drop_rate=drop_rate, drop_axes=...)
 
 
 @sk.autoinit
@@ -82,13 +114,7 @@ class DropoutND(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
         # drops full feature maps along first axis.
-        shape = (x.shape[0], *([1] * (x.ndim - 1)))
-
-        return jnp.where(
-            (keep_prop := jax.lax.stop_gradient(1 - self.drop_rate)) == 0.0,
-            jnp.zeros_like(x),
-            jnp.where(jr.bernoulli(key, keep_prop, shape=shape), x / keep_prop, 0),
-        )
+        return dropout_nd(x, jax.lax.stop_gradient(self.drop_rate), key, (0,))
 
     @property
     @abc.abstractmethod
