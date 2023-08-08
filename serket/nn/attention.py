@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+import functools as ft
+
 import jax
 import jax.numpy as jnp
 import jax.random as jr
@@ -21,6 +23,7 @@ from typing_extensions import Annotated
 
 import serket as sk
 from serket.nn.initialization import InitType
+from serket.nn.utils import maybe_lazy_call, maybe_lazy_init
 
 """Defines attention layers."""
 
@@ -31,6 +34,21 @@ def split_heads(array: jax.Array, num_heads: int) -> jax.Array:
 
 def merge_heads(array: jax.Array) -> jax.Array:
     return array.reshape(*array.shape[:-2], -1)
+
+
+def is_lazy_call(instance, *_, **__) -> bool:
+    return getattr(instance, "qkv_features", False) is None
+
+
+def is_lazy_init(_, num_heads, qkv_features, *__, **___) -> bool:
+    return qkv_features is None
+
+
+def infer_qkv_features(_, q_array, *__, **___) -> int:
+    return q_array.shape[-1]
+
+
+attention_updates = dict(qkv_features=infer_qkv_features)
 
 
 def calculate_attention(
@@ -123,6 +141,25 @@ class MultiHeadAttention(sk.TreeClass):
         >>> print(layer(q, k, v, mask=mask, key=jr.PRNGKey(0)).shape)
         (3, 4, 4)
 
+    Note:
+        :class:`.MultiHeadAttention` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``qkv_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import jax.random as jr
+        >>> import serket as sk
+        >>> q = jr.uniform(jr.PRNGKey(0), (3, 2, 6))
+        >>> k = jr.uniform(jr.PRNGKey(1), (3, 2, 6))
+        >>> v = jr.uniform(jr.PRNGKey(2), (3, 2, 6))
+        >>> lazy_layer = sk.nn.MultiHeadAttention(2, None)
+        >>> _, materialized_layer = lazy_layer.at["__call__"](q, k, v)
+        >>> materialized_layer(q, k, v).shape
+        (3, 2, 6)
+
     Reference:
         - https://github.com/keras-team/keras/blob/v2.13.1/keras/layers/attention/multi_head_attention.py
         - https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/attention.py
@@ -130,6 +167,7 @@ class MultiHeadAttention(sk.TreeClass):
         - https://arxiv.org/abs/1706.03762
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         num_heads: int,
@@ -191,6 +229,7 @@ class MultiHeadAttention(sk.TreeClass):
             key=okey,
         )
 
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=attention_updates)
     def __call__(
         self,
         q_array: Annotated[jax.Array, "..., q_length, qkv_features"],
