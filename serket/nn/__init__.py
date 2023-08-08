@@ -102,6 +102,7 @@ from .image import (
     RandomRotate2D,
     RandomVerticalShear2D,
     Rotate2D,
+    Solarize2D,
     VerticalShear2D,
 )
 from .linear import FNN, MLP, Embedding, GeneralLinear, Identity, Linear, Multilinear
@@ -279,6 +280,7 @@ __all__ = (
     "RandomRotate2D",
     "RandomVerticalShear2D",
     "Rotate2D",
+    "Solarize2D",
     "VerticalShear2D",
     # pooling
     "AdaptiveAvgPool1D",

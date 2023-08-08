@@ -37,6 +37,17 @@
       return SimpleRNNState(jnp.zeros([cell.hidden_features]))
   ```
 
+- `MultiHeadAttention`
+- `BatchNorm`
+- `RandomHorizontalShear2D`
+- `RandomPerspective2D`
+- `RandomRotate2D`
+- `RandomVerticalShear2D`
+- `Rotate2D`
+- `VerticalShear2D`
+- `Pixelate2D`
+- `Solarize2D`
+
 ### Deprecations
 
 - `Bilinear` is deprecated, use `Multilinear((in1_features, in2_features), out_features)`

@@ -18,7 +18,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from serket.nn import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
+from serket.nn import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D, Solarize2D
 
 
 def test_AvgBlur2D():
@@ -99,3 +99,22 @@ def test_filter2d():
     layer2 = FFTFilter2D(in_features=1, kernel=jnp.ones([3, 3]) / 9.0)
 
     npt.assert_allclose(layer(x), layer2(x), atol=1e-4)
+
+
+def test_solarize2d():
+    x = jnp.arange(1, 26).reshape(1, 5, 5)
+    layer = Solarize2D(threshold=10, max_val=25)
+    npt.assert_allclose(
+        layer(x),
+        jnp.array(
+            [
+                [
+                    [1, 2, 3, 4, 5],
+                    [6, 7, 8, 9, 15],
+                    [14, 13, 12, 11, 10],
+                    [9, 8, 7, 6, 5],
+                    [4, 3, 2, 1, 0],
+                ]
+            ]
+        ),
+    )

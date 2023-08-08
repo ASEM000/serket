@@ -908,6 +908,53 @@ class RandomPerspective2D(sk.TreeClass):
         return 2
 
 
+def solarize(
+    image: jax.Array,
+    threshold: float | int,
+    max_val: float | int,
+) -> jax.Array:
+    """Inverts all values above a given threshold."""
+    return jnp.where(image < threshold, image, max_val - image)
+
+
+@sk.autoinit
+class Solarize2D(sk.TreeClass):
+    """Inverts all values above a given threshold.
+
+    Args:
+        threshold: The threshold value above which to invert.
+        max_val: The maximum value of the image. e.g. 255 for uint8 images.
+            1.0 for float images. default: 1.0
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> layer = sk.nn.Solarize2D(threshold=10, max_val=25)
+        >>> print(layer(x))
+        [[[ 1  2  3  4  5]
+          [ 6  7  8  9 15]
+          [14 13 12 11 10]
+          [ 9  8  7  6  5]
+          [ 4  3  2  1  0]]]
+
+    Reference:
+        - https://github.com/tensorflow/models/blob/v2.13.1/official/vision/ops/augment.py#L804-L809
+    """
+
+    threshold: float
+    max_val: float = 1.0
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
+        return solarize(x, threshold, max_val)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
 @tree_eval.def_eval(RandomContrast2D)
 @tree_eval.def_eval(RandomRotate2D)
 @tree_eval.def_eval(RandomHorizontalShear2D)
