@@ -13,6 +13,7 @@
    :caption: API Documentation
 
    activations
+   attention
    containers
    convolution
    dropout

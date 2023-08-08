@@ -45,6 +45,8 @@ from .activation import (
     TanhShrink,
     ThresholdedReLU,
 )
+from .attention import MultiHeadAttention
+from .blocks import UNetBlock, VGG16Block, VGG19Block
 from .containers import RandomApply, Sequential
 from .convolution import (
     Conv1D,
@@ -80,6 +82,7 @@ from .dropout import (
     Dropout1D,
     Dropout2D,
     Dropout3D,
+    GeneralDropout,
     RandomCutout1D,
     RandomCutout2D,
 )
@@ -202,6 +205,12 @@ __all__ = (
     "Tanh",
     "TanhShrink",
     "ThresholdedReLU",
+    # attention
+    "MultiHeadAttention",
+    # blocks
+    "UNetBlock",
+    "VGG16Block",
+    "VGG19Block",
     # container
     "RandomApply",
     "Sequential",
@@ -238,6 +247,7 @@ __all__ = (
     "Dropout1D",
     "Dropout2D",
     "Dropout3D",
+    "GeneralDropout",
     "RandomCutout1D",
     "RandomCutout2D",
     # linear
