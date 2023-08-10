@@ -165,8 +165,17 @@ class MultiHeadAttention(sk.TreeClass):
         (3, 4, 4)
 
     Note:
-        If ``k_features``, ``v_features``, ``out_features`` are not specified,
-        they are set to ``q_features``.
+        - If ``k_features``, ``v_features``, ``out_features`` are not specified,
+          they are set to ``q_features``.
+        - To disable attention :class:`.Dropout`, use :func:`.tree_eval` on the 
+          instantiated layer.
+
+        >>> import serket as sk
+        >>> layer = sk.nn.MultiHeadAttention(1, 1)
+        >>> print(repr(layer.dropout))
+        GeneralDropout(drop_rate=0.0, drop_axes=Ellipsis)
+        >>> print(repr(sk.tree_eval(layer).dropout))
+        Identity()
 
     Note:
         :class:`.MultiHeadAttention` supports lazy initialization, meaning that the weights and

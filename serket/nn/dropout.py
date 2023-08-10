@@ -416,7 +416,7 @@ class RandomCutout2D(sk.TreeClass):
 
 @tree_eval.def_eval(RandomCutout1D)
 @tree_eval.def_eval(RandomCutout2D)
-@tree_eval.def_eval(Dropout)
+@tree_eval.def_eval(GeneralDropout)
 @tree_eval.def_eval(DropoutND)
 def dropout_evaluation(_) -> Identity:
     return Identity()
