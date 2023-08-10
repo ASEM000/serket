@@ -47,6 +47,7 @@
 - `VerticalShear2D`
 - `Pixelate2D`
 - `Solarize2D`
+- `Posterize2D`
 
 ### Deprecations
 

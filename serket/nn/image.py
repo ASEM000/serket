@@ -28,6 +28,8 @@ from serket.nn.convolution import DepthwiseConv2D, DepthwiseFFTConv2D
 from serket.nn.custom_transform import tree_eval
 from serket.nn.linear import Identity
 from serket.nn.utils import (
+    IsInstance,
+    Range,
     maybe_lazy_call,
     maybe_lazy_init,
     positive_int_cb,
@@ -949,6 +951,75 @@ class Solarize2D(sk.TreeClass):
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
         return solarize(x, threshold, max_val)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+def posterize(image: jax.Array, bits: int) -> jax.Array:
+    """Reduce the number of bits for each color channel.
+
+    Args:
+        image: The image to posterize.
+        bits: The number of bits to keep for each channel (1-8).
+
+    Reference:
+        - https://github.com/tensorflow/models/blob/v2.13.1/official/vision/ops/augment.py#L859-L862
+        - https://github.com/python-pillow/Pillow/blob/6651a3143621181d94cc92d36e1490721ef0b44f/src/PIL/ImageOps.py#L547
+    """
+    shift = 8 - bits
+    return jnp.left_shift(jnp.right_shift(image, shift), shift)
+
+
+@sk.autoinit
+class Posterize2D(sk.TreeClass):
+    """Reduce the number of bits for each color channel.
+
+    Args:
+        bits: The number of bits to keep for each channel (1-8).
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.Posterize2D(4)
+        >>> x = jnp.arange(1, 51).reshape(2, 5, 5)
+        >>> print(x)
+        [[[ 1  2  3  4  5]
+          [ 6  7  8  9 10]
+          [11 12 13 14 15]
+          [16 17 18 19 20]
+          [21 22 23 24 25]]
+
+         [[26 27 28 29 30]
+          [31 32 33 34 35]
+          [36 37 38 39 40]
+          [41 42 43 44 45]
+          [46 47 48 49 50]]]
+        >>> print(layer(x))
+        [[[ 0  0  0  0  0]
+          [ 0  0  0  0  0]
+          [ 0  0  0  0  0]
+          [16 16 16 16 16]
+          [16 16 16 16 16]]
+
+         [[16 16 16 16 16]
+          [16 32 32 32 32]
+          [32 32 32 32 32]
+          [32 32 32 32 32]
+          [32 32 48 48 48]]]
+
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tfm/vision/augment/posterize
+        - https://github.com/python-pillow/Pillow/blob/main/src/PIL/ImageOps.py#L547
+    """
+
+    bits: int = sk.field(callbacks=[IsInstance(int), Range(1, 8)])
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        bits = jax.lax.stop_gradient(self.bits)
+        return jax.vmap(posterize, in_axes=(0, None))(x, bits)
 
     @property
     def spatial_ndim(self) -> int:
