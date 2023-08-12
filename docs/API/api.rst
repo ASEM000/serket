@@ -14,6 +14,7 @@
 
    activations
    attention
+   clustering
    containers
    convolution
    dropout

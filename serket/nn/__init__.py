@@ -47,6 +47,7 @@ from .activation import (
 )
 from .attention import MultiHeadAttention
 from .blocks import UNetBlock, VGG16Block, VGG19Block
+from .clustering import KMeans
 from .containers import RandomApply, Sequential
 from .convolution import (
     Conv1D,
@@ -284,6 +285,8 @@ __all__ = (
     "Rotate2D",
     "Solarize2D",
     "VerticalShear2D",
+    # kmeans
+    "KMeans",
     # pooling
     "AdaptiveAvgPool1D",
     "AdaptiveAvgPool2D",
