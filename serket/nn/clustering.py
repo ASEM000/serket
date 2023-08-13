@@ -31,7 +31,6 @@ from serket.nn.utils import IsInstance, Range
 
 class KMeansState(NamedTuple):
     centers: Annotated[jax.Array, "f32[k,d]"]
-    labels: Annotated[jax.Array, "f32[n,1]"]
     error: Annotated[jax.Array, "f32[k,d]"]
     iters: int = 0
 
@@ -87,7 +86,6 @@ def kmeans(
         state: initial ``KMeansState`` containing:
 
             - centers: The initial centers of the clusters.
-            - labels: The initial indices of the points assigned to each cluster.
             - error: The initial error of the centers at each iteration.
             - iters: The inital number of iterations (i.e. 0)
 
@@ -98,7 +96,6 @@ def kmeans(
         A ``KMeansState`` named tuple containing:
 
             - centers: The final centers of the clusters.
-            - labels: The indices of the points assigned to each cluster.
             - error: The error of the centers at each iteration.
             - iters: The number of iterations until convergence.
     """
@@ -118,7 +115,7 @@ def kmeans(
 
         error = jnp.abs(centers - state.centers)
 
-        return KMeansState(centers, labels, error, state.iters + 1)
+        return KMeansState(centers, error, state.iters + 1)
 
     def condition(state: KMeansState) -> bool:
         return jnp.all(state.error > tol)
@@ -141,9 +138,8 @@ class KMeans(sk.TreeClass):
         >>> clusters = 4
         >>> x = jr.uniform(jr.PRNGKey(0), shape=(100, features))
         >>> layer = sk.nn.KMeans(clusters=clusters, tol=1e-6)
-        >>> x, state = layer(x)
+        >>> labels, state = layer(x)
         >>> centers = state.centers
-        >>> labels = state.labels
         >>> assert labels.shape == (100, 1)
         >>> assert centers.shape == (clusters, features)
 
@@ -181,7 +177,6 @@ class KMeans(sk.TreeClass):
             state: initial ``KMeansState`` containing:
 
                 - centers: The initial centers of the clusters.
-                - labels: The initial indices of the points assigned to each cluster.
                 - error: The initial error of the centers at each iteration.
                 - iters: The inital number of iterations (i.e. 0)
 
@@ -189,12 +184,15 @@ class KMeans(sk.TreeClass):
                 defined in :func:`.tree_state`
 
         Returns:
-            A tuple containing the input data and a ``KMeansState``.
+            A tuple containing the labels and a ``KMeansState``.
         """
 
         state = sk.tree_state(self, x) if state is None else state
         clusters, tol, state = jax.lax.stop_gradient((self.clusters, self.tol, state))
-        return x, kmeans(x, state, clusters=clusters, tol=tol)
+        state = kmeans(x, state, clusters=clusters, tol=tol)
+        distances = distances_from_centers(x, state.centers)
+        labels = labels_from_distances(distances)
+        return labels, state
 
 
 class EvalKMeans(sk.TreeClass):
@@ -211,8 +209,8 @@ class EvalKMeans(sk.TreeClass):
     ) -> tuple[jax.Array, KMeansState]:
         distances = distances_from_centers(x, state.centers)
         labels = labels_from_distances(distances)
-        state = state._replace(labels=labels, iters=None, error=None)
-        return x, state
+        state = state._replace(iters=None, error=None)
+        return labels, state
 
 
 @tree_state.def_state(KMeans)
@@ -224,12 +222,7 @@ def init_kmeans(layer: KMeans, data: jax.Array) -> KMeansState:
         shape=(layer.clusters, data.shape[1]),
     )
 
-    return KMeansState(
-        centers=centers,
-        labels=labels_from_distances(distances_from_centers(data, centers)),
-        error=centers + jnp.inf,
-        iters=0,
-    )
+    return KMeansState(centers=centers, error=centers + jnp.inf, iters=0)
 
 
 @tree_eval.def_eval(KMeans)
