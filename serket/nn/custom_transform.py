@@ -33,7 +33,7 @@ class NoState(sk.TreeClass):
         del _, __
 
 
-def tree_state(tree: T, array: jax.Array | None = None) -> T:
+def tree_state(tree: T, *, array: jax.Array | None = None) -> T:
     """Build state for a tree of layers.
 
     Some layers require state to be initialized before training. For example,
@@ -43,8 +43,9 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
 
     Args:
         tree: A tree of layers.
-        array: (Optional) array to use for initializing state required by some layers
-            (e.g. :class:`nn.ConvGRU1DCell`). default: ``None``.
+        array: (Optional keyword argument) array to use for initializing state
+            required by some layers (e.g. :class:`nn.ConvGRU1DCell`). default:
+            ``None``.
 
     Returns:
         A tree of state leaves if it has state, otherwise ``NoState`` leaf.
@@ -86,7 +87,7 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
             return tree_state.state_dispatcher(leaf)
         except TypeError:
             # with optional array argument
-            return tree_state.state_dispatcher(leaf, array)
+            return tree_state.state_dispatcher(leaf, array=array)
 
     return jax.tree_map(dispatch_func, tree, is_leaf=is_leaf)
 

@@ -1585,32 +1585,32 @@ def _check_rnn_cell_tree_state_input(cell: RNNCell, array):
 
 
 @tree_state.def_state(ConvLSTMNDCell)
-def conv_lstm_init_state(cell: ConvLSTMNDCell, x: Any) -> ConvLSTMNDState:
-    x = _check_rnn_cell_tree_state_input(cell, x)
-    shape = (cell.hidden_features, *x.shape[1:])
-    zeros = jnp.zeros(shape).astype(x.dtype)
+def conv_lstm_init_state(cell: ConvLSTMNDCell, *, array: Any) -> ConvLSTMNDState:
+    array = _check_rnn_cell_tree_state_input(cell, array)
+    shape = (cell.hidden_features, *array.shape[1:])
+    zeros = jnp.zeros(shape).astype(array.dtype)
     return ConvLSTMNDState(zeros, zeros)
 
 
 @tree_state.def_state(ConvGRUNDCell)
-def conv_gru_init_state(cell: ConvGRUNDCell, x: Any) -> ConvGRUNDState:
-    x = _check_rnn_cell_tree_state_input(cell, x)
-    shape = (cell.hidden_features, *x.shape[1:])
-    return ConvGRUNDState(jnp.zeros(shape).astype(x.dtype))
+def conv_gru_init_state(cell: ConvGRUNDCell, *, array: Any) -> ConvGRUNDState:
+    array = _check_rnn_cell_tree_state_input(cell, array)
+    shape = (cell.hidden_features, *array.shape[1:])
+    return ConvGRUNDState(jnp.zeros(shape).astype(array.dtype))
 
 
 @tree_state.def_state(ScanRNN)
-def scan_rnn_init_state(rnn: ScanRNN, x: jax.Array | None = None) -> RNNState:
+def scan_rnn_init_state(rnn: ScanRNN, *, array: jax.Array | None = None) -> RNNState:
     # the idea here is to combine the state of the forward and backward cells
     # if backward cell exists. to have single state input for `ScanRNN` and
     # single state output not to complicate the ``__call__`` signature on the
     # user side.
-    x = [None] if x is None else x
+    array = [None] if array is None else array
     # non-spatial cells don't need an input instead
     # pass `None` to `tree_state`
     # otherwise pass the a single time step input to the cells
     return (
-        tree_state(rnn.cell, array=x[0])
+        tree_state(rnn.cell, array=array[0])
         if rnn.backward_cell is None
-        else concat_state(tree_state((rnn.cell, rnn.backward_cell), array=x[0]))
+        else concat_state(tree_state((rnn.cell, rnn.backward_cell), array=array[0]))
     )

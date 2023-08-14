@@ -187,7 +187,7 @@ class KMeans(sk.TreeClass):
             A tuple containing the labels and a ``KMeansState``.
         """
 
-        state = sk.tree_state(self, x) if state is None else state
+        state = sk.tree_state(self, array=x) if state is None else state
         clusters, tol, state = jax.lax.stop_gradient((self.clusters, self.tol, state))
         state = kmeans(x, state, clusters=clusters, tol=tol)
         distances = distances_from_centers(x, state.centers)
@@ -214,12 +214,12 @@ class EvalKMeans(sk.TreeClass):
 
 
 @tree_state.def_state(KMeans)
-def init_kmeans(layer: KMeans, data: jax.Array) -> KMeansState:
+def init_kmeans(layer: KMeans, *, array: jax.Array) -> KMeansState:
     centers = jr.uniform(
         key=jr.PRNGKey(0),
-        minval=data.min(),
-        maxval=data.max(),
-        shape=(layer.clusters, data.shape[1]),
+        minval=array.min(),
+        maxval=array.max(),
+        shape=(layer.clusters, array.shape[1]),
     )
 
     return KMeansState(centers=centers, error=centers + jnp.inf, iters=0)
