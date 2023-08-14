@@ -29,8 +29,8 @@ T = TypeVar("T")
 class NoState(sk.TreeClass):
     """No state placeholder."""
 
-    def __init__(self, _: Any, __: Any):
-        del _, __
+    def __init__(self, _: Any, *, array: Any):
+        del _, array
 
 
 def tree_state(tree: T, *, array: jax.Array | None = None) -> T:
@@ -72,7 +72,7 @@ def tree_state(tree: T, *, array: jax.Array | None = None) -> T:
         ...    return "some state"
         >>> sk.tree_state(LayerWithState())
         'some state'
-        >>> sk.tree_state(LayerWithState(), jax.numpy.ones((1, 1)))
+        >>> sk.tree_state(LayerWithState(), array=jax.numpy.ones((1, 1)))
         'some state'
     """
 

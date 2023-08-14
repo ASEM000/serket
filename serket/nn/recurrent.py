@@ -1350,7 +1350,7 @@ def materialize_cell(instance, x: jax.Array, state=None, **__) -> RNNCell:
     # in case of lazy initialization, we need to materialize the cell
     # before it can be passed to the scan function
     cell = instance.cell
-    state = state if state is not None else sk.tree_state(instance, x)
+    state = state if state is not None else sk.tree_state(instance, array=x)
     state = split_state(state, 2) if instance.backward_cell is not None else [state]
     _, cell = cell.at["__call__"](x[0], state[0])
     return cell
@@ -1360,7 +1360,7 @@ def materialize_backward_cell(instance, x, state=None, **__) -> RNNCell | None:
     if instance.backward_cell is None:
         return None
     cell = instance.cell
-    state = state if state is not None else sk.tree_state(instance, x)
+    state = state if state is not None else sk.tree_state(instance, array=x)
     state = split_state(state, 2) if instance.backward_cell is not None else [state]
     _, cell = cell.at["__call__"](x[0], state[-1])
     return cell
