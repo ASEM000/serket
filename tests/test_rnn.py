@@ -575,7 +575,7 @@ def test_conv_lstm1d(layer):
     cell = layer(
         in_features=in_features,
         hidden_features=hidden_features,
-        recurrent_act_func="sigmoid",
+        recurrent_act="sigmoid",
         kernel_size=3,
         padding="same",
         weight_init="glorot_uniform",
@@ -604,7 +604,7 @@ def test_conv_lstm1d(layer):
     cell = layer(
         in_features=in_features,
         hidden_features=hidden_features,
-        recurrent_act_func="sigmoid",
+        recurrent_act="sigmoid",
         kernel_size=3,
         padding="same",
         weight_init="glorot_uniform",
@@ -788,7 +788,7 @@ def test_dense_cell():
     cell = DenseCell(
         in_features=10,
         hidden_features=10,
-        act_func=lambda x: x,
+        act=lambda x: x,
         weight_init="ones",
         bias_init=None,
     )

@@ -100,7 +100,7 @@ class SimpleRNNCell(RNNCell):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         recurrent_weight_init: InitType = "orthogonal",
-        act_func: ActivationType = jax.nn.tanh,
+        act: ActivationType = jax.nn.tanh,
         key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
@@ -112,7 +112,7 @@ class SimpleRNNCell(RNNCell):
             weight_init: the function to use to initialize the weights
             bias_init: the function to use to initialize the bias
             recurrent_weight_init: the function to use to initialize the recurrent weights
-            act_func: the activation function to use for the hidden state update
+            act: the activation function to use for the hidden state update
             key: the key to use to initialize the weights
             dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -150,7 +150,7 @@ class SimpleRNNCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = resolve_activation(act_func)
+        self.act = resolve_activation(act)
 
         i2h = sk.nn.Linear(
             in_features,
@@ -182,7 +182,7 @@ class SimpleRNNCell(RNNCell):
 
         ih = jnp.concatenate([x, state.hidden_state], axis=-1)
         h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
-        return SimpleRNNState(self.act_func(h))
+        return SimpleRNNState(self.act(h))
 
     @property
     def spatial_ndim(self) -> int:
@@ -201,7 +201,7 @@ class DenseCell(RNNCell):
         hidden_features: the number of hidden features
         weight_init: the function to use to initialize the weights
         bias_init: the function to use to initialize the bias
-        act_func: the activation function to use for the hidden state update,
+        act: the activation function to use for the hidden state update,
             use `None` for no activation
         key: the key to use to initialize the weights
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
@@ -244,13 +244,13 @@ class DenseCell(RNNCell):
         *,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
-        act_func: ActivationType = jax.nn.tanh,
+        act: ActivationType = jax.nn.tanh,
         key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = resolve_activation(act_func)
+        self.act = resolve_activation(act)
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
@@ -268,7 +268,7 @@ class DenseCell(RNNCell):
         if not isinstance(state, DenseState):
             raise TypeError(f"Expected {state=} to be an instance of `DenseState`")
 
-        h = self.act_func(self.in_to_hidden(x))
+        h = self.act(self.in_to_hidden(x))
         return DenseState(h)
 
     @property
@@ -290,8 +290,8 @@ class LSTMCell(RNNCell):
         weight_init: the function to use to initialize the weights
         bias_init: the function to use to initialize the bias
         recurrent_weight_init: the function to use to initialize the recurrent weights
-        act_func: the activation function to use for the hidden state update
-        recurrent_act_func: the activation function to use for the cell state update
+        act: the activation function to use for the hidden state update
+        recurrent_act: the activation function to use for the cell state update
         key: the key to use to initialize the weights
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -338,8 +338,8 @@ class LSTMCell(RNNCell):
         weight_init: str | Callable = "glorot_uniform",
         bias_init: str | Callable | None = "zeros",
         recurrent_weight_init: str | Callable = "orthogonal",
-        act_func: str | Callable[[Any], Any] | None = "tanh",
-        recurrent_act_func: ActivationType | None = "sigmoid",
+        act: str | Callable[[Any], Any] | None = "tanh",
+        recurrent_act: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
@@ -347,8 +347,8 @@ class LSTMCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = resolve_activation(act_func)
-        self.recurrent_act_func = resolve_activation(recurrent_act_func)
+        self.act = resolve_activation(act)
+        self.recurrent_act = resolve_activation(recurrent_act)
 
         i2h = sk.nn.Linear(
             in_features,
@@ -382,12 +382,12 @@ class LSTMCell(RNNCell):
         ih = jnp.concatenate([x, h], axis=-1)
         h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
         i, f, g, o = jnp.split(h, 4, axis=-1)
-        i = self.recurrent_act_func(i)
-        f = self.recurrent_act_func(f)
-        g = self.act_func(g)
-        o = self.recurrent_act_func(o)
+        i = self.recurrent_act(i)
+        f = self.recurrent_act(f)
+        g = self.act(g)
+        o = self.recurrent_act(o)
         c = f * c + i * g
-        h = o * self.act_func(c)
+        h = o * self.act(c)
         return LSTMState(h, c)
 
     @property
@@ -408,8 +408,8 @@ class GRUCell(RNNCell):
         weight_init: the function to use to initialize the weights
         bias_init: the function to use to initialize the bias
         recurrent_weight_init: the function to use to initialize the recurrent weights
-        act_func: the activation function to use for the hidden state update
-        recurrent_act_func: the activation function to use for the cell state update
+        act: the activation function to use for the hidden state update
+        recurrent_act: the activation function to use for the cell state update
         key: the key to use to initialize the weights
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -455,8 +455,8 @@ class GRUCell(RNNCell):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         recurrent_weight_init: InitType = "orthogonal",
-        act_func: ActivationType | None = "tanh",
-        recurrent_act_func: ActivationType | None = "sigmoid",
+        act: ActivationType | None = "tanh",
+        recurrent_act: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
@@ -464,8 +464,8 @@ class GRUCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = resolve_activation(act_func)
-        self.recurrent_act_func = resolve_activation(recurrent_act_func)
+        self.act = resolve_activation(act)
+        self.recurrent_act = resolve_activation(recurrent_act)
 
         self.in_to_hidden = sk.nn.Linear(
             in_features,
@@ -495,9 +495,9 @@ class GRUCell(RNNCell):
         h = state.hidden_state
         xe, xu, xo = jnp.split(self.in_to_hidden(x), 3, axis=-1)
         he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=-1)
-        e = self.recurrent_act_func(xe + he)
-        u = self.recurrent_act_func(xu + hu)
-        o = self.act_func(xo + (e * ho))
+        e = self.recurrent_act(xe + he)
+        u = self.recurrent_act(xu + hu)
+        o = self.act(xo + (e * ho))
         h = (1 - u) * o + u * h
         return GRUState(hidden_state=h)
 
@@ -525,8 +525,8 @@ class ConvLSTMNDCell(RNNCell):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         recurrent_weight_init: InitType = "orthogonal",
-        act_func: ActivationType | None = "tanh",
-        recurrent_act_func: ActivationType | None = "hard_sigmoid",
+        act: ActivationType | None = "tanh",
+        recurrent_act: ActivationType | None = "hard_sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
@@ -534,8 +534,8 @@ class ConvLSTMNDCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = resolve_activation(act_func)
-        self.recurrent_act_func = resolve_activation(recurrent_act_func)
+        self.act = resolve_activation(act)
+        self.recurrent_act = resolve_activation(recurrent_act)
 
         self.in_to_hidden = self.convolution_layer(
             in_features,
@@ -573,12 +573,12 @@ class ConvLSTMNDCell(RNNCell):
         h, c = state.hidden_state, state.cell_state
         h = self.in_to_hidden(x) + self.hidden_to_hidden(h)
         i, f, g, o = jnp.split(h, 4, axis=0)
-        i = self.recurrent_act_func(i)
-        f = self.recurrent_act_func(f)
-        g = self.act_func(g)
-        o = self.recurrent_act_func(o)
+        i = self.recurrent_act(i)
+        f = self.recurrent_act(f)
+        g = self.act(g)
+        o = self.recurrent_act(o)
         c = f * c + i * g
-        h = o * self.act_func(c)
+        h = o * self.act(c)
         return ConvLSTMNDState(h, c)
 
     @property
@@ -600,8 +600,8 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -658,8 +658,8 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -716,8 +716,8 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -774,8 +774,8 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -832,8 +832,8 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -890,8 +890,8 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -953,8 +953,8 @@ class ConvGRUNDCell(RNNCell):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         recurrent_weight_init: InitType = "orthogonal",
-        act_func: ActivationType | None = "tanh",
-        recurrent_act_func: ActivationType | None = "sigmoid",
+        act: ActivationType | None = "tanh",
+        recurrent_act: ActivationType | None = "sigmoid",
         key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
@@ -962,8 +962,8 @@ class ConvGRUNDCell(RNNCell):
 
         self.in_features = positive_int_cb(in_features)
         self.hidden_features = positive_int_cb(hidden_features)
-        self.act_func = resolve_activation(act_func)
-        self.recurrent_act_func = resolve_activation(recurrent_act_func)
+        self.act = resolve_activation(act)
+        self.recurrent_act = resolve_activation(recurrent_act)
 
         self.in_to_hidden = self.convolution_layer(
             in_features,
@@ -1001,9 +1001,9 @@ class ConvGRUNDCell(RNNCell):
         h = state.hidden_state
         xe, xu, xo = jnp.split(self.in_to_hidden(x), 3, axis=0)
         he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=0)
-        e = self.recurrent_act_func(xe + he)
-        u = self.recurrent_act_func(xu + hu)
-        o = self.act_func(xo + (e * ho))
+        e = self.recurrent_act(xe + he)
+        u = self.recurrent_act(xu + hu)
+        o = self.act(xo + (e * ho))
         h = (1 - u) * o + u * h
         return ConvGRUNDState(hidden_state=h)
 
@@ -1026,8 +1026,8 @@ class ConvGRU1DCell(ConvGRUNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -1081,8 +1081,8 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -1136,8 +1136,8 @@ class ConvGRU2DCell(ConvGRUNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -1191,8 +1191,8 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -1246,8 +1246,8 @@ class ConvGRU3DCell(ConvGRUNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -1301,8 +1301,8 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         weight_init: Weight initialization function
         bias_init: Bias initialization function
         recurrent_weight_init: Recurrent weight initialization function
-        act_func: Activation function
-        recurrent_act_func: Recurrent activation function
+        act: Activation function
+        recurrent_act: Recurrent activation function
         key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 

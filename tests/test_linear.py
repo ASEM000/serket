@@ -47,7 +47,7 @@ def test_linear():
 
     nn = FNN(
         [1, 128, 128, 1],
-        act_func="relu",
+        act="relu",
         weight_init="he_normal",
         bias_init="ones",
     )

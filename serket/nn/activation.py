@@ -388,22 +388,22 @@ class ActivationClassType(Protocol):
         ...
 
 
-def resolve_activation(act_func: ActivationType) -> ActivationFunctionType:
+def resolve_activation(act: ActivationType) -> ActivationFunctionType:
     # in case the user passes a trainable activation function
     # we need to make a copy of it to avoid unpredictable side effects
-    if isinstance(act_func, str):
-        if act_func in act_map:
-            return act_map[act_func]()
-        raise ValueError(f"Unknown {act_func=}, available activations: {list(act_map)}")
-    return act_func
+    if isinstance(act, str):
+        if act in act_map:
+            return act_map[act]()
+        raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")
+    return act
 
 
-def def_act_entry(key: str, act_func: ActivationClassType) -> None:
+def def_act_entry(key: str, act: ActivationClassType) -> None:
     """Register a custom activation function key for use in ``serket`` layers.
 
     Args:
         key: The key to register the function under.
-        act_func: a class with a ``__call__`` method that takes a single argument
+        act: a class with a ``__call__`` method that takes a single argument
             and returns a ``jax`` array.
 
     Note:
@@ -412,7 +412,7 @@ def def_act_entry(key: str, act_func: ActivationClassType) -> None:
 
     Note:
         By design, activation functions can be passed directly to ``serket`` layers
-        with the ``act_func`` argument. This function is useful if you want to
+        with the ``act`` argument. This function is useful if you want to
         represent activation functions as a string in a configuration file.
 
     Example:
@@ -425,15 +425,15 @@ def def_act_entry(key: str, act_func: ActivationClassType) -> None:
         ...        return x * self.my_param
         >>> sk.def_act_entry("my_act", MyTrainableActivation)
         >>> x = jnp.ones((1, 1))
-        >>> sk.nn.FNN([1, 1, 1], act_func="my_act", weight_init="ones", bias_init=None)(x)
+        >>> sk.nn.FNN([1, 1, 1], act="my_act", weight_init="ones", bias_init=None)(x)
         Array([[10.]], dtype=float32)
     """
     if key in act_map:
         raise ValueError(f"`init_key` {key=} already registered")
 
-    if not isinstance(act_func, type):
-        raise ValueError(f"Expected a class, got {act_func=}")
-    if not callable(act_func):
-        raise ValueError(f"Expected a class with a `__call__` method, got {act_func=}")
+    if not isinstance(act, type):
+        raise ValueError(f"Expected a class, got {act=}")
+    if not callable(act):
+        raise ValueError(f"Expected a class with a `__call__` method, got {act=}")
 
-    act_map[key] = act_func
+    act_map[key] = act

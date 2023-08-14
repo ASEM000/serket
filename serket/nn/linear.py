@@ -400,7 +400,7 @@ class FNN(sk.TreeClass):
 
     Args:
         layers: Sequence of layer sizes
-        act_func: a single Activation function to be applied between layers or
+        act: a single Activation function to be applied between layers or
             ``len(layers)-2`` Sequence of activation functions applied between
             layers.
         weight_init: Weight initializer function.
@@ -445,7 +445,7 @@ class FNN(sk.TreeClass):
         self,
         layers: Sequence[int],
         *,
-        act_func: ActivationType | tuple[ActivationType, ...] = "tanh",
+        act: ActivationType | tuple[ActivationType, ...] = "tanh",
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
@@ -454,13 +454,13 @@ class FNN(sk.TreeClass):
         keys = jr.split(key, len(layers) - 1)
         num_hidden_layers = len(layers) - 2
 
-        if isinstance(act_func, tuple):
-            if len(act_func) != (num_hidden_layers):
-                raise ValueError(f"{len(act_func)=} != {(num_hidden_layers)=}")
+        if isinstance(act, tuple):
+            if len(act) != (num_hidden_layers):
+                raise ValueError(f"{len(act)=} != {(num_hidden_layers)=}")
 
-            self.act_func = tuple(resolve_activation(act) for act in act_func)
+            self.act = tuple(resolve_activation(act) for act in act)
         else:
-            self.act_func = resolve_activation(act_func)
+            self.act = resolve_activation(act)
 
         self.layers = tuple(
             Linear(
@@ -477,12 +477,12 @@ class FNN(sk.TreeClass):
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         *layers, last = self.layers
 
-        if isinstance(self.act_func, tuple):
-            for ai, li in zip(self.act_func, layers):
+        if isinstance(self.act, tuple):
+            for ai, li in zip(self.act, layers):
                 x = ai(li(x))
         else:
             for li in layers:
-                x = self.act_func(li(x))
+                x = self.act(li(x))
 
         return last(x)
 
@@ -490,19 +490,19 @@ class FNN(sk.TreeClass):
 def _scan_batched_layer_with_single_activation(
     x: Batched[jax.Array],
     layer: Batched[Linear],
-    act_func: ActivationFunctionType,
+    act: ActivationFunctionType,
 ) -> jax.Array:
     if layer.bias is None:
 
         def scan_func(x: jax.Array, bias: Batched[jax.Array]):
-            return act_func(x + bias), None
+            return act(x + bias), None
 
         x, _ = jax.lax.scan(scan_func, x, layer.weight)
         return x
 
     def scan_func(x: jax.Array, weight_bias: Batched[jax.Array]):
         weight, bias = weight_bias[..., :-1], weight_bias[..., -1]
-        return act_func(x @ weight + bias), None
+        return act(x @ weight + bias), None
 
     weight_bias = jnp.concatenate([layer.weight, layer.bias[:, :, None]], axis=-1)
     x, _ = jax.lax.scan(scan_func, x, weight_bias)
@@ -512,13 +512,13 @@ def _scan_batched_layer_with_single_activation(
 def _scan_batched_layer_with_multiple_activations(
     x: Batched[jax.Array],
     layer: Batched[Linear],
-    act_func: Sequence[ActivationFunctionType],
+    act: Sequence[ActivationFunctionType],
 ) -> jax.Array:
     if layer.bias is None:
 
         def scan_func(x_index: tuple[jax.Array, int], weight: Batched[jax.Array]):
             x, index = x_index
-            x = jax.lax.switch(index, act_func, x @ weight)
+            x = jax.lax.switch(index, act, x @ weight)
             return (x, index + 1), None
 
         (x, _), _ = jax.lax.scan(scan_func, (x, 0), layer.weight)
@@ -527,7 +527,7 @@ def _scan_batched_layer_with_multiple_activations(
     def scan_func(x_index: jax.Array, weight_bias: Batched[jax.Array]):
         x, index = x_index
         weight, bias = weight_bias[..., :-1], weight_bias[..., -1]
-        x = jax.lax.switch(index, act_func, x @ weight + bias)
+        x = jax.lax.switch(index, act, x @ weight + bias)
         return [x, index + 1], None
 
     weight_bias = jnp.concatenate([layer.weight, layer.bias[:, :, None]], axis=-1)
@@ -543,7 +543,7 @@ class MLP(sk.TreeClass):
         out_features: Number of output features.
         hidden_size: Number of hidden units in each hidden layer.
         num_hidden_layers: Number of hidden layers including the output layer.
-        act_func: Activation function.
+        act: Activation function.
         weight_init: Weight initialization function.
         bias_init: Bias initialization function.
         key: Random number generator key.
@@ -610,7 +610,7 @@ class MLP(sk.TreeClass):
         *,
         hidden_size: int,
         num_hidden_layers: int,
-        act_func: ActivationType | tuple[ActivationType, ...] = "tanh",
+        act: ActivationType | tuple[ActivationType, ...] = "tanh",
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         key: jr.KeyArray = jr.PRNGKey(0),
@@ -621,12 +621,12 @@ class MLP(sk.TreeClass):
 
         keys = jr.split(key, num_hidden_layers + 1)
 
-        if isinstance(act_func, tuple):
-            if len(act_func) != (num_hidden_layers):
-                raise ValueError(f"{len(act_func)=} != {(num_hidden_layers)=}")
-            self.act_func = tuple(resolve_activation(act) for act in act_func)
+        if isinstance(act, tuple):
+            if len(act) != (num_hidden_layers):
+                raise ValueError(f"{len(act)=} != {(num_hidden_layers)=}")
+            self.act = tuple(resolve_activation(act) for act in act)
         else:
-            self.act_func = resolve_activation(act_func)
+            self.act = resolve_activation(act)
 
         kwargs = dict(weight_init=weight_init, bias_init=bias_init, dtype=dtype)
 
@@ -643,13 +643,13 @@ class MLP(sk.TreeClass):
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         l0, lm, lh = self.layers
 
-        if isinstance(self.act_func, tuple):
-            a0, *ah = self.act_func
+        if isinstance(self.act, tuple):
+            a0, *ah = self.act
             x = a0(l0(x))
             x = _scan_batched_layer_with_multiple_activations(x, lm, ah)
             return lh(x)
 
-        a0 = self.act_func
+        a0 = self.act
         x = a0(l0(x))
         x = _scan_batched_layer_with_single_activation(x, lm, a0)
         return lh(x)

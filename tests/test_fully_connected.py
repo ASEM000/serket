@@ -20,8 +20,8 @@ from serket.nn import FNN, MLP
 
 
 def test_fnn():
-    layer = FNN([1, 2, 3, 4], act_func=("relu", "tanh"))
-    assert layer.act_func[0] is not layer.act_func[1]
+    layer = FNN([1, 2, 3, 4], act=("relu", "tanh"))
+    assert layer.act[0] is not layer.act[1]
     assert layer.layers[0] is not layer.layers[1]
 
     x = jax.random.normal(jax.random.PRNGKey(0), (10, 1))
@@ -35,7 +35,7 @@ def test_fnn():
     y = jax.nn.relu(y)
     y = y @ w3
 
-    l1 = FNN([1, 5, 3, 4], act_func=("tanh", "relu"), bias_init=None)
+    l1 = FNN([1, 5, 3, 4], act=("tanh", "relu"), bias_init=None)
     l1 = l1.at["layers"].at[0].at["weight"].set(w1)
     l1 = l1.at["layers"].at[1].at["weight"].set(w2)
     l1 = l1.at["layers"].at[2].at["weight"].set(w3)
@@ -49,7 +49,7 @@ def test_mlp():
         4,
         hidden_size=10,
         num_hidden_layers=2,
-        act_func=("relu", "tanh"),
+        act=("relu", "tanh"),
         bias_init=None,
     )
 
@@ -75,7 +75,7 @@ def test_mlp():
 
 
 def test_fnn_mlp():
-    fnn = FNN(layers=[2, 4, 4, 2], act_func="relu")
-    mlp = MLP(2, 2, hidden_size=4, num_hidden_layers=2, act_func="relu")
+    fnn = FNN(layers=[2, 4, 4, 2], act="relu")
+    mlp = MLP(2, 2, hidden_size=4, num_hidden_layers=2, act="relu")
     x = jax.random.normal(jax.random.PRNGKey(0), (10, 2))
     npt.assert_allclose(fnn(x), mlp(x))
