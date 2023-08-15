@@ -1026,10 +1026,160 @@ class Posterize2D(sk.TreeClass):
         return 2
 
 
+def horizontal_translate(image: jax.Array, shift: int) -> jax.Array:
+    """Translate an image horizontally by a pixel value."""
+    _, _, _ = image.shape
+    if shift > 0:
+        return jnp.zeros_like(image).at[:, :, shift:].set(image[:, :, :-shift])
+    if shift < 0:
+        return jnp.zeros_like(image).at[:, :, :shift].set(image[:, :, -shift:])
+    return image
+
+
+def vertical_translate(image: jax.Array, shift: int) -> jax.Array:
+    """Translate an image vertically by a pixel value."""
+    _, _, _ = image.shape
+    if shift > 0:
+        return jnp.zeros_like(image).at[:, shift:, :].set(image[:, :-shift, :])
+    if shift < 0:
+        return jnp.zeros_like(image).at[:, :shift, :].set(image[:, -shift:, :])
+    return image
+
+
+def random_horizontal_translate(image: jax.Array, key: jr.KeyArray) -> jax.Array:
+    _, _, w = image.shape
+    shift = jr.randint(key, shape=(), minval=-w, maxval=w)
+    return horizontal_translate(image, shift)
+
+
+def random_vertical_translate(image: jax.Array, key: jr.KeyArray) -> jax.Array:
+    _, h, _ = image.shape
+    shift = jr.randint(key, shape=(), minval=-h, maxval=h)
+    return vertical_translate(image, shift)
+
+
+@sk.autoinit
+class HorizontalTranslate2D(sk.TreeClass):
+    """Translate an image horizontally by a pixel value.
+
+    Args:
+        shift: The number of pixels to shift the image by.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> print(sk.nn.HorizontalTranslate2D(2)(x))
+        [[[ 0  0  1  2  3]
+          [ 0  0  6  7  8]
+          [ 0  0 11 12 13]
+          [ 0  0 16 17 18]
+          [ 0  0 21 22 23]]]
+    """
+
+    shift: int = sk.field(callbacks=[IsInstance(int)])
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        return horizontal_translate(x, self.shift)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+@sk.autoinit
+class VerticalTranslate2D(sk.TreeClass):
+    """Translate an image vertically by a pixel value.
+
+    Args:
+        shift: The number of pixels to shift the image by.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> print(sk.nn.VerticalTranslate2D(2)(x))
+        [[[ 0  0  0  0  0]
+          [ 0  0  0  0  0]
+          [ 1  2  3  4  5]
+          [ 6  7  8  9 10]
+          [11 12 13 14 15]]]
+    """
+
+    shift: int = sk.field(callbacks=[IsInstance(int)])
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        return vertical_translate(x, self.shift)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class RandomHorizontalTranslate2D(sk.TreeClass):
+    """Translate an image horizontally by a random pixel value.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> print(sk.nn.RandomHorizontalTranslate2D()(x))
+        [[[ 4  5  0  0  0]
+          [ 9 10  0  0  0]
+          [14 15  0  0  0]
+          [19 20  0  0  0]
+          [24 25  0  0  0]]]
+    """
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(
+        self,
+        x: jax.Array,
+        key: jr.KeyArray = jr.PRNGKey(0),
+    ) -> jax.Array:
+        return random_horizontal_translate(x, key)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class RandomVerticalTranslate2D(sk.TreeClass):
+    """Translate an image vertically by a random pixel value.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> print(sk.nn.RandomVerticalTranslate2D()(x))
+        [[[16 17 18 19 20]
+          [21 22 23 24 25]
+          [ 0  0  0  0  0]
+          [ 0  0  0  0  0]
+          [ 0  0  0  0  0]]]
+    """
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(
+        self,
+        x: jax.Array,
+        key: jr.KeyArray = jr.PRNGKey(0),
+    ) -> jax.Array:
+        return random_vertical_translate(x, key)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
 @tree_eval.def_eval(RandomContrast2D)
 @tree_eval.def_eval(RandomRotate2D)
 @tree_eval.def_eval(RandomHorizontalShear2D)
 @tree_eval.def_eval(RandomVerticalShear2D)
 @tree_eval.def_eval(RandomPerspective2D)
+@tree_eval.def_eval(RandomHorizontalTranslate2D)
+@tree_eval.def_eval(RandomVerticalTranslate2D)
 def random_image_transform(_):
     return Identity()

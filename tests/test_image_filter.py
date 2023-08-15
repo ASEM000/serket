@@ -18,7 +18,15 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from serket.nn import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D, Solarize2D
+from serket.nn.image import (
+    AvgBlur2D,
+    FFTFilter2D,
+    Filter2D,
+    GaussianBlur2D,
+    HorizontalTranslate2D,
+    Solarize2D,
+    VerticalTranslate2D,
+)
 
 
 def test_AvgBlur2D():
@@ -118,3 +126,81 @@ def test_solarize2d():
             ]
         ),
     )
+
+
+def test_horizontal_translate():
+    x = jnp.arange(1, 26).reshape(1, 5, 5)
+    layer = HorizontalTranslate2D(2)
+    npt.assert_allclose(
+        layer(x),
+        jnp.array(
+            [
+                [
+                    [0, 0, 1, 2, 3],
+                    [0, 0, 6, 7, 8],
+                    [0, 0, 11, 12, 13],
+                    [0, 0, 16, 17, 18],
+                    [0, 0, 21, 22, 23],
+                ]
+            ]
+        ),
+    )
+
+    layer = HorizontalTranslate2D(-2)
+    npt.assert_allclose(
+        layer(x),
+        jnp.array(
+            [
+                [
+                    [3, 4, 5, 0, 0],
+                    [8, 9, 10, 0, 0],
+                    [13, 14, 15, 0, 0],
+                    [18, 19, 20, 0, 0],
+                    [23, 24, 25, 0, 0],
+                ]
+            ]
+        ),
+    )
+
+    layer = HorizontalTranslate2D(0)
+
+    npt.assert_allclose(layer(x), x)
+
+
+def test_vertical_translate():
+    x = jnp.arange(1, 26).reshape(1, 5, 5)
+    layer = VerticalTranslate2D(2)
+    npt.assert_allclose(
+        layer(x),
+        jnp.array(
+            [
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [1, 2, 3, 4, 5],
+                    [6, 7, 8, 9, 10],
+                    [11, 12, 13, 14, 15],
+                ]
+            ]
+        ),
+    )
+
+    layer = VerticalTranslate2D(-2)
+    npt.assert_allclose(
+        layer(x),
+        jnp.array(
+            [
+                [
+                    [11, 12, 13, 14, 15],
+                    [16, 17, 18, 19, 20],
+                    [21, 22, 23, 24, 25],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ]
+            ]
+        ),
+    )
+
+    layer = VerticalTranslate2D(0)
+
+    npt.assert_allclose(layer(x), x)

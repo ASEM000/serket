@@ -9,12 +9,16 @@ Image filtering
 .. autoclass:: GaussianBlur2D
 .. autoclass:: HistogramEqualization2D
 .. autoclass:: HorizontalShear2D
+.. autoclass:: HorizontalTranslate2D
 .. autoclass:: Pixelate2D
 .. autoclass:: PixelShuffle2D
 .. autoclass:: RandomContrast2D
 .. autoclass:: RandomHorizontalShear2D
+.. autoclass:: RandomHorizontalTranslate2D
 .. autoclass:: RandomPerspective2D
 .. autoclass:: RandomRotate2D
 .. autoclass:: RandomVerticalShear2D
+.. autoclass:: RandomVerticalTranslate2D
 .. autoclass:: Rotate2D
 .. autoclass:: VerticalShear2D
+.. autoclass:: VerticalTranslate2D
