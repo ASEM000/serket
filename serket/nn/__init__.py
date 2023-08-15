@@ -48,7 +48,7 @@ from .activation import (
 from .attention import MultiHeadAttention
 from .blocks import UNetBlock, VGG16Block, VGG19Block
 from .clustering import KMeans
-from .containers import RandomApply, Sequential
+from .containers import OneOf, RandomApply, Sequential
 from .convolution import (
     Conv1D,
     Conv1DLocal,
@@ -219,6 +219,7 @@ __all__ = (
     "VGG16Block",
     "VGG19Block",
     # container
+    "OneOf",
     "RandomApply",
     "Sequential",
     # convolution

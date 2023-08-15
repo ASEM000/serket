@@ -81,21 +81,24 @@ class Sequential(sk.TreeClass):
 
 @sk.autoinit
 class RandomApply(sk.TreeClass):
-    """Randomly applies a layer with probability p.
+    """Randomly applies a layer with probability ``rate``.
 
     Args:
         layer: layer to apply.
-        p: probability of applying the layer
+        rate: probability of applying the layer
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=0.0)
+        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), rate=0.0)
         >>> layer(jnp.ones((1, 10, 10))).shape
         (1, 10, 10)
-        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), p=1.0)
+        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), rate=1.0)
         >>> layer(jnp.ones((1, 10, 10))).shape
         (1, 5, 5)
+
+    Note:
+        Using :func:`tree_eval` will always apply the layer/function.
 
     Reference:
         - https://pytorch.org/vision/main/_modules/torchvision/transforms/transforms.html#RandomApply
@@ -103,11 +106,54 @@ class RandomApply(sk.TreeClass):
     """
 
     layer: Any
-    p: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
+    rate: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
 
-    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)):
-        p = jax.lax.stop_gradient(self.p)
-        return self.layer(x) if jr.bernoulli(key, p) else x
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)):
+        rate = jax.lax.stop_gradient(self.rate)
+        return self.layer(x) if jr.bernoulli(key, rate) else x
+
+
+class OneOf(sk.TreeClass):
+    """Randomly selects one of the given layers/functions.
+
+    Args:
+        layers: variable number of layers/functions to select from.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.random as jr
+        >>> key = jr.PRNGKey(0)
+        >>> print(sk.nn.OneOf(lambda x: x + 2, lambda x: x * 2)(1.0, key))
+        3.0
+        >>> key = jr.PRNGKey(10)
+        >>> print(sk.nn.OneOf(lambda x: x + 2, lambda x: x * 2)(1.0, key))
+        2.0
+
+    Note:
+        Using :func:`tree_eval` will convert this layer to a :func:`nn.Sequential`
+        to apply the all layers sequentially.
+
+        >>> import serket as sk
+        >>> layer = sk.nn.OneOf(lambda x: x + 2, lambda x: x * 2)
+        >>> # will apply all layers sequentially
+        >>> print(sk.tree_eval(layer)(1.0))
+        6.0
+
+    Reference:
+        - https://imgaug.readthedocs.io/en/latest/source/overview/meta.html#oneof
+    """
+
+    def __init__(self, *layers):
+        self.layers = layers
+
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)):
+        index = jr.randint(key, (), 0, len(self.layers))
+        return jax.lax.switch(index, self.layers, x)
+
+
+@tree_eval.def_eval(OneOf)
+def tree_eval_sequential(layer: OneOf) -> Sequential:
+    return Sequential(*layer.layers)
 
 
 @tree_eval.def_eval(RandomApply)

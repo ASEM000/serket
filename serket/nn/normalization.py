@@ -539,7 +539,6 @@ class BatchNorm(sk.TreeClass):
         self,
         x: jax.Array,
         state: BatchNormState | None = None,
-        **k,
     ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
 
@@ -629,7 +628,6 @@ class EvalNorm(sk.TreeClass):
         self,
         x: jax.Array,
         state: BatchNormState | None = None,
-        **k,
     ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
 

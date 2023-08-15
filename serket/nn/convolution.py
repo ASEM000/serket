@@ -216,7 +216,7 @@ class ConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -528,7 +528,7 @@ class FFTConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -885,7 +885,7 @@ class ConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -1215,7 +1215,7 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -1580,7 +1580,7 @@ class DepthwiseConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -1854,7 +1854,7 @@ class DepthwiseFFTConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -2160,7 +2160,7 @@ class SeparableConvND(sk.TreeClass):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
@@ -2826,7 +2826,7 @@ class ConvNDLocal(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         x = jax.lax.conv_general_dilated_local(
             lhs=jnp.expand_dims(x, 0),
             rhs=self.weight,

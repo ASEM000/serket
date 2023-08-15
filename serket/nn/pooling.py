@@ -55,7 +55,7 @@ class GeneralPoolND(sk.TreeClass):
         self.operation = operation
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x, **k):
+    def __call__(self, x):
         padding = delayed_canonicalize_padding(
             in_dim=x.shape,
             kernel_size=self.kernel_size,
@@ -135,7 +135,7 @@ class GlobalPoolND(sk.TreeClass):
         self.operation = operation
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
         return self.operation(x, axis=axes, keepdims=self.keepdims)
 
@@ -165,7 +165,7 @@ class AdaptivePoolND(sk.TreeClass):
         self.func = func
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x, **k):
+    def __call__(self, x):
         indim = x.shape[1:]
         outdim = self.output_size
         strides = tuple(i // o for i, o in zip(indim, outdim))

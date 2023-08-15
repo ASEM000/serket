@@ -35,7 +35,7 @@ class AdaptiveLeakyReLU(sk.TreeClass):
     a: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
     v: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         v = jax.lax.stop_gradient(self.v)
         return jnp.maximum(0, self.a * x) - v * jnp.maximum(0, -self.a * x)
 
@@ -50,7 +50,7 @@ class AdaptiveReLU(sk.TreeClass):
 
     a: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jnp.maximum(0, self.a * x)
 
 
@@ -64,7 +64,7 @@ class AdaptiveSigmoid(sk.TreeClass):
 
     a: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return 1 / (1 + jnp.exp(-self.a * x))
 
 
@@ -78,7 +78,7 @@ class AdaptiveTanh(sk.TreeClass):
 
     a: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         a = self.a
         return (jnp.exp(a * x) - jnp.exp(-a * x)) / (jnp.exp(a * x) + jnp.exp(-a * x))
 
@@ -89,7 +89,7 @@ class CeLU(sk.TreeClass):
 
     alpha: float = sk.field(default=1.0, callbacks=[ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.celu(x, alpha=lax.stop_gradient(self.alpha))
 
 
@@ -99,7 +99,7 @@ class ELU(sk.TreeClass):
 
     alpha: float = sk.field(default=1.0, callbacks=[ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.elu(x, alpha=lax.stop_gradient(self.alpha))
 
 
@@ -109,7 +109,7 @@ class GELU(sk.TreeClass):
 
     approximate: bool = sk.field(default=1.0, callbacks=[IsInstance(bool)])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.gelu(x, approximate=self.approximate)
 
 
@@ -117,7 +117,7 @@ class GELU(sk.TreeClass):
 class GLU(sk.TreeClass):
     """Gated linear unit"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.glu(x)
 
 
@@ -127,7 +127,7 @@ class HardShrink(sk.TreeClass):
 
     alpha: float = sk.field(default=0.5, callbacks=[Range(0), ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         alpha = lax.stop_gradient(self.alpha)
         return jnp.where(x > alpha, x, jnp.where(x < -alpha, x, 0.0))
 
@@ -135,35 +135,35 @@ class HardShrink(sk.TreeClass):
 class HardSigmoid(sk.TreeClass):
     """Hard sigmoid activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.hard_sigmoid(x)
 
 
 class HardSwish(sk.TreeClass):
     """Hard swish activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.hard_swish(x)
 
 
 class HardTanh(sk.TreeClass):
     """Hard tanh activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.hard_tanh(x)
 
 
 class LogSigmoid(sk.TreeClass):
     """Log sigmoid activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.log_sigmoid(x)
 
 
 class LogSoftmax(sk.TreeClass):
     """Log softmax activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.log_softmax(x)
 
 
@@ -173,49 +173,49 @@ class LeakyReLU(sk.TreeClass):
 
     negative_slope: float = sk.field(default=0.01, callbacks=[Range(0), ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.leaky_relu(x, lax.stop_gradient(self.negative_slope))
 
 
 class ReLU(sk.TreeClass):
     """ReLU activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.relu(x)
 
 
 class ReLU6(sk.TreeClass):
     """ReLU6 activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.relu6(x)
 
 
 class SeLU(sk.TreeClass):
     """Scaled Exponential Linear Unit"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.selu(x)
 
 
 class Sigmoid(sk.TreeClass):
     """Sigmoid activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.sigmoid(x)
 
 
 class SoftPlus(sk.TreeClass):
     """SoftPlus activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.softplus(x)
 
 
 class SoftSign(sk.TreeClass):
     """SoftSign activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return x / (1 + jnp.abs(x))
 
 
@@ -225,7 +225,7 @@ class SoftShrink(sk.TreeClass):
 
     alpha: float = sk.field(default=0.5, callbacks=[Range(0), ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         alpha = lax.stop_gradient(self.alpha)
         return jnp.where(
             x < -alpha,
@@ -237,28 +237,28 @@ class SoftShrink(sk.TreeClass):
 class SquarePlus(sk.TreeClass):
     """SquarePlus activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return 0.5 * (x + jnp.sqrt(x * x + 4))
 
 
 class Swish(sk.TreeClass):
     """Swish activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.swish(x)
 
 
 class Tanh(sk.TreeClass):
     """Tanh activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.tanh(x)
 
 
 class TanhShrink(sk.TreeClass):
     """TanhShrink activation function"""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return x - jax.nn.tanh(x)
 
 
@@ -268,7 +268,7 @@ class ThresholdedReLU(sk.TreeClass):
 
     theta: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         theta = lax.stop_gradient(self.theta)
         return jnp.where(x > theta, x, 0)
 
@@ -276,7 +276,7 @@ class ThresholdedReLU(sk.TreeClass):
 class Mish(sk.TreeClass):
     """Mish activation function https://arxiv.org/pdf/1908.08681.pdf."""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return x * jax.nn.tanh(jax.nn.softplus(x))
 
 
@@ -286,7 +286,7 @@ class PReLU(sk.TreeClass):
 
     a: float = sk.field(default=0.25, callbacks=[Range(0), ScalarLike()])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jnp.where(x >= 0, x, x * self.a)
 
 
@@ -303,7 +303,7 @@ class Snake(sk.TreeClass):
 
     a: float = sk.field(callbacks=[Range(0), ScalarLike()], default=1.0)
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         a = lax.stop_gradient(self.a)
         return x + (1 - jnp.cos(2 * a * x)) / (2 * a)
 

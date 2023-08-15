@@ -122,7 +122,7 @@ class AvgBlur2D(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="conv1.in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return lax.stop_gradient(self.conv2(self.conv1(x)))
 
     @property
@@ -205,7 +205,7 @@ class GaussianBlur2D(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="conv1.in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return lax.stop_gradient(self.conv1(self.conv2(x)))
 
     @property
@@ -252,7 +252,7 @@ class Filter2D(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="conv.in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return lax.stop_gradient(self.conv(x))
 
     @property
@@ -299,7 +299,7 @@ class FFTFilter2D(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="conv.in_features", axis=0)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return lax.stop_gradient(self.conv(x))
 
     @property
@@ -324,7 +324,7 @@ class HistogramEqualization2D(sk.TreeClass):
         self.bins = positive_int_cb(bins)
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         bins_count = self.bins
         hist, bins = jnp.histogram(x.flatten(), bins_count, density=True)
         cdf = hist.cumsum()
@@ -367,7 +367,7 @@ class PixelShuffle2D(sk.TreeClass):
         raise ValueError("upscale_factor must be an integer or tuple of length 2")
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         channels = x.shape[0]
 
         sr, sw = self.upscale_factor
@@ -417,7 +417,7 @@ class AdjustContrast2D(sk.TreeClass):
     contrast_factor: float = 1.0
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return lax.stop_gradient(adjust_contrast_nd(x, self.contrast_factor))
 
     @property
@@ -543,7 +543,7 @@ class Rotate2D(sk.TreeClass):
         self.angle = angle
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return rotate(x, jax.lax.stop_gradient(self.angle))
 
     @property
@@ -616,7 +616,7 @@ class HorizontalShear2D(sk.TreeClass):
         self.angle = angle
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return horizontal_shear(x, jax.lax.stop_gradient(self.angle))
 
     @property
@@ -688,7 +688,7 @@ class VerticalShear2D(sk.TreeClass):
         self.angle = angle
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return vertical_shear(x, jax.lax.stop_gradient(self.angle))
 
     @property
@@ -776,7 +776,7 @@ class Pixelate2D(sk.TreeClass):
         self.scale = scale
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return pixelate(x, jax.lax.stop_gradient(self.scale))
 
     @property
@@ -948,7 +948,7 @@ class Solarize2D(sk.TreeClass):
     max_val: float = 1.0
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
         return solarize(x, threshold, max_val)
 
@@ -1017,7 +1017,7 @@ class Posterize2D(sk.TreeClass):
     bits: int = sk.field(callbacks=[IsInstance(int), Range(1, 8)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         bits = jax.lax.stop_gradient(self.bits)
         return jax.vmap(posterize, in_axes=(0, None))(x, bits)
 
@@ -1080,7 +1080,7 @@ class HorizontalTranslate2D(sk.TreeClass):
     shift: int = sk.field(callbacks=[IsInstance(int)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return horizontal_translate(x, self.shift)
 
     @property
@@ -1110,7 +1110,7 @@ class VerticalTranslate2D(sk.TreeClass):
     shift: int = sk.field(callbacks=[IsInstance(int)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return vertical_translate(x, self.shift)
 
     @property

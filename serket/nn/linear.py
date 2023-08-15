@@ -180,7 +180,7 @@ class Multilinear(sk.TreeClass):
         self.bias = resolve_init_func(bias_init)(k2, (out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, *x, **k) -> jax.Array:
+    def __call__(self, *x) -> jax.Array:
         einsum_string = _multilinear_einsum_string(len(self.in_features))
         x = jnp.einsum(einsum_string, *x, self.weight)
         return x if self.bias is None else (x + self.bias)
@@ -336,7 +336,7 @@ class GeneralLinear(sk.TreeClass):
         self.bias = resolve_init_func(bias_init)(k2, (self.out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         # ensure negative axes
         axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)
         einsum_string = _general_linear_einsum_string(*axes)
@@ -347,7 +347,7 @@ class GeneralLinear(sk.TreeClass):
 class Identity(sk.TreeClass):
     """Identity layer. Returns the input."""
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return x
 
 
@@ -379,7 +379,7 @@ class Embedding(sk.TreeClass):
         self.out_features = positive_int_cb(out_features)
         self.weight = jr.uniform(key, (self.in_features, self.out_features))
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         """Embeds the input.
 
         Args:
@@ -474,7 +474,7 @@ class FNN(sk.TreeClass):
             for (ki, di, do) in (zip(keys, layers[:-1], layers[1:]))
         )
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         *layers, last = self.layers
 
         if isinstance(self.act, tuple):
@@ -640,7 +640,7 @@ class MLP(sk.TreeClass):
             Linear(hidden_size, out_features, key=keys[-1], **kwargs),
         )
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         l0, lm, lh = self.layers
 
         if isinstance(self.act, tuple):

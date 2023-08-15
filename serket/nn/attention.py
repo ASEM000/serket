@@ -167,7 +167,7 @@ class MultiHeadAttention(sk.TreeClass):
     Note:
         - If ``k_features``, ``v_features``, ``out_features`` are not specified,
           they are set to ``q_features``.
-        - To disable attention :class:`.Dropout`, use :func:`.tree_eval` on the 
+        - To disable attention :class:`.Dropout`, use :func:`.tree_eval` on the
           instantiated layer.
 
         >>> import serket as sk
@@ -235,7 +235,7 @@ class MultiHeadAttention(sk.TreeClass):
 
         if v_features % num_heads != 0:
             raise ValueError(f"{v_features=} % {num_heads=} != 0.")
-        
+
         if out_features % num_heads != 0:
             raise ValueError(f"{out_features=} % {num_heads=} != 0.")
 
@@ -285,6 +285,7 @@ class MultiHeadAttention(sk.TreeClass):
         k_array: Annotated[jax.Array, "..., kv_length, k_features"],
         v_array: Annotated[jax.Array, "..., kv_length, v_features"],
         mask: Annotated[jax.Array, "..., num_heads, q_length, kv_length"] | None = None,
+        *,
         key: jr.KeyArray = jr.PRNGKey(0),
     ) -> Annotated[jax.Array, "..., q_length, out_features"]:
         """Applies multi-head attention to the given inputs.
