@@ -37,9 +37,16 @@ def tree_state(tree: T, *, array: jax.Array | None = None) -> T:
     """Build state for a tree of layers.
 
     Some layers require state to be initialized before training. For example,
-    :class:`nn.BatchNorm` layers requires ``running_mean`` and ``running_var`` to be initialized
-    before training. This function initializes the state for a tree of layers,
-    based on the layer defined ``state`` rule using ``tree_state.def_state``.
+    :class:`nn.BatchNorm` layers requires ``running_mean`` and ``running_var`` to
+    be initialized before training. This function initializes the state for a
+    tree of layers, based on the layer defined ``state`` rule using
+    ``tree_state.def_state``.
+
+    :func:`.tree_state` objective is to provide a simple and consistent way to
+    initialize state for a tree of layers. Specifically, it provides a way to
+    separate the state initialization logic from the layer definition. This
+    allows for a more clear separation of concerns, and makes it easier to
+    define new layers.
 
     Args:
         tree: A tree of layers.
@@ -102,6 +109,12 @@ def tree_eval(tree):
     For example, :class:`nn.Dropout` layer is replaced by an :class:`nn.Identity` layer
     and :class:`nn.BatchNorm` layer is replaced by :class:`nn.EvalNorm` layer when
     evaluating the tree.
+
+    :func:`.tree_eval` objective is to provide a simple and consistent way to
+    disable any trainning related behavior for a tree of layers. Specifically,
+    it provides a way to separate the evaluation logic from the layer definition.
+    This allows for a more clear separation of concerns, and makes it easier to
+    define new layers that has a single behavior.
 
     Args:
         tree: A tree of layers.
