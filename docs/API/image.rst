@@ -10,6 +10,7 @@ Image filtering
 .. autoclass:: HistogramEqualization2D
 .. autoclass:: HorizontalShear2D
 .. autoclass:: HorizontalTranslate2D
+.. autoclass:: JigSaw2D
 .. autoclass:: Pixelate2D
 .. autoclass:: PixelShuffle2D
 .. autoclass:: RandomContrast2D

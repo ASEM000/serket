@@ -49,6 +49,7 @@
 - `Pixelate2D`
 - `Solarize2D`
 - `Posterize2D`
+- `JigSaw2D`
 
 ### Deprecations
 

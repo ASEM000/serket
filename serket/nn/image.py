@@ -1174,6 +1174,94 @@ class RandomVerticalTranslate2D(sk.TreeClass):
         return 2
 
 
+@ft.partial(jax.jit, inline=True, static_argnums=1)
+def jigsaw(
+    image: jax.Array,
+    tiles: int = 1,
+    key: jr.KeyArray = jr.PRNGKey(0),
+) -> jax.Array:
+    """Jigsaw channel-first image
+
+    Args:
+        image: channel-first image (CHW)
+        tiles: number of tiles per side
+        key: random key
+    """
+    channels, height, width = image.shape
+    tile_height = height // tiles
+    tile_width = width // tiles
+
+    image_ = image[:, : height - height % tiles, : width - width % tiles]
+
+    image_ = image_.reshape(channels, tiles, tile_height, tiles, tile_width)
+    image_ = image_.transpose(1, 3, 0, 2, 4)
+    image_ = image_.reshape(-1, channels, tile_height, tile_width)
+
+    indices = jr.permutation(key, len(image_))
+    image_ = jax.vmap(lambda x: image_[x])(indices)
+
+    image_ = image_.reshape(tiles, tiles, channels, tile_height, tile_width)
+    image_ = image_.transpose(2, 0, 3, 1, 4)
+    image_ = image_.reshape(channels, tiles * tile_height, tiles * tile_width)
+
+    image = image.at[:, : height - height % tiles, : width - width % tiles].set(image_)
+
+    return image
+
+
+@sk.autoinit
+class JigSaw2D(sk.TreeClass):
+    """Mixes up tiles of an image.
+
+    Args:
+        tiles: number of tiles per side
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
+        >>> print(x)
+        [[[ 1  2  3  4]
+          [ 5  6  7  8]
+          [ 9 10 11 12]
+          [13 14 15 16]]]
+        >>> print(sk.nn.JigSaw(2)(x))
+        [[[ 9 10  3  4]
+          [13 14  7  8]
+          [11 12  1  2]
+          [15 16  5  6]]]
+
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
+        >>> layer = sk.nn.JigSaw2D(2)
+        >>> eval_layer = sk.tree_eval(layer)
+        >>> print(eval_layer(x))
+        [[[ 1  2  3  4]
+          [ 5  6  7  8]
+          [ 9 10 11 12]
+          [13 14 15 16]]]
+
+    Reference:
+        - https://imgaug.readthedocs.io/en/latest/source/overview/geometric.html#jigsaw
+    """
+
+    tiles: int = sk.field(callbacks=[IsInstance(int), Range(1)])
+
+    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
+        """Mixes up tiles of an image.
+
+        Args:
+            x: channel-first image (CHW)
+            key: random key
+        """
+        return jigsaw(x, self.tiles, key)
+
+
 @tree_eval.def_eval(RandomContrast2D)
 @tree_eval.def_eval(RandomRotate2D)
 @tree_eval.def_eval(RandomHorizontalShear2D)
@@ -1181,5 +1269,6 @@ class RandomVerticalTranslate2D(sk.TreeClass):
 @tree_eval.def_eval(RandomPerspective2D)
 @tree_eval.def_eval(RandomHorizontalTranslate2D)
 @tree_eval.def_eval(RandomVerticalTranslate2D)
+@tree_eval.def_eval(JigSaw2D)
 def random_image_transform(_):
     return Identity()

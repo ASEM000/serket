@@ -24,6 +24,7 @@ from serket.nn.image import (
     Filter2D,
     GaussianBlur2D,
     HorizontalTranslate2D,
+    JigSaw2D,
     Solarize2D,
     VerticalTranslate2D,
 )
@@ -204,3 +205,12 @@ def test_vertical_translate():
     layer = VerticalTranslate2D(0)
 
     npt.assert_allclose(layer(x), x)
+
+
+def test_jigsaw():
+    x = jnp.arange(1, 17).reshape(1, 4, 4)
+    layer = JigSaw2D(2)
+    npt.assert_allclose(
+        layer(x),
+        jnp.array([[[9, 10, 3, 4], [13, 14, 7, 8], [11, 12, 1, 2], [15, 16, 5, 6]]]),
+    )
