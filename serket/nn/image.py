@@ -1225,7 +1225,7 @@ class JigSaw2D(sk.TreeClass):
           [ 5  6  7  8]
           [ 9 10 11 12]
           [13 14 15 16]]]
-        >>> print(sk.nn.JigSaw(2)(x))
+        >>> print(sk.nn.JigSaw2D(2)(x))
         [[[ 9 10  3  4]
           [13 14  7  8]
           [11 12  1  2]
