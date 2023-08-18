@@ -22,7 +22,7 @@
 
 ### Additions
 
-- `tree_eval`: a dispatcher to define layers evaluation rule. for example `Dropout` is changed to `Identity` when `tree_state` is applied.
+- `tree_eval`: a dispatcher to define layers evaluation rule. for example `Dropout` is changed to `Identity` when `tree_eval` is applied.
 
   ```python
   @sk.tree_eval.def_eval(sk.nn.Dropout)
