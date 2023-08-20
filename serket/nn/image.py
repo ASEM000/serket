@@ -1252,6 +1252,7 @@ class JigSaw2D(sk.TreeClass):
 
     tiles: int = sk.field(callbacks=[IsInstance(int), Range(1)])
 
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         """Mixes up tiles of an image.
 
@@ -1260,6 +1261,10 @@ class JigSaw2D(sk.TreeClass):
             key: random key
         """
         return jigsaw(x, self.tiles, key)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 @tree_eval.def_eval(RandomContrast2D)
