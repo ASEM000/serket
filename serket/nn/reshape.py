@@ -742,7 +742,7 @@ class RandomZoom3D(sk.TreeClass):
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        k1, k2, k3, k4, k5, k6 = jr.split(key, 4)
+        k1, k2, k3, k4, k5, k6 = jr.split(key, 6)
         low, high = self.height_factor
         x = zoom_axis(x, jr.uniform(k1, minval=low, maxval=high), k3, axis=1)
         low, high == self.width_factor
