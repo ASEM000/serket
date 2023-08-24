@@ -211,6 +211,7 @@ class MultiHeadAttention(sk.TreeClass):
         k_features: int | None = None,
         v_features: int | None = None,
         out_features: int | None = None,
+        *,
         q_weight_init: InitType = "glorot_uniform",
         q_bias_init: InitType = "zeros",
         k_weight_init: InitType = "glorot_uniform",

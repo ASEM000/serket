@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 import jax.random as jr
+import pytest
 
 import serket as sk
 
@@ -33,3 +34,15 @@ def test_attention_shape():
     v = jr.uniform(jr.PRNGKey(2), (batch, kv_length, qkv_features))
     layer = sk.nn.MultiHeadAttention(num_heads, qkv_features, drop_rate=0.0)
     assert (layer(q, k, v, mask=mask, key=jr.PRNGKey(0)).shape) == (3, 4, 4)
+
+    with pytest.raises(ValueError):
+        sk.nn.MultiHeadAttention(10, 2)
+
+    with pytest.raises(ValueError):
+        sk.nn.MultiHeadAttention(4, 4, 10)
+
+    with pytest.raises(ValueError):
+        sk.nn.MultiHeadAttention(4, 4, 4, 10)
+
+    with pytest.raises(ValueError):
+        sk.nn.MultiHeadAttention(4, 4, 4, 4, 10)
