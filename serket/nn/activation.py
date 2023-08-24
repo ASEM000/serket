@@ -14,7 +14,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Literal, Protocol, Union, get_args
+import functools as ft
+from typing import Any, Callable, Literal, TypeVar, Union, get_args
 
 import jax
 import jax.numpy as jnp
@@ -22,6 +23,8 @@ from jax import lax
 
 import serket as sk
 from serket.nn.utils import IsInstance, Range, ScalarLike
+
+T = TypeVar("T")
 
 
 @sk.autoinit
@@ -107,7 +110,7 @@ class ELU(sk.TreeClass):
 class GELU(sk.TreeClass):
     """Gaussian error linear unit"""
 
-    approximate: bool = sk.field(default=1.0, callbacks=[IsInstance(bool)])
+    approximate: bool = sk.field(default=False, callbacks=[IsInstance(bool)])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.gelu(x, approximate=self.approximate)
@@ -344,36 +347,36 @@ ActivationLiteral = Literal[
 
 
 acts = [
-    AdaptiveLeakyReLU,
-    AdaptiveReLU,
-    AdaptiveSigmoid,
-    AdaptiveTanh,
-    CeLU,
-    ELU,
-    GELU,
-    GLU,
-    HardShrink,
-    HardSigmoid,
-    HardSwish,
-    HardTanh,
-    LeakyReLU,
-    LogSigmoid,
-    LogSoftmax,
-    Mish,
-    PReLU,
-    ReLU,
-    ReLU6,
-    SeLU,
-    Sigmoid,
-    Snake,
-    SoftPlus,
-    SoftShrink,
-    SoftSign,
-    SquarePlus,
-    Swish,
-    Tanh,
-    TanhShrink,
-    ThresholdedReLU,
+    AdaptiveLeakyReLU(),
+    AdaptiveReLU(),
+    AdaptiveSigmoid(),
+    AdaptiveTanh(),
+    CeLU(),
+    ELU(),
+    GELU(),
+    GLU(),
+    HardShrink(),
+    HardSigmoid(),
+    HardSwish(),
+    HardTanh(),
+    LeakyReLU(),
+    LogSigmoid(),
+    LogSoftmax(),
+    Mish(),
+    PReLU(),
+    ReLU(),
+    ReLU6(),
+    SeLU(),
+    Sigmoid(),
+    Snake(),
+    SoftPlus(),
+    SoftShrink(),
+    SoftSign(),
+    SquarePlus(),
+    Swish(),
+    Tanh(),
+    TanhShrink(),
+    ThresholdedReLU(),
 ]
 
 
@@ -383,28 +386,34 @@ ActivationFunctionType = Callable[[jax.typing.ArrayLike], jax.Array]
 ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 
 
-class ActivationClassType(Protocol):
+class ActivationClassType(sk.TreeClass):
     def __call__(self, x: jax.typing.ArrayLike) -> jax.Array:
         ...
 
 
-def resolve_activation(act: ActivationType) -> ActivationFunctionType:
-    # in case the user passes a trainable activation function
-    # we need to make a copy of it to avoid unpredictable side effects
-    if isinstance(act, str):
-        if act in act_map:
-            return act_map[act]()
-        raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")
+@ft.singledispatch
+def resolve_activation(act: T) -> T:
     return act
 
 
-def def_act_entry(key: str, act: ActivationClassType) -> None:
+@resolve_activation.register(str)
+def _(act: str) -> sk.TreeClass:
+    try:
+        return jax.tree_map(lambda x: x, act_map[act])
+    except KeyError:
+        raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")
+
+
+def def_act_entry(
+    key: str,
+    act: Callable[[jax.typing.ArrayLike], jax.Array] | Any,
+) -> None:
     """Register a custom activation function key for use in ``serket`` layers.
 
     Args:
         key: The key to register the function under.
-        act: a class with a ``__call__`` method that takes a single argument
-            and returns a ``jax`` array.
+        act: a callable object that takes a single argument and returns a ``jax``
+            array.
 
     Note:
         The registered key can be used in any of ``serket`` ``act_*`` arguments as
@@ -423,7 +432,7 @@ def def_act_entry(key: str, act: ActivationClassType) -> None:
         ...    my_param: float = 10.0
         ...    def __call__(self, x):
         ...        return x * self.my_param
-        >>> sk.def_act_entry("my_act", MyTrainableActivation)
+        >>> sk.def_act_entry("my_act", MyTrainableActivation())
         >>> x = jnp.ones((1, 1))
         >>> sk.nn.FNN([1, 1, 1], act="my_act", weight_init="ones", bias_init=None)(x)
         Array([[10.]], dtype=float32)
@@ -431,9 +440,7 @@ def def_act_entry(key: str, act: ActivationClassType) -> None:
     if key in act_map:
         raise ValueError(f"`init_key` {key=} already registered")
 
-    if not isinstance(act, type):
-        raise ValueError(f"Expected a class, got {act=}")
     if not callable(act):
-        raise ValueError(f"Expected a class with a `__call__` method, got {act=}")
+        raise TypeError(f"{act=} must be a callable object")
 
     act_map[key] = act
