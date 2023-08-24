@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Any, Callable, Literal, TypeVar, Union, get_args
+from typing import Callable, Literal, TypeVar, Union, get_args
 
 import jax
 import jax.numpy as jnp
@@ -386,28 +386,20 @@ ActivationFunctionType = Callable[[jax.typing.ArrayLike], jax.Array]
 ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 
 
-class ActivationClassType(sk.TreeClass):
-    def __call__(self, x: jax.typing.ArrayLike) -> jax.Array:
-        ...
-
-
 @ft.singledispatch
 def resolve_activation(act: T) -> T:
     return act
 
 
 @resolve_activation.register(str)
-def _(act: str) -> sk.TreeClass:
+def _(act: str):
     try:
         return jax.tree_map(lambda x: x, act_map[act])
     except KeyError:
         raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")
 
 
-def def_act_entry(
-    key: str,
-    act: Callable[[jax.typing.ArrayLike], jax.Array] | Any,
-) -> None:
+def def_act_entry(key: str, act: ActivationFunctionType) -> None:
     """Register a custom activation function key for use in ``serket`` layers.
 
     Args:

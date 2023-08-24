@@ -17,8 +17,9 @@ from __future__ import annotations
 import jax
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 
-from serket.nn import (
+from serket.nn.activation import (
     ELU,
     GELU,
     GLU,
@@ -48,6 +49,8 @@ from serket.nn import (
     Tanh,
     TanhShrink,
     ThresholdedReLU,
+    def_act_entry,
+    resolve_activation,
 )
 
 
@@ -286,3 +289,20 @@ def test_snake():
     expected = jnp.array([-0.29192656, 0.0, 1.7080734])
     actual = Snake()(x)
     npt.assert_allclose(actual, expected, atol=1e-4)
+
+
+def test_resolving():
+    with pytest.raises(ValueError):
+        resolve_activation("nonexistent")
+
+
+def test_def_act_entry():
+    def_act_entry("id", lambda x: x)
+
+    with pytest.raises(ValueError):
+        # duplicate entry
+        def_act_entry("id", lambda x: x)
+
+    with pytest.raises(TypeError):
+        # non-callable
+        def_act_entry("one", 1)
