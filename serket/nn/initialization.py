@@ -14,8 +14,8 @@
 from __future__ import annotations
 
 import functools as ft
-from collections.abc import Callable
-from typing import Any, Literal, Tuple, Union, get_args
+from collections.abc import Callable as ABCCallable
+from typing import Callable,Any, Literal, Tuple, Union, get_args
 
 import jax
 import jax.nn.initializers as ji
@@ -82,7 +82,7 @@ def _(init: None):
     return jtu.Partial(lambda key, shape, dtype=None: None)
 
 
-@resolve_init.register(Callable)
+@resolve_init.register(ABCCallable)
 def _(init: Callable):
     return jtu.Partial(init)
 
