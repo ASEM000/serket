@@ -18,14 +18,24 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
+import serket as sk
 from serket.nn.image import (
     AvgBlur2D,
     FFTFilter2D,
     Filter2D,
     GaussianBlur2D,
+    HorizontalShear2D,
     HorizontalTranslate2D,
     JigSaw2D,
+    Pixelate2D,
+    RandomHorizontalShear2D,
+    RandomHorizontalTranslate2D,
+    RandomRotate2D,
+    RandomVerticalShear2D,
+    RandomVerticalTranslate2D,
+    Rotate2D,
     Solarize2D,
+    VerticalShear2D,
     VerticalTranslate2D,
 )
 
@@ -167,6 +177,10 @@ def test_horizontal_translate():
 
     npt.assert_allclose(layer(x), x)
 
+    layer = RandomHorizontalTranslate2D((0, 0))
+
+    npt.assert_allclose(layer(x), x)
+
 
 def test_vertical_translate():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
@@ -206,6 +220,10 @@ def test_vertical_translate():
 
     npt.assert_allclose(layer(x), x)
 
+    layer = RandomVerticalTranslate2D((0, 0))
+
+    npt.assert_allclose(layer(x), x)
+
 
 def test_jigsaw():
     x = jnp.arange(1, 17).reshape(1, 4, 4)
@@ -214,3 +232,101 @@ def test_jigsaw():
         layer(x),
         jnp.array([[[9, 10, 3, 4], [13, 14, 7, 8], [11, 12, 1, 2], [15, 16, 5, 6]]]),
     )
+
+
+def test_rotate():
+    layer = Rotate2D(90)
+
+    x = jnp.arange(1, 26).reshape(1, 5, 5)
+    # ccw rotation
+
+    rot = jnp.array(
+        [
+            [
+                [5, 10, 15, 20, 25],
+                [4, 9, 14, 19, 24],
+                [3, 8, 13, 18, 23],
+                [2, 7, 12, 17, 22],
+                [1, 6, 11, 16, 21],
+            ]
+        ]
+    )
+
+    npt.assert_allclose(layer(x), rot)
+
+    # random roate
+
+    layer = RandomRotate2D((90, 90))
+
+    npt.assert_allclose(layer(x), rot)
+    npt.assert_allclose(sk.tree_eval(layer)(x), x)
+
+
+def test_horizontal_shear():
+    x = jnp.arange(1, 26).reshape(1, 5, 5)
+    layer = HorizontalShear2D(45)
+    shear = jnp.array(
+        [
+            [
+                [0, 0, 1, 2, 3],
+                [0, 6, 7, 8, 9],
+                [11, 12, 13, 14, 15],
+                [17, 18, 19, 20, 0],
+                [23, 24, 25, 0, 0],
+            ]
+        ]
+    )
+
+    npt.assert_allclose(layer(x), shear)
+
+    layer = RandomHorizontalShear2D((45, 45))
+    npt.assert_allclose(layer(x), shear)
+
+    npt.assert_allclose(sk.tree_eval(layer)(x), x)
+
+
+def test_vertical_shear():
+    x = jnp.arange(1, 26).reshape(1, 5, 5)
+    layer = VerticalShear2D(45)
+    shear = jnp.array(
+        [
+            [
+                [0, 0, 3, 9, 15],
+                [0, 2, 8, 14, 20],
+                [1, 7, 13, 19, 25],
+                [6, 12, 18, 24, 0],
+                [11, 17, 23, 0, 0],
+            ]
+        ]
+    )
+
+    npt.assert_allclose(layer(x), shear)
+
+    layer = RandomVerticalShear2D((45, 45))
+    npt.assert_allclose(layer(x), shear)
+
+    npt.assert_allclose(sk.tree_eval(layer)(x), x)
+
+
+def test_posterize():
+    x = jnp.arange(1, 26).reshape(1, 5, 5)
+    layer = sk.nn.Posterize2D(4)
+    posterized = jnp.array(
+        [
+            [
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [16, 16, 16, 16, 16],
+                [16, 16, 16, 16, 16],
+            ]
+        ]
+    )
+
+    npt.assert_allclose(layer(x), posterized)
+
+
+def test_pixelate():
+    x = jnp.arange(1, 26).reshape(1, 5, 5)
+    layer = Pixelate2D(1)
+    npt.assert_allclose(layer(x), x)

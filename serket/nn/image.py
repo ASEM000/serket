@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-# import kernex as kex
 import functools as ft
 
 import jax
@@ -471,7 +470,7 @@ def affine(image, matrix):
 def horizontal_shear(image: jax.Array, angle: float) -> jax.Array:
     """shear rows by an angle in degrees"""
     shear = jnp.tan(jnp.deg2rad(angle))
-    matrix = jnp.array([[1, shear], [0, 1]])
+    matrix = jnp.array([[1, 0], [shear, 1]])
     return affine(image, matrix)
 
 
@@ -489,7 +488,7 @@ def random_horizontal_shear(
 def vertical_shear(image: jax.Array, angle: float) -> jax.Array:
     """shear cols by an angle in degrees"""
     shear = jnp.tan(jnp.deg2rad(angle))
-    matrix = jnp.array([[1, 0], [shear, 1]])
+    matrix = jnp.array([[1, shear], [0, 1]])
     return affine(image, matrix)
 
 
@@ -506,7 +505,7 @@ def random_vertical_shear(
 
 def rotate(image: jax.Array, angle: float) -> jax.Array:
     """Rotate a channel-first image by an angle in degrees in CCW direction."""
-    θ = jnp.deg2rad(angle)
+    θ = jnp.deg2rad(-angle)
     matrix = jnp.array([[jnp.cos(θ), -jnp.sin(θ)], [jnp.sin(θ), jnp.cos(θ)]])
     return affine(image, matrix)
 
@@ -531,12 +530,12 @@ class Rotate2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.Rotate2D(30)(x))
-        [[[ 2  5  3  2  1]
-          [ 9 10  8  7  5]
-          [16 15 13 11 10]
-          [21 19 18 16 11]
-          [ 6 18 23 21  5]]]
+        >>> print(sk.nn.Rotate2D(90)(x))
+        [[[ 5 10 15 20 25]
+          [ 4  9 14 19 24]
+          [ 3  8 13 18 23]
+          [ 2  7 12 17 22]
+          [ 1  6 11 16 21]]]
     """
 
     def __init__(self, angle: float):
@@ -563,14 +562,14 @@ class RandomRotate2D(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
         >>> print(sk.nn.RandomRotate2D((10, 30))(x, key=jax.random.PRNGKey(0)))
-        [[[ 2  4  3  3  2]
-          [ 7  9  8  7  7]
-          [14 14 13 12 12]
-          [19 19 18 17 13]
-          [10 18 23 22 10]]]
+        [[[ 1  2  4  7  4]
+          [ 4  6  9 11 11]
+          [ 8 10 13 16 18]
+          [10 15 17 20 22]
+          [ 8 19 22 18 11]]]
     """
 
-    def __init__(self, angle_range: tuple[float, float]):
+    def __init__(self, angle_range: tuple[float, float] = (0.0, 360.0)):
         if not (
             isinstance(angle_range, tuple)
             and len(angle_range) == 2
@@ -604,12 +603,12 @@ class HorizontalShear2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.HorizontalShear2D(60)(x))
-        [[[ 0  0  3 13 22]
-          [ 0  1  8 18 13]
-          [ 0  3 13 23  0]
-          [ 1  8 18  6  0]
-          [ 4 13 23  0  0]]]
+        >>> print(sk.nn.HorizontalShear2D(45)(x))
+        [[[ 0  0  1  2  3]
+          [ 0  6  7  8  9]
+          [11 12 13 14 15]
+          [17 18 19 20  0]
+          [23 24 25  0  0]]]
     """
 
     def __init__(self, angle: float):
@@ -635,15 +634,15 @@ class RandomHorizontalShear2D(sk.TreeClass):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.RandomHorizontalShear2D((10, 60))(x, key=jax.random.PRNGKey(0)))
-        [[[ 0  1  3  7 11]
-          [ 1  4  8 12 16]
-          [ 5  9 13 17 21]
-          [10 14 18 22 20]
-          [15 19 23 10  0]]]
+        >>> print(sk.nn.RandomHorizontalShear2D((45,45))(x))
+        [[[ 0  0  1  2  3]
+          [ 0  6  7  8  9]
+          [11 12 13 14 15]
+          [17 18 19 20  0]
+          [23 24 25  0  0]]]
     """
 
-    def __init__(self, angle_range: tuple[float, float]):
+    def __init__(self, angle_range: tuple[float, float] = (0.0, 90.0)):
         if not (
             isinstance(angle_range, tuple)
             and len(angle_range) == 2
@@ -676,12 +675,12 @@ class VerticalShear2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.VerticalShear2D(60)(x))
-        [[[ 0  0  0  1  2]
-          [ 0  2  6  7  8]
-          [11 12 13 14 15]
-          [18 19 20  5  0]
-          [24 13  0  0  0]]]
+        >>> print(sk.nn.VerticalShear2D(45)(x))
+        [[[ 0  0  3  9 15]
+          [ 0  2  8 14 20]
+          [ 1  7 13 19 25]
+          [ 6 12 18 24  0]
+          [11 17 23  0  0]]]
     """
 
     def __init__(self, angle: float):
@@ -707,15 +706,15 @@ class RandomVerticalShear2D(sk.TreeClass):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.RandomVerticalShear2D((10, 60))(x, key=jax.random.PRNGKey(0)))
-        [[[ 0  1  2  3  4]
-          [ 2  6  7  8  9]
-          [11 12 13 14 15]
-          [17 18 19 20  8]
-          [22 23 24 20  0]]]
+        >>> print(sk.nn.RandomVerticalShear2D((45,45))(x))
+        [[[ 0  0  3  9 15]
+          [ 0  2  8 14 20]
+          [ 1  7 13 19 25]
+          [ 6 12 18 24  0]
+          [11 17 23  0  0]]]
     """
 
-    def __init__(self, angle_range: tuple[float, float]):
+    def __init__(self, angle_range: tuple[float, float] = (0.0, 90.0)):
         if not (
             isinstance(angle_range, tuple)
             and len(angle_range) == 2
@@ -1118,6 +1117,7 @@ class VerticalTranslate2D(sk.TreeClass):
         return 2
 
 
+@sk.autoinit
 class RandomHorizontalTranslate2D(sk.TreeClass):
     """Translate an image horizontally by a random pixel value.
 
