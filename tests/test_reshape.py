@@ -12,9 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import jax.numpy as jnp
+from __future__ import annotations
 
-from serket.nn import Resize1D, Resize2D, Resize3D, Upsample1D, Upsample2D, Upsample3D
+import jax.numpy as jnp
+import numpy.testing as npt
+
+from serket.nn import (
+    Pad1D,
+    Pad2D,
+    Pad3D,
+    RandomZoom1D,
+    RandomZoom2D,
+    RandomZoom3D,
+    Resize1D,
+    Resize2D,
+    Resize3D,
+    Upsample1D,
+    Upsample2D,
+    Upsample3D,
+)
 
 
 def test_resize1d():
@@ -41,3 +57,36 @@ def test_upsample2d():
 def test_upsample3d():
     assert Upsample3D(2)(jnp.ones([1, 2, 2, 2])).shape == (1, 4, 4, 4)
     assert Upsample3D((2, 3, 4))(jnp.ones([1, 2, 2, 2])).shape == (1, 4, 6, 8)
+
+
+def test_padding1d():
+    layer = Pad1D(padding=1)
+    assert layer(jnp.ones((1, 1))).shape == (1, 3)
+
+
+def test_padding2d():
+    layer = Pad2D(padding=1)
+    assert layer(jnp.ones((1, 1, 1))).shape == (1, 3, 3)
+
+    layer = Pad2D(padding=((1, 2), (3, 4)))
+    assert layer(jnp.ones((1, 1, 1))).shape == (1, 4, 8)
+
+
+def test_padding3d():
+    layer = Pad3D(padding=1)
+    assert layer(jnp.ones((1, 1, 1, 1))).shape == (1, 3, 3, 3)
+
+    layer = Pad3D(padding=((1, 2), (3, 4), (5, 6)))
+    assert layer(jnp.ones((1, 1, 1, 1))).shape == (1, 4, 8, 12)
+
+
+def test_random_zoom():
+    npt.assert_allclose(RandomZoom1D((0, 0))(jnp.ones((10, 5))), jnp.ones((10, 5)))
+
+    npt.assert_allclose(
+        RandomZoom2D((0.5, 0.5))(jnp.ones((10, 5, 5))).shape, (10, 5, 5)
+    )
+
+    npt.assert_allclose(
+        RandomZoom3D((0.5, 0.5))(jnp.ones((10, 5, 5, 5))).shape, (10, 5, 5, 5)
+    )
