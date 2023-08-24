@@ -94,7 +94,6 @@ def def_init_entry(key: str, init_func: InitFuncType) -> None:
         key: The key to register the function under.
         init_func: The function to register. must take three arguments: a key,
             a shape, and a dtype, and return an array of the given shape and dtype.
-            dtype must have a default value.
 
     Note:
         By design initialization function can be passed directly to ``serket`` layers
@@ -122,14 +121,5 @@ def def_init_entry(key: str, init_func: InitFuncType) -> None:
     if len(signature.parameters) != 3:
         # verify its a three argument function
         raise ValueError(f"`init_func` {len(signature.parameters)=} != 3")
-
-    argnames = list(dict(signature.parameters))
-
-    if argnames != ["key", "shape", "dtype"]:
-        # verify the names of the parameters
-        raise ValueError(f"`init_func` {argnames=} != ['key', 'shape', 'dtype']")
-
-    if signature.parameters["dtype"].default is inspect._empty:
-        raise ValueError("`init_func` `dtype` must have a default value")
 
     init_map[key] = init_func
