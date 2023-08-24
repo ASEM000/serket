@@ -13,8 +13,9 @@
 # limitations under the License.
 from __future__ import annotations
 
-from types import FunctionType
-from typing import Any, Callable, Literal, Tuple, Union, get_args
+import functools as ft
+from collections.abc import Callable
+from typing import Any, Literal, Tuple, Union, get_args
 
 import jax
 import jax.nn.initializers as ji
@@ -63,19 +64,27 @@ inits = [
 init_map: dict[str, InitType] = dict(zip(get_args(InitLiteral), inits))
 
 
-def resolve_init_func(init_func: str | InitFuncType) -> Callable:
-    if isinstance(init_func, FunctionType):
-        return jtu.Partial(init_func)
+@ft.singledispatch
+def resolve_init(init):
+    raise TypeError(f"Unknown type {type(init)}")
 
-    if isinstance(init_func, str):
-        if init_func in init_map:
-            return jtu.Partial(init_map[init_func])
-        raise ValueError(f"value must be one of ({', '.join(init_map.keys())})")
 
-    if init_func is None:
-        return jtu.Partial(lambda key, shape, dtype=None: None)
+@resolve_init.register(str)
+def _(init: str):
+    try:
+        return jtu.Partial(jax.tree_map(lambda x: x, init_map[init]))
+    except KeyError:
+        raise ValueError(f"Unknown {init=}, available init: {list(init_map)}")
 
-    raise ValueError("Value must be a string or a function.")
+
+@resolve_init.register(type(None))
+def _(init: None):
+    return jtu.Partial(lambda key, shape, dtype=None: None)
+
+
+@resolve_init.register(Callable)
+def _(init: Callable):
+    return jtu.Partial(init)
 
 
 def def_init_entry(key: str, init_func: InitFuncType) -> None:

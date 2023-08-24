@@ -27,7 +27,7 @@ import jax.random as jr
 from jax.lax import ConvDimensionNumbers
 
 import serket as sk
-from serket.nn.initialization import DType, InitType, resolve_init_func
+from serket.nn.initialization import DType, InitType, resolve_init
 from serket.nn.utils import (
     DilationType,
     KernelSizeType,
@@ -200,10 +200,10 @@ class BaseConvND(sk.TreeClass):
             raise ValueError(f"{(out_features % groups == 0)=}")
 
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
-        self.weight = resolve_init_func(self.weight_init)(key, weight_shape, dtype)
+        self.weight = resolve_init(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = resolve_init_func(self.bias_init)(key, bias_shape, dtype)
+        self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
     @property
     @abc.abstractmethod
@@ -869,10 +869,10 @@ class BaseConvNDTranspose(sk.TreeClass):
 
         in_features = positive_int_cb(self.in_features)
         weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
-        self.weight = resolve_init_func(self.weight_init)(key, weight_shape, dtype)
+        self.weight = resolve_init(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
-        self.bias = resolve_init_func(self.bias_init)(key, bias_shape, dtype)
+        self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
     @property
     @abc.abstractmethod
@@ -1564,10 +1564,10 @@ class BaseDepthwiseConvND(sk.TreeClass):
         self.bias_init = bias_init
 
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
-        self.weight = resolve_init_func(self.weight_init)(key, weight_shape, dtype)
+        self.weight = resolve_init(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
-        self.bias = resolve_init_func(self.bias_init)(key, bias_shape, dtype)
+        self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
     @property
     @abc.abstractmethod
@@ -2818,10 +2818,10 @@ class ConvNDLocal(sk.TreeClass):
             *out_size,
         )
 
-        self.weight = resolve_init_func(self.weight_init)(key, weight_shape, dtype)
+        self.weight = resolve_init(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (self.out_features, *out_size)
-        self.bias = resolve_init_func(self.bias_init)(key, bias_shape, dtype)
+        self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")

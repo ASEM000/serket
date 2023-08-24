@@ -27,7 +27,7 @@ from serket.nn.activation import (
     ActivationType,
     resolve_activation,
 )
-from serket.nn.initialization import DType, InitType, resolve_init_func
+from serket.nn.initialization import DType, InitType, resolve_init
 from serket.nn.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb
 
 T = TypeVar("T")
@@ -176,8 +176,8 @@ class Multilinear(sk.TreeClass):
 
         k1, k2 = jr.split(key)
         weight_shape = (*in_features, out_features)
-        self.weight = resolve_init_func(weight_init)(k1, weight_shape, dtype)
-        self.bias = resolve_init_func(bias_init)(k2, (out_features,), dtype)
+        self.weight = resolve_init(weight_init)(k1, weight_shape, dtype)
+        self.bias = resolve_init(bias_init)(k2, (out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, *x) -> jax.Array:
@@ -332,8 +332,8 @@ class GeneralLinear(sk.TreeClass):
 
         k1, k2 = jr.split(key)
         weight_shape = (*in_features, out_features)
-        self.weight = resolve_init_func(weight_init)(k1, weight_shape, dtype)
-        self.bias = resolve_init_func(bias_init)(k2, (self.out_features,), dtype)
+        self.weight = resolve_init(weight_init)(k1, weight_shape, dtype)
+        self.bias = resolve_init(bias_init)(k2, (self.out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array) -> jax.Array:

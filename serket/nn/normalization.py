@@ -23,7 +23,7 @@ from jax.custom_batching import custom_vmap
 
 import serket as sk
 from serket.nn.custom_transform import tree_eval, tree_state
-from serket.nn.initialization import DType, InitType, resolve_init_func
+from serket.nn.initialization import DType, InitType, resolve_init
 from serket.nn.utils import (
     Range,
     ScalarLike,
@@ -153,8 +153,8 @@ class LayerNorm(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
 
-        self.gamma = resolve_init_func(weight_init)(key, self.normalized_shape, dtype)
-        self.beta = resolve_init_func(bias_init)(key, self.normalized_shape, dtype)
+        self.gamma = resolve_init(weight_init)(key, self.normalized_shape, dtype)
+        self.beta = resolve_init(bias_init)(key, self.normalized_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -246,8 +246,8 @@ class GroupNorm(sk.TreeClass):
         if in_features % groups != 0:
             raise ValueError(f"{in_features} must be divisible by {groups=}.")
 
-        self.weight = resolve_init_func(weight_init)(key, (in_features,), dtype)
-        self.bias = resolve_init_func(bias_init)(key, (in_features,), dtype)
+        self.weight = resolve_init(weight_init)(key, (in_features,), dtype)
+        self.bias = resolve_init(bias_init)(key, (in_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array, **k) -> jax.Array:
@@ -531,8 +531,8 @@ class BatchNorm(sk.TreeClass):
         self.bias_init = bias_init
         self.axis = axis
 
-        self.weight = resolve_init_func(weight_init)(key, (in_features,), dtype=dtype)
-        self.bias = resolve_init_func(bias_init)(key, (in_features,), dtype=dtype)
+        self.weight = resolve_init(weight_init)(key, (in_features,), dtype=dtype)
+        self.bias = resolve_init(bias_init)(key, (in_features,), dtype=dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
@@ -620,8 +620,8 @@ class EvalNorm(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.axis = axis
-        self.weight = resolve_init_func(weight_init)(key, (in_features,), dtype)
-        self.bias = resolve_init_func(bias_init)(key, (in_features,), dtype)
+        self.weight = resolve_init(weight_init)(key, (in_features,), dtype)
+        self.bias = resolve_init(bias_init)(key, (in_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
