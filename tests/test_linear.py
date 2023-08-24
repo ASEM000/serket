@@ -19,7 +19,7 @@ import numpy.testing as npt
 import pytest
 
 import serket as sk
-from serket.nn import FNN, Embedding, GeneralLinear, Identity, Linear, Multilinear
+from serket.nn import FNN, MLP, Embedding, GeneralLinear, Identity, Linear, Multilinear
 
 
 def test_embed():
@@ -64,6 +64,10 @@ def test_linear():
     layer = layer.at["weight"].set(w)
     y = jnp.array([[-0.31568417]])
     npt.assert_allclose(layer(jnp.array([[1.0]])), y)
+
+    layer = Linear(None, 1, bias_init="zeros")
+    _, layer = layer.at["__call__"](jnp.ones([100, 2]))
+    assert layer.in_features == (2,)
 
 
 def test_bilinear():
@@ -135,3 +139,29 @@ def test_general_linear():
 
     with pytest.raises(ValueError):
         GeneralLinear(in_features=(1,), in_axes=(0, -3), out_features=5)
+
+    with pytest.raises(TypeError):
+        GeneralLinear(in_features=(1, "s"), in_axes=(0, -3), out_features=5)
+
+    with pytest.raises(TypeError):
+        GeneralLinear(in_features=(1, 2), in_axes=(0, "s"), out_features=3)
+
+
+def test_mlp():
+    x = jnp.linspace(0, 1, 100)[:, None]
+
+    fnn = FNN([1, 2, 1])
+    mlp = MLP(in_features=1, out_features=1, hidden_size=2, num_hidden_layers=1)
+
+    npt.assert_allclose(fnn(x), mlp(x), atol=1e-4)
+
+    fnn = FNN([1, 2, 2, 1], act=("relu", "tanh"))
+    mlp = MLP(
+        in_features=1,
+        out_features=1,
+        hidden_size=2,
+        num_hidden_layers=2,
+        act=("relu", "tanh"),
+    )
+
+    npt.assert_allclose(fnn(x), mlp(x), atol=1e-4)

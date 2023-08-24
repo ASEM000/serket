@@ -322,10 +322,10 @@ class GeneralLinear(sk.TreeClass):
         self.bias_init = bias_init
 
         if not (all(isinstance(i, int) for i in in_features)):
-            raise ValueError(f"Expected tuple of ints for {in_features=}")
+            raise TypeError(f"Expected tuple of ints for {in_features=}")
 
         if not (all(isinstance(i, int) for i in in_axes)):
-            raise ValueError(f"Expected tuple of ints for {in_axes=}")
+            raise TypeError(f"Expected tuple of ints for {in_axes=}")
 
         if len(in_axes) != len(in_features):
             raise ValueError(f"{len(in_axes)=} != {len(in_features)=}")

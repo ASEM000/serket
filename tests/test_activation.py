@@ -45,6 +45,7 @@ from serket.nn.activation import (
     SoftPlus,
     SoftShrink,
     SoftSign,
+    SquarePlus,
     Swish,
     Tanh,
     TanhShrink,
@@ -288,6 +289,13 @@ def test_snake():
     x = jnp.array([-1.0, 0, 1])
     expected = jnp.array([-0.29192656, 0.0, 1.7080734])
     actual = Snake()(x)
+    npt.assert_allclose(actual, expected, atol=1e-4)
+
+
+def test_square_plus():
+    x = jnp.array([-1.0, 0, 1])
+    expected = 0.5 * (x + jnp.sqrt(x**2 + 4))
+    actual = SquarePlus()(x)
     npt.assert_allclose(actual, expected, atol=1e-4)
 
 
