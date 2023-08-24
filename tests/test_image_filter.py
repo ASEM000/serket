@@ -29,10 +29,8 @@ from serket.nn.image import (
     JigSaw2D,
     Pixelate2D,
     RandomHorizontalShear2D,
-    RandomHorizontalTranslate2D,
     RandomRotate2D,
     RandomVerticalShear2D,
-    RandomVerticalTranslate2D,
     Rotate2D,
     Solarize2D,
     VerticalShear2D,
@@ -177,10 +175,6 @@ def test_horizontal_translate():
 
     npt.assert_allclose(layer(x), x)
 
-    layer = RandomHorizontalTranslate2D((0, 0))
-
-    npt.assert_allclose(layer(x), x)
-
 
 def test_vertical_translate():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
@@ -217,10 +211,6 @@ def test_vertical_translate():
     )
 
     layer = VerticalTranslate2D(0)
-
-    npt.assert_allclose(layer(x), x)
-
-    layer = RandomVerticalTranslate2D((0, 0))
 
     npt.assert_allclose(layer(x), x)
 
