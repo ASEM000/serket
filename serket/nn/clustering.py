@@ -132,6 +132,24 @@ class KMeans(sk.TreeClass):
         tol: The tolerance for convergence. default: 1e-4
 
     Example:
+
+        Example usage plot of :class:`.nn.KMeans`
+
+        >>> import jax
+        >>> import jax.random as jr
+        >>> import matplotlib.pyplot as plt
+        >>> import serket as sk
+        >>> x = jr.uniform(jr.PRNGKey(0), shape=(500, 2))
+        >>> layer = sk.nn.KMeans(clusters=5, tol=1e-6)
+        >>> labels, state = layer(x)
+        >>> plt.scatter(x[:, 0], x[:, 1], c=labels[:, 0], cmap="jet_r")  # doctest: +SKIP
+        >>> plt.scatter(state.centers[:, 0], state.centers[:, 1], c="r", marker="o", linewidths=4)  # doctest: +SKIP
+        
+        .. image:: ../_static/kmeans.svg
+            :width: 600
+            :align: center
+
+    Example:
         >>> import serket as sk
         >>> import jax.random as jr
         >>> features = 3
