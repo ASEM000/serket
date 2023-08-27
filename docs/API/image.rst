@@ -8,6 +8,7 @@ Image filtering
 .. autoclass:: Filter2D
 .. autoclass:: GaussianBlur2D
 .. autoclass:: HistogramEqualization2D
+.. autoclass:: HorizontalFlip2D
 .. autoclass:: HorizontalShear2D
 .. autoclass:: HorizontalTranslate2D
 .. autoclass:: JigSaw2D
@@ -21,5 +22,7 @@ Image filtering
 .. autoclass:: RandomVerticalShear2D
 .. autoclass:: RandomVerticalTranslate2D
 .. autoclass:: Rotate2D
+.. autoclass:: Solarize2D
+.. autoclass:: VerticalFlip2D
 .. autoclass:: VerticalShear2D
 .. autoclass:: VerticalTranslate2D

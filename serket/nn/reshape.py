@@ -507,66 +507,6 @@ class RandomCrop3D(RandomCropND):
         return 3
 
 
-class HorizontalFlip2D(sk.TreeClass):
-    """Flip channels left to right.
-
-    Examples:
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> x = jnp.arange(1,10).reshape(1,3, 3)
-        >>> print(x)
-        [[[1 2 3]
-          [4 5 6]
-          [7 8 9]]]
-
-        >>> print(sk.nn.HorizontalFlip2D()(x))
-        [[[3 2 1]
-          [6 5 4]
-          [9 8 7]]]
-
-    Reference:
-        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
-    """
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.vmap(lambda x: jnp.flip(x, axis=1))(x)
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class VerticalFlip2D(sk.TreeClass):
-    """Flip channels up to down.
-
-    Examples:
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> x = jnp.arange(1,10).reshape(1,3, 3)
-        >>> print(x)
-        [[[1 2 3]
-          [4 5 6]
-          [7 8 9]]]
-
-        >>> print(sk.nn.VerticalFlip2D()(x))
-        [[[7 8 9]
-          [4 5 6]
-          [1 2 3]]]
-
-    Reference:
-        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
-    """
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.vmap(lambda x: jnp.flip(x, axis=0))(x)
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
 def zoom_axis(
     x: jax.Array,
     factor: float,

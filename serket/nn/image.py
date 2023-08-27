@@ -55,6 +55,8 @@ image_updates = dict(in_features=infer_in_features)
 class AvgBlur2D(sk.TreeClass):
     """Average blur 2D layer
 
+    .. image:: ../_static/avgblur2d.png
+
     Args:
         in_features: number of input channels.
         kernel_size: size of the convolving kernel.
@@ -131,6 +133,8 @@ class AvgBlur2D(sk.TreeClass):
 
 class GaussianBlur2D(sk.TreeClass):
     """Apply Gaussian blur to a channel-first image.
+
+    .. image:: ../_static/gaussianblur2d.png
 
     Args:
         in_features: number of input features
@@ -215,6 +219,8 @@ class GaussianBlur2D(sk.TreeClass):
 class Filter2D(sk.TreeClass):
     """Apply 2D filter for each channel
 
+    .. image:: ../_static/filter2d.png
+
     Args:
         in_features: number of input channels.
         kernel: kernel array.
@@ -261,6 +267,8 @@ class Filter2D(sk.TreeClass):
 
 class FFTFilter2D(sk.TreeClass):
     """Apply 2D filter for each channel using FFT
+
+    .. image:: ../_static/filter2d.png
 
     Args:
         in_features: number of input channels
@@ -408,6 +416,11 @@ def random_contrast_nd(
 class AdjustContrast2D(sk.TreeClass):
     """Adjusts the contrast of an 2D input by scaling the pixel values by a factor.
 
+    .. image:: ../_static/adjustcontrast2d.png
+
+    Args:
+        contrast_factor: contrast factor to adust the contrast by. Defaults to 1.0.
+
     Reference:
         - https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
         - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
@@ -417,7 +430,8 @@ class AdjustContrast2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        return lax.stop_gradient(adjust_contrast_nd(x, self.contrast_factor))
+        contrast_factor = jax.lax.stop_gradient(self.contrast_factor)
+        return adjust_contrast_nd(x, contrast_factor)
 
     @property
     def spatial_ndim(self) -> int:
@@ -523,6 +537,8 @@ def random_rotate(
 class Rotate2D(sk.TreeClass):
     """Rotate a 2D image by an angle in dgrees in CCW direction
 
+    .. image:: ../_static/rotate2d.png
+
     Args:
         angle: angle to rotate in degrees counter-clockwise direction.
 
@@ -596,6 +612,8 @@ class RandomRotate2D(sk.TreeClass):
 class HorizontalShear2D(sk.TreeClass):
     """Shear an image horizontally
 
+    .. image:: ../_static/horizontalshear2d.png
+
     Args:
         angle: angle to rotate in degrees counter-clockwise direction.
 
@@ -667,6 +685,8 @@ class RandomHorizontalShear2D(sk.TreeClass):
 
 class VerticalShear2D(sk.TreeClass):
     """Shear an image vertically
+
+    .. image:: ../_static/verticalshear2d.png
 
     Args:
         angle: angle to rotate in degrees counter-clockwise direction.
@@ -751,6 +771,8 @@ def pixelate(image: jax.Array, scale: int = 16) -> jax.Array:
 class Pixelate2D(sk.TreeClass):
     """Pixelate an image by upsizing and downsizing an image
 
+    .. image:: ../_static/pixelate2d.png
+
     Args:
         scale: the scale to which the image will be downsized before being upsized
             to the original shape. for example, ``scale=2`` means the image will
@@ -817,6 +839,8 @@ def random_perspective(
 
 class RandomPerspective2D(sk.TreeClass):
     """Applies a random perspective transform to a channel-first image.
+
+    .. image:: ../_static/randomperspective2d.png
 
     Args:
         scale: the scale of the random perspective transform. Higher scale will
@@ -922,6 +946,8 @@ def solarize(
 class Solarize2D(sk.TreeClass):
     """Inverts all values above a given threshold.
 
+    .. image:: ../_static/solarize2d.png
+
     Args:
         threshold: The threshold value above which to invert.
         max_val: The maximum value of the image. e.g. 255 for uint8 images.
@@ -974,6 +1000,8 @@ def posterize(image: jax.Array, bits: int) -> jax.Array:
 @sk.autoinit
 class Posterize2D(sk.TreeClass):
     """Reduce the number of bits for each color channel.
+
+    .. image:: ../_static/nn/posterize2d.png
 
     Args:
         bits: The number of bits to keep for each channel (1-8).
@@ -1061,6 +1089,8 @@ def random_vertical_translate(image: jax.Array, key: jr.KeyArray) -> jax.Array:
 class HorizontalTranslate2D(sk.TreeClass):
     """Translate an image horizontally by a pixel value.
 
+    .. image:: ../_static/horizontaltranslate2d.png
+
     Args:
         shift: The number of pixels to shift the image by.
 
@@ -1090,6 +1120,8 @@ class HorizontalTranslate2D(sk.TreeClass):
 @sk.autoinit
 class VerticalTranslate2D(sk.TreeClass):
     """Translate an image vertically by a pixel value.
+
+    .. image:: ../_static/verticaltranslate2d.png
 
     Args:
         shift: The number of pixels to shift the image by.
@@ -1213,6 +1245,8 @@ def jigsaw(
 class JigSaw2D(sk.TreeClass):
     """Mixes up tiles of an image.
 
+    .. image:: ../_static/jigsaw2d.png
+
     Args:
         tiles: number of tiles per side
 
@@ -1261,6 +1295,70 @@ class JigSaw2D(sk.TreeClass):
             key: random key
         """
         return jigsaw(x, self.tiles, key)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class HorizontalFlip2D(sk.TreeClass):
+    """Flip channels left to right.
+
+    .. image:: ../_static/horizontalflip2d.png
+
+    Examples:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> x = jnp.arange(1,10).reshape(1,3, 3)
+        >>> print(x)
+        [[[1 2 3]
+          [4 5 6]
+          [7 8 9]]]
+
+        >>> print(sk.nn.HorizontalFlip2D()(x))
+        [[[3 2 1]
+          [6 5 4]
+          [9 8 7]]]
+
+    Reference:
+        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
+    """
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        return jax.vmap(lambda x: jnp.flip(x, axis=1))(x)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class VerticalFlip2D(sk.TreeClass):
+    """Flip channels up to down.
+
+    .. image:: ../_static/verticalflip2d.png
+
+    Examples:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> x = jnp.arange(1,10).reshape(1,3, 3)
+        >>> print(x)
+        [[[1 2 3]
+          [4 5 6]
+          [7 8 9]]]
+
+        >>> print(sk.nn.VerticalFlip2D()(x))
+        [[[7 8 9]
+          [4 5 6]
+          [1 2 3]]]
+
+    Reference:
+        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
+    """
+
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, **k) -> jax.Array:
+        return jax.vmap(lambda x: jnp.flip(x, axis=0))(x)
 
     @property
     def spatial_ndim(self) -> int:

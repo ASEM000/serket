@@ -94,6 +94,7 @@ from .image import (
     Filter2D,
     GaussianBlur2D,
     HistogramEqualization2D,
+    HorizontalFlip2D,
     HorizontalShear2D,
     HorizontalTranslate2D,
     JigSaw2D,
@@ -109,6 +110,7 @@ from .image import (
     RandomVerticalTranslate2D,
     Rotate2D,
     Solarize2D,
+    VerticalFlip2D,
     VerticalShear2D,
     VerticalTranslate2D,
 )
@@ -161,7 +163,6 @@ from .reshape import (
     Crop2D,
     Crop3D,
     Flatten,
-    HorizontalFlip2D,
     Pad1D,
     Pad2D,
     Pad3D,
@@ -178,7 +179,6 @@ from .reshape import (
     Upsample1D,
     Upsample2D,
     Upsample3D,
-    VerticalFlip2D,
 )
 
 __all__ = (
@@ -279,6 +279,7 @@ __all__ = (
     "Filter2D",
     "GaussianBlur2D",
     "HistogramEqualization2D",
+    "HorizontalFlip2D",
     "HorizontalShear2D",
     "HorizontalTranslate2D",
     "JigSaw2D",
@@ -294,6 +295,7 @@ __all__ = (
     "RandomVerticalTranslate2D",
     "Rotate2D",
     "Solarize2D",
+    "VerticalFlip2D",
     "VerticalShear2D",
     "VerticalTranslate2D",
     # kmeans
@@ -343,7 +345,6 @@ __all__ = (
     "Crop2D",
     "Crop3D",
     "Flatten",
-    "HorizontalFlip2D",
     "Pad1D",
     "Pad2D",
     "Pad3D",
@@ -360,7 +361,6 @@ __all__ = (
     "Upsample1D",
     "Upsample2D",
     "Upsample3D",
-    "VerticalFlip2D",
     # block
     "blocks",
 )
