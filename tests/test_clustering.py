@@ -42,8 +42,6 @@ def test_kmeans():
     # pick a point near one of the centers
     xx = jnp.array([[0.5, 0.2]])
     labels, eval_state = sk.tree_eval(layer)(xx, state)
-    assert eval_state.iters is None
-    assert eval_state.error is None
     # centers should not change
     npt.assert_allclose(state.centers, eval_state.centers, atol=1e-6)
     assert labels[0] == 0

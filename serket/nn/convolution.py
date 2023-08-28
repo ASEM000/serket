@@ -25,6 +25,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 from jax.lax import ConvDimensionNumbers
+from typing_extensions import Annotated
 
 import serket as sk
 from serket.nn.initialization import DType, InitType, resolve_init
@@ -212,6 +213,44 @@ class BaseConvND(sk.TreeClass):
         ...
 
 
+def convolution_ndim(
+    array: jax.Array,
+    weight: Annotated[jax.Array, "OIHW"],
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+    dilation: tuple[int, ...],
+    groups: int,
+) -> jax.Array:
+    """Convolution function wrapping ``jax.lax.conv_general_dilated``.
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
+        bias: bias. shape is (out_features, (1,)*spatial).
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+        dilation: dilation of the convolutional kernel accepts tuple of integers
+            for different dilation in each dimension.
+        groups: number of groups to use for grouped convolution.
+    """
+    x = jax.lax.conv_general_dilated(
+        lhs=jnp.expand_dims(array, 0),
+        rhs=weight,
+        window_strides=strides,
+        padding=padding,
+        rhs_dilation=dilation,
+        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
+        feature_group_count=groups,
+    )
+
+    if bias is None:
+        return jnp.squeeze(x, 0)
+    return jnp.squeeze((x + bias), 0)
+
+
 class ConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -224,19 +263,15 @@ class ConvND(BaseConvND):
             strides=self.strides,
         )
 
-        x = jax.lax.conv_general_dilated(
-            lhs=jnp.expand_dims(x, 0),
-            rhs=self.weight,
-            window_strides=self.strides,
+        return convolution_ndim(
+            array=x,
+            weight=self.weight,
+            bias=self.bias,
+            strides=self.strides,
             padding=padding,
-            rhs_dilation=self.dilation,
-            dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
-            feature_group_count=self.groups,
+            dilation=self.dilation,
+            groups=self.groups,
         )
-
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze((x + self.bias), 0)
 
 
 class Conv1D(ConvND):
@@ -524,6 +559,43 @@ class Conv3D(ConvND):
         return 3
 
 
+def fft_convolution_ndim(
+    array: jax.Array,
+    weight: Annotated[jax.Array, "OIHW"],
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+    dilation: tuple[int, ...],
+    groups: int,
+) -> jax.Array:
+    """Convolution function wrapping ``fft_conv_general_dilated``.
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
+        bias: bias. shape is (out_features, (1,)*spatial).
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+        dilation: dilation of the convolutional kernel accepts tuple of integers
+            for different dilation in each dimension.
+        groups: number of groups to use for grouped convolution.
+    """
+    x = fft_conv_general_dilated(
+        lhs=jnp.expand_dims(array, 0),
+        rhs=weight,
+        strides=strides,
+        padding=padding,
+        dilation=dilation,
+        groups=groups,
+    )
+
+    if bias is None:
+        return jnp.squeeze(x, 0)
+    return jnp.squeeze((x + bias), 0)
+
+
 class FFTConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -536,18 +608,15 @@ class FFTConvND(BaseConvND):
             strides=self.strides,
         )
 
-        x = fft_conv_general_dilated(
-            lhs=jnp.expand_dims(x, 0),
-            rhs=self.weight,
+        return fft_convolution_ndim(
+            array=x,
+            weight=self.weight,
+            bias=self.bias,
             strides=self.strides,
             padding=padding,
-            groups=self.groups,
             dilation=self.dilation,
+            groups=self.groups,
         )
-
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze((x + self.bias), 0)
 
 
 class FFTConv1D(FFTConvND):
@@ -881,6 +950,49 @@ class BaseConvNDTranspose(sk.TreeClass):
         ...
 
 
+def transposed_convolution_ndim(
+    array: jax.Array,
+    weight: Annotated[jax.Array, "OIHW"],
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+    dilation: tuple[int, ...],
+    out_padding: int,
+) -> jax.Array:
+    """Transposed convolution function wrapping ``jax.lax.conv_general_dilated``.
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
+        bias: bias. shape is (out_features, (1,)*spatial).
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+        dilation: dilation of the convolutional kernel accepts tuple of integers
+            for different dilation in each dimension.
+        out_padding: padding of the output after convolution.
+    """
+    transposed_padding = calculate_transpose_padding(
+        padding=padding,
+        extra_padding=out_padding,
+        kernel_size=weight.shape[2:],
+        input_dilation=dilation,
+    )
+    x = jax.lax.conv_transpose(
+        lhs=jnp.expand_dims(array, 0),
+        rhs=weight,
+        strides=strides,
+        padding=transposed_padding,
+        rhs_dilation=dilation,
+        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
+    )
+
+    if bias is None:
+        return jnp.squeeze(x, 0)
+    return jnp.squeeze(x + bias, 0)
+
+
 class ConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -893,25 +1005,15 @@ class ConvNDTranspose(BaseConvNDTranspose):
             strides=self.strides,
         )
 
-        transposed_padding = calculate_transpose_padding(
-            padding=padding,
-            extra_padding=self.out_padding,
-            kernel_size=self.kernel_size,
-            input_dilation=self.dilation,
-        )
-
-        x = jax.lax.conv_transpose(
-            lhs=jnp.expand_dims(x, 0),
-            rhs=self.weight,
+        return transposed_convolution_ndim(
+            array=x,
+            weight=self.weight,
+            bias=self.bias,
             strides=self.strides,
-            padding=transposed_padding,
-            rhs_dilation=self.dilation,
-            dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
+            padding=padding,
+            dilation=self.dilation,
+            out_padding=self.out_padding,
         )
-
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze(x + self.bias, 0)
 
 
 class Conv1DTranspose(ConvNDTranspose):
@@ -1211,6 +1313,49 @@ class Conv3DTranspose(ConvNDTranspose):
         return 3
 
 
+def transposed_fft_convolution_ndim(
+    array: jax.Array,
+    weight: Annotated[jax.Array, "OIHW"],
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+    dilation: tuple[int, ...],
+    out_padding: int,
+) -> jax.Array:
+    """Transposed convolution function wrapping ``fft_conv_general_dilated``.
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
+        bias: bias. shape is (out_features, (1,)*spatial).
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+        dilation: dilation of the convolutional kernel accepts tuple of integers
+            for different dilation in each dimension.
+        out_padding: padding of the output after convolution.
+    """
+    transposed_padding = calculate_transpose_padding(
+        padding=padding,
+        extra_padding=out_padding,
+        kernel_size=weight.shape[2:],
+        input_dilation=dilation,
+    )
+    x = fft_conv_general_dilated(
+        lhs=jnp.expand_dims(array, 0),
+        rhs=weight,
+        strides=strides,
+        padding=transposed_padding,
+        dilation=dilation,
+        groups=1,
+    )
+
+    if bias is None:
+        return jnp.squeeze(x, 0)
+    return jnp.squeeze(x + bias, 0)
+
+
 class FFTConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -1223,24 +1368,15 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
             strides=self.strides,
         )
 
-        transposed_padding = calculate_transpose_padding(
-            padding=padding,
-            extra_padding=self.out_padding,
-            kernel_size=self.kernel_size,
-            input_dilation=self.dilation,
-        )
-
-        x = fft_conv_general_dilated(
-            lhs=jnp.expand_dims(x, 0),
-            rhs=self.weight,
+        return transposed_fft_convolution_ndim(
+            array=x,
+            weight=self.weight,
+            bias=self.bias,
             strides=self.strides,
-            padding=transposed_padding,
+            padding=padding,
             dilation=self.dilation,
-            groups=1,
+            out_padding=self.out_padding,
         )
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze(x + self.bias, 0)
 
 
 class FFTConv1DTranspose(FFTConvNDTranspose):
@@ -1576,6 +1712,40 @@ class BaseDepthwiseConvND(sk.TreeClass):
         ...
 
 
+def depthwise_convolution_ndim(
+    array: jax.Array,
+    weight: Annotated[jax.Array, "OIHW"],
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+) -> jax.Array:
+    """Depthwise convolution function wrapping ``jax.lax.conv_general_dilated``.
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
+        bias: bias. shape is (out_features, (1,)*spatial).
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+    """
+
+    x = jax.lax.conv_general_dilated(
+        lhs=jnp.expand_dims(array, 0),
+        rhs=weight,
+        window_strides=strides,
+        padding=padding,
+        rhs_dilation=(1,) * (array.ndim - 1),
+        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
+        feature_group_count=array.shape[0],  # in_features
+    )
+
+    if bias is None:
+        return jnp.squeeze(x, 0)
+    return jnp.squeeze(x + bias, 0)
+
+
 class DepthwiseConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -1588,19 +1758,13 @@ class DepthwiseConvND(BaseDepthwiseConvND):
             strides=self.strides,
         )
 
-        x = jax.lax.conv_general_dilated(
-            lhs=jnp.expand_dims(x, 0),
-            rhs=self.weight,
-            window_strides=self.strides,
+        return depthwise_convolution_ndim(
+            array=x,
+            weight=self.weight,
+            bias=self.bias,
+            strides=self.strides,
             padding=padding,
-            rhs_dilation=canonicalize(1, self.spatial_ndim, "dilation"),
-            dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
-            feature_group_count=self.in_features,
         )
-
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze((x + self.bias), 0)
 
 
 class DepthwiseConv1D(DepthwiseConvND):
@@ -1850,6 +2014,39 @@ class DepthwiseConv3D(DepthwiseConvND):
         return 3
 
 
+def depthwise_fft_convolution_ndim(
+    array: jax.Array,
+    weight: Annotated[jax.Array, "OIHW"],
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+) -> jax.Array:
+    """Depthwise convolution function wrapping ``jax.lax.conv_general_dilated``.
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
+        bias: bias. shape is (out_features, (1,)*spatial).
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+    """
+
+    x = fft_conv_general_dilated(
+        lhs=jnp.expand_dims(array, 0),
+        rhs=weight,
+        strides=strides,
+        padding=padding,
+        dilation=(1,) * (array.ndim - 1),
+        groups=array.shape[0],  # in_features
+    )
+
+    if bias is None:
+        return jnp.squeeze(x, 0)
+    return jnp.squeeze(x + bias, 0)
+
+
 class DepthwiseFFTConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
@@ -1862,18 +2059,13 @@ class DepthwiseFFTConvND(BaseDepthwiseConvND):
             strides=self.strides,
         )
 
-        x = fft_conv_general_dilated(
-            lhs=jnp.expand_dims(x, 0),
-            rhs=self.weight,
+        return depthwise_fft_convolution_ndim(
+            array=x,
+            weight=self.weight,
+            bias=self.bias,
             strides=self.strides,
             padding=padding,
-            dilation=canonicalize(1, self.spatial_ndim, "dilation"),
-            groups=self.in_features,
         )
-
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze((x + self.bias), 0)
 
 
 class DepthwiseFFTConv1D(DepthwiseFFTConvND):
@@ -2770,6 +2962,46 @@ def infer_in_size(_, x, *__, **___) -> tuple[int, ...]:
 updates = {**dict(in_size=infer_in_size), **updates}
 
 
+def local_convolution_ndim(
+    array: jax.Array,
+    weight: Annotated[jax.Array, "OIHW"],
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+    dilation: tuple[int, ...],
+    kernel_size: tuple[int, ...],
+) -> jax.Array:
+    """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
+        bias: bias. shape is (out_features, (1,)*spatial).
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+        dilation: dilation of the convolution accepts tuple of integers for different
+            dilation in each dimension.
+        kernel_size: size of the convolutional kernel accepts tuple of integers for
+            different kernel sizes in each dimension.
+    """
+
+    x = jax.lax.conv_general_dilated_local(
+        lhs=jnp.expand_dims(array, 0),
+        rhs=weight,
+        window_strides=strides,
+        padding=padding,
+        filter_shape=kernel_size,
+        rhs_dilation=dilation,
+        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
+    )
+
+    if bias is None:
+        return jnp.squeeze(x, 0)
+    return jnp.squeeze(x + bias, 0)
+
+
 class ConvNDLocal(sk.TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
@@ -2827,19 +3059,15 @@ class ConvNDLocal(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
-        x = jax.lax.conv_general_dilated_local(
-            lhs=jnp.expand_dims(x, 0),
-            rhs=self.weight,
-            window_strides=self.strides,
+        return local_convolution_ndim(
+            array=x,
+            weight=self.weight,
+            bias=self.bias,
+            strides=self.strides,
             padding=self.padding,
-            filter_shape=self.kernel_size,
-            rhs_dilation=self.dilation,
-            dimension_numbers=generate_conv_dim_numbers(self.spatial_ndim),
+            dilation=self.dilation,
+            kernel_size=self.kernel_size,
         )
-
-        if self.bias is None:
-            return jnp.squeeze(x, 0)
-        return jnp.squeeze((x + self.bias), 0)
 
     @property
     @abc.abstractmethod

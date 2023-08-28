@@ -144,7 +144,7 @@ class KMeans(sk.TreeClass):
         >>> labels, state = layer(x)
         >>> plt.scatter(x[:, 0], x[:, 1], c=labels[:, 0], cmap="jet_r")  # doctest: +SKIP
         >>> plt.scatter(state.centers[:, 0], state.centers[:, 1], c="r", marker="o", linewidths=4)  # doctest: +SKIP
-        
+
         .. image:: ../_static/kmeans.svg
             :width: 600
             :align: center
@@ -227,7 +227,6 @@ class EvalKMeans(sk.TreeClass):
     ) -> tuple[jax.Array, KMeansState]:
         distances = distances_from_centers(x, state.centers)
         labels = labels_from_distances(distances)
-        state = state._replace(iters=None, error=None)
         return labels, state
 
 
