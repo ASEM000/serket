@@ -380,6 +380,8 @@ class RandomCutout1D(sk.TreeClass):
 
 class RandomCutout2D(sk.TreeClass):
     """Random Cutouts for spatial 2D array
+    
+    .. image:: ../_static/randomcutout2d.png
 
     Args:
         shape: shape of the cutout. accepts int or a two element tuple.
