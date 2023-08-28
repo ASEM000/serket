@@ -54,3 +54,4 @@
 ### Deprecations
 
 - `Bilinear` is deprecated, use `Multilinear((in1_features, in2_features), out_features)`
+- `HistogramEqualization2D`

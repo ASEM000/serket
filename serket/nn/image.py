@@ -314,36 +314,6 @@ class FFTFilter2D(sk.TreeClass):
         return 2
 
 
-class HistogramEqualization2D(sk.TreeClass):
-    """Apply histogram equalization to 2D spatial array channel wise
-
-    Args:
-        bins: number of bins. Defaults to 256.
-
-    Reference:
-        - https://en.wikipedia.org/wiki/Histogram_equalization
-        - http://www.janeriksolem.net/histogram-equalization-with-python-and.html
-        - https://scikit-image.org/docs/stable/api/skimage.exposure.html#skimage.exposure.equalize_hist
-        - https://stackoverflow.com/questions/28518684/histogram-equalization-of-grayscale-images-with-numpy
-    """
-
-    def __init__(self, bins: int = 256):
-        self.bins = positive_int_cb(bins)
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        bins_count = self.bins
-        hist, bins = jnp.histogram(x.flatten(), bins_count, density=True)
-        cdf = hist.cumsum()
-        cdf = (bins_count - 1) * cdf / cdf[-1]
-        return jnp.interp(x.flatten(), bins[:-1], cdf).reshape(x.shape)
-
-    @property
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the image."""
-        return 2
-
-
 class PixelShuffle2D(sk.TreeClass):
     """Rearrange elements in a tensor.
 

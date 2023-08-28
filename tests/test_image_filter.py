@@ -20,6 +20,7 @@ import numpy.testing as npt
 import pytest
 
 import serket as sk
+from serket.nn import HorizontalFlip2D, PixelShuffle2D, VerticalFlip2D
 from serket.nn.image import (
     AdjustContrast2D,
     AvgBlur2D,
@@ -394,3 +395,39 @@ def test_random_contrast_2d():
         y,
         atol=1e-5,
     )
+
+
+def test_flip_left_right_2d():
+    flip = HorizontalFlip2D()
+    x = jnp.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]])
+    y = flip(x)
+    npt.assert_allclose(y, jnp.array([[[3, 2, 1], [6, 5, 4], [9, 8, 7]]]))
+
+
+def test_flip_up_down_2d():
+    flip = VerticalFlip2D()
+    x = jnp.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]])
+    y = flip(x)
+    npt.assert_allclose(y, jnp.array([[[7, 8, 9], [4, 5, 6], [1, 2, 3]]]))
+
+
+def test_pixel_shuffle():
+    x = jnp.array(
+        [
+            [[0.08482574, 1.9097648], [0.29561743, 1.120948]],
+            [[0.33432344, -0.82606775], [0.6481277, 1.0434873]],
+            [[-0.7824839, -0.4539462], [0.6297971, 0.81524646]],
+            [[-0.32787678, -1.1234448], [-1.6607416, 0.27290547]],
+        ]
+    )
+
+    ps = PixelShuffle2D(2)
+    y = jnp.array([0.08482574, 0.33432344, 1.9097648, -0.82606775])
+
+    npt.assert_allclose(ps(x)[0, 0], y, atol=1e-5)
+
+    with pytest.raises(ValueError):
+        PixelShuffle2D(3)(jnp.ones([6, 4, 4]))
+
+    with pytest.raises(ValueError):
+        PixelShuffle2D(-3)(jnp.ones([9, 6, 4]))

@@ -7,7 +7,6 @@ Image filtering
 .. autoclass:: FFTFilter2D
 .. autoclass:: Filter2D
 .. autoclass:: GaussianBlur2D
-.. autoclass:: HistogramEqualization2D
 .. autoclass:: HorizontalFlip2D
 .. autoclass:: HorizontalShear2D
 .. autoclass:: HorizontalTranslate2D
