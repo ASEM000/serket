@@ -227,7 +227,7 @@ def convolution_ndim(
     Args:
         array: input array. shape is (in_features, *spatial).
         weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial).
+        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -573,7 +573,7 @@ def fft_convolution_ndim(
     Args:
         array: input array. shape is (in_features, *spatial).
         weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial).
+        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -964,7 +964,7 @@ def transposed_convolution_ndim(
     Args:
         array: input array. shape is (in_features, *spatial).
         weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial).
+        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -1327,7 +1327,7 @@ def transposed_fft_convolution_ndim(
     Args:
         array: input array. shape is (in_features, *spatial).
         weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial).
+        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -1724,7 +1724,7 @@ def depthwise_convolution_ndim(
     Args:
         array: input array. shape is (in_features, *spatial).
         weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial).
+        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -2026,7 +2026,7 @@ def depthwise_fft_convolution_ndim(
     Args:
         array: input array. shape is (in_features, *spatial).
         weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial).
+        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -2976,7 +2976,7 @@ def local_convolution_ndim(
     Args:
         array: input array. shape is (in_features, *spatial).
         weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial).
+        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers

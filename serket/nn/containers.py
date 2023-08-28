@@ -25,6 +25,30 @@ from serket.nn.custom_transform import tree_eval
 from serket.nn.utils import Range
 
 
+def sequential(
+    layers: tuple[Any, ...],
+    array: jax.Array,
+    *,
+    key: jr.KeyArray,
+):
+    """Applies a sequence of layers to an array.
+
+    Args:
+        layers: a tuple of layers a callable accepting an array and returning an
+            array with an optional ``key`` argument for random number generation.
+        array: an array to apply the layers to.
+        key: a random number generator key.
+
+    """
+    for key, layer in zip(jr.split(key, len(layers)), layers):
+        try:
+            array = layer(array, key=key)
+        except TypeError:
+            # key argument is not supported
+            array = layer(array)
+    return array
+
+
 class Sequential(sk.TreeClass):
     """A sequential container for layers.
 
@@ -49,12 +73,7 @@ class Sequential(sk.TreeClass):
         self.layers = layers
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        for key, layer in zip(jr.split(key, len(self.layers)), self.layers):
-            try:
-                x = layer(x, key=key)
-            except TypeError:
-                x = layer(x)
-        return x
+        return sequential(layers=self.layers, array=x, key=key)
 
     @ft.singledispatchmethod
     def __getitem__(self, key):
@@ -77,6 +96,24 @@ class Sequential(sk.TreeClass):
 
     def __reversed__(self):
         return reversed(self.layers)
+
+
+def random_apply(
+    layer,
+    array: jax.Array,
+    *,
+    rate: float,
+    key: jr.KeyArray,
+) -> jax.Array:
+    """Randomly applies a layer with probability ``rate``.
+
+    Args:
+        layer: layer to apply.
+        array: an array to apply the layer to.
+        rate: probability of applying the layer
+        key: a random number generator key.
+    """
+    return layer(array) if jr.bernoulli(key, rate) else array
 
 
 @sk.autoinit
@@ -110,7 +147,24 @@ class RandomApply(sk.TreeClass):
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)):
         rate = jax.lax.stop_gradient(self.rate)
-        return self.layer(x) if jr.bernoulli(key, rate) else x
+        return random_apply(layer=self.layer, array=x, rate=rate, key=key)
+
+
+def random_choice(
+    layers: tuple[Any, ...],
+    array: jax.Array,
+    *,
+    key: jr.KeyArray,
+) -> jax.Array:
+    """Randomly selects one of the given layers/functions.
+
+    Args:
+        layers: variable number of layers/functions to select from.
+        array: an array to apply the layer to.
+        key: a random number generator key.
+    """
+    index = jr.randint(key, (), 0, len(layers))
+    return jax.lax.switch(index, layers, array)
 
 
 class RandomChoice(sk.TreeClass):
@@ -148,8 +202,7 @@ class RandomChoice(sk.TreeClass):
         self.layers = layers
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        index = jr.randint(key, (), 0, len(self.layers))
-        return jax.lax.switch(index, self.layers, x)
+        return random_choice(layers=self.layers, array=x, key=key)
 
 
 @tree_eval.def_eval(RandomChoice)

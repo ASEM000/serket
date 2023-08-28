@@ -164,6 +164,15 @@ class GLU(sk.TreeClass):
         return jax.nn.glu(x)
 
 
+def hard_shrink(x: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
+    """Hard shrink activation function
+
+    Reference:
+        https://arxiv.org/pdf/1702.00783.pdf.
+    """
+    return jnp.where(x > alpha, x, jnp.where(x < -alpha, x, 0.0))
+
+
 @sk.autoinit
 class HardShrink(sk.TreeClass):
     """Hard shrink activation function"""
@@ -172,7 +181,7 @@ class HardShrink(sk.TreeClass):
 
     def __call__(self, x: jax.Array) -> jax.Array:
         alpha = lax.stop_gradient(self.alpha)
-        return jnp.where(x > alpha, x, jnp.where(x < -alpha, x, 0.0))
+        return hard_shrink(x, alpha)
 
 
 class HardSigmoid(sk.TreeClass):
@@ -255,11 +264,16 @@ class SoftPlus(sk.TreeClass):
         return jax.nn.softplus(x)
 
 
+def softsign(x: jax.typing.ArrayLike) -> jax.Array:
+    """SoftSign activation function"""
+    return x / (1 + jnp.abs(x))
+
+
 class SoftSign(sk.TreeClass):
     """SoftSign activation function"""
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        return x / (1 + jnp.abs(x))
+        return softsign(x)
 
 
 def softshrink(x: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
@@ -316,11 +330,16 @@ class Tanh(sk.TreeClass):
         return jax.nn.tanh(x)
 
 
+def tanh_shrink(x: jax.typing.ArrayLike) -> jax.Array:
+    """TanhShrink activation function"""
+    return x - jnp.tanh(x)
+
+
 class TanhShrink(sk.TreeClass):
     """TanhShrink activation function"""
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        return x - jax.nn.tanh(x)
+        return tanh_shrink(x)
 
 
 def thresholded_relu(x: jax.typing.ArrayLike, theta: float = 1.0) -> jax.Array:
@@ -436,43 +455,42 @@ ActivationLiteral = Literal[
 
 
 acts = [
-    AdaptiveLeakyReLU(),
-    AdaptiveReLU(),
-    AdaptiveSigmoid(),
-    AdaptiveTanh(),
-    CeLU(),
-    ELU(),
-    GELU(),
-    GLU(),
-    HardShrink(),
-    HardSigmoid(),
-    HardSwish(),
-    HardTanh(),
-    LeakyReLU(),
-    LogSigmoid(),
-    LogSoftmax(),
-    Mish(),
-    PReLU(),
-    ReLU(),
-    ReLU6(),
-    SeLU(),
-    Sigmoid(),
-    Snake(),
-    SoftPlus(),
-    SoftShrink(),
-    SoftSign(),
-    SquarePlus(),
-    Swish(),
-    Tanh(),
-    TanhShrink(),
-    ThresholdedReLU(),
+    adaptive_leaky_relu,
+    adaptive_relu,
+    adaptive_sigmoid,
+    adaptive_tanh,
+    jax.nn.celu,
+    jax.nn.elu,
+    jax.nn.gelu,
+    jax.nn.glu,
+    hard_shrink,
+    jax.nn.hard_sigmoid,
+    jax.nn.hard_swish,
+    jax.nn.hard_tanh,
+    jax.nn.leaky_relu,
+    jax.nn.log_sigmoid,
+    jax.nn.log_softmax,
+    mish,
+    prelu,
+    jax.nn.relu,
+    jax.nn.relu6,
+    jax.nn.selu,
+    jax.nn.sigmoid,
+    snake,
+    jax.nn.softplus,
+    softshrink,
+    softsign,
+    squareplus,
+    jax.nn.swish,
+    jax.nn.tanh,
+    tanh_shrink,
+    thresholded_relu,
 ]
 
 
-act_map: dict[str, sk.TreeClass] = dict(zip(get_args(ActivationLiteral), acts))
-
 ActivationFunctionType = Callable[[jax.typing.ArrayLike], jax.Array]
 ActivationType = Union[ActivationLiteral, ActivationFunctionType]
+act_map = dict(zip(get_args(ActivationLiteral), acts))
 
 
 @ft.singledispatch
