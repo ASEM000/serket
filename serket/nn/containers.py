@@ -123,10 +123,10 @@ class RandomChoice(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> key = jr.PRNGKey(0)
-        >>> print(sk.nn.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key))
+        >>> print(sk.nn.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key=key))
         3.0
         >>> key = jr.PRNGKey(10)
-        >>> print(sk.nn.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key))
+        >>> print(sk.nn.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key=key))
         2.0
 
     Note:

@@ -24,6 +24,5 @@
    pooling
    recurrent
    reshaping
-   misc
 
 

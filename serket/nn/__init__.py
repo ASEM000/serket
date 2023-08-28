@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import blocks
 from .activation import (
     ELU,
     GELU,
@@ -46,7 +45,6 @@ from .activation import (
     ThresholdedReLU,
 )
 from .attention import MultiHeadAttention
-from .blocks import UNetBlock, VGG16Block, VGG19Block
 from .clustering import KMeans
 from .containers import RandomApply, RandomChoice, Sequential
 from .convolution import (
@@ -214,10 +212,6 @@ __all__ = (
     "ThresholdedReLU",
     # attention
     "MultiHeadAttention",
-    # blocks
-    "UNetBlock",
-    "VGG16Block",
-    "VGG19Block",
     # container
     "RandomApply",
     "RandomChoice",

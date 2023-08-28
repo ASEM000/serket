@@ -55,3 +55,4 @@
 
 - `Bilinear` is deprecated, use `Multilinear((in1_features, in2_features), out_features)`
 - `HistogramEqualization2D`
+- Remove `.blocks`, and will move it to examples

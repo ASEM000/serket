@@ -5,3 +5,4 @@ Containers
 
 .. autoclass:: Sequential
 .. autoclass:: RandomApply
+.. autoclass:: RandomChoice
