@@ -20,26 +20,27 @@ import numpy.testing as npt
 import pytest
 
 import serket as sk
-from serket.nn import HorizontalFlip2D, PixelShuffle2D, VerticalFlip2D
-from serket.nn.image import (
-    AdjustContrast2D,
-    AvgBlur2D,
-    FFTFilter2D,
-    Filter2D,
-    GaussianBlur2D,
+from serket.image.affine import (
+    HorizontalFlip2D,
     HorizontalShear2D,
     HorizontalTranslate2D,
-    JigSaw2D,
     Pixelate2D,
-    RandomContrast2D,
     RandomHorizontalShear2D,
     RandomRotate2D,
     RandomVerticalShear2D,
     Rotate2D,
     Solarize2D,
+    VerticalFlip2D,
     VerticalShear2D,
     VerticalTranslate2D,
 )
+from serket.image.augment import (
+    AdjustContrast2D,
+    JigSaw2D,
+    PixelShuffle2D,
+    RandomContrast2D,
+)
+from serket.image.filter import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
 
 
 def test_AvgBlur2D():
@@ -304,7 +305,7 @@ def test_vertical_shear():
 
 def test_posterize():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = sk.nn.Posterize2D(4)
+    layer = sk.image.Posterize2D(4)
     posterized = jnp.array(
         [
             [

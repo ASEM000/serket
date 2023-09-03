@@ -1,13 +1,13 @@
-``PyTreeClass`` API
+🌲 Tree & Module API
 =============================
 
-The entiriety of pytreeclass is re-exported here for convenience under the serket namespace
-
+.. note::
+    `pytreeclass <https://pytreeclass.readthedocs.io/en/latest/>`_ API is re-exported under the ``serket`` namespace.
 .. toctree::
    :maxdepth: 2
    :caption: API Documentation
 
-   pytreeclass/core
-   pytreeclass/masking
-   pytreeclass/advanced_api
-   pytreeclass/pretty_print
+   core
+   masking
+   advanced_api
+   pretty_print

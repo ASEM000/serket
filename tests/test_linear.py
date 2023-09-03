@@ -186,9 +186,9 @@ def test_mlp():
     y = jnp.tanh(y)
     y = y @ w3
 
-    layer = layer.at["layers"].at[0].at["weight"].set(w1)
-    layer = layer.at["layers"].at[1].at["weight"].set(w2[None])
-    layer = layer.at["layers"].at[2].at["weight"].set(w3)
+    layer = layer.at["layers"][0]["weight"].set(w1)
+    layer = layer.at["layers"][1]["weight"].set(w2[None])
+    layer = layer.at["layers"][2]["weight"].set(w3)
 
     # breakpoint()
     print(layer(x).shape)
@@ -213,9 +213,9 @@ def test_fnn():
     y = y @ w3
 
     l1 = FNN([1, 5, 3, 4], act=("tanh", "relu"), bias_init=None)
-    l1 = l1.at["layers"].at[0].at["weight"].set(w1)
-    l1 = l1.at["layers"].at[1].at["weight"].set(w2)
-    l1 = l1.at["layers"].at[2].at["weight"].set(w3)
+    l1 = l1.at["layers"][0]["weight"].set(w1)
+    l1 = l1.at["layers"][1]["weight"].set(w2)
+    l1 = l1.at["layers"][2]["weight"].set(w3)
 
     npt.assert_allclose(l1(x), y)
 

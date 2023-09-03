@@ -81,12 +81,20 @@ Install from github::
     examples
 
 
+.. currentmodule:: serket
+    
+.. autofunction:: tree_state
+.. autofunction:: tree_eval
+.. autofunction:: def_init_entry
+.. autofunction:: def_act_entry
+
+
 .. toctree::
     :caption: API Documentation
     :maxdepth: 1
 
-    
-    API/api
+    API/nn
+    API/image
     API/pytreeclass
 
 Apache2.0 License.

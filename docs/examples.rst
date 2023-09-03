@@ -1,4 +1,4 @@
-``Serket`` Examples
+``serket`` Examples
 ======================
 
 .. toctree::

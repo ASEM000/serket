@@ -1,12 +1,8 @@
-``Serket`` NN API 
+🧠 Neural network API 
 ======================
 
 .. currentmodule:: serket
 
-.. autofunction:: tree_state
-.. autofunction:: tree_eval
-.. autofunction:: def_init_entry
-.. autofunction:: def_act_entry
 
 .. toctree::
    :maxdepth: 2
@@ -18,11 +14,12 @@
    containers
    convolution
    dropout
-   image
    linear
    normalization
    pooling
    recurrent
    reshaping
+
+
 
 

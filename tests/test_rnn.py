@@ -417,8 +417,8 @@ def test_gru():
     )
 
     cell = GRUCell(1, 3, bias_init=None)
-    cell = cell.at["in_to_hidden"].at["weight"].set(w1)
-    cell = cell.at["hidden_to_hidden"].at["weight"].set(w2)
+    cell = cell.at["in_to_hidden"]["weight"].set(w1)
+    cell = cell.at["hidden_to_hidden"]["weight"].set(w2)
     y = jnp.array([[-0.00142191, 0.11011646, 0.1613554]])
     ypred = ScanRNN(cell, return_sequences=True)(jnp.ones([1, 1]))
     npt.assert_allclose(y, ypred, atol=1e-4)
@@ -583,9 +583,9 @@ def test_conv_lstm1d(layer):
         bias_init="zeros",
     )
 
-    cell = cell.at["in_to_hidden"].at["weight"].set(w_in_to_hidden)
-    cell = cell.at["hidden_to_hidden"].at["weight"].set(w_hidden_to_hidden)
-    cell = cell.at["in_to_hidden"].at["bias"].set(b_in_to_hidden)
+    cell = cell.at["in_to_hidden"]["weight"].set(w_in_to_hidden)
+    cell = cell.at["hidden_to_hidden"]["weight"].set(w_hidden_to_hidden)
+    cell = cell.at["in_to_hidden"]["bias"].set(b_in_to_hidden)
 
     x = jnp.ones([time_steps, in_features, *spatial_dim])
 

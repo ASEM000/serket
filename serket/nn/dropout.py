@@ -94,10 +94,10 @@ class Dropout(GeneralDropout):
             Linear(
               in_features=(10),
               out_features=10,
-              weight_init=he_normal,
-              bias_init=ones,
-              weight=f32[10,10](μ=0.01, σ=0.45, ∈[-0.96,0.95]),
-              bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
+              weight_init=glorot_uniform,
+              bias_init=zeros,
+              weight=f32[10,10](μ=0.01, σ=0.31, ∈[-0.54,0.54]),
+              bias=f32[10](μ=0.00, σ=0.00, ∈[0.00,0.00])
             )
           )
         )
@@ -147,10 +147,10 @@ class Dropout1D(DropoutND):
             Linear(
               in_features=(10),
               out_features=10,
-              weight_init=he_normal,
-              bias_init=ones,
-              weight=f32[10,10](μ=0.01, σ=0.45, ∈[-0.96,0.95]),
-              bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
+              weight_init=glorot_uniform,
+              bias_init=zeros,
+              weight=f32[10,10](μ=0.01, σ=0.31, ∈[-0.54,0.54]),
+              bias=f32[10](μ=0.00, σ=0.00, ∈[0.00,0.00])
             )
           )
         )
@@ -194,10 +194,10 @@ class Dropout2D(DropoutND):
             Linear(
               in_features=(10),
               out_features=10,
-              weight_init=he_normal,
-              bias_init=ones,
-              weight=f32[10,10](μ=0.01, σ=0.45, ∈[-0.96,0.95]),
-              bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
+              weight_init=glorot_uniform,
+              bias_init=zeros,
+              weight=f32[10,10](μ=0.01, σ=0.31, ∈[-0.54,0.54]),
+              bias=f32[10](μ=0.00, σ=0.00, ∈[0.00,0.00])
             )
           )
         )
@@ -241,10 +241,10 @@ class Dropout3D(DropoutND):
             Linear(
               in_features=(10),
               out_features=10,
-              weight_init=he_normal,
-              bias_init=ones,
-              weight=f32[10,10](μ=0.01, σ=0.45, ∈[-0.96,0.95]),
-              bias=f32[10](μ=1.00, σ=0.00, ∈[1.00,1.00])
+              weight_init=glorot_uniform,
+              bias_init=zeros,
+              weight=f32[10,10](μ=0.01, σ=0.31, ∈[-0.54,0.54]),
+              bias=f32[10](μ=0.00, σ=0.00, ∈[0.00,0.00])
             )
           )
         )
@@ -380,7 +380,7 @@ class RandomCutout1D(sk.TreeClass):
 
 class RandomCutout2D(sk.TreeClass):
     """Random Cutouts for spatial 2D array
-    
+
     .. image:: ../_static/randomcutout2d.png
 
     Args:

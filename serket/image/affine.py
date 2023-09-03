@@ -19,424 +19,12 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jax import lax
 from jax.scipy.ndimage import map_coordinates
 
 import serket as sk
-from serket.nn.convolution import DepthwiseConv2D, DepthwiseFFTConv2D
 from serket.nn.custom_transform import tree_eval
 from serket.nn.linear import Identity
-from serket.nn.utils import (
-    IsInstance,
-    Range,
-    maybe_lazy_call,
-    maybe_lazy_init,
-    positive_int_cb,
-    validate_axis_shape,
-    validate_spatial_ndim,
-)
-
-
-def is_lazy_call(instance, *_, **__) -> bool:
-    return getattr(instance, "in_features", False) is None
-
-
-def is_lazy_init(_, in_features, *__, **___) -> bool:
-    return in_features is None
-
-
-def infer_in_features(_, x, *__, **___) -> int:
-    return x.shape[0]
-
-
-image_updates = dict(in_features=infer_in_features)
-
-
-class AvgBlur2D(sk.TreeClass):
-    """Average blur 2D layer
-
-    .. image:: ../_static/avgblur2d.png
-
-    Args:
-        in_features: number of input channels.
-        kernel_size: size of the convolving kernel.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> layer = sk.nn.AvgBlur2D(in_features=1, kernel_size=3)
-        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
-        [[[0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]
-          [0.6666667  1.         1.         1.         0.6666667 ]
-          [0.6666667  1.         1.         1.         0.6666667 ]
-          [0.6666667  1.         1.         1.         0.6666667 ]
-          [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
-
-    Note:
-        :class:`.AvgBlur2D` supports lazy initialization, meaning that the weights and
-        biases are not initialized until the first call to the layer. This is
-        useful when the input shape is not known at initialization time.
-
-        To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
-        with an input of known shape.
-
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> import jax.random as jr
-        >>> import jax
-        >>> @sk.autoinit
-        ... class Blur(sk.TreeClass):
-        ...    l1: sk.nn.AvgBlur2D = sk.nn.AvgBlur2D(None, 3)
-        ...    l2: sk.nn.AvgBlur2D = sk.nn.AvgBlur2D(None, 3)
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy_blur = Blur()
-        >>> # materialize the layer
-        >>> _, materialized_blur = lazy_blur.at["__call__"](jnp.ones((5, 2, 2)))
-    """
-
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(self, in_features: int | None, kernel_size: int | tuple[int, int]):
-        weight = jnp.ones(kernel_size)
-        weight = weight / jnp.sum(weight)
-        weight = weight[:, None]
-        weight = jnp.repeat(weight[None, None], in_features, axis=0)
-
-        self.conv1 = DepthwiseConv2D(
-            in_features=in_features,
-            kernel_size=(kernel_size, 1),
-            padding="same",
-            weight_init=lambda *_: weight,
-            bias_init=None,
-        )
-
-        self.conv2 = DepthwiseConv2D(
-            in_features=in_features,
-            kernel_size=(1, kernel_size),
-            padding="same",
-            weight_init=lambda *_: jnp.moveaxis(weight, 2, 3),
-            bias_init=None,
-        )
-
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="conv1.in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return lax.stop_gradient(self.conv2(self.conv1(x)))
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class GaussianBlur2D(sk.TreeClass):
-    """Apply Gaussian blur to a channel-first image.
-
-    .. image:: ../_static/gaussianblur2d.png
-
-    Args:
-        in_features: number of input features
-        kernel_size: kernel size
-        sigma: sigma. Defaults to 1.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> layer = sk.nn.GaussianBlur2D(in_features=1, kernel_size=3)
-        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
-        [[[0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]
-          [0.7259314 1.        1.        1.        0.7259314]
-          [0.7259314 1.        1.        1.        0.7259314]
-          [0.7259314 1.        1.        1.        0.7259314]
-          [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
-
-    Note:
-        :class:`.GaussianBlur2D` supports lazy initialization, meaning that the weights and
-        biases are not initialized until the first call to the layer. This is
-        useful when the input shape is not known at initialization time.
-
-        To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
-        with an input of known shape.
-
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> import jax.random as jr
-        >>> import jax
-        >>> @sk.autoinit
-        ... class Blur(sk.TreeClass):
-        ...    l1: sk.nn.GaussianBlur2D = sk.nn.GaussianBlur2D(None, 3)
-        ...    l2: sk.nn.GaussianBlur2D = sk.nn.GaussianBlur2D(None, 3)
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy_blur = Blur()
-        >>> # materialize the layer
-        >>> _, materialized_blur = lazy_blur.at["__call__"](jnp.ones((5, 2, 2)))
-    """
-
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(self, in_features: int, kernel_size: int, *, sigma: float = 1.0):
-        kernel_size = positive_int_cb(kernel_size)
-        self.sigma = sigma
-
-        x = jnp.linspace(-(kernel_size - 1) / 2.0, (kernel_size - 1) / 2.0, kernel_size)
-        weight = jnp.exp(-0.5 * jnp.square(x) * jax.lax.rsqrt(self.sigma))
-
-        weight = weight / jnp.sum(weight)
-        weight = weight[:, None]
-
-        weight = jnp.repeat(weight[None, None], in_features, axis=0)
-        self.conv1 = DepthwiseFFTConv2D(
-            in_features=in_features,
-            kernel_size=(kernel_size, 1),
-            padding="same",
-            weight_init=lambda *_: weight,
-            bias_init=None,
-        )
-
-        self.conv2 = DepthwiseFFTConv2D(
-            in_features=in_features,
-            kernel_size=(1, kernel_size),
-            padding="same",
-            weight_init=lambda *_: jnp.moveaxis(weight, 2, 3),
-            bias_init=None,
-        )
-
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="conv1.in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return lax.stop_gradient(self.conv1(self.conv2(x)))
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class Filter2D(sk.TreeClass):
-    """Apply 2D filter for each channel
-
-    .. image:: ../_static/filter2d.png
-
-    Args:
-        in_features: number of input channels.
-        kernel: kernel array.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> layer = sk.nn.Filter2D(in_features=1, kernel=jnp.ones((3,3)))
-        >>> print(layer(jnp.ones((1,5,5))))
-        [[[4. 6. 6. 6. 4.]
-          [6. 9. 9. 9. 6.]
-          [6. 9. 9. 9. 6.]
-          [6. 9. 9. 9. 6.]
-          [4. 6. 6. 6. 4.]]]
-    """
-
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(self, in_features: int, kernel: jax.Array):
-        if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
-            raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
-
-        in_features = positive_int_cb(in_features)
-        weight = jnp.stack([kernel] * in_features, axis=0)
-        weight = weight[:, None]
-
-        self.conv = DepthwiseConv2D(
-            in_features=in_features,
-            kernel_size=kernel.shape,
-            padding="same",
-            weight_init=lambda *_: weight,
-            bias_init=None,
-        )
-
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="conv.in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return lax.stop_gradient(self.conv(x))
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class FFTFilter2D(sk.TreeClass):
-    """Apply 2D filter for each channel using FFT
-
-    .. image:: ../_static/filter2d.png
-
-    Args:
-        in_features: number of input channels
-        kernel: kernel array
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> layer = sk.nn.FFTFilter2D(in_features=1, kernel=jnp.ones((3,3)))
-        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
-        [[[4.0000005 6.0000005 6.000001  6.0000005 4.0000005]
-          [6.0000005 9.        9.        9.        6.0000005]
-          [6.0000005 9.        9.        9.        6.0000005]
-          [6.0000005 9.        9.        9.        6.0000005]
-          [4.        6.0000005 6.0000005 6.0000005 4.       ]]]
-    """
-
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(self, in_features: int, kernel: jax.Array):
-        if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
-            raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
-
-        in_features = positive_int_cb(in_features)
-        weight = jnp.stack([kernel] * in_features, axis=0)
-        weight = weight[:, None]
-
-        self.conv = DepthwiseFFTConv2D(
-            in_features=in_features,
-            kernel_size=kernel.shape,
-            padding="same",
-            weight_init=lambda *_: weight,
-            bias_init=None,
-        )
-
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="conv.in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return lax.stop_gradient(self.conv(x))
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class PixelShuffle2D(sk.TreeClass):
-    """Rearrange elements in a tensor.
-
-    Args:
-        upscale_factor: factor to increase spatial resolution by. accepts a
-            single integer or a tuple of length 2. defaults to 1.
-
-    Reference:
-        - https://arxiv.org/abs/1609.05158
-    """
-
-    def __init__(self, upscale_factor: int | tuple[int, int] = 1):
-        if isinstance(upscale_factor, int):
-            if upscale_factor < 1:
-                raise ValueError("upscale_factor must be >= 1")
-
-            self.upscale_factor = (upscale_factor, upscale_factor)
-            return
-
-        if isinstance(upscale_factor, tuple):
-            if len(upscale_factor) != 2:
-                raise ValueError("upscale_factor must be a tuple of length 2")
-            if upscale_factor[0] < 1 or upscale_factor[1] < 1:
-                raise ValueError("upscale_factor must be >= 1")
-            self.upscale_factor = upscale_factor
-            return
-
-        raise ValueError("upscale_factor must be an integer or tuple of length 2")
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        channels = x.shape[0]
-
-        sr, sw = self.upscale_factor
-        oc = channels // (sr * sw)
-
-        if not (channels % (sr * sw)) == 0:
-            raise ValueError(f"{channels=} not divisible by {sr*sw}.")
-
-        ih, iw = x.shape[1], x.shape[2]
-        x = jnp.reshape(x, (sr, sw, oc, ih, iw))
-        x = jnp.transpose(x, (2, 3, 0, 4, 1))
-        x = jnp.reshape(x, (oc, ih * sr, iw * sw))
-        return x
-
-    @property
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the image."""
-        return 2
-
-
-def adjust_contrast_nd(x: jax.Array, contrast_factor: float):
-    """Adjusts the contrast of an image by scaling the pixel values by a factor."""
-    μ = jnp.mean(x, axis=tuple(range(1, x.ndim)), keepdims=True)
-    return (contrast_factor * (x - μ) + μ).astype(x.dtype)
-
-
-def random_contrast_nd(
-    x: jax.Array,
-    contrast_range: tuple[float, float],
-    key: jr.KeyArray = jr.PRNGKey(0),
-) -> jax.Array:
-    """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
-    minval, maxval = contrast_range
-    contrast_factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
-    return adjust_contrast_nd(x, contrast_factor)
-
-
-@sk.autoinit
-class AdjustContrast2D(sk.TreeClass):
-    """Adjusts the contrast of an 2D input by scaling the pixel values by a factor.
-
-    .. image:: ../_static/adjustcontrast2d.png
-
-    Args:
-        contrast_factor: contrast factor to adust the contrast by. Defaults to 1.0.
-
-    Reference:
-        - https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
-        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
-    """
-
-    contrast_factor: float = 1.0
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        contrast_factor = jax.lax.stop_gradient(self.contrast_factor)
-        return adjust_contrast_nd(x, contrast_factor)
-
-    @property
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the image."""
-        return 2
-
-
-class RandomContrast2D(sk.TreeClass):
-    """Randomly adjusts the contrast of an 1D input by scaling the pixel values by a factor.
-
-    Reference:
-        - https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
-        - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
-    """
-
-    def __init__(self, contrast_range: tuple[float, float] = (0.5, 1)):
-        if not (
-            isinstance(contrast_range, tuple)
-            and len(contrast_range) == 2
-            and contrast_range[0] <= contrast_range[1]
-        ):
-            raise ValueError(
-                "`contrast_range` must be a tuple of two floats, "
-                "with the first one smaller than the second one."
-            )
-
-        self.contrast_range = contrast_range
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        return random_contrast_nd(x, lax.stop_gradient(self.contrast_range), key=key)
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+from serket.nn.utils import IsInstance, validate_spatial_ndim
 
 
 def affine(image, matrix):
@@ -516,7 +104,7 @@ class Rotate2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.Rotate2D(90)(x))
+        >>> print(sk.image.Rotate2D(90)(x))
         [[[ 5 10 15 20 25]
           [ 4  9 14 19 24]
           [ 3  8 13 18 23]
@@ -547,7 +135,7 @@ class RandomRotate2D(sk.TreeClass):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.RandomRotate2D((10, 30))(x, key=jax.random.PRNGKey(0)))
+        >>> print(sk.image.RandomRotate2D((10, 30))(x, key=jax.random.PRNGKey(0)))
         [[[ 1  2  4  7  4]
           [ 4  6  9 11 11]
           [ 8 10 13 16 18]
@@ -591,7 +179,7 @@ class HorizontalShear2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.HorizontalShear2D(45)(x))
+        >>> print(sk.image.HorizontalShear2D(45)(x))
         [[[ 0  0  1  2  3]
           [ 0  6  7  8  9]
           [11 12 13 14 15]
@@ -622,7 +210,7 @@ class RandomHorizontalShear2D(sk.TreeClass):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.RandomHorizontalShear2D((45,45))(x))
+        >>> print(sk.image.RandomHorizontalShear2D((45,45))(x))
         [[[ 0  0  1  2  3]
           [ 0  6  7  8  9]
           [11 12 13 14 15]
@@ -665,7 +253,7 @@ class VerticalShear2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.VerticalShear2D(45)(x))
+        >>> print(sk.image.VerticalShear2D(45)(x))
         [[[ 0  0  3  9 15]
           [ 0  2  8 14 20]
           [ 1  7 13 19 25]
@@ -696,7 +284,7 @@ class RandomVerticalShear2D(sk.TreeClass):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.RandomVerticalShear2D((45,45))(x))
+        >>> print(sk.image.RandomVerticalShear2D((45,45))(x))
         [[[ 0  0  3  9 15]
           [ 0  2  8 14 20]
           [ 1  7 13 19 25]
@@ -753,7 +341,7 @@ class Pixelate2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.Pixelate2D(2)(x))  # doctest: +SKIP
+        >>> print(sk.image.Pixelate2D(2)(x))  # doctest: +SKIP
         [[[ 7  7  8  8  9]
           [ 8  8  9  9 10]
           [12 12 13 13 14]
@@ -855,7 +443,7 @@ class RandomPerspective2D(sk.TreeClass):
          [0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0]
          [0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0]
          [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]]
-        >>> layer = sk.nn.RandomPerspective2D(100)
+        >>> layer = sk.image.RandomPerspective2D(100)
         >>> key = jax.random.PRNGKey(10)
         >>> out = layer(mask[None], key=key)[0]
         >>> print(out.astype(int))
@@ -927,7 +515,7 @@ class Solarize2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> layer = sk.nn.Solarize2D(threshold=10, max_val=25)
+        >>> layer = sk.image.Solarize2D(threshold=10, max_val=25)
         >>> print(layer(x))
         [[[ 1  2  3  4  5]
           [ 6  7  8  9 15]
@@ -946,75 +534,6 @@ class Solarize2D(sk.TreeClass):
     def __call__(self, x: jax.Array) -> jax.Array:
         threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
         return solarize(x, threshold, max_val)
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-def posterize(image: jax.Array, bits: int) -> jax.Array:
-    """Reduce the number of bits for each color channel.
-
-    Args:
-        image: The image to posterize.
-        bits: The number of bits to keep for each channel (1-8).
-
-    Reference:
-        - https://github.com/tensorflow/models/blob/v2.13.1/official/vision/ops/augment.py#L859-L862
-        - https://github.com/python-pillow/Pillow/blob/6651a3143621181d94cc92d36e1490721ef0b44f/src/PIL/ImageOps.py#L547
-    """
-    shift = 8 - bits
-    return jnp.left_shift(jnp.right_shift(image, shift), shift)
-
-
-@sk.autoinit
-class Posterize2D(sk.TreeClass):
-    """Reduce the number of bits for each color channel.
-
-    .. image:: ../_static/posterize2d.png
-    
-    Args:
-        bits: The number of bits to keep for each channel (1-8).
-        
-    Example:
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> layer = sk.nn.Posterize2D(4)
-        >>> x = jnp.arange(1, 51).reshape(2, 5, 5)
-        >>> print(x)
-        [[[ 1  2  3  4  5]
-          [ 6  7  8  9 10]
-          [11 12 13 14 15]
-          [16 17 18 19 20]
-          [21 22 23 24 25]]
-         [[26 27 28 29 30]
-          [31 32 33 34 35]
-          [36 37 38 39 40]
-          [41 42 43 44 45]
-          [46 47 48 49 50]]]
-        >>> print(layer(x))
-        [[[ 0  0  0  0  0]
-          [ 0  0  0  0  0]
-          [ 0  0  0  0  0]
-          [16 16 16 16 16]
-          [16 16 16 16 16]]
-         [[16 16 16 16 16]
-          [16 32 32 32 32]
-          [32 32 32 32 32]
-          [32 32 32 32 32]
-          [32 32 48 48 48]]]
-
-    Reference:
-        - https://www.tensorflow.org/api_docs/python/tfm/vision/augment/posterize
-        - https://github.com/python-pillow/Pillow/blob/main/src/PIL/ImageOps.py#L547
-    """
-
-    bits: int = sk.field(callbacks=[IsInstance(int), Range(1, 8)])
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        bits = jax.lax.stop_gradient(self.bits)
-        return jax.vmap(posterize, in_axes=(0, None))(x, bits)
 
     @property
     def spatial_ndim(self) -> int:
@@ -1066,7 +585,7 @@ class HorizontalTranslate2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.HorizontalTranslate2D(2)(x))
+        >>> print(sk.image.HorizontalTranslate2D(2)(x))
         [[[ 0  0  1  2  3]
           [ 0  0  6  7  8]
           [ 0  0 11 12 13]
@@ -1098,7 +617,7 @@ class VerticalTranslate2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.VerticalTranslate2D(2)(x))
+        >>> print(sk.image.VerticalTranslate2D(2)(x))
         [[[ 0  0  0  0  0]
           [ 0  0  0  0  0]
           [ 1  2  3  4  5]
@@ -1125,7 +644,7 @@ class RandomHorizontalTranslate2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.RandomHorizontalTranslate2D()(x))
+        >>> print(sk.image.RandomHorizontalTranslate2D()(x))
         [[[ 4  5  0  0  0]
           [ 9 10  0  0  0]
           [14 15  0  0  0]
@@ -1153,7 +672,7 @@ class RandomVerticalTranslate2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.RandomVerticalTranslate2D()(x))
+        >>> print(sk.image.RandomVerticalTranslate2D()(x))
         [[[16 17 18 19 20]
           [21 22 23 24 25]
           [ 0  0  0  0  0]
@@ -1174,101 +693,6 @@ class RandomVerticalTranslate2D(sk.TreeClass):
         return 2
 
 
-@ft.partial(jax.jit, inline=True, static_argnums=1)
-def jigsaw(
-    image: jax.Array,
-    tiles: int = 1,
-    key: jr.KeyArray = jr.PRNGKey(0),
-) -> jax.Array:
-    """Jigsaw channel-first image
-
-    Args:
-        image: channel-first image (CHW)
-        tiles: number of tiles per side
-        key: random key
-    """
-    channels, height, width = image.shape
-    tile_height = height // tiles
-    tile_width = width // tiles
-
-    image_ = image[:, : height - height % tiles, : width - width % tiles]
-
-    image_ = image_.reshape(channels, tiles, tile_height, tiles, tile_width)
-    image_ = image_.transpose(1, 3, 0, 2, 4)
-    image_ = image_.reshape(-1, channels, tile_height, tile_width)
-
-    indices = jr.permutation(key, len(image_))
-    image_ = jax.vmap(lambda x: image_[x])(indices)
-
-    image_ = image_.reshape(tiles, tiles, channels, tile_height, tile_width)
-    image_ = image_.transpose(2, 0, 3, 1, 4)
-    image_ = image_.reshape(channels, tiles * tile_height, tiles * tile_width)
-
-    image = image.at[:, : height - height % tiles, : width - width % tiles].set(image_)
-
-    return image
-
-
-@sk.autoinit
-class JigSaw2D(sk.TreeClass):
-    """Mixes up tiles of an image.
-
-    .. image:: ../_static/jigsaw2d.png
-
-    Args:
-        tiles: number of tiles per side
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
-        >>> print(x)
-        [[[ 1  2  3  4]
-          [ 5  6  7  8]
-          [ 9 10 11 12]
-          [13 14 15 16]]]
-        >>> print(sk.nn.JigSaw2D(2)(x))
-        [[[ 9 10  3  4]
-          [13 14  7  8]
-          [11 12  1  2]
-          [15 16  5  6]]]
-
-    Note:
-        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
-          evaluation.
-
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
-        >>> layer = sk.nn.JigSaw2D(2)
-        >>> eval_layer = sk.tree_eval(layer)
-        >>> print(eval_layer(x))
-        [[[ 1  2  3  4]
-          [ 5  6  7  8]
-          [ 9 10 11 12]
-          [13 14 15 16]]]
-
-    Reference:
-        - https://imgaug.readthedocs.io/en/latest/source/overview/geometric.html#jigsaw
-    """
-
-    tiles: int = sk.field(callbacks=[IsInstance(int), Range(1)])
-
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        """Mixes up tiles of an image.
-
-        Args:
-            x: channel-first image (CHW)
-            key: random key
-        """
-        return jigsaw(x, self.tiles, key)
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
 class HorizontalFlip2D(sk.TreeClass):
     """Flip channels left to right.
 
@@ -1283,7 +707,7 @@ class HorizontalFlip2D(sk.TreeClass):
           [4 5 6]
           [7 8 9]]]
 
-        >>> print(sk.nn.HorizontalFlip2D()(x))
+        >>> print(sk.image.HorizontalFlip2D()(x))
         [[[3 2 1]
           [6 5 4]
           [9 8 7]]]
@@ -1315,7 +739,7 @@ class VerticalFlip2D(sk.TreeClass):
           [4 5 6]
           [7 8 9]]]
 
-        >>> print(sk.nn.VerticalFlip2D()(x))
+        >>> print(sk.image.VerticalFlip2D()(x))
         [[[7 8 9]
           [4 5 6]
           [1 2 3]]]
@@ -1333,13 +757,11 @@ class VerticalFlip2D(sk.TreeClass):
         return 2
 
 
-@tree_eval.def_eval(RandomContrast2D)
 @tree_eval.def_eval(RandomRotate2D)
 @tree_eval.def_eval(RandomHorizontalShear2D)
 @tree_eval.def_eval(RandomVerticalShear2D)
 @tree_eval.def_eval(RandomPerspective2D)
 @tree_eval.def_eval(RandomHorizontalTranslate2D)
 @tree_eval.def_eval(RandomVerticalTranslate2D)
-@tree_eval.def_eval(JigSaw2D)
 def random_image_transform(_):
     return Identity()
