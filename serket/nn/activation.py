@@ -22,7 +22,7 @@ import jax.numpy as jnp
 from jax import lax
 
 import serket as sk
-from serket.nn.utils import IsInstance, Range, ScalarLike
+from serket.utils import IsInstance, Range, ScalarLike
 
 T = TypeVar("T")
 

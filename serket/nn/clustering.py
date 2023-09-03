@@ -23,8 +23,8 @@ import jax.random as jr
 from typing_extensions import Annotated
 
 import serket as sk
-from serket.nn.custom_transform import tree_eval, tree_state
-from serket.nn.utils import IsInstance, Range
+from serket.custom_transform import tree_eval, tree_state
+from serket.utils import IsInstance, Range
 
 """K-means utility functions."""
 

@@ -22,9 +22,9 @@ import jax.random as jr
 from jax.custom_batching import custom_vmap
 
 import serket as sk
-from serket.nn.custom_transform import tree_eval, tree_state
+from serket.custom_transform import tree_eval, tree_state
 from serket.nn.initialization import DType, InitType, resolve_init
-from serket.nn.utils import (
+from serket.utils import (
     Range,
     ScalarLike,
     maybe_lazy_call,

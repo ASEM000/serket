@@ -22,7 +22,7 @@ from jax import lax
 
 import serket as sk
 from serket.nn.convolution import DepthwiseConv2D, DepthwiseFFTConv2D
-from serket.nn.utils import (
+from serket.utils import (
     maybe_lazy_call,
     maybe_lazy_init,
     positive_int_cb,

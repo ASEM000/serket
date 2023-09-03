@@ -18,7 +18,7 @@ import jax.tree_util as jtu
 import pytest
 
 from serket.nn.initialization import resolve_init
-from serket.nn.utils import canonicalize
+from serket.utils import canonicalize
 
 
 def test_canonicalize_init_func():

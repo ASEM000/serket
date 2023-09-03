@@ -43,8 +43,8 @@ from pytreeclass import (
 )
 
 from . import nn
+from .custom_transform import tree_eval, tree_state
 from .nn.activation import def_act_entry
-from .nn.custom_transform import tree_eval, tree_state
 from .nn.initialization import def_init_entry
 
 __all__ = (
@@ -88,4 +88,4 @@ __all__ = (
 )
 
 
-__version__ = "0.2.0rc1"
+__version__ = "0.2.0rc2"

@@ -23,9 +23,9 @@ import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
-from serket.nn.custom_transform import tree_eval
+from serket.custom_transform import tree_eval
 from serket.nn.linear import Identity
-from serket.nn.utils import Range, canonicalize, positive_int_cb, validate_spatial_ndim
+from serket.utils import Range, canonicalize, positive_int_cb, validate_spatial_ndim
 
 
 def dropout_nd(

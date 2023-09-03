@@ -28,7 +28,7 @@ from serket.nn.activation import (
     resolve_activation,
 )
 from serket.nn.initialization import DType, InitType, resolve_init
-from serket.nn.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb
+from serket.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb
 
 T = TypeVar("T")
 

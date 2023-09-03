@@ -22,9 +22,9 @@ import jax.random as jr
 from jax.scipy.ndimage import map_coordinates
 
 import serket as sk
-from serket.nn.custom_transform import tree_eval
+from serket.custom_transform import tree_eval
 from serket.nn.linear import Identity
-from serket.nn.utils import IsInstance, validate_spatial_ndim
+from serket.utils import IsInstance, validate_spatial_ndim
 
 
 def affine(image, matrix):

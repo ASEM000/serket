@@ -21,8 +21,8 @@ import jax
 import jax.random as jr
 
 import serket as sk
-from serket.nn.custom_transform import tree_eval
-from serket.nn.utils import Range
+from serket.custom_transform import tree_eval
+from serket.utils import Range
 
 
 def sequential(

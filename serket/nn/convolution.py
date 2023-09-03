@@ -29,7 +29,7 @@ from typing_extensions import Annotated
 
 import serket as sk
 from serket.nn.initialization import DType, InitType, resolve_init
-from serket.nn.utils import (
+from serket.utils import (
     DilationType,
     KernelSizeType,
     PaddingType,

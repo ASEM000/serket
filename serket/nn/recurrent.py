@@ -24,10 +24,10 @@ import jax.random as jr
 import jax.tree_util as jtu
 
 import serket as sk
+from serket.custom_transform import tree_state
 from serket.nn.activation import ActivationType, resolve_activation
-from serket.nn.custom_transform import tree_state
 from serket.nn.initialization import DType, InitType
-from serket.nn.utils import (
+from serket.utils import (
     DilationType,
     KernelSizeType,
     PaddingType,

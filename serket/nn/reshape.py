@@ -23,9 +23,9 @@ import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
-from serket.nn.custom_transform import tree_eval
+from serket.custom_transform import tree_eval
 from serket.nn.linear import Identity
-from serket.nn.utils import (
+from serket.utils import (
     IsInstance,
     canonicalize,
     delayed_canonicalize_padding,

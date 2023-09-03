@@ -22,9 +22,9 @@ import jax.random as jr
 from jax import lax
 
 import serket as sk
-from serket.nn.custom_transform import tree_eval
+from serket.custom_transform import tree_eval
 from serket.nn.linear import Identity
-from serket.nn.utils import IsInstance, Range, validate_spatial_ndim
+from serket.utils import IsInstance, Range, validate_spatial_ndim
 
 
 def pixel_shuffle_2d(x: jax.Array, upscale_factor: int | tuple[int, int]) -> jax.Array:

@@ -23,7 +23,7 @@ import jax.numpy as jnp
 import kernex as kex
 
 import serket as sk
-from serket.nn.utils import (
+from serket.utils import (
     KernelSizeType,
     PaddingType,
     StridesType,

@@ -23,7 +23,7 @@ from typing_extensions import Annotated
 
 import serket as sk
 from serket.nn.initialization import InitType
-from serket.nn.utils import maybe_lazy_call, maybe_lazy_init
+from serket.utils import maybe_lazy_call, maybe_lazy_init
 
 """Defines attention layers."""
 
