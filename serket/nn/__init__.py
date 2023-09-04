@@ -302,6 +302,4 @@ __all__ = (
     "Upsample1D",
     "Upsample2D",
     "Upsample3D",
-    # block
-    "blocks",
 )

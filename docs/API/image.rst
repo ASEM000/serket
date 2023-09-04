@@ -8,6 +8,6 @@
    :maxdepth: 2
    :caption: API Documentation
 
-   affine
+   geometric
    augment
    filter
