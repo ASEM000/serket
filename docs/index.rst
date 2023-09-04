@@ -76,23 +76,20 @@ Install from github::
 
 .. toctree::
     :caption: Examples
-    :maxdepth: 2
+    :maxdepth: 1
     
     examples
 
 
 .. currentmodule:: serket
     
-.. autofunction:: tree_state
-.. autofunction:: tree_eval
-.. autofunction:: def_init_entry
-.. autofunction:: def_act_entry
 
 
 .. toctree::
     :caption: API Documentation
     :maxdepth: 1
-
+    
+    API/common
     API/nn
     API/image
     API/pytreeclass
