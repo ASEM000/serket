@@ -22,6 +22,7 @@ from jax import lax
 
 import serket as sk
 from serket.nn.convolution import DepthwiseConv2D, DepthwiseFFTConv2D
+from serket.nn.initialization import DType
 from serket.utils import (
     maybe_lazy_call,
     maybe_lazy_init,
@@ -54,6 +55,7 @@ class AvgBlur2D(sk.TreeClass):
     Args:
         in_features: number of input channels.
         kernel_size: size of the convolving kernel.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -92,7 +94,14 @@ class AvgBlur2D(sk.TreeClass):
     """
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(self, in_features: int | None, kernel_size: int | tuple[int, int]):
+    def __init__(
+        self,
+        in_features: int | None,
+        kernel_size: int,
+        *,
+        dtype: DType = jnp.float32,
+    ):
+        kernel_size = positive_int_cb(kernel_size)
         weight = jnp.ones(kernel_size)
         weight = weight / jnp.sum(weight)
         weight = weight[:, None]
@@ -104,6 +113,7 @@ class AvgBlur2D(sk.TreeClass):
             padding="same",
             weight_init=lambda *_: weight,
             bias_init=None,
+            dtype=dtype,
         )
 
         self.conv2 = DepthwiseConv2D(
@@ -112,6 +122,7 @@ class AvgBlur2D(sk.TreeClass):
             padding="same",
             weight_init=lambda *_: jnp.moveaxis(weight, 2, 3),
             bias_init=None,
+            dtype=dtype,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
@@ -134,6 +145,7 @@ class GaussianBlur2D(sk.TreeClass):
         in_features: number of input features
         kernel_size: kernel size
         sigma: sigma. Defaults to 1.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -172,7 +184,14 @@ class GaussianBlur2D(sk.TreeClass):
     """
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(self, in_features: int, kernel_size: int, *, sigma: float = 1.0):
+    def __init__(
+        self,
+        in_features: int,
+        kernel_size: int,
+        *,
+        sigma: float = 1.0,
+        dtype: DType = jnp.float32,
+    ):
         kernel_size = positive_int_cb(kernel_size)
         self.sigma = sigma
 
@@ -189,6 +208,7 @@ class GaussianBlur2D(sk.TreeClass):
             padding="same",
             weight_init=lambda *_: weight,
             bias_init=None,
+            dtype=dtype,
         )
 
         self.conv2 = DepthwiseFFTConv2D(
@@ -197,6 +217,7 @@ class GaussianBlur2D(sk.TreeClass):
             padding="same",
             weight_init=lambda *_: jnp.moveaxis(weight, 2, 3),
             bias_init=None,
+            dtype=dtype,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
@@ -218,6 +239,7 @@ class Filter2D(sk.TreeClass):
     Args:
         in_features: number of input channels.
         kernel: kernel array.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -232,7 +254,13 @@ class Filter2D(sk.TreeClass):
     """
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(self, in_features: int, kernel: jax.Array):
+    def __init__(
+        self,
+        in_features: int,
+        kernel: jax.Array,
+        *,
+        dtype: DType = jnp.float32,
+    ):
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
@@ -246,6 +274,7 @@ class Filter2D(sk.TreeClass):
             padding="same",
             weight_init=lambda *_: weight,
             bias_init=None,
+            dtype=dtype,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
@@ -267,6 +296,7 @@ class FFTFilter2D(sk.TreeClass):
     Args:
         in_features: number of input channels
         kernel: kernel array
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
@@ -281,7 +311,13 @@ class FFTFilter2D(sk.TreeClass):
     """
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(self, in_features: int, kernel: jax.Array):
+    def __init__(
+        self,
+        in_features: int,
+        kernel: jax.Array,
+        *,
+        dtype: DType = jnp.float32,
+    ):
         if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
 
@@ -295,6 +331,7 @@ class FFTFilter2D(sk.TreeClass):
             padding="same",
             weight_init=lambda *_: weight,
             bias_init=None,
+            dtype=dtype,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)

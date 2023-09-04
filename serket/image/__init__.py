@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .affine import (
+from .augment import (
+    AdjustContrast2D,
+    JigSaw2D,
+    PixelShuffle2D,
+    Posterize2D,
+    RandomContrast2D,
+)
+from .filter import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
+from .geometric import (
     HorizontalFlip2D,
     HorizontalShear2D,
     HorizontalTranslate2D,
@@ -29,14 +37,6 @@ from .affine import (
     VerticalShear2D,
     VerticalTranslate2D,
 )
-from .augment import (
-    AdjustContrast2D,
-    JigSaw2D,
-    PixelShuffle2D,
-    Posterize2D,
-    RandomContrast2D,
-)
-from .filter import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
 
 __all__ = (
     # image

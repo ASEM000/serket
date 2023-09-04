@@ -20,7 +20,14 @@ import numpy.testing as npt
 import pytest
 
 import serket as sk
-from serket.image.affine import (
+from serket.image.augment import (
+    AdjustContrast2D,
+    JigSaw2D,
+    PixelShuffle2D,
+    RandomContrast2D,
+)
+from serket.image.filter import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
+from serket.image.geometric import (
     HorizontalFlip2D,
     HorizontalShear2D,
     HorizontalTranslate2D,
@@ -34,13 +41,6 @@ from serket.image.affine import (
     VerticalShear2D,
     VerticalTranslate2D,
 )
-from serket.image.augment import (
-    AdjustContrast2D,
-    JigSaw2D,
-    PixelShuffle2D,
-    RandomContrast2D,
-)
-from serket.image.filter import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
 
 
 def test_AvgBlur2D():
