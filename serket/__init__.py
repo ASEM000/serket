@@ -42,7 +42,7 @@ from pytreeclass import (
     unfreeze,
 )
 
-from . import nn
+from . import image, nn
 from .custom_transform import tree_eval, tree_state
 from .nn.activation import def_act_entry
 from .nn.initialization import def_init_entry
@@ -81,6 +81,7 @@ __all__ = (
     "leafwise",
     # serket
     "nn",
+    "image",
     "tree_eval",
     "tree_state",
     "def_init_entry",

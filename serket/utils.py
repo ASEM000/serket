@@ -35,6 +35,11 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
+@ft.lru_cache(maxsize=None)
+def generate_conv_dim_numbers(spatial_ndim) -> jax.lax.ConvDimensionNumbers:
+    return jax.lax.ConvDimensionNumbers(*((tuple(range(spatial_ndim + 2)),) * 3))
+
+
 @ft.lru_cache(maxsize=128)
 def calculate_transpose_padding(
     padding,

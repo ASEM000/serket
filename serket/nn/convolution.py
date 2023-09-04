@@ -24,7 +24,6 @@ from typing import Sequence
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jax.lax import ConvDimensionNumbers
 from typing_extensions import Annotated
 
 import serket as sk
@@ -38,17 +37,13 @@ from serket.utils import (
     calculate_transpose_padding,
     canonicalize,
     delayed_canonicalize_padding,
+    generate_conv_dim_numbers,
     maybe_lazy_call,
     maybe_lazy_init,
     positive_int_cb,
     validate_axis_shape,
     validate_spatial_ndim,
 )
-
-
-@ft.lru_cache(maxsize=None)
-def generate_conv_dim_numbers(spatial_ndim) -> ConvDimensionNumbers:
-    return ConvDimensionNumbers(*((tuple(range(spatial_ndim + 2)),) * 3))
 
 
 @ft.partial(jax.jit, inline=True)
