@@ -123,14 +123,6 @@ class AvgBlur2DBase(sk.TreeClass):
         kernel = jnp.repeat(kernel[None, None], in_features, axis=0).astype(dtype)
         self.kernel = kernel
 
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        x = filter_2d(x, self.kernel)
-        x = filter_2d(x, jnp.moveaxis(self.kernel, 2, 3))
-        return x
-
     @property
     def spatial_ndim(self) -> int:
         return 2
