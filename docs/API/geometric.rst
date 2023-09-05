@@ -1,4 +1,4 @@
-Affine API
+Geometric API
 ---------------------------------
 .. currentmodule:: serket.image
     

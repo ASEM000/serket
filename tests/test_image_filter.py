@@ -26,7 +26,14 @@ from serket.image.augment import (
     PixelShuffle2D,
     RandomContrast2D,
 )
-from serket.image.filter import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
+from serket.image.filter import (
+    AvgBlur2D,
+    FFTAvgBlur2D,
+    FFTFilter2D,
+    FFTGaussianBlur2D,
+    Filter2D,
+    GaussianBlur2D,
+)
 from serket.image.geometric import (
     HorizontalFlip2D,
     HorizontalShear2D,
@@ -64,6 +71,10 @@ def test_AvgBlur2D():
     with pytest.raises(ValueError):
         AvgBlur2D(0, 1)
 
+    # test with
+    z = FFTAvgBlur2D(1, 3)(jnp.arange(1, 26).reshape([1, 5, 5]).astype(jnp.float32))
+    npt.assert_allclose(y, z, atol=1e-5)
+
 
 def test_GaussBlur2D():
     layer = GaussianBlur2D(in_features=1, kernel_size=3, sigma=1.0)
@@ -90,6 +101,10 @@ def test_GaussBlur2D():
 
     with pytest.raises(ValueError):
         GaussianBlur2D(0, 1, sigma=1.0)
+
+    z = FFTGaussianBlur2D(1, 3, sigma=1.0)(jnp.ones([1, 5, 5])).astype(jnp.float32)
+
+    npt.assert_allclose(layer(x), z, atol=1e-5)
 
 
 # def test_lazy_blur():

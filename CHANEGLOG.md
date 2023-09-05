@@ -4,6 +4,8 @@
 
 ### Changes
 
+- Moved image related layers to `serket.image`
+
 - `ScanRNN` changes:
 
   - `cell.init_state` is deprecated use `sk.tree_state(cell, ...)` instead.
@@ -51,6 +53,8 @@
 - `Solarize2D`
 - `Posterize2D`
 - `JigSaw2D`
+- `FFTAvgBlur2D`
+- `FFTGaussianBlur2D`
 
 ### Deprecations
 

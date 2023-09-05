@@ -106,8 +106,38 @@ def fft_filter_2d(
     return jax.lax.stop_gradient_p.bind(jnp.squeeze(x, 0))
 
 
-class AvgBlur2D(sk.TreeClass):
-    """Average blur 2D layer
+class AvgBlur2DBase(sk.TreeClass):
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
+    def __init__(
+        self,
+        in_features: int | None,
+        kernel_size: int,
+        *,
+        dtype: DType = jnp.float32,
+    ):
+        self.in_features = positive_int_cb(in_features)
+        kernel_size = positive_int_cb(kernel_size)
+        kernel = jnp.ones(kernel_size)
+        kernel = kernel / jnp.sum(kernel)
+        kernel = kernel[:, None]
+        kernel = jnp.repeat(kernel[None, None], in_features, axis=0).astype(dtype)
+        self.kernel = kernel
+
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array) -> jax.Array:
+        x = filter_2d(x, self.kernel)
+        x = filter_2d(x, jnp.moveaxis(self.kernel, 2, 3))
+        return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class AvgBlur2D(AvgBlur2DBase):
+    """Average blur 2D layer.
 
     .. image:: ../_static/avgblur2d.png
 
@@ -152,22 +182,6 @@ class AvgBlur2D(sk.TreeClass):
         >>> _, materialized_blur = lazy_blur.at["__call__"](jnp.ones((5, 2, 2)))
     """
 
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(
-        self,
-        in_features: int | None,
-        kernel_size: int,
-        *,
-        dtype: DType = jnp.float32,
-    ):
-        self.in_features = positive_int_cb(in_features)
-        kernel_size = positive_int_cb(kernel_size)
-        kernel = jnp.ones(kernel_size)
-        kernel = kernel / jnp.sum(kernel)
-        kernel = kernel[:, None]
-        kernel = jnp.repeat(kernel[None, None], in_features, axis=0).astype(dtype)
-        self.kernel = kernel
-
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -176,12 +190,88 @@ class AvgBlur2D(sk.TreeClass):
         x = filter_2d(x, jnp.moveaxis(self.kernel, 2, 3))
         return x
 
+
+class FFTAvgBlur2D(AvgBlur2DBase):
+    """Average blur 2D layer using FFT.
+
+    .. image:: ../_static/avgblur2d.png
+
+    Args:
+        in_features: number of input channels.
+        kernel_size: size of the convolving kernel.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.FFTAvgBlur2D(in_features=1, kernel_size=3)
+        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
+        [[[0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]
+          [0.6666667  1.         1.         1.         0.6666667 ]
+          [0.6666667  1.         1.         1.         0.6666667 ]
+          [0.6666667  1.         1.         1.         0.6666667 ]
+          [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
+
+    Note:
+        :class:`.FFTAvgBlur2D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class Blur(sk.TreeClass):
+        ...    l1: sk.image.AvgBlur2D = sk.image.FFTAvgBlur2D(None, 3)
+        ...    l2: sk.image.AvgBlur2D = sk.image.FFTAvgBlur2D(None, 3)
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_blur = Blur()
+        >>> # materialize the layer
+        >>> _, materialized_blur = lazy_blur.at["__call__"](jnp.ones((5, 2, 2)))
+    """
+
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array) -> jax.Array:
+        x = fft_filter_2d(x, self.kernel)
+        x = fft_filter_2d(x, jnp.moveaxis(self.kernel, 2, 3))
+        return x
+
+
+class GaussianBlur2DBase(sk.TreeClass):
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
+    def __init__(
+        self,
+        in_features: int,
+        kernel_size: int,
+        *,
+        sigma: float = 1.0,
+        dtype: DType = jnp.float32,
+    ):
+        self.in_features = positive_int_cb(in_features)
+        self.kernel_size = positive_int_cb(kernel_size)
+        self.sigma = sigma
+
+        x = jnp.linspace(-(kernel_size - 1) / 2.0, (kernel_size - 1) / 2.0, kernel_size)
+        kernel = jnp.exp(-0.5 * jnp.square(x) * jax.lax.rsqrt(self.sigma))
+        kernel = kernel / jnp.sum(kernel)
+        kernel = kernel[:, None].astype(dtype)
+        self.kernel = jnp.repeat(kernel[None, None], in_features, axis=0)
+
     @property
     def spatial_ndim(self) -> int:
         return 2
 
 
-class GaussianBlur2D(sk.TreeClass):
+class GaussianBlur2D(GaussianBlur2DBase):
     """Apply Gaussian blur to a channel-first image.
 
     .. image:: ../_static/gaussianblur2d.png
@@ -228,25 +318,6 @@ class GaussianBlur2D(sk.TreeClass):
         >>> _, materialized_blur = lazy_blur.at["__call__"](jnp.ones((5, 2, 2)))
     """
 
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(
-        self,
-        in_features: int,
-        kernel_size: int,
-        *,
-        sigma: float = 1.0,
-        dtype: DType = jnp.float32,
-    ):
-        self.in_features = positive_int_cb(in_features)
-        self.kernel_size = positive_int_cb(kernel_size)
-        self.sigma = sigma
-
-        x = jnp.linspace(-(kernel_size - 1) / 2.0, (kernel_size - 1) / 2.0, kernel_size)
-        kernel = jnp.exp(-0.5 * jnp.square(x) * jax.lax.rsqrt(self.sigma))
-        kernel = kernel / jnp.sum(kernel)
-        kernel = kernel[:, None].astype(dtype)
-        self.kernel = jnp.repeat(kernel[None, None], in_features, axis=0)
-
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -255,9 +326,61 @@ class GaussianBlur2D(sk.TreeClass):
         x = filter_2d(x, jnp.moveaxis(self.kernel, 2, 3))
         return x
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+
+class FFTGaussianBlur2D(GaussianBlur2DBase):
+    """Apply Gaussian blur to a channel-first image using FFT.
+
+    .. image:: ../_static/gaussianblur2d.png
+
+    Args:
+        in_features: number of input features
+        kernel_size: kernel size
+        sigma: sigma. Defaults to 1.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.FFTGaussianBlur2D(in_features=1, kernel_size=3)
+        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
+        [[[0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]
+          [0.7259314 1.        1.        1.        0.7259314]
+          [0.7259314 1.        1.        1.        0.7259314]
+          [0.7259314 1.        1.        1.        0.7259314]
+          [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
+
+    Note:
+        :class:`.FFTGaussianBlur2D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import jax
+        >>> @sk.autoinit
+        ... class Blur(sk.TreeClass):
+        ...    l1: sk.image.FFTGaussianBlur2D = sk.image.FFTGaussianBlur2D(None, 3)
+        ...    l2: sk.image.FFTGaussianBlur2D = sk.image.FFTGaussianBlur2D(None, 3)
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        >>> # lazy initialization
+        >>> lazy_blur = Blur()
+        >>> # materialize the layer
+        >>> _, materialized_blur = lazy_blur.at["__call__"](jnp.ones((5, 2, 2)))
+    """
+
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=image_updates)
+    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array) -> jax.Array:
+        x = fft_filter_2d(x, self.kernel)
+        x = fft_filter_2d(x, jnp.moveaxis(self.kernel, 2, 3))
+        return x
 
 
 class Filter2D(sk.TreeClass):

@@ -19,7 +19,14 @@ from .augment import (
     Posterize2D,
     RandomContrast2D,
 )
-from .filter import AvgBlur2D, FFTFilter2D, Filter2D, GaussianBlur2D
+from .filter import (
+    AvgBlur2D,
+    FFTAvgBlur2D,
+    FFTFilter2D,
+    FFTGaussianBlur2D,
+    Filter2D,
+    GaussianBlur2D,
+)
 from .geometric import (
     HorizontalFlip2D,
     HorizontalShear2D,
@@ -39,20 +46,24 @@ from .geometric import (
 )
 
 __all__ = (
-    # image
+    # augment
     "AdjustContrast2D",
+    "JigSaw2D",
+    "PixelShuffle2D",
+    "Posterize2D",
+    "RandomContrast2D",
+    # filter
     "AvgBlur2D",
     "FFTFilter2D",
     "Filter2D",
     "GaussianBlur2D",
+    "FFTAvgBlur2D",
+    "FFTGaussianBlur2D",
+    # geometric
     "HorizontalFlip2D",
     "HorizontalShear2D",
     "HorizontalTranslate2D",
-    "JigSaw2D",
     "Pixelate2D",
-    "PixelShuffle2D",
-    "Posterize2D",
-    "RandomContrast2D",
     "RandomHorizontalShear2D",
     "RandomHorizontalTranslate2D",
     "RandomPerspective2D",
