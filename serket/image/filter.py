@@ -78,7 +78,7 @@ def fft_filter_2d(
     array: Annotated[jax.Array, "CHW"],
     weight: Annotated[jax.Array, "OIHW"],
 ) -> jax.Array:
-    """Filtering wrapping ``jax.lax.conv_general_dilated``.
+    """Filtering wrapping ``serket`` ``fft_conv_general_dilated``
 
     Args:
         array: input array. shape is (in_features, *spatial).

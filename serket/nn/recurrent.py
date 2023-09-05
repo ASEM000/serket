@@ -76,7 +76,7 @@ class RNNCell(sk.TreeClass):
     """
 
     @abc.abstractclassmethod
-    def __call__(self, x: jax.Array, state: RNNState, **k) -> RNNState:
+    def __call__(self, x: jax.Array, state: RNNState) -> RNNState:
         ...
 
     @property
@@ -176,7 +176,7 @@ class SimpleRNNCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: SimpleRNNState, **k) -> SimpleRNNState:
+    def __call__(self, x: jax.Array, state: SimpleRNNState) -> SimpleRNNState:
         if not isinstance(state, SimpleRNNState):
             raise TypeError(f"Expected {state=} to be an instance of `SimpleRNNState`")
 
@@ -264,7 +264,7 @@ class DenseCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: DenseState, **k) -> DenseState:
+    def __call__(self, x: jax.Array, state: DenseState) -> DenseState:
         if not isinstance(state, DenseState):
             raise TypeError(f"Expected {state=} to be an instance of `DenseState`")
 
@@ -374,7 +374,7 @@ class LSTMCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: LSTMState, **k) -> LSTMState:
+    def __call__(self, x: jax.Array, state: LSTMState) -> LSTMState:
         if not isinstance(state, LSTMState):
             raise TypeError(f"Expected {state=} to be an instance of `LSTMState`")
 
@@ -488,7 +488,7 @@ class GRUCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: GRUState, **k) -> GRUState:
+    def __call__(self, x: jax.Array, state: GRUState) -> GRUState:
         if not isinstance(state, GRUState):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
@@ -566,7 +566,7 @@ class ConvLSTMNDCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: ConvLSTMNDState, **k) -> ConvLSTMNDState:
+    def __call__(self, x: jax.Array, state: ConvLSTMNDState) -> ConvLSTMNDState:
         if not isinstance(state, ConvLSTMNDState):
             raise TypeError(f"Expected {state=} to be an instance of ConvLSTMNDState.")
 
@@ -994,7 +994,7 @@ class ConvGRUNDCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: ConvGRUNDState, **k) -> ConvGRUNDState:
+    def __call__(self, x: jax.Array, state: ConvGRUNDState) -> ConvGRUNDState:
         if not isinstance(state, ConvGRUNDState):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
@@ -1431,7 +1431,7 @@ class ScanRNN(sk.TreeClass):
                 raise ValueError(f"{cell.in_features=} != {backward_cell.in_features=}")
             if cell.hidden_features != backward_cell.hidden_features:
                 raise ValueError(
-                    f"{cell.hidden_features=} != {backward_cell.hidden_features=}."
+                    f"{cell.hidden_features=} != {backward_cell.hidden_features=}"
                 )
 
         self.cell = cell
@@ -1543,23 +1543,30 @@ def _no_accumulate_scan(
 
 
 @tree_state.def_state(SimpleRNNCell)
-def simple_rnn_init_state(cell: SimpleRNNCell) -> SimpleRNNState:
+def simple_rnn_init_state(
+    cell: SimpleRNNCell,
+    array: jax.Array | None,
+) -> SimpleRNNState:
+    del array
     return SimpleRNNState(jnp.zeros([cell.hidden_features]))
 
 
 @tree_state.def_state(DenseCell)
-def dense_init_state(cell: DenseCell) -> DenseState:
+def dense_init_state(cell: DenseCell, array: jax.Array | None) -> DenseState:
+    del array
     return DenseState(jnp.empty([cell.hidden_features]))
 
 
 @tree_state.def_state(LSTMCell)
-def lstm_init_state(cell: LSTMCell) -> LSTMState:
+def lstm_init_state(cell: LSTMCell, array: jax.Array | None) -> LSTMState:
+    del array
     shape = [cell.hidden_features]
     return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
 @tree_state.def_state(GRUCell)
-def gru_init_state(cell: GRUCell) -> GRUState:
+def gru_init_state(cell: GRUCell, array: jax.Array | None) -> GRUState:
+    del array
     return GRUState(jnp.zeros([cell.hidden_features]))
 
 
@@ -1585,7 +1592,7 @@ def _check_rnn_cell_tree_state_input(cell: RNNCell, array):
 
 
 @tree_state.def_state(ConvLSTMNDCell)
-def conv_lstm_init_state(cell: ConvLSTMNDCell, *, array: Any) -> ConvLSTMNDState:
+def conv_lstm_init_state(cell: ConvLSTMNDCell, array: Any) -> ConvLSTMNDState:
     array = _check_rnn_cell_tree_state_input(cell, array)
     shape = (cell.hidden_features, *array.shape[1:])
     zeros = jnp.zeros(shape).astype(array.dtype)
@@ -1593,14 +1600,14 @@ def conv_lstm_init_state(cell: ConvLSTMNDCell, *, array: Any) -> ConvLSTMNDState
 
 
 @tree_state.def_state(ConvGRUNDCell)
-def conv_gru_init_state(cell: ConvGRUNDCell, *, array: Any) -> ConvGRUNDState:
+def conv_gru_init_state(cell: ConvGRUNDCell, array: Any) -> ConvGRUNDState:
     array = _check_rnn_cell_tree_state_input(cell, array)
     shape = (cell.hidden_features, *array.shape[1:])
     return ConvGRUNDState(jnp.zeros(shape).astype(array.dtype))
 
 
 @tree_state.def_state(ScanRNN)
-def scan_rnn_init_state(rnn: ScanRNN, *, array: jax.Array | None = None) -> RNNState:
+def scan_rnn_init_state(rnn: ScanRNN, array: jax.Array | None = None) -> RNNState:
     # the idea here is to combine the state of the forward and backward cells
     # if backward cell exists. to have single state input for `ScanRNN` and
     # single state output not to complicate the ``__call__`` signature on the

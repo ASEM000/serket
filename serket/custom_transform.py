@@ -29,11 +29,11 @@ T = TypeVar("T")
 class NoState(sk.TreeClass):
     """No state placeholder."""
 
-    def __init__(self, _: Any, *, array: Any):
-        del _, array
+    def __init__(self, layer: Any, array: Any):
+        del layer, array
 
 
-def tree_state(tree: T, *, array: jax.Array | None = None) -> T:
+def tree_state(tree: T, array: jax.Array | None = None) -> T:
     """Build state for a tree of layers.
 
     Some layers require state to be initialized before training. For example,
@@ -50,12 +50,32 @@ def tree_state(tree: T, *, array: jax.Array | None = None) -> T:
 
     Args:
         tree: A tree of layers.
-        array: (Optional keyword argument) array to use for initializing state
-            required by some layers (e.g. :class:`nn.ConvGRU1DCell`). default:
-            ``None``.
+        array: argument for array to use for initializing state required by some
+            layers (e.g. :class:`nn.ConvGRU1DCell`). Default is ``None``.
 
     Returns:
         A tree of state leaves if it has state, otherwise ``NoState`` leaf.
+
+
+    Note:
+        To define a state initialization rule for a custom layer, use the decorator
+        :func:`.tree_state.def_state` on a function that accepts the layer and
+        input array. The function should return the state for the layer.
+
+        >>> import jax
+        >>> import serket as sk
+        >>> class LayerWithState(sk.TreeClass):
+        ...    pass
+        >>> # state function accept the `layer` and  input array
+        >>> @sk.tree_state.def_state(LayerWithState)
+        ... def _(leaf, array: jax.Array | None):
+        ...    del array  # unused but required as argument
+        ...    return "some state"
+        >>> sk.tree_state(LayerWithState())
+        'some state'
+        >>> sk.tree_state(LayerWithState(), array=jax.numpy.ones((1, 1)))
+        'some state'
+
 
     Example:
         >>> import jax.numpy as jnp
@@ -66,21 +86,6 @@ def tree_state(tree: T, *, array: jax.Array | None = None) -> T:
           running_mean=f32[5](μ=0.00, σ=0.00, ∈[0.00,0.00]),
           running_var=f32[5](μ=1.00, σ=0.00, ∈[1.00,1.00])
         )]
-
-    Example:
-        >>> # define state initialization rule for a custom layer
-        >>> import jax
-        >>> import serket as sk
-        >>> class LayerWithState(sk.TreeClass):
-        ...    pass
-        >>> # state function accept the `layer` and optional input array as arguments
-        >>> @sk.tree_state.def_state(LayerWithState)
-        ... def _(leaf):
-        ...    return "some state"
-        >>> sk.tree_state(LayerWithState())
-        'some state'
-        >>> sk.tree_state(LayerWithState(), array=jax.numpy.ones((1, 1)))
-        'some state'
     """
 
     types = tuple(set(tree_state.state_dispatcher.registry) - {object})
@@ -89,12 +94,7 @@ def tree_state(tree: T, *, array: jax.Array | None = None) -> T:
         return isinstance(x, types)
 
     def dispatch_func(leaf):
-        try:
-            # single argument
-            return tree_state.state_dispatcher(leaf)
-        except TypeError:
-            # with optional array argument
-            return tree_state.state_dispatcher(leaf, array=array)
+        return tree_state.state_dispatcher(leaf, array)
 
     return jax.tree_map(dispatch_func, tree, is_leaf=is_leaf)
 
