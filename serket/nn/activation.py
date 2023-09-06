@@ -48,8 +48,8 @@ class AdaptiveLeakyReLU(sk.TreeClass):
         https://arxiv.org/pdf/1906.01170.pdf.
     """
 
-    a: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
-    v: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
+    a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
+    v: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         v = jax.lax.stop_gradient(self.v)
@@ -73,7 +73,7 @@ class AdaptiveReLU(sk.TreeClass):
         https://arxiv.org/pdf/1906.01170.pdf.
     """
 
-    a: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
+    a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         return adaptive_relu(x, self.a)
@@ -96,7 +96,7 @@ class AdaptiveSigmoid(sk.TreeClass):
         https://arxiv.org/pdf/1906.01170.pdf.
     """
 
-    a: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
+    a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         return adaptive_sigmoid(x, self.a)
@@ -119,7 +119,7 @@ class AdaptiveTanh(sk.TreeClass):
         https://arxiv.org/pdf/1906.01170.pdf.
     """
 
-    a: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
+    a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         a = self.a
@@ -130,7 +130,7 @@ class AdaptiveTanh(sk.TreeClass):
 class CeLU(sk.TreeClass):
     """Celu activation function"""
 
-    alpha: float = sk.field(default=1.0, callbacks=[ScalarLike()])
+    alpha: float = sk.field(default=1.0, on_setattr=[ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.celu(x, alpha=lax.stop_gradient(self.alpha))
@@ -140,7 +140,7 @@ class CeLU(sk.TreeClass):
 class ELU(sk.TreeClass):
     """Exponential linear unit"""
 
-    alpha: float = sk.field(default=1.0, callbacks=[ScalarLike()])
+    alpha: float = sk.field(default=1.0, on_setattr=[ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.elu(x, alpha=lax.stop_gradient(self.alpha))
@@ -150,7 +150,7 @@ class ELU(sk.TreeClass):
 class GELU(sk.TreeClass):
     """Gaussian error linear unit"""
 
-    approximate: bool = sk.field(default=False, callbacks=[IsInstance(bool)])
+    approximate: bool = sk.field(default=False, on_setattr=[IsInstance(bool)])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.gelu(x, approximate=self.approximate)
@@ -177,7 +177,7 @@ def hard_shrink(x: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
 class HardShrink(sk.TreeClass):
     """Hard shrink activation function"""
 
-    alpha: float = sk.field(default=0.5, callbacks=[Range(0), ScalarLike()])
+    alpha: float = sk.field(default=0.5, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         alpha = lax.stop_gradient(self.alpha)
@@ -223,7 +223,7 @@ class LogSoftmax(sk.TreeClass):
 class LeakyReLU(sk.TreeClass):
     """Leaky ReLU activation function"""
 
-    negative_slope: float = sk.field(default=0.01, callbacks=[Range(0), ScalarLike()])
+    negative_slope: float = sk.field(default=0.01, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         return jax.nn.leaky_relu(x, lax.stop_gradient(self.negative_slope))
@@ -293,7 +293,7 @@ def softshrink(x: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
 class SoftShrink(sk.TreeClass):
     """SoftShrink activation function"""
 
-    alpha: float = sk.field(default=0.5, callbacks=[Range(0), ScalarLike()])
+    alpha: float = sk.field(default=0.5, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         alpha = lax.stop_gradient(self.alpha)
@@ -355,7 +355,7 @@ def thresholded_relu(x: jax.typing.ArrayLike, theta: float = 1.0) -> jax.Array:
 class ThresholdedReLU(sk.TreeClass):
     """Thresholded ReLU activation function."""
 
-    theta: float = sk.field(default=1.0, callbacks=[Range(0), ScalarLike()])
+    theta: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         theta = lax.stop_gradient(self.theta)
@@ -383,7 +383,7 @@ def prelu(x: jax.typing.ArrayLike, a: float = 0.25) -> jax.Array:
 class PReLU(sk.TreeClass):
     """Parametric ReLU activation function"""
 
-    a: float = sk.field(default=0.25, callbacks=[Range(0), ScalarLike()])
+    a: float = sk.field(default=0.25, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         return prelu(x, self.a)
@@ -412,7 +412,7 @@ class Snake(sk.TreeClass):
         https://arxiv.org/pdf/2006.08195.pdf.
     """
 
-    a: float = sk.field(callbacks=[Range(0), ScalarLike()], default=1.0)
+    a: float = sk.field(on_setattr=[Range(0), ScalarLike()], default=1.0)
 
     def __call__(self, x: jax.Array) -> jax.Array:
         a = lax.stop_gradient(self.a)

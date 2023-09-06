@@ -282,8 +282,8 @@ class Flatten(sk.TreeClass):
         https://pytorch.org/docs/stable/generated/torch.nn.Flatten.html?highlight=flatten#torch.nn.Flatten
     """
 
-    start_dim: int = sk.field(default=0, callbacks=[IsInstance(int)])
-    end_dim: int = sk.field(default=-1, callbacks=[IsInstance(int)])
+    start_dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
+    end_dim: int = sk.field(default=-1, on_setattr=[IsInstance(int)])
 
     def __call__(self, x: jax.Array) -> jax.Array:
         start_dim = self.start_dim + (0 if self.start_dim >= 0 else x.ndim)
@@ -311,8 +311,8 @@ class Unflatten(sk.TreeClass):
         - https://pytorch.org/docs/stable/generated/torch.nn.Unflatten.html?highlight=unflatten
     """
 
-    dim: int = sk.field(default=0, callbacks=[IsInstance(int)])
-    shape: tuple = sk.field(default=None, callbacks=[IsInstance(tuple)])
+    dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
+    shape: tuple = sk.field(default=None, on_setattr=[IsInstance(tuple)])
 
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         shape = list(x.shape)

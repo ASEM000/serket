@@ -131,7 +131,7 @@ class LayerNorm(sk.TreeClass):
         https://nn.labml.ai/normalization/layer_norm/index.html
     """
 
-    eps: float = sk.field(callbacks=[Range(0, min_inclusive=False), ScalarLike()])
+    eps: float = sk.field(on_setattr=[Range(0, min_inclusive=False), ScalarLike()])
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
@@ -225,6 +225,7 @@ class GroupNorm(sk.TreeClass):
     Reference:
         https://nn.labml.ai/normalization/group_norm/index.html
     """
+    eps: float = sk.field(on_setattr=[Range(0), ScalarLike()])
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
@@ -240,7 +241,7 @@ class GroupNorm(sk.TreeClass):
     ):
         self.in_features = positive_int_cb(in_features)
         self.groups = positive_int_cb(groups)
-        self.eps = sk.field(callbacks=[Range(0), ScalarLike()])(eps)
+        self.eps = eps
 
         # needs more info for checking
         if in_features % groups != 0:

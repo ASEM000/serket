@@ -311,7 +311,7 @@ class Posterize2D(sk.TreeClass):
         - https://github.com/python-pillow/Pillow/blob/main/src/PIL/ImageOps.py#L547
     """
 
-    bits: int = sk.field(callbacks=[IsInstance(int), Range(1, 8)])
+    bits: int = sk.field(on_setattr=[IsInstance(int), Range(1, 8)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
@@ -401,7 +401,7 @@ class JigSaw2D(sk.TreeClass):
         - https://imgaug.readthedocs.io/en/latest/source/overview/geometric.html#jigsaw
     """
 
-    tiles: int = sk.field(callbacks=[IsInstance(int), Range(1)])
+    tiles: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:

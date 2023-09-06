@@ -593,7 +593,7 @@ class HorizontalTranslate2D(sk.TreeClass):
           [ 0  0 21 22 23]]]
     """
 
-    shift: int = sk.field(callbacks=[IsInstance(int)])
+    shift: int = sk.field(on_setattr=[IsInstance(int)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
@@ -625,7 +625,7 @@ class VerticalTranslate2D(sk.TreeClass):
           [11 12 13 14 15]]]
     """
 
-    shift: int = sk.field(callbacks=[IsInstance(int)])
+    shift: int = sk.field(on_setattr=[IsInstance(int)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:

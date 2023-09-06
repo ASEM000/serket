@@ -143,7 +143,7 @@ class RandomApply(sk.TreeClass):
     """
 
     layer: Any
-    rate: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
+    rate: float = sk.field(default=0.5, on_setattr=[Range(0, 1)])
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)):
         rate = jax.lax.stop_gradient(self.rate)

@@ -59,7 +59,7 @@ class GeneralDropout(sk.TreeClass):
             dropout is applied to all axes.
     """
 
-    drop_rate: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
+    drop_rate: float = sk.field(default=0.5, on_setattr=[Range(0, 1)])
     drop_axes: tuple[int, ...] | Literal["..."] = ...
 
     def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
@@ -109,7 +109,7 @@ class Dropout(GeneralDropout):
 
 @sk.autoinit
 class DropoutND(sk.TreeClass):
-    drop_rate: float = sk.field(default=0.5, callbacks=[Range(0, 1)])
+    drop_rate: float = sk.field(default=0.5, on_setattr=[Range(0, 1)])
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):

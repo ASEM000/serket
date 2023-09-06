@@ -180,8 +180,8 @@ class KMeans(sk.TreeClass):
         >>> assert jnp.all(eval_state.centers == state.centers)
     """
 
-    clusters: int = sk.field(callbacks=[IsInstance(int), Range(1)])
-    tol: float = sk.field(callbacks=[IsInstance(float), Range(0, min_inclusive=False)])
+    clusters: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
+    tol: float = sk.field(on_setattr=[IsInstance(float), Range(0, min_inclusive=False)])
 
     def __call__(
         self,
