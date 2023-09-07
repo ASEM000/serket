@@ -25,7 +25,13 @@ import jax.random as jr
 import serket as sk
 from serket.custom_transform import tree_eval
 from serket.nn.linear import Identity
-from serket.utils import Range, canonicalize, positive_int_cb, validate_spatial_ndim
+from serket.utils import (
+    IsInstance,
+    Range,
+    canonicalize,
+    positive_int_cb,
+    validate_spatial_ndim,
+)
 
 
 def dropout_nd(
@@ -59,11 +65,15 @@ class GeneralDropout(sk.TreeClass):
             dropout is applied to all axes.
     """
 
-    drop_rate: float = sk.field(default=0.5, on_setattr=[Range(0, 1)])
+    drop_rate: float = sk.field(
+        default=0.5,
+        on_setattr=[IsInstance(float), Range(0, 1)],
+        on_getattr=[jax.lax.stop_gradient_p.bind],
+    )
     drop_axes: tuple[int, ...] | Literal["..."] = ...
 
     def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        return dropout_nd(x, jax.lax.stop_gradient(self.drop_rate), key, self.drop_axes)
+        return dropout_nd(x, self.drop_rate, key, self.drop_axes)
 
 
 class Dropout(GeneralDropout):
@@ -109,12 +119,16 @@ class Dropout(GeneralDropout):
 
 @sk.autoinit
 class DropoutND(sk.TreeClass):
-    drop_rate: float = sk.field(default=0.5, on_setattr=[Range(0, 1)])
+    drop_rate: float = sk.field(
+        default=0.5,
+        on_setattr=[IsInstance(float), Range(0, 1)],
+        on_getattr=[jax.lax.stop_gradient_p.bind],
+    )
 
     @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
         # drops full feature maps along first axis.
-        return dropout_nd(x, jax.lax.stop_gradient(self.drop_rate), key, (0,))
+        return dropout_nd(x, self.drop_rate, key, (0,))
 
     @property
     @abc.abstractmethod

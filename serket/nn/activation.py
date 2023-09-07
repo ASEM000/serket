@@ -49,11 +49,14 @@ class AdaptiveLeakyReLU(sk.TreeClass):
     """
 
     a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
-    v: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
+    v: float = sk.field(
+        default=1.0,
+        on_setattr=[Range(0), ScalarLike()],
+        on_getattr=[lax.stop_gradient_p.bind],
+    )
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        v = jax.lax.stop_gradient(self.v)
-        return adaptive_leaky_relu(x, self.a, v)
+        return adaptive_leaky_relu(x, self.a, self.v)
 
 
 def adaptive_relu(x: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
@@ -130,20 +133,28 @@ class AdaptiveTanh(sk.TreeClass):
 class CeLU(sk.TreeClass):
     """Celu activation function"""
 
-    alpha: float = sk.field(default=1.0, on_setattr=[ScalarLike()])
+    alpha: float = sk.field(
+        default=1.0,
+        on_setattr=[ScalarLike()],
+        on_getattr=[lax.stop_gradient_p.bind],
+    )
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        return jax.nn.celu(x, alpha=lax.stop_gradient(self.alpha))
+        return jax.nn.celu(x, alpha=self.alpha)
 
 
 @sk.autoinit
 class ELU(sk.TreeClass):
     """Exponential linear unit"""
 
-    alpha: float = sk.field(default=1.0, on_setattr=[ScalarLike()])
+    alpha: float = sk.field(
+        default=1.0,
+        on_setattr=[ScalarLike()],
+        on_getattr=[lax.stop_gradient_p.bind],
+    )
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        return jax.nn.elu(x, alpha=lax.stop_gradient(self.alpha))
+        return jax.nn.elu(x, alpha=self.alpha)
 
 
 @sk.autoinit
@@ -177,11 +188,14 @@ def hard_shrink(x: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
 class HardShrink(sk.TreeClass):
     """Hard shrink activation function"""
 
-    alpha: float = sk.field(default=0.5, on_setattr=[Range(0), ScalarLike()])
+    alpha: float = sk.field(
+        default=0.5,
+        on_setattr=[Range(0), ScalarLike()],
+        on_getattr=[lax.stop_gradient_p.bind],
+    )
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        alpha = lax.stop_gradient(self.alpha)
-        return hard_shrink(x, alpha)
+        return hard_shrink(x, self.alpha)
 
 
 class HardSigmoid(sk.TreeClass):
@@ -223,10 +237,14 @@ class LogSoftmax(sk.TreeClass):
 class LeakyReLU(sk.TreeClass):
     """Leaky ReLU activation function"""
 
-    negative_slope: float = sk.field(default=0.01, on_setattr=[Range(0), ScalarLike()])
+    negative_slope: float = sk.field(
+        default=0.01,
+        on_setattr=[Range(0), ScalarLike()],
+        on_getattr=[lax.stop_gradient_p.bind],
+    )
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        return jax.nn.leaky_relu(x, lax.stop_gradient(self.negative_slope))
+        return jax.nn.leaky_relu(x, self.negative_slope)
 
 
 class ReLU(sk.TreeClass):
@@ -293,11 +311,14 @@ def softshrink(x: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
 class SoftShrink(sk.TreeClass):
     """SoftShrink activation function"""
 
-    alpha: float = sk.field(default=0.5, on_setattr=[Range(0), ScalarLike()])
+    alpha: float = sk.field(
+        default=0.5,
+        on_setattr=[Range(0), ScalarLike()],
+        on_getattr=[lax.stop_gradient_p.bind],
+    )
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        alpha = lax.stop_gradient(self.alpha)
-        return softshrink(x, alpha)
+        return softshrink(x, self.alpha)
 
 
 def squareplus(x: jax.typing.ArrayLike) -> jax.Array:
@@ -355,11 +376,14 @@ def thresholded_relu(x: jax.typing.ArrayLike, theta: float = 1.0) -> jax.Array:
 class ThresholdedReLU(sk.TreeClass):
     """Thresholded ReLU activation function."""
 
-    theta: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
+    theta: float = sk.field(
+        default=1.0,
+        on_setattr=[Range(0), ScalarLike()],
+        on_getattr=[lax.stop_gradient_p.bind],
+    )
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        theta = lax.stop_gradient(self.theta)
-        return thresholded_relu(x, theta)
+        return thresholded_relu(x, self.theta)
 
 
 def mish(x: jax.typing.ArrayLike) -> jax.Array:
@@ -412,11 +436,14 @@ class Snake(sk.TreeClass):
         https://arxiv.org/pdf/2006.08195.pdf.
     """
 
-    a: float = sk.field(on_setattr=[Range(0), ScalarLike()], default=1.0)
+    a: float = sk.field(
+        default=1.0,
+        on_setattr=[Range(0), ScalarLike()],
+        on_getattr=[lax.stop_gradient_p.bind],
+    )
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        a = lax.stop_gradient(self.a)
-        return snake(x, a)
+        return snake(x, self.a)
 
 
 # useful for building layers from configuration text

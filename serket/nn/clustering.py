@@ -30,31 +30,31 @@ from serket.utils import IsInstance, Range
 
 
 class KMeansState(NamedTuple):
-    centers: Annotated[jax.Array, "f32[k,d]"]
-    error: Annotated[jax.Array, "f32[k,d]"]
+    centers: Annotated[jax.Array, "Float[k,d]"]
+    error: Annotated[jax.Array, "Float[k,d]"]
     iters: int = 0
 
 
 def distances_from_centers(
-    data: Annotated[jax.Array, "f32[n,d]"],
-    centers: Annotated[jax.Array, "f32[k,d]"],
-) -> Annotated[jax.Array, "f32[n,k]"]:
+    data: Annotated[jax.Array, "Float[n,d]"],
+    centers: Annotated[jax.Array, "Float[k,d]"],
+) -> Annotated[jax.Array, "Float[n,k]"]:
     # for each point find the distance to each center
     return jax.vmap(lambda xi: jax.vmap(jnp.linalg.norm)(xi - centers))(data)
 
 
 def labels_from_distances(
-    distances: Annotated[jax.Array, "f32[n,k]"]
-) -> Annotated[jax.Array, "f32[n,1]"]:
+    distances: Annotated[jax.Array, "Float[n,k]"]
+) -> Annotated[jax.Array, "Integer[n,1]"]:
     # for each point find the index of the closest center
     return jnp.argmin(distances, axis=1, keepdims=True)
 
 
 def centers_from_labels(
-    data: Annotated[jax.Array, "f32[n,d]"],
-    labels: Annotated[jax.Array, "i32[n,1]"],
+    data: Annotated[jax.Array, "Float[n,d]"],
+    labels: Annotated[jax.Array, "Integer[n,1]"],
     k: int,
-) -> Annotated[jax.Array, "f32[k,d]"]:
+) -> Annotated[jax.Array, "Float[k,d]"]:
     # for each center find the mean of the points assigned to it
     return jax.vmap(
         lambda k: jnp.divide(
@@ -66,7 +66,7 @@ def centers_from_labels(
 
 @ft.partial(jax.jit, static_argnames="clusters")
 def kmeans(
-    data: Annotated[jax.Array, "f32[n,d]"],
+    data: Annotated[jax.Array, "Float[n,d]"],
     state: KMeansState,
     *,
     clusters: int,
@@ -75,10 +75,10 @@ def kmeans(
     """K-means clustering algorithm.
 
     Steps:
-        1. Initialize the centers randomly. f32[k,d]
-        2. Calculate point-wise distances from data and centers. f32[n,d],f32[k,d] -> f32[n,k]
-        3. Assign each point to the closest center. f32[n,k] -> f32[n,1]
-        4. Calculate the new centers from data and labels. f32[n,d],f32[n,1] -> f32[k,d]
+        1. Initialize the centers randomly. Float[k,d]
+        2. Calculate point-wise distances from data and centers. Float[n,d],Float[k,d] -> Float[n,k]
+        3. Assign each point to the closest center. Float[n,k] -> Float[n,1]
+        4. Calculate the new centers from data and labels. Float[n,d],Float[n,1] -> Float[k,d]
         5. Repeat steps 2-4 until the centers converge.
 
     Args:
@@ -104,13 +104,12 @@ def kmeans(
         raise TypeError(f"{state=} not an instance of `KMeansState`")
 
     def step(state: KMeansState) -> KMeansState:
-        # f32[n,d] -> f32[n,k]
+        # Float[n,d] -> Float[n,k]
         distances = distances_from_centers(data, state.centers)
 
-        # f32[n,k] -> f32[n,1]
+        # Float[n,k] -> Integer[n,1]
         labels = labels_from_distances(distances)
 
-        # f32[n,d] -> f32[k,d]
         centers = centers_from_labels(data, labels, clusters)
 
         error = jnp.abs(centers - state.centers)
