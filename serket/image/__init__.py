@@ -54,11 +54,11 @@ __all__ = (
     "RandomContrast2D",
     # filter
     "AvgBlur2D",
+    "FFTAvgBlur2D",
     "FFTFilter2D",
+    "FFTGaussianBlur2D",
     "Filter2D",
     "GaussianBlur2D",
-    "FFTAvgBlur2D",
-    "FFTGaussianBlur2D",
     # geometric
     "HorizontalFlip2D",
     "HorizontalShear2D",
