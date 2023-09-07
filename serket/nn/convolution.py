@@ -219,6 +219,9 @@ def convolution_ndim(
 ) -> jax.Array:
     """Convolution function wrapping ``jax.lax.conv_general_dilated``.
 
+    Note:
+        Use ``jax.vmap`` to apply the convolution to a batch of inputs.
+
     Args:
         array: input array. shape is (in_features, *spatial).
         weight: convolutional kernel. shape is (out_features, in_features, *kernel).
@@ -241,9 +244,7 @@ def convolution_ndim(
         feature_group_count=groups,
     )
 
-    if bias is None:
-        return jnp.squeeze(x, 0)
-    return jnp.squeeze((x + bias), 0)
+    return jnp.squeeze(x, 0) if bias is None else jnp.squeeze((x + bias), 0)
 
 
 class ConvND(BaseConvND):
@@ -565,6 +566,9 @@ def fft_convolution_ndim(
 ) -> jax.Array:
     """Convolution function wrapping ``fft_conv_general_dilated``.
 
+    Note:
+        Use ``jax.vmap`` to apply the convolution to a batch of inputs.
+
     Args:
         array: input array. shape is (in_features, *spatial).
         weight: convolutional kernel. shape is (out_features, in_features, *kernel).
@@ -586,9 +590,7 @@ def fft_convolution_ndim(
         groups=groups,
     )
 
-    if bias is None:
-        return jnp.squeeze(x, 0)
-    return jnp.squeeze((x + bias), 0)
+    return jnp.squeeze(x, 0) if bias is None else jnp.squeeze((x + bias), 0)
 
 
 class FFTConvND(BaseConvND):

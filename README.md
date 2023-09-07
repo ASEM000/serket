@@ -1,5 +1,5 @@
 <div align="center">
-<img width="250px" src="assets/logo.svg"></div>
+<img width="250px" src="https://github.com/ASEM000/serket/assets/48389287/1733c849-c44f-4810-b74a-8a10263e8cc5"></div>
 
 <h2 align="center">The ✨Magical✨ JAX ML Library.</h2>
 <h5 align = "center"> *Serket is the goddess of magic in Egyptian mythology
@@ -9,7 +9,7 @@
 |[**Quick Example**](#QuickExample)
 
 ![Tests](https://github.com/ASEM000/serket/actions/workflows/tests.yml/badge.svg)
-![pyver](https://img.shields.io/badge/python-3.8%203.9%203.10%203.11-red)
+![pyver](https://img.shields.io/badge/python-3.8%203.9%203.10%203.11-blue)
 ![codestyle](https://img.shields.io/badge/codestyle-black-black)
 [![Downloads](https://static.pepy.tech/badge/serket)](https://pepy.tech/project/serket)
 [![codecov](https://codecov.io/gh/ASEM000/serket/branch/main/graph/badge.svg?token=C6NXOK9EVS)](https://codecov.io/gh/ASEM000/serket)
