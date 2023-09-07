@@ -51,7 +51,7 @@ from serket.image.geometric import (
 
 
 def test_AvgBlur2D():
-    x = AvgBlur2D(1, 3)(jnp.arange(1, 26).reshape([1, 5, 5]).astype(jnp.float32))
+    x = AvgBlur2D(3)(jnp.arange(1, 26).reshape([1, 5, 5]).astype(jnp.float32))
 
     y = [
         [
@@ -65,19 +65,13 @@ def test_AvgBlur2D():
 
     npt.assert_allclose(x, y, atol=1e-5)
 
-    # with pytest.raises(ValueError):
-    # AvgBlur2D(1, 0)
-
-    with pytest.raises(ValueError):
-        AvgBlur2D(0, 1)
-
     # test with
-    z = FFTAvgBlur2D(1, 3)(jnp.arange(1, 26).reshape([1, 5, 5]).astype(jnp.float32))
+    z = FFTAvgBlur2D(3)(jnp.arange(1, 26).reshape([1, 5, 5]).astype(jnp.float32))
     npt.assert_allclose(y, z, atol=1e-5)
 
 
 def test_GaussBlur2D():
-    layer = GaussianBlur2D(in_features=1, kernel_size=3, sigma=1.0)
+    layer = GaussianBlur2D(kernel_size=3, sigma=1.0)
     x = jnp.ones([1, 5, 5])
 
     npt.assert_allclose(
@@ -97,12 +91,9 @@ def test_GaussBlur2D():
     )
 
     with pytest.raises(ValueError):
-        GaussianBlur2D(1, 0, sigma=1.0)
+        GaussianBlur2D(0, sigma=1.0)
 
-    with pytest.raises(ValueError):
-        GaussianBlur2D(0, 1, sigma=1.0)
-
-    z = FFTGaussianBlur2D(1, 3, sigma=1.0)(jnp.ones([1, 5, 5])).astype(jnp.float32)
+    z = FFTGaussianBlur2D(3, sigma=1.0)(jnp.ones([1, 5, 5])).astype(jnp.float32)
 
     npt.assert_allclose(layer(x), z, atol=1e-5)
 
@@ -128,12 +119,12 @@ def test_GaussBlur2D():
 
 
 def test_filter2d():
-    layer = Filter2D(in_features=1, kernel=jnp.ones([3, 3]) / 9.0)
+    layer = Filter2D(kernel=jnp.ones([3, 3]) / 9.0)
     x = jnp.ones([1, 5, 5])
 
-    npt.assert_allclose(AvgBlur2D(1, 3)(x), layer(x), atol=1e-4)
+    npt.assert_allclose(AvgBlur2D(3)(x), layer(x), atol=1e-4)
 
-    layer2 = FFTFilter2D(in_features=1, kernel=jnp.ones([3, 3]) / 9.0)
+    layer2 = FFTFilter2D(kernel=jnp.ones([3, 3]) / 9.0)
 
     npt.assert_allclose(layer(x), layer2(x), atol=1e-4)
 
