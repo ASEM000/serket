@@ -2,12 +2,5 @@
 =============================
 
 .. note::
-    `pytreeclass <https://pytreeclass.readthedocs.io/en/latest/>`_ API is re-exported under the ``serket`` namespace.
-.. toctree::
-   :maxdepth: 2
-   :caption: API Documentation
-
-   core
-   masking
-   advanced_api
-   pretty_print
+    `pytreeclass <https://pytreeclass.readthedocs.io/en/latest/>`_ API is fully re-exported under the ``serket`` namespace.
+    `Check the docs <https://pytreeclass.readthedocs.io/en/latest/>`_ for full details.
