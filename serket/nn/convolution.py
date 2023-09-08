@@ -334,7 +334,7 @@ class Conv1D(ConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -429,7 +429,7 @@ class Conv2D(ConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -524,7 +524,7 @@ class Conv3D(ConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -680,7 +680,7 @@ class FFTConv1D(FFTConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -775,7 +775,7 @@ class FFTConv2D(FFTConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -870,7 +870,7 @@ class FFTConv3D(FFTConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1081,7 +1081,7 @@ class Conv1DTranspose(ConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1180,7 +1180,7 @@ class Conv2DTranspose(ConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1279,7 +1279,7 @@ class Conv3DTranspose(ConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1444,7 +1444,7 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1543,7 +1543,7 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1642,7 +1642,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1814,7 +1814,7 @@ class DepthwiseConv1D(DepthwiseConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1896,7 +1896,7 @@ class DepthwiseConv2D(DepthwiseConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1979,7 +1979,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -2115,7 +2115,7 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -2197,7 +2197,7 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -2279,7 +2279,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -2431,7 +2431,7 @@ class SeparableConv1D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -2528,7 +2528,7 @@ class SeparableConv2D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -2625,7 +2625,7 @@ class SeparableConv3D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -2722,7 +2722,7 @@ class SeparableFFTConv1D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -2819,7 +2819,7 @@ class SeparableFFTConv2D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -2916,7 +2916,7 @@ class SeparableFFTConv3D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -3130,7 +3130,7 @@ class Conv1DLocal(ConvNDLocal):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -3220,7 +3220,7 @@ class Conv2DLocal(ConvNDLocal):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -3310,7 +3310,7 @@ class Conv3DLocal(ConvNDLocal):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk

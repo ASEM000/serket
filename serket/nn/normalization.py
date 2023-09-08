@@ -117,7 +117,7 @@ class LayerNorm(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``normalized_shape`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -212,7 +212,7 @@ class GroupNorm(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -290,7 +290,7 @@ class InstanceNorm(GroupNorm):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -497,7 +497,7 @@ class BatchNorm(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk

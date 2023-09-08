@@ -133,7 +133,7 @@ class Multilinear(sk.TreeClass):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -210,7 +210,7 @@ class Linear(Multilinear):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -289,7 +289,7 @@ class GeneralLinear(sk.TreeClass):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import jax
@@ -428,7 +428,7 @@ class FNN(sk.TreeClass):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, add ``None`` as the the first element of the
-        ``layers`` argument and use the ``.at["calling_method_name"]`` attribute
+        ``layers`` argument and use the ``.at["__call__"]`` attribute
         to call the layer with an input of known shape.
 
         >>> import serket as sk
@@ -591,7 +591,7 @@ class MLP(sk.TreeClass):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk

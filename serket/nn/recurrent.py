@@ -132,7 +132,7 @@ class SimpleRNNCell(RNNCell):
             This is useful when the input shape is not known at initialization time.
 
             To use lazy initialization, pass ``None`` as the ``in_features`` argument
-            and use the ``.at["calling_method_name"]`` attribute to call the layer
+            and use the ``.at["__call__"]`` attribute to call the layer
             with an input of known shape.
 
             >>> import serket as sk
@@ -224,7 +224,7 @@ class DenseCell(RNNCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -313,7 +313,7 @@ class LSTMCell(RNNCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -431,7 +431,7 @@ class GRUCell(RNNCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -620,7 +620,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -678,7 +678,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -736,7 +736,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -794,7 +794,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -852,7 +852,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -910,7 +910,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1046,7 +1046,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1101,7 +1101,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1156,7 +1156,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1211,7 +1211,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1266,7 +1266,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk
@@ -1321,7 +1321,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import serket as sk

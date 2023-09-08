@@ -183,7 +183,7 @@ class MultiHeadAttention(sk.TreeClass):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``q_features`` argument
-        and use the ``.at["calling_method_name"]`` attribute to call the layer
+        and use the ``.at["__call__"]`` attribute to call the layer
         with an input of known shape.
 
         >>> import jax.random as jr
