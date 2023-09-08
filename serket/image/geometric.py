@@ -130,6 +130,21 @@ class RandomRotate2D(sk.TreeClass):
     Args:
         angle_range: a tuple of min angle and max angle to randdomly choose from.
 
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
+        >>> layer = sk.image.RandomRotate2D((10, 30))
+        >>> eval_layer = sk.tree_eval(layer)
+        >>> print(eval_layer(x))
+        [[[ 1  2  3  4]
+          [ 5  6  7  8]
+          [ 9 10 11 12]
+          [13 14 15 16]]]
+
     Example:
         >>> import serket as sk
         >>> import jax
@@ -205,12 +220,27 @@ class RandomHorizontalShear2D(sk.TreeClass):
     Args:
         angle_range: a tuple of min angle and max angle to randdomly choose from.
 
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
+        >>> layer = sk.image.RandomHorizontalShear2D((45, 45))
+        >>> eval_layer = sk.tree_eval(layer)
+        >>> print(eval_layer(x))
+        [[[ 1  2  3  4]
+          [ 5  6  7  8]
+          [ 9 10 11 12]
+          [13 14 15 16]]]
+
     Example:
         >>> import serket as sk
         >>> import jax
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.image.RandomHorizontalShear2D((45,45))(x))
+        >>> print(sk.image.RandomHorizontalShear2D((45, 45))(x))
         [[[ 0  0  1  2  3]
           [ 0  6  7  8  9]
           [11 12 13 14 15]
@@ -279,12 +309,27 @@ class RandomVerticalShear2D(sk.TreeClass):
     Args:
         angle_range: a tuple of min angle and max angle to randdomly choose from.
 
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
+        >>> layer = sk.image.RandomVerticalShear2D((45, 45))
+        >>> eval_layer = sk.tree_eval(layer)
+        >>> print(eval_layer(x))
+        [[[ 1  2  3  4]
+          [ 5  6  7  8]
+          [ 9 10 11 12]
+          [13 14 15 16]]]
+
     Example:
         >>> import serket as sk
         >>> import jax
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.image.RandomVerticalShear2D((45,45))(x))
+        >>> print(sk.image.RandomVerticalShear2D((45, 45))(x))
         [[[ 0  0  3  9 15]
           [ 0  2  8 14 20]
           [ 1  7 13 19 25]
@@ -404,6 +449,21 @@ class RandomPerspective2D(sk.TreeClass):
         scale: the scale of the random perspective transform. Higher scale will
             lead to higher degree of perspective transform. default to 1.0. 0.0
             means no perspective transform.
+
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
+        >>> layer = sk.image.RandomPerspective2D(100)
+        >>> eval_layer = sk.tree_eval(layer)
+        >>> print(eval_layer(x))
+        [[[ 1  2  3  4]
+          [ 5  6  7  8]
+          [ 9 10 11 12]
+          [13 14 15 16]]]
 
     Example:
         >>> import serket as sk
@@ -640,6 +700,21 @@ class VerticalTranslate2D(sk.TreeClass):
 class RandomHorizontalTranslate2D(sk.TreeClass):
     """Translate an image horizontally by a random pixel value.
 
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
+        >>> layer = sk.image.RandomHorizontalTranslate2D()
+        >>> eval_layer = sk.tree_eval(layer)
+        >>> print(eval_layer(x))
+        [[[ 1  2  3  4]
+          [ 5  6  7  8]
+          [ 9 10 11 12]
+          [13 14 15 16]]]
+
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -667,6 +742,21 @@ class RandomHorizontalTranslate2D(sk.TreeClass):
 
 class RandomVerticalTranslate2D(sk.TreeClass):
     """Translate an image vertically by a random pixel value.
+
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
+        >>> layer = sk.image.RandomVerticalTranslate2D()
+        >>> eval_layer = sk.tree_eval(layer)
+        >>> print(eval_layer(x))
+        [[[ 1  2  3  4]
+          [ 5  6  7  8]
+          [ 9 10 11 12]
+          [13 14 15 16]]]
 
     Example:
         >>> import serket as sk

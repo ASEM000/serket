@@ -130,6 +130,13 @@ class AdjustContrast2D(sk.TreeClass):
 class RandomContrast2D(sk.TreeClass):
     """Randomly adjusts the contrast of an 1D input by scaling the pixel values by a factor.
 
+    Args:
+        contrast_range: contrast range to adust the contrast by. Defaults to (0.5, 1).
+
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+
     Reference:
         - https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
         - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
