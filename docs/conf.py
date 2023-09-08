@@ -146,9 +146,8 @@ nbsphinx_prolog = r"""
         :format: html
 
     .. nbinfo::
+        :raw-html:`<div style="text-align: left; padding: 0; margin: 0;"><a href="https://colab.research.google.com/github/asem000/serket/blob/main/{{ docname }}" style="padding: 0; margin: 0;"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" style="vertical-align:text-bottom; padding: 0; margin: 0;"></a></div>`
 
-        Open in colab:
-        :raw-html:`<a href="https://colab.research.google.com/github/asem000/serket/blob/main/{{ docname }}"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" style="vertical-align:text-bottom"></a>`
 """
 
 # Tell sphinx-autodoc-typehints to generate stub parameter annotations including
