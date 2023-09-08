@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import jax.numpy as jnp
 from jax import lax
 
 import serket as sk
-from serket.utils import IsInstance, Range, ScalarLike
+from serket._src.utils import IsInstance, Range, ScalarLike
 
 T = TypeVar("T")
 

@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ from itertools import product
 import jax.numpy as jnp
 import numpy.testing as npt
 
-from serket.nn.pooling import (
+from serket._src.nn.pooling import (
     AdaptiveAvgPool1D,
     AdaptiveAvgPool2D,
     AdaptiveAvgPool3D,

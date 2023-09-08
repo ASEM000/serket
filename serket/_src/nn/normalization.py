@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import jax.random as jr
 from jax.custom_batching import custom_vmap
 
 import serket as sk
-from serket.custom_transform import tree_eval, tree_state
-from serket.nn.initialization import DType, InitType, resolve_init
-from serket.utils import (
+from serket._src.custom_transform import tree_eval, tree_state
+from serket._src.nn.initialization import DType, InitType, resolve_init
+from serket._src.utils import (
     Range,
     ScalarLike,
     maybe_lazy_call,
@@ -225,6 +225,7 @@ class GroupNorm(sk.TreeClass):
     Reference:
         https://nn.labml.ai/normalization/group_norm/index.html
     """
+
     eps: float = sk.field(on_setattr=[Range(0), ScalarLike()])
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)

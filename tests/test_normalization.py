@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,13 +20,12 @@ import numpy.testing as npt
 import pytest
 
 import serket as sk
-from serket.nn import BatchNorm, GroupNorm, InstanceNorm, LayerNorm
 
 os.environ["KERAS_BACKEND"] = "jax"
 
 
-def test_LayerNorm():
-    layer = LayerNorm((5, 2), bias_init=None, weight_init=None)
+def test_layer_norm():
+    layer = sk.nn.LayerNorm((5, 2), bias_init=None, weight_init=None)
 
     x = jnp.array(
         [
@@ -51,7 +50,7 @@ def test_LayerNorm():
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
 
-def test_InstanceNorm():
+def test_instance_norm():
     x = jnp.array(
         [
             [
@@ -98,11 +97,11 @@ def test_InstanceNorm():
         ]
     )
 
-    layer = InstanceNorm(in_features=3)
+    layer = sk.nn.InstanceNorm(in_features=3)
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
-    layer = InstanceNorm(in_features=3, weight_init=None, bias_init=None)
+    layer = sk.nn.InstanceNorm(in_features=3, weight_init=None, bias_init=None)
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
@@ -202,18 +201,18 @@ def test_group_norm():
         ]
     )
 
-    layer = GroupNorm(in_features=6, groups=2)
+    layer = sk.nn.GroupNorm(in_features=6, groups=2)
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
     with pytest.raises(ValueError):
-        layer = GroupNorm(in_features=6, groups=4)
+        layer = sk.nn.GroupNorm(in_features=6, groups=4)
 
     with pytest.raises(ValueError):
-        layer = GroupNorm(in_features=0, groups=1)
+        layer = sk.nn.GroupNorm(in_features=0, groups=1)
 
     with pytest.raises(ValueError):
-        layer = GroupNorm(in_features=-1, groups=0)
+        layer = sk.nn.GroupNorm(in_features=-1, groups=0)
 
 
 @pytest.mark.parametrize("axis", [0, 1, 2, 3])
@@ -231,7 +230,7 @@ def test_batchnorm(axis):
     for i in range(5):
         x_keras = bn_keras(x_keras, training=True)
 
-    bn_sk = BatchNorm(
+    bn_sk = sk.nn.BatchNorm(
         x_keras.shape[axis],
         momentum=0.5,
         eps=bn_keras.epsilon,

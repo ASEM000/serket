@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import jax.random as jr
 from typing_extensions import Annotated
 
 import serket as sk
-from serket.nn.initialization import InitType
-from serket.utils import maybe_lazy_call, maybe_lazy_init
+from serket._src.nn.initialization import InitType
+from serket._src.utils import maybe_lazy_call, maybe_lazy_init
 
 """Defines attention layers."""
 

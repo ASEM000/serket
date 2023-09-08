@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ import jax.random as jr
 import jax.tree_util as jtu
 
 import serket as sk
-from serket.custom_transform import tree_state
-from serket.nn.activation import ActivationType, resolve_activation
-from serket.nn.initialization import DType, InitType
-from serket.utils import (
+from serket._src.custom_transform import tree_state
+from serket._src.nn.activation import ActivationType, resolve_activation
+from serket._src.nn.initialization import DType, InitType
+from serket._src.utils import (
     DilationType,
     KernelSizeType,
     PaddingType,

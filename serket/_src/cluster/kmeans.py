@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import jax.random as jr
 from typing_extensions import Annotated
 
 import serket as sk
-from serket.custom_transform import tree_eval, tree_state
-from serket.utils import IsInstance, Range
+from serket._src.custom_transform import tree_eval, tree_state
+from serket._src.utils import IsInstance, Range
 
 """K-means utility functions."""
 

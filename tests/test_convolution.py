@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,33 +16,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from serket.nn import (
-    Conv1D,
-    Conv1DTranspose,
-    Conv2D,
-    Conv2DTranspose,
-    Conv3D,
-    Conv3DTranspose,
-    DepthwiseConv1D,
-    DepthwiseConv2D,
-    DepthwiseConv3D,
-    DepthwiseFFTConv1D,
-    DepthwiseFFTConv2D,
-    DepthwiseFFTConv3D,
-    FFTConv1D,
-    FFTConv1DTranspose,
-    FFTConv2D,
-    FFTConv2DTranspose,
-    FFTConv3D,
-    FFTConv3DTranspose,
-    SeparableConv1D,
-    SeparableConv2D,
-    SeparableConv3D,
-    SeparableFFTConv1D,
-    SeparableFFTConv2D,
-    SeparableFFTConv3D,
-)
-from serket.nn.convolution import Conv1DLocal, Conv2DLocal
+import serket as sk
 
 
 def test_fft_conv1d():
@@ -75,7 +49,7 @@ def test_fft_conv1d():
         ]
     )
 
-    layer = FFTConv1D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
+    layer = sk.nn.FFTConv1D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
 
@@ -257,7 +231,7 @@ def test_fft_conv2d():
         ]
     )
 
-    ls = FFTConv2D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
+    ls = sk.nn.FFTConv2D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
     ls = ls.at["weight"].set(w)
     ls = ls.at["bias"].set(b)
 
@@ -522,7 +496,7 @@ def test_fft_conv3d():
         ]
     )
 
-    ls = FFTConv3D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
+    ls = sk.nn.FFTConv3D(2, 6, kernel_size=3, padding=0, strides=1, groups=2)
     ls = ls.at["weight"].set(w)
     ls = ls.at["bias"].set(b)
 
@@ -531,44 +505,56 @@ def test_fft_conv3d():
 
 def test_fft_conv():
     x = jnp.ones([10, 1])
-    npt.assert_allclose(FFTConv1D(10, 1, 3)(x), Conv1D(10, 1, 3)(x), atol=1e-4)
+    npt.assert_allclose(
+        sk.nn.FFTConv1D(10, 1, 3)(x), sk.nn.Conv1D(10, 1, 3)(x), atol=1e-4
+    )
     x = jnp.ones([7, 8])
-    npt.assert_allclose(FFTConv1D(7, 1, 3)(x), Conv1D(7, 1, 3)(x), atol=1e-4)
+    npt.assert_allclose(
+        sk.nn.FFTConv1D(7, 1, 3)(x), sk.nn.Conv1D(7, 1, 3)(x), atol=1e-4
+    )
 
     x = jnp.ones([10, 1])
     npt.assert_allclose(
-        FFTConv1D(10, 1, 3, dilation=2)(x),
-        Conv1D(10, 1, 3, dilation=2)(x),
+        sk.nn.FFTConv1D(10, 1, 3, dilation=2)(x),
+        sk.nn.Conv1D(10, 1, 3, dilation=2)(x),
         atol=1e-5,
     )
 
     x = jnp.ones([10, 1, 1])
-    npt.assert_allclose(FFTConv2D(10, 1, 3)(x), Conv2D(10, 1, 3)(x), atol=1e-4)
+    npt.assert_allclose(
+        sk.nn.FFTConv2D(10, 1, 3)(x), sk.nn.Conv2D(10, 1, 3)(x), atol=1e-4
+    )
     x = jnp.ones([7, 8, 9])
-    npt.assert_allclose(FFTConv2D(7, 1, 3)(x), Conv2D(7, 1, 3)(x), atol=1e-4)
+    npt.assert_allclose(
+        sk.nn.FFTConv2D(7, 1, 3)(x), sk.nn.Conv2D(7, 1, 3)(x), atol=1e-4
+    )
 
     x = jnp.ones([10, 10, 10])
     npt.assert_allclose(
-        FFTConv2D(10, 1, 3, dilation=3)(x),
-        Conv2D(10, 1, 3, dilation=3)(x),
+        sk.nn.FFTConv2D(10, 1, 3, dilation=3)(x),
+        sk.nn.Conv2D(10, 1, 3, dilation=3)(x),
         atol=1e-5,
     )
     x = jnp.ones([7, 8, 9])
     npt.assert_allclose(
-        FFTConv2D(7, 1, 3, dilation=2)(x),
-        Conv2D(7, 1, 3, dilation=2)(x),
+        sk.nn.FFTConv2D(7, 1, 3, dilation=2)(x),
+        sk.nn.Conv2D(7, 1, 3, dilation=2)(x),
         atol=1e-5,
     )
 
     x = jnp.ones([10, 1, 1, 1])
-    npt.assert_allclose(FFTConv3D(10, 1, 3)(x), Conv3D(10, 1, 3)(x), atol=1e-4)
+    npt.assert_allclose(
+        sk.nn.FFTConv3D(10, 1, 3)(x), sk.nn.Conv3D(10, 1, 3)(x), atol=1e-4
+    )
     x = jnp.ones([7, 8, 9, 10])
-    npt.assert_allclose(FFTConv3D(7, 1, 3)(x), Conv3D(7, 1, 3)(x), atol=1e-4)
+    npt.assert_allclose(
+        sk.nn.FFTConv3D(7, 1, 3)(x), sk.nn.Conv3D(7, 1, 3)(x), atol=1e-4
+    )
 
     x = jnp.ones([7, 8, 9, 10])
     npt.assert_allclose(
-        FFTConv3D(7, 1, 3, dilation=(1, 2, 3))(x),
-        Conv3D(7, 1, 3, dilation=(1, 2, 3))(x),
+        sk.nn.FFTConv3D(7, 1, 3, dilation=(1, 2, 3))(x),
+        sk.nn.Conv3D(7, 1, 3, dilation=(1, 2, 3))(x),
         atol=1e-5,
     )
 
@@ -576,42 +562,46 @@ def test_fft_conv():
 def test_depthwise_fft_conv():
     x = jnp.ones([10, 1])
     npt.assert_allclose(
-        DepthwiseFFTConv1D(10, 3)(x), DepthwiseConv1D(10, 3)(x), atol=1e-4
+        sk.nn.DepthwiseFFTConv1D(10, 3)(x), sk.nn.DepthwiseConv1D(10, 3)(x), atol=1e-4
     )
 
     x = jnp.ones([10, 1, 1])
     npt.assert_allclose(
-        DepthwiseFFTConv2D(10, 3)(x), DepthwiseConv2D(10, 3)(x), atol=1e-4
+        sk.nn.DepthwiseFFTConv2D(10, 3)(x), sk.nn.DepthwiseConv2D(10, 3)(x), atol=1e-4
     )
 
     x = jnp.ones([10, 1, 1, 1])
     npt.assert_allclose(
-        DepthwiseFFTConv3D(10, 3)(x), DepthwiseConv3D(10, 3)(x), atol=1e-4
+        sk.nn.DepthwiseFFTConv3D(10, 3)(x), sk.nn.DepthwiseConv3D(10, 3)(x), atol=1e-4
     )
 
 
 def test_conv_transpose():
     x = jnp.ones([10, 4])
     npt.assert_allclose(
-        Conv1DTranspose(10, 4, 3)(x), FFTConv1DTranspose(10, 4, 3)(x), atol=1e-4
+        sk.nn.Conv1DTranspose(10, 4, 3)(x),
+        sk.nn.FFTConv1DTranspose(10, 4, 3)(x),
+        atol=1e-4,
     )
 
     x = jnp.ones([10, 4])
     npt.assert_allclose(
-        Conv1DTranspose(10, 4, 3, dilation=2)(x),
-        FFTConv1DTranspose(10, 4, 3, dilation=2)(x),
+        sk.nn.Conv1DTranspose(10, 4, 3, dilation=2)(x),
+        sk.nn.FFTConv1DTranspose(10, 4, 3, dilation=2)(x),
         atol=1e-5,
     )
 
     x = jnp.ones([10, 4, 4])
     npt.assert_allclose(
-        Conv2DTranspose(10, 4, 3)(x), FFTConv2DTranspose(10, 4, 3)(x), atol=1e-4
+        sk.nn.Conv2DTranspose(10, 4, 3)(x),
+        sk.nn.FFTConv2DTranspose(10, 4, 3)(x),
+        atol=1e-4,
     )
 
     x = jnp.ones([10, 4, 4, 4])
     npt.assert_allclose(
-        Conv3DTranspose(10, 4, 3, dilation=2)(x),
-        FFTConv3DTranspose(10, 4, 3, dilation=2)(x),
+        sk.nn.Conv3DTranspose(10, 4, 3, dilation=2)(x),
+        sk.nn.FFTConv3DTranspose(10, 4, 3, dilation=2)(x),
         atol=1e-5,
     )
 
@@ -619,22 +609,28 @@ def test_conv_transpose():
 def test_separable_conv():
     x = jnp.ones([10, 4])
     npt.assert_allclose(
-        SeparableConv1D(10, 4, 3)(x), SeparableFFTConv1D(10, 4, 3)(x), atol=1e-4
+        sk.nn.SeparableConv1D(10, 4, 3)(x),
+        sk.nn.SeparableFFTConv1D(10, 4, 3)(x),
+        atol=1e-4,
     )
 
     x = jnp.ones([10, 4, 4])
     npt.assert_allclose(
-        SeparableConv2D(10, 4, 3)(x), SeparableFFTConv2D(10, 4, 3)(x), atol=1e-4
+        sk.nn.SeparableConv2D(10, 4, 3)(x),
+        sk.nn.SeparableFFTConv2D(10, 4, 3)(x),
+        atol=1e-4,
     )
 
     x = jnp.ones([10, 4, 4, 4])
     npt.assert_allclose(
-        SeparableConv3D(10, 4, 3)(x), SeparableFFTConv3D(10, 4, 3)(x), atol=1e-4
+        sk.nn.SeparableConv3D(10, 4, 3)(x),
+        sk.nn.SeparableFFTConv3D(10, 4, 3)(x),
+        atol=1e-4,
     )
 
 
 def test_conv1D():
-    layer = Conv1D(
+    layer = sk.nn.Conv1D(
         in_features=1,
         out_features=1,
         kernel_size=2,
@@ -646,7 +642,7 @@ def test_conv1D():
     x = jnp.arange(1, 11).reshape([1, 10]).astype(jnp.float32)
     npt.assert_allclose(layer(x), jnp.array([[3, 5, 7, 9, 11, 13, 15, 17, 19, 10]]))
 
-    layer = Conv1D(
+    layer = sk.nn.Conv1D(
         in_features=1, out_features=1, kernel_size=2, padding="same", strides=2
     )
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2], dtype=jnp.float32))
@@ -654,7 +650,7 @@ def test_conv1D():
 
     npt.assert_allclose(layer(x), jnp.array([[3, 7, 11, 15, 19]]))
 
-    layer = Conv1D(
+    layer = sk.nn.Conv1D(
         in_features=1, out_features=1, kernel_size=2, padding="VALID", strides=1
     )
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2], dtype=jnp.float32))
@@ -716,19 +712,19 @@ def test_conv1D():
         ]
     )
 
-    layer = Conv1D(1, 2, 3, padding=2, strides=1, dilation=2)
+    layer = sk.nn.Conv1D(1, 2, 3, padding=2, strides=1, dilation=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
 
     npt.assert_allclose(layer(x), y)
 
-    layer = Conv1D(1, 2, 3, padding=2, strides=1, dilation=2, bias_init=None)
+    layer = sk.nn.Conv1D(1, 2, 3, padding=2, strides=1, dilation=2, bias_init=None)
     layer = layer.at["weight"].set(w)
     npt.assert_allclose(layer(x), y)
 
 
 def test_conv2D():
-    layer = Conv2D(in_features=1, out_features=1, kernel_size=2)
+    layer = sk.nn.Conv2D(in_features=1, out_features=1, kernel_size=2)
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2, 2], dtype=jnp.float32))  # OIHW
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
 
@@ -739,7 +735,7 @@ def test_conv2D():
         ),
     )
 
-    layer = Conv2D(in_features=1, out_features=1, kernel_size=2, padding="VALID")
+    layer = sk.nn.Conv2D(in_features=1, out_features=1, kernel_size=2, padding="VALID")
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
 
@@ -754,7 +750,7 @@ def test_conv2D():
         ),
     )
 
-    layer = Conv2D(1, 2, 2, padding="same", strides=2)
+    layer = sk.nn.Conv2D(1, 2, 2, padding="same", strides=2)
     layer = layer.at["weight"].set(jnp.ones([2, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
 
@@ -768,7 +764,7 @@ def test_conv2D():
         ),
     )
 
-    layer = Conv2D(1, 2, 2, padding="same", strides=1)
+    layer = sk.nn.Conv2D(1, 2, 2, padding="same", strides=1)
     layer = layer.at["weight"].set(jnp.ones([2, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
 
@@ -786,7 +782,7 @@ def test_conv2D():
         ),
     )
 
-    layer = Conv2D(1, 2, 2, padding="same", strides=1, bias_init=None)
+    layer = sk.nn.Conv2D(1, 2, 2, padding="same", strides=1, bias_init=None)
     layer = layer.at["weight"].set(jnp.ones([2, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
 
@@ -806,7 +802,7 @@ def test_conv2D():
 
 
 def test_conv3D():
-    layer = Conv3D(1, 3, 3)
+    layer = sk.nn.Conv3D(1, 3, 3)
     layer = layer.at["weight"].set(jnp.ones([3, 1, 3, 3, 3]))
     layer = layer.at["bias"].set(jnp.zeros([3, 1, 1, 1]))
     npt.assert_allclose(
@@ -838,13 +834,15 @@ def test_conv1dtranspose():
 
     b = jnp.array([[[0.0]]])
 
-    layer = Conv1DTranspose(4, 1, 3, padding=2, strides=1, dilation=2)
+    layer = sk.nn.Conv1DTranspose(4, 1, 3, padding=2, strides=1, dilation=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
     y = jnp.array([[0.27022034, 0.24495776, -0.00368674]])
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
-    layer = Conv1DTranspose(4, 1, 3, padding=2, strides=1, dilation=2, bias_init=None)
+    layer = sk.nn.Conv1DTranspose(
+        4, 1, 3, padding=2, strides=1, dilation=2, bias_init=None
+    )
     layer = layer.at["weight"].set(w)
     y = jnp.array([[0.27022034, 0.24495776, -0.00368674]])
     npt.assert_allclose(layer(x), y, atol=1e-5)
@@ -898,7 +896,7 @@ def test_conv2dtranspose():
 
     b = jnp.array([[[0.0]]])
 
-    layer = Conv2DTranspose(3, 1, 3, padding=2, strides=1, dilation=2)
+    layer = sk.nn.Conv2DTranspose(3, 1, 3, padding=2, strides=1, dilation=2)
 
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
@@ -916,7 +914,9 @@ def test_conv2dtranspose():
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
-    layer = Conv2DTranspose(3, 1, 3, padding=2, strides=1, dilation=2, bias_init=None)
+    layer = sk.nn.Conv2DTranspose(
+        3, 1, 3, padding=2, strides=1, dilation=2, bias_init=None
+    )
 
     layer = layer.at["weight"].set(w)
 
@@ -1085,7 +1085,7 @@ def test_conv3dtranspose():
 
     b = jnp.array([[[[0.0]]]])
 
-    layer = Conv3DTranspose(4, 1, 3, padding=2, strides=1, dilation=2)
+    layer = sk.nn.Conv3DTranspose(4, 1, 3, padding=2, strides=1, dilation=2)
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
 
@@ -1113,7 +1113,9 @@ def test_conv3dtranspose():
 
     npt.assert_allclose(y, layer(x), atol=1e-5)
 
-    layer = Conv3DTranspose(4, 1, 3, padding=2, strides=1, dilation=2, bias_init=None)
+    layer = sk.nn.Conv3DTranspose(
+        4, 1, 3, padding=2, strides=1, dilation=2, bias_init=None
+    )
     layer = layer.at["weight"].set(w)
 
     y = jnp.array(
@@ -1182,7 +1184,7 @@ def test_depthwise_conv1d():
         ]
     )
 
-    layer = DepthwiseConv1D(in_features=5, kernel_size=3, depth_multiplier=2)
+    layer = sk.nn.DepthwiseConv1D(in_features=5, kernel_size=3, depth_multiplier=2)
     layer = layer.at["weight"].set(w)
 
     npt.assert_allclose(y, layer(x), atol=1e-5)
@@ -1246,7 +1248,7 @@ def test_depthwise_conv2d():
         ]
     )
 
-    layer = DepthwiseConv2D(2, 3)
+    layer = sk.nn.DepthwiseConv2D(2, 3)
     layer = layer.at["weight"].set(w)
 
     npt.assert_allclose(y, layer(x), atol=1e-5)
@@ -1273,7 +1275,7 @@ def test_seperable_conv1d():
 
     y = jnp.array([[0.5005436, 0.44051802, 0.5662357, 0.13085097, -0.22720146]])
 
-    layer = SeparableConv1D(
+    layer = sk.nn.SeparableConv1D(
         in_features=2, out_features=1, kernel_size=3, depth_multiplier=2
     )
 
@@ -1350,7 +1352,7 @@ def test_seperable_conv2d():
         ]
     )
 
-    layer_jax = SeparableConv2D(
+    layer_jax = sk.nn.SeparableConv2D(
         in_features=2, out_features=1, kernel_size=3, depth_multiplier=2
     )
 
@@ -1480,7 +1482,7 @@ def test_conv1d_local():
         ]
     )
 
-    layer = Conv1DLocal(
+    layer = sk.nn.Conv1DLocal(
         in_features=2,
         out_features=1,
         kernel_size=3,
@@ -1518,7 +1520,7 @@ def test_conv2d_local():
 
     x = jnp.ones((2, 4, 4))
 
-    layer = Conv2DLocal(2, 1, (3, 2), in_size=(4, 4), padding="valid", strides=2)
+    layer = sk.nn.Conv2DLocal(2, 1, (3, 2), in_size=(4, 4), padding="valid", strides=2)
     layer = layer.at["weight"].set(w)
 
     npt.assert_allclose(y, layer(x), atol=1e-5)
@@ -1526,91 +1528,91 @@ def test_conv2d_local():
 
 def test_in_feature_error():
     with pytest.raises(ValueError):
-        Conv1D(0, 1, 2)
+        sk.nn.Conv1D(0, 1, 2)
 
     with pytest.raises(ValueError):
-        Conv2D(0, 1, 2)
+        sk.nn.Conv2D(0, 1, 2)
 
     with pytest.raises(ValueError):
-        Conv3D(0, 1, 2)
+        sk.nn.Conv3D(0, 1, 2)
 
     with pytest.raises(ValueError):
-        Conv1DLocal(0, 1, 2, in_size=(2,))
+        sk.nn.Conv1DLocal(0, 1, 2, in_size=(2,))
 
     with pytest.raises(ValueError):
-        Conv2DLocal(0, 1, 2, in_size=(2, 2))
+        sk.nn.Conv2DLocal(0, 1, 2, in_size=(2, 2))
 
     with pytest.raises(ValueError):
-        Conv1DTranspose(0, 1, 3)
+        sk.nn.Conv1DTranspose(0, 1, 3)
 
     with pytest.raises(ValueError):
-        Conv2DTranspose(0, 1, 3)
+        sk.nn.Conv2DTranspose(0, 1, 3)
 
     with pytest.raises(ValueError):
-        Conv3DTranspose(0, 1, 3)
+        sk.nn.Conv3DTranspose(0, 1, 3)
 
     with pytest.raises(ValueError):
-        DepthwiseConv1D(0, 1)
+        sk.nn.DepthwiseConv1D(0, 1)
 
     with pytest.raises(ValueError):
-        DepthwiseConv2D(0, 1)
+        sk.nn.DepthwiseConv2D(0, 1)
 
 
 def test_out_feature_error():
     with pytest.raises(ValueError):
-        Conv1D(1, 0, 2)
+        sk.nn.Conv1D(1, 0, 2)
 
     with pytest.raises(ValueError):
-        Conv2D(1, 0, 2)
+        sk.nn.Conv2D(1, 0, 2)
 
     with pytest.raises(ValueError):
-        Conv3D(1, 0, 2)
+        sk.nn.Conv3D(1, 0, 2)
 
     with pytest.raises(ValueError):
-        Conv1DLocal(1, 0, 2, in_size=(2,))
+        sk.nn.Conv1DLocal(1, 0, 2, in_size=(2,))
 
     with pytest.raises(ValueError):
-        Conv2DLocal(1, 0, 2, in_size=(2, 2))
+        sk.nn.Conv2DLocal(1, 0, 2, in_size=(2, 2))
 
     with pytest.raises(ValueError):
-        Conv1DTranspose(1, 0, 3)
+        sk.nn.Conv1DTranspose(1, 0, 3)
 
     with pytest.raises(ValueError):
-        Conv2DTranspose(1, 0, 3)
+        sk.nn.Conv2DTranspose(1, 0, 3)
 
     with pytest.raises(ValueError):
-        Conv3DTranspose(1, 0, 3)
+        sk.nn.Conv3DTranspose(1, 0, 3)
 
 
 def test_groups_error():
     with pytest.raises(ValueError):
-        Conv1D(1, 1, 2, groups=0)
+        sk.nn.Conv1D(1, 1, 2, groups=0)
 
     with pytest.raises(ValueError):
-        Conv2D(1, 1, 2, groups=0)
+        sk.nn.Conv2D(1, 1, 2, groups=0)
 
     with pytest.raises(ValueError):
-        Conv3D(1, 1, 2, groups=0)
+        sk.nn.Conv3D(1, 1, 2, groups=0)
 
     with pytest.raises(ValueError):
-        Conv1DTranspose(1, 1, 3, groups=0)
+        sk.nn.Conv1DTranspose(1, 1, 3, groups=0)
 
     with pytest.raises(ValueError):
-        Conv2DTranspose(1, 1, 3, groups=0)
+        sk.nn.Conv2DTranspose(1, 1, 3, groups=0)
 
     with pytest.raises(ValueError):
-        Conv3DTranspose(1, 1, 3, groups=0)
+        sk.nn.Conv3DTranspose(1, 1, 3, groups=0)
 
 
 @pytest.mark.parametrize(
     "layer,array,expected_shape",
     [
-        [Conv1D, jnp.ones([10, 3]), (1, 3)],
-        [Conv2D, jnp.ones([10, 3, 3]), (1, 3, 3)],
-        [Conv3D, jnp.ones([10, 3, 3, 3]), (1, 3, 3, 3)],
-        [Conv1DTranspose, jnp.ones([10, 3]), (1, 3)],
-        [Conv2DTranspose, jnp.ones([10, 3, 3]), (1, 3, 3)],
-        [Conv3DTranspose, jnp.ones([10, 3, 3, 3]), (1, 3, 3, 3)],
+        [sk.nn.Conv1D, jnp.ones([10, 3]), (1, 3)],
+        [sk.nn.Conv2D, jnp.ones([10, 3, 3]), (1, 3, 3)],
+        [sk.nn.Conv3D, jnp.ones([10, 3, 3, 3]), (1, 3, 3, 3)],
+        [sk.nn.Conv1DTranspose, jnp.ones([10, 3]), (1, 3)],
+        [sk.nn.Conv2DTranspose, jnp.ones([10, 3, 3]), (1, 3, 3)],
+        [sk.nn.Conv3DTranspose, jnp.ones([10, 3, 3, 3]), (1, 3, 3, 3)],
     ],
 )
 def test_lazy_conv(layer, array, expected_shape):

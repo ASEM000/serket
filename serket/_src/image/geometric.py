@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import jax.random as jr
 from jax.scipy.ndimage import map_coordinates
 
 import serket as sk
-from serket.custom_transform import tree_eval
-from serket.nn.linear import Identity
-from serket.utils import IsInstance, validate_spatial_ndim
+from serket._src.custom_transform import tree_eval
+from serket._src.nn.linear import Identity
+from serket._src.utils import IsInstance, validate_spatial_ndim
 
 
 def affine(image, matrix):

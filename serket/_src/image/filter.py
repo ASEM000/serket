@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import jax.numpy as jnp
 from typing_extensions import Annotated
 
 import serket as sk
-from serket.nn.convolution import fft_conv_general_dilated
-from serket.nn.initialization import DType
-from serket.utils import (
+from serket._src.nn.convolution import fft_conv_general_dilated
+from serket._src.nn.initialization import DType
+from serket._src.utils import (
     generate_conv_dim_numbers,
     positive_int_cb,
     resolve_string_padding,

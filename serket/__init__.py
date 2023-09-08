@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,10 +42,11 @@ from pytreeclass import (
     unfreeze,
 )
 
+from serket._src.custom_transform import tree_eval, tree_state
+from serket._src.nn.activation import def_act_entry
+from serket._src.nn.initialization import def_init_entry
+
 from . import cluster, image, nn
-from .custom_transform import tree_eval, tree_state
-from .nn.activation import def_act_entry
-from .nn.initialization import def_init_entry
 
 __all__ = [
     # general utils

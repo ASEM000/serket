@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import functools as ft
 from collections.abc import Callable as ABCCallable
-from typing import Callable,Any, Literal, Tuple, Union, get_args
+from typing import Any, Callable, Literal, Tuple, Union, get_args
 
 import jax
 import jax.nn.initializers as ji

@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ import jax.random as jr
 import jax.tree_util as jtu
 import pytest
 
-from serket.nn.initialization import resolve_init
-from serket.utils import canonicalize
+from serket._src.nn.initialization import resolve_init
+from serket._src.utils import canonicalize
 
 
 def test_canonicalize_init_func():

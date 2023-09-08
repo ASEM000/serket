@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
-from serket.nn.activation import (
+from serket._src.nn.activation import (
     ActivationFunctionType,
     ActivationType,
     resolve_activation,
 )
-from serket.nn.initialization import DType, InitType, resolve_init
-from serket.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb
+from serket._src.nn.initialization import DType, InitType, resolve_init
+from serket._src.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb
 
 T = TypeVar("T")
 

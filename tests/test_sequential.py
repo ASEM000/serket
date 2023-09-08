@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from serket.nn import Sequential
+import serket as sk
 
 
 def test_sequential():
-    model = Sequential(lambda x: x)
+    model = sk.nn.Sequential(lambda x: x)
     assert model(1.0) == 1.0
 
-    model = Sequential(lambda x: x + 1, lambda x: x + 1)
+    model = sk.nn.Sequential(lambda x: x + 1, lambda x: x + 1)
     assert model(1.0) == 3.0
 
-    model = Sequential(lambda x, key: x)
+    model = sk.nn.Sequential(lambda x, key: x)
     assert model(1.0) == 1.0
 
 
 def test_sequential_getitem():
-    model = Sequential(lambda x: x + 1, lambda x: x + 1)
+    model = sk.nn.Sequential(lambda x: x + 1, lambda x: x + 1)
     assert model[0](1.0) == 2.0
     assert model[1](1.0) == 2.0
     assert model[0:1](1.0) == 2.0
@@ -36,15 +36,15 @@ def test_sequential_getitem():
 
 
 def test_sequential_len():
-    model = Sequential(lambda x: x + 1, lambda x: x + 1)
+    model = sk.nn.Sequential(lambda x: x + 1, lambda x: x + 1)
     assert len(model) == 2
 
 
 def test_sequential_iter():
-    model = Sequential(lambda x: x + 1, lambda x: x + 1)
+    model = sk.nn.Sequential(lambda x: x + 1, lambda x: x + 1)
     assert list(model) == [model[0], model[1]]
 
 
 def test_sequential_reversed():
-    model = Sequential(lambda x: x + 1, lambda x: x + 1)
+    model = sk.nn.Sequential(lambda x: x + 1, lambda x: x + 1)
     assert list(reversed(model)) == [model[1], model[0]]

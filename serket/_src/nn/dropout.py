@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,9 +23,8 @@ import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
-from serket.custom_transform import tree_eval
-from serket.nn.linear import Identity
-from serket.utils import (
+from serket._src.custom_transform import tree_eval
+from serket._src.utils import (
     IsInstance,
     Range,
     canonicalize,
@@ -434,5 +433,5 @@ class RandomCutout2D(sk.TreeClass):
 @tree_eval.def_eval(RandomCutout2D)
 @tree_eval.def_eval(GeneralDropout)
 @tree_eval.def_eval(DropoutND)
-def dropout_evaluation(_) -> Identity:
-    return Identity()
+def dropout_evaluation(_) -> sk.nn.Identity:
+    return sk.nn.Identity()

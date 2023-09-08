@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import jax
 import jax.random as jr
 
 import serket as sk
-from serket.custom_transform import tree_eval
-from serket.utils import Range
+from serket._src.custom_transform import tree_eval
+from serket._src.utils import Range
 
 
 def sequential(

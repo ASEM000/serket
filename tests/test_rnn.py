@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 # import tensorflow.keras as tfk
 # import tensorflow as tf
 # import numpy as np
-# from serket.nn.recurrent import  LSTMCell, ScanRNN
+# from serket._src.nn.recurrent import  LSTMCell, ScanRNN
 
 # batch_size = 1
 # time_steps = 2
@@ -68,7 +68,7 @@ import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
 
-from serket.nn.recurrent import (  # ConvGRU1DCell,; ConvGRU2DCell,; ConvGRU3DCell,; ConvLSTM2DCell,; ConvLSTM3DCell,
+from serket._src.nn.recurrent import (
     ConvLSTM1DCell,
     DenseCell,
     FFTConvLSTM1DCell,

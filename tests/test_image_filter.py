@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,38 +20,10 @@ import numpy.testing as npt
 import pytest
 
 import serket as sk
-from serket.image.augment import (
-    AdjustContrast2D,
-    JigSaw2D,
-    PixelShuffle2D,
-    RandomContrast2D,
-)
-from serket.image.filter import (
-    AvgBlur2D,
-    FFTAvgBlur2D,
-    FFTFilter2D,
-    FFTGaussianBlur2D,
-    Filter2D,
-    GaussianBlur2D,
-)
-from serket.image.geometric import (
-    HorizontalFlip2D,
-    HorizontalShear2D,
-    HorizontalTranslate2D,
-    Pixelate2D,
-    RandomHorizontalShear2D,
-    RandomRotate2D,
-    RandomVerticalShear2D,
-    Rotate2D,
-    Solarize2D,
-    VerticalFlip2D,
-    VerticalShear2D,
-    VerticalTranslate2D,
-)
 
 
 def test_AvgBlur2D():
-    x = AvgBlur2D(3)(jnp.arange(1, 26).reshape([1, 5, 5]).astype(jnp.float32))
+    x = sk.image.AvgBlur2D(3)(jnp.arange(1, 26).reshape([1, 5, 5]).astype(jnp.float32))
 
     y = [
         [
@@ -66,12 +38,14 @@ def test_AvgBlur2D():
     npt.assert_allclose(x, y, atol=1e-5)
 
     # test with
-    z = FFTAvgBlur2D(3)(jnp.arange(1, 26).reshape([1, 5, 5]).astype(jnp.float32))
+    z = sk.image.FFTAvgBlur2D(3)(
+        jnp.arange(1, 26).reshape([1, 5, 5]).astype(jnp.float32)
+    )
     npt.assert_allclose(y, z, atol=1e-5)
 
 
 def test_GaussBlur2D():
-    layer = GaussianBlur2D(kernel_size=3, sigma=1.0)
+    layer = sk.image.GaussianBlur2D(kernel_size=3, sigma=1.0)
     x = jnp.ones([1, 5, 5])
 
     npt.assert_allclose(
@@ -91,47 +65,29 @@ def test_GaussBlur2D():
     )
 
     with pytest.raises(ValueError):
-        GaussianBlur2D(0, sigma=1.0)
+        sk.image.GaussianBlur2D(0, sigma=1.0)
 
-    z = FFTGaussianBlur2D(3, sigma=1.0)(jnp.ones([1, 5, 5])).astype(jnp.float32)
+    z = sk.image.FFTGaussianBlur2D(3, sigma=1.0)(jnp.ones([1, 5, 5])).astype(
+        jnp.float32
+    )
 
     npt.assert_allclose(layer(x), z, atol=1e-5)
 
 
-# def test_lazy_blur():
-#     layer = GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0)
-#     assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
-
-#     layer = AvgBlur2D(None, 3)
-#     assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
-
-#     layer = Filter2D(None, jnp.ones([3, 3]))
-#     assert layer(jnp.ones([10, 5, 5])).shape == (10, 5, 5)
-
-#     with pytest.raises(ConcretizationTypeError):
-#         jax.jit(GaussianBlur2D(in_features=None, kernel_size=3, sigma=1.0))(jnp.ones([10, 5, 5]))  # fmt: skip
-
-#     with pytest.raises(ConcretizationTypeError):
-#         jax.jit(AvgBlur2D(in_features=None, kernel_size=3))(jnp.ones([10, 5, 5]))
-
-#     with pytest.raises(ConcretizationTypeError):
-#         jax.jit(Filter2D(in_features=None, kernel=jnp.ones([4, 4])))(jnp.ones([10, 5, 5]))  # fmt: skip
-
-
 def test_filter2d():
-    layer = Filter2D(kernel=jnp.ones([3, 3]) / 9.0)
+    layer = sk.image.Filter2D(kernel=jnp.ones([3, 3]) / 9.0)
     x = jnp.ones([1, 5, 5])
 
-    npt.assert_allclose(AvgBlur2D(3)(x), layer(x), atol=1e-4)
+    npt.assert_allclose(sk.image.AvgBlur2D(3)(x), layer(x), atol=1e-4)
 
-    layer2 = FFTFilter2D(kernel=jnp.ones([3, 3]) / 9.0)
+    layer2 = sk.image.FFTFilter2D(kernel=jnp.ones([3, 3]) / 9.0)
 
     npt.assert_allclose(layer(x), layer2(x), atol=1e-4)
 
 
 def test_solarize2d():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = Solarize2D(threshold=10, max_val=25)
+    layer = sk.image.Solarize2D(threshold=10, max_val=25)
     npt.assert_allclose(
         layer(x),
         jnp.array(
@@ -150,7 +106,7 @@ def test_solarize2d():
 
 def test_horizontal_translate():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = HorizontalTranslate2D(2)
+    layer = sk.image.HorizontalTranslate2D(2)
     npt.assert_allclose(
         layer(x),
         jnp.array(
@@ -166,7 +122,7 @@ def test_horizontal_translate():
         ),
     )
 
-    layer = HorizontalTranslate2D(-2)
+    layer = sk.image.HorizontalTranslate2D(-2)
     npt.assert_allclose(
         layer(x),
         jnp.array(
@@ -182,14 +138,14 @@ def test_horizontal_translate():
         ),
     )
 
-    layer = HorizontalTranslate2D(0)
+    layer = sk.image.HorizontalTranslate2D(0)
 
     npt.assert_allclose(layer(x), x)
 
 
 def test_vertical_translate():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = VerticalTranslate2D(2)
+    layer = sk.image.VerticalTranslate2D(2)
     npt.assert_allclose(
         layer(x),
         jnp.array(
@@ -205,7 +161,7 @@ def test_vertical_translate():
         ),
     )
 
-    layer = VerticalTranslate2D(-2)
+    layer = sk.image.VerticalTranslate2D(-2)
     npt.assert_allclose(
         layer(x),
         jnp.array(
@@ -221,14 +177,14 @@ def test_vertical_translate():
         ),
     )
 
-    layer = VerticalTranslate2D(0)
+    layer = sk.image.VerticalTranslate2D(0)
 
     npt.assert_allclose(layer(x), x)
 
 
 def test_jigsaw():
     x = jnp.arange(1, 17).reshape(1, 4, 4)
-    layer = JigSaw2D(2)
+    layer = sk.image.JigSaw2D(2)
     npt.assert_allclose(
         layer(x),
         jnp.array([[[9, 10, 3, 4], [13, 14, 7, 8], [11, 12, 1, 2], [15, 16, 5, 6]]]),
@@ -236,7 +192,7 @@ def test_jigsaw():
 
 
 def test_rotate():
-    layer = Rotate2D(90)
+    layer = sk.image.Rotate2D(90)
 
     x = jnp.arange(1, 26).reshape(1, 5, 5)
     # ccw rotation
@@ -257,7 +213,7 @@ def test_rotate():
 
     # random roate
 
-    layer = RandomRotate2D((90, 90))
+    layer = sk.image.RandomRotate2D((90, 90))
 
     npt.assert_allclose(layer(x), rot)
     npt.assert_allclose(sk.tree_eval(layer)(x), x)
@@ -265,7 +221,7 @@ def test_rotate():
 
 def test_horizontal_shear():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = HorizontalShear2D(45)
+    layer = sk.image.HorizontalShear2D(45)
     shear = jnp.array(
         [
             [
@@ -280,7 +236,7 @@ def test_horizontal_shear():
 
     npt.assert_allclose(layer(x), shear)
 
-    layer = RandomHorizontalShear2D((45, 45))
+    layer = sk.image.RandomHorizontalShear2D((45, 45))
     npt.assert_allclose(layer(x), shear)
 
     npt.assert_allclose(sk.tree_eval(layer)(x), x)
@@ -288,7 +244,7 @@ def test_horizontal_shear():
 
 def test_vertical_shear():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = VerticalShear2D(45)
+    layer = sk.image.VerticalShear2D(45)
     shear = jnp.array(
         [
             [
@@ -303,7 +259,7 @@ def test_vertical_shear():
 
     npt.assert_allclose(layer(x), shear)
 
-    layer = RandomVerticalShear2D((45, 45))
+    layer = sk.image.RandomVerticalShear2D((45, 45))
     npt.assert_allclose(layer(x), shear)
 
     npt.assert_allclose(sk.tree_eval(layer)(x), x)
@@ -329,7 +285,7 @@ def test_posterize():
 
 def test_pixelate():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = Pixelate2D(1)
+    layer = sk.image.Pixelate2D(1)
     npt.assert_allclose(layer(x), x)
 
 
@@ -363,7 +319,7 @@ def test_adjust_contrast_2d():
         ]
     )
 
-    npt.assert_allclose(AdjustContrast2D(contrast_factor=0.5)(x), y, atol=1e-5)
+    npt.assert_allclose(sk.image.AdjustContrast2D(contrast_factor=0.5)(x), y, atol=1e-5)
 
 
 def test_random_contrast_2d():
@@ -398,21 +354,23 @@ def test_random_contrast_2d():
     )
 
     npt.assert_allclose(
-        RandomContrast2D(contrast_range=(0.5, 1))(x, key=jax.random.PRNGKey(0)),
+        sk.image.RandomContrast2D(contrast_range=(0.5, 1))(
+            x, key=jax.random.PRNGKey(0)
+        ),
         y,
         atol=1e-5,
     )
 
 
 def test_flip_left_right_2d():
-    flip = HorizontalFlip2D()
+    flip = sk.image.HorizontalFlip2D()
     x = jnp.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]])
     y = flip(x)
     npt.assert_allclose(y, jnp.array([[[3, 2, 1], [6, 5, 4], [9, 8, 7]]]))
 
 
 def test_flip_up_down_2d():
-    flip = VerticalFlip2D()
+    flip = sk.image.VerticalFlip2D()
     x = jnp.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]])
     y = flip(x)
     npt.assert_allclose(y, jnp.array([[[7, 8, 9], [4, 5, 6], [1, 2, 3]]]))
@@ -428,13 +386,13 @@ def test_pixel_shuffle():
         ]
     )
 
-    ps = PixelShuffle2D(2)
+    ps = sk.image.PixelShuffle2D(2)
     y = jnp.array([0.08482574, 0.33432344, 1.9097648, -0.82606775])
 
     npt.assert_allclose(ps(x)[0, 0], y, atol=1e-5)
 
     with pytest.raises(ValueError):
-        PixelShuffle2D(3)(jnp.ones([6, 4, 4]))
+        sk.image.PixelShuffle2D(3)(jnp.ones([6, 4, 4]))
 
     with pytest.raises(ValueError):
-        PixelShuffle2D(-3)(jnp.ones([9, 6, 4]))
+        sk.image.PixelShuffle2D(-3)(jnp.ones([9, 6, 4]))

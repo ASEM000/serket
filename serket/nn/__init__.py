@@ -1,4 +1,4 @@
-# Copyright 2023 Serket authors
+# Copyright 2023 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .activation import (
+from serket._src.nn.activation import (
     ELU,
     GELU,
     GLU,
@@ -44,9 +44,9 @@ from .activation import (
     TanhShrink,
     ThresholdedReLU,
 )
-from .attention import MultiHeadAttention
-from .containers import RandomApply, RandomChoice, Sequential
-from .convolution import (
+from serket._src.nn.attention import MultiHeadAttention
+from serket._src.nn.containers import RandomApply, RandomChoice, Sequential
+from serket._src.nn.convolution import (
     Conv1D,
     Conv1DLocal,
     Conv1DTranspose,
@@ -75,7 +75,7 @@ from .convolution import (
     SeparableFFTConv2D,
     SeparableFFTConv3D,
 )
-from .dropout import (
+from serket._src.nn.dropout import (
     Dropout,
     Dropout1D,
     Dropout2D,
@@ -84,9 +84,17 @@ from .dropout import (
     RandomCutout1D,
     RandomCutout2D,
 )
-from .linear import FNN, MLP, Embedding, GeneralLinear, Identity, Linear, Multilinear
-from .normalization import BatchNorm, GroupNorm, InstanceNorm, LayerNorm
-from .pooling import (
+from serket._src.nn.linear import (
+    FNN,
+    MLP,
+    Embedding,
+    GeneralLinear,
+    Identity,
+    Linear,
+    Multilinear,
+)
+from serket._src.nn.normalization import BatchNorm, GroupNorm, InstanceNorm, LayerNorm
+from serket._src.nn.pooling import (
     AdaptiveAvgPool1D,
     AdaptiveAvgPool2D,
     AdaptiveAvgPool3D,
@@ -109,7 +117,7 @@ from .pooling import (
     MaxPool2D,
     MaxPool3D,
 )
-from .recurrent import (
+from serket._src.nn.recurrent import (
     ConvGRU1DCell,
     ConvGRU2DCell,
     ConvGRU3DCell,
@@ -128,7 +136,7 @@ from .recurrent import (
     ScanRNN,
     SimpleRNNCell,
 )
-from .reshape import (
+from serket._src.nn.reshape import (
     Crop1D,
     Crop2D,
     Crop3D,
@@ -151,7 +159,7 @@ from .reshape import (
     Upsample3D,
 )
 
-__all__ = (
+__all__ = [
     # activation
     "ELU",
     "GELU",
@@ -299,4 +307,4 @@ __all__ = (
     "Upsample1D",
     "Upsample2D",
     "Upsample3D",
-)
+]
