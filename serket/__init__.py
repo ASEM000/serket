@@ -42,12 +42,12 @@ from pytreeclass import (
     unfreeze,
 )
 
-from . import image, nn
+from . import cluster, image, nn
 from .custom_transform import tree_eval, tree_state
 from .nn.activation import def_act_entry
 from .nn.initialization import def_init_entry
 
-__all__ = (
+__all__ = [
     # general utils
     "TreeClass",
     "is_tree_equal",
@@ -80,13 +80,14 @@ __all__ = (
     "Partial",
     "leafwise",
     # serket
+    "cluster",
     "nn",
     "image",
     "tree_eval",
     "tree_state",
     "def_init_entry",
     "def_act_entry",
-)
+]
 
 
-__version__ = "0.2.0rc2"
+__version__ = "0.2.0rc3"

@@ -32,7 +32,7 @@ def test_kmeans():
     k = 3
     x = random.uniform(rng, (100, 2))
     sc_ = KMeans(n_clusters=k, tol=1e-5).fit(x)
-    layer = sk.nn.KMeans(k, tol=1e-5)
+    layer = sk.cluster.KMeans(k, tol=1e-5)
     _, state = layer(x)
     npt.assert_allclose(
         jnp.sort(sc_.cluster_centers_, axis=0),

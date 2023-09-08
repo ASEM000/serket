@@ -45,7 +45,6 @@ from .activation import (
     ThresholdedReLU,
 )
 from .attention import MultiHeadAttention
-from .clustering import KMeans
 from .containers import RandomApply, RandomChoice, Sequential
 from .convolution import (
     Conv1D,
@@ -239,8 +238,6 @@ __all__ = (
     "GroupNorm",
     "InstanceNorm",
     "LayerNorm",
-    # kmeans
-    "KMeans",
     # pooling
     "AdaptiveAvgPool1D",
     "AdaptiveAvgPool2D",

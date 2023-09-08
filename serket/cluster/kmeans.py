@@ -132,14 +132,14 @@ class KMeans(sk.TreeClass):
 
     Example:
 
-        Example usage plot of :class:`.nn.KMeans`
+        Example usage plot of :class:`.cluster.KMeans`
 
         >>> import jax
         >>> import jax.random as jr
         >>> import matplotlib.pyplot as plt
         >>> import serket as sk
         >>> x = jr.uniform(jr.PRNGKey(0), shape=(500, 2))
-        >>> layer = sk.nn.KMeans(clusters=5, tol=1e-6)
+        >>> layer = sk.cluster.KMeans(clusters=5, tol=1e-6)
         >>> labels, state = layer(x)
         >>> plt.scatter(x[:, 0], x[:, 1], c=labels[:, 0], cmap="jet_r")  # doctest: +SKIP
         >>> plt.scatter(state.centers[:, 0], state.centers[:, 1], c="r", marker="o", linewidths=4)  # doctest: +SKIP
@@ -154,14 +154,14 @@ class KMeans(sk.TreeClass):
         >>> features = 3
         >>> clusters = 4
         >>> x = jr.uniform(jr.PRNGKey(0), shape=(100, features))
-        >>> layer = sk.nn.KMeans(clusters=clusters, tol=1e-6)
+        >>> layer = sk.cluster.KMeans(clusters=clusters, tol=1e-6)
         >>> labels, state = layer(x)
         >>> centers = state.centers
         >>> assert labels.shape == (100, 1)
         >>> assert centers.shape == (clusters, features)
 
     Note:
-        To use the :class:`.nn.KMeans` layer in evaluation mode, use :func:`.tree_eval` to
+        To use the :class:`.cluster.KMeans` layer in evaluation mode, use :func:`.tree_eval` to
         disallow centers update and only predict the labels based on the current
         centers.
 
@@ -170,7 +170,7 @@ class KMeans(sk.TreeClass):
         >>> features = 3
         >>> clusters = 4
         >>> x = jr.uniform(jr.PRNGKey(0), shape=(100, features))
-        >>> layer = sk.nn.KMeans(clusters=clusters, tol=1e-6)
+        >>> layer = sk.cluster.KMeans(clusters=clusters, tol=1e-6)
         >>> x, state = layer(x)
         >>> eval_layer = sk.tree_eval(layer)
         >>> y = jr.uniform(jr.PRNGKey(0), shape=(1, features))

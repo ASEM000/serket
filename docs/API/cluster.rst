@@ -1,6 +1,6 @@
-Clustering
+🌈 Clustering API
 ---------------------------------
-.. currentmodule:: serket.nn
+.. currentmodule:: serket.cluster
 
     
 .. autoclass:: KMeans

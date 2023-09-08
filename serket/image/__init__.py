@@ -45,7 +45,7 @@ from .geometric import (
     VerticalTranslate2D,
 )
 
-__all__ = (
+__all__ = [
     # augment
     "AdjustContrast2D",
     "JigSaw2D",
@@ -75,4 +75,4 @@ __all__ = (
     "VerticalFlip2D",
     "VerticalShear2D",
     "VerticalTranslate2D",
-)
+]

@@ -90,6 +90,7 @@ Install from github::
     :maxdepth: 1
     
     API/common
+    API/cluster
     API/nn
     API/image
     API/pytreeclass
