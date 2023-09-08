@@ -130,6 +130,36 @@ def tree_eval(tree):
         >>> layer = sk.nn.Dropout(0.5)
         >>> sk.tree_eval(layer)
         Identity()
+
+    Note:
+        To define evaluation rule for a custom layer, use the decorator
+        :func:`.tree_eval.def_eval` on a function that accepts the layer. The 
+        function should return the evaluation layer.
+
+        >>> import serket as sk
+        >>> import jax
+        >>> class AddOne(sk.TreeClass):
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return x + 1
+        >>> x = jax.numpy.ones([3, 3])
+        >>> add_one = AddOne()
+        >>> print(add_one(x))  # add one to each element
+        [[2. 2. 2.]
+         [2. 2. 2.]
+         [2. 2. 2.]]
+        <BLANKLINE>
+        >>> class AddOneEval(sk.TreeClass):
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return x  # no-op
+        <BLANKLINE>
+        >>> # register `AddOne` to be replaced by `AddOneEval` in evaluation mode
+        >>> @sk.tree_eval.def_eval(AddOne)
+        ... def _(_: AddOne) -> AddOneEval:
+        ...    return AddOneEval()
+        >>> print(sk.tree_eval(add_one)(x))
+        [[1. 1. 1.]
+         [1. 1. 1.]
+         [1. 1. 1.]]
     """
 
     types = tuple(set(tree_eval.eval_dispatcher.registry) - {object})
