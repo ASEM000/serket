@@ -7,5 +7,6 @@
 
     notebooks/train_mnist
     notebooks/train_bilstm
+    notebooks/train_pinn_burgers
     notebooks/train_mp
     notebooks/regularization
