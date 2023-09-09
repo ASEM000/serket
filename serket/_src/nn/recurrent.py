@@ -65,11 +65,9 @@ class RNNState(sk.TreeClass):
 class RNNCell(sk.TreeClass):
     """Abstract class for RNN cells.
 
-    Subclasses must implement:
-        - `__call__` should take in an `input` and a `state` and return a new `state`.
-        - `init_state` should take in a `spatial_shape` and return an initial `state`.
-        - `spatial_ndim` should return the spatial dimensionality of the RNN.
-            0 for non-spatial, 1 for 1D, 2 for 2D, 3 for 3D etc.
+    Subclasses should
+        - Implement `__call__` method that accept an input and a state and return a new state.
+        - Define state rule using :func:`serket.tree_state` decorator.
 
     Subclassed classes can by used with `ScanRNN` to scan the RNN over a sequence
     of inputs. for example, check out `SimpleRNNCell`.

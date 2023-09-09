@@ -319,6 +319,80 @@ def get_params(func: MethodType) -> tuple[inspect.Parameter, ...]:
     return tuple(inspect.signature(func).parameters.values())
 
 
+# TODO: maybe expose this as a public API
+
+# Handling lazy layers
+"""
+Creating a _lazy_ ``Linear`` layer example:
+
+In this example, we create a _lazy_ ``Linear`` that initializes the weights
+and biases based on the input. The ``__init__`` method is decorated with 
+``maybe_lazy_init`` with the condition that if ``in_features`` is ``None`` 
+then the layer is lazy. and the ``__call__`` method is decorated with 
+``maybe_lazy_call`` with the condition that if the instance ``in_features`` 
+is ``None`` then the layer is lazy. addditionally, we define an update function 
+that infers the ``in_features`` from the input shape and updates the 
+``in_features`` attribute to then 
+re-initialize the layer with the inferred ``in_features``.
+
+One benefit of this approach is that we can use the layer as a lazy layer
+or a materialized layer without changing the code. This is useful to 
+translate code from both explicit and implicit shaped layer found in 
+libraries like ``pytorch`` and ``tensorflow``.
+
+>>> import functools as ft
+>>> import serket as sk
+>>> import jax.numpy as jnp
+>>> from serket._src.utils import maybe_lazy_call, maybe_lazy_init
+<BLANKLINE>
+>>> def is_lazy_init(self, in_features, out_features):
+...    # we need to define how to tell if the layer is lazy
+...    # based on the inputs
+...    return in_features is None  # or anything else really
+<BLANKLINE>
+>>> def is_lazy_call(self, x):
+...    # we need to define how to tell if the layer is lazy
+...    # at the call time
+...    # replicating the lazy init condition
+...    return getattr(self, "in_features", False) is None
+<BLANKLINE>
+>>> def infer_in_features(self, x):
+...    # we need to define how to infer the in_features
+...    # based on the inputs at call time
+...    # for linear layers, we can infer the in_features as the last dimension
+...    return x.shape[-1]
+<BLANKLINE>
+>>> # lastly we need to assign this function to a dictionary that has the name
+>>> # of the feature we want to infer
+>>> updates = dict(in_features=infer_in_features)
+<BLANKLINE>
+>>> class SimpleLinear(sk.TreeClass):
+...    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
+...    def __init__(self, in_features, out_features):
+...        self.in_features = in_features
+...        self.out_features = out_features
+...        self.weight = jnp.ones((in_features, out_features))  # dummy weight
+...        self.bias = jnp.zeros((out_features,))  # dummy bias
+>>>    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
+...    def __call__(self, x):
+...        return x
+<BLANKLINE>
+>>> simple_lazy_linear = SimpleLinear(None, 1)
+>>> x = jnp.ones([10, 2])  # last dimension is the in_features of the layer
+>>> print(repr(simple_lazy_linear))
+SimpleLinear(in_features=None, out_features=1)
+<BLANKLINE>
+>>> _, materialized_linear = simple_lazy_linear.at["__call__"](x)
+<BLANKLINE>
+>>> print(repr(materialized_linear))
+SimpleLinear(
+    in_features=2, 
+    out_features=1, 
+    weight=f32[2,1](μ=1.00, σ=0.00, ∈[1.00,1.00]), 
+    bias=f32[1](μ=0.00, σ=0.00, ∈[0.00,0.00])
+)
+"""
+
 def maybe_lazy_init(
     func: Callable[P, T],
     is_lazy: Callable[..., bool],

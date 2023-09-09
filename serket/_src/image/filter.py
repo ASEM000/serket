@@ -40,6 +40,9 @@ def filter_2d(
     Args:
         array: 2D input array. shape is (row, col).
         weight: convolutional kernel. shape is (row, col).
+
+    Note:
+        - To filter 3D array, channel-wise use ``jax.vmap(filter_2d, in_axes=(0, None))``.
     """
     assert array.ndim == 2
     assert weight.ndim == 2
@@ -68,6 +71,9 @@ def fft_filter_2d(
     Args:
         array: 2D input array. shape is (row, col).
         weight: convolutional kernel. shape is (row, col).
+
+    Note:
+        - To filter 3D array, channel-wise use ``jax.vmap(filter_2d, in_axes=(0, None))``.
     """
     assert array.ndim == 2
     assert weight.ndim == 2
