@@ -71,7 +71,6 @@ Install from github::
     
     notebooks/mental_model
     notebooks/train_eval
-    notebooks/layers_overview
     notebooks/lazy_initialization
 
 .. toctree::
