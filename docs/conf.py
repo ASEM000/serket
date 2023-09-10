@@ -70,10 +70,9 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 autodoc_default_options = {
     "member-order": "bysource",
-    "special-members": True,
+    "special-members": '__call__',
     "exclude-members": "__repr__, __str__, __weakref__",
 }
-
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -90,7 +89,7 @@ html_theme = "sphinx_book_theme"
 
 
 html_theme_options = {
-    "show_toc_level": 2,
+    "show_toc_level": 1,
     "repository_url": "https://github.com/ASEM000/Serket",
     "use_repository_button": True,
     "collapse_navigation": False,

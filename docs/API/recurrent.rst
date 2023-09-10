@@ -23,5 +23,3 @@ Recurrent
 .. autoclass:: FFTConvGRU3DCell
 
 .. autoclass:: ScanRNN
-    :members:
-        __call__
