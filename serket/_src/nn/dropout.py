@@ -29,7 +29,7 @@ from serket._src.utils import (
     Range,
     canonicalize,
     positive_int_cb,
-    validate_spatial_ndim,
+    validate_spatial_nd,
 )
 
 
@@ -124,7 +124,7 @@ class DropoutND(sk.TreeClass):
         on_getattr=[jax.lax.stop_gradient_p.bind],
     )
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x, *, key=jr.PRNGKey(0)):
         # drops full feature maps along first axis.
         return dropout_nd(x, self.drop_rate, key, (0,))
@@ -381,7 +381,7 @@ class RandomCutout1D(sk.TreeClass):
         self.cutout_count = positive_int_cb(cutout_count)
         self.fill_value = fill_value
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         out = random_cutout_1d(x, self.shape, self.cutout_count, self.fill_value, key)
         return jax.lax.stop_gradient(out)
@@ -419,7 +419,7 @@ class RandomCutout2D(sk.TreeClass):
         self.cutout_count = positive_int_cb(cutout_count)
         self.fill_value = fill_value
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         out = random_cutout_2d(x, self.shape, self.cutout_count, self.fill_value, key)
         return jax.lax.stop_gradient(out)

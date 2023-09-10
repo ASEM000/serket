@@ -261,7 +261,7 @@ def recursive_getattr(obj, attr: Sequence[str]):
     )
 
 
-def validate_spatial_ndim(func: Callable[P, T], attribute_name: str) -> Callable[P, T]:
+def validate_spatial_nd(func: Callable[P, T], attribute_name: str) -> Callable[P, T]:
     """Decorator to validate spatial input shape."""
     attribute_list: Sequence[str] = attribute_name.split(".")
 
@@ -392,6 +392,7 @@ SimpleLinear(
     bias=f32[1](μ=0.00, σ=0.00, ∈[0.00,0.00])
 )
 """
+
 
 def maybe_lazy_init(
     func: Callable[P, T],

@@ -24,7 +24,7 @@ from jax import lax
 import serket as sk
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
-from serket._src.utils import IsInstance, Range, validate_spatial_ndim
+from serket._src.utils import IsInstance, Range, validate_spatial_nd
 
 
 def pixel_shuffle_2d(x: jax.Array, upscale_factor: int | tuple[int, int]) -> jax.Array:
@@ -73,7 +73,7 @@ class PixelShuffle2D(sk.TreeClass):
 
         raise ValueError("upscale_factor must be an integer or tuple of length 2")
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         return pixel_shuffle_2d(x, self.upscale_factor)
 
@@ -116,7 +116,7 @@ class AdjustContrast2D(sk.TreeClass):
 
     contrast_factor: float = 1.0
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         contrast_factor = jax.lax.stop_gradient(self.contrast_factor)
         return adjust_contrast_nd(x, contrast_factor)
@@ -155,7 +155,7 @@ class RandomContrast2D(sk.TreeClass):
 
         self.contrast_range = contrast_range
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         return random_contrast_nd(x, lax.stop_gradient(self.contrast_range), key=key)
 
@@ -203,7 +203,7 @@ class Pixelate2D(sk.TreeClass):
             raise ValueError(f"{scale=} must be a positive int")
         self.scale = scale
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         return pixelate(x, jax.lax.stop_gradient(self.scale))
 
@@ -251,7 +251,7 @@ class Solarize2D(sk.TreeClass):
     threshold: float
     max_val: float = 1.0
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
         return solarize(x, threshold, max_val)
@@ -320,7 +320,7 @@ class Posterize2D(sk.TreeClass):
 
     bits: int = sk.field(on_setattr=[IsInstance(int), Range(1, 8)])
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         bits = jax.lax.stop_gradient(self.bits)
         return jax.vmap(posterize, in_axes=(0, None))(x, bits)
@@ -410,7 +410,7 @@ class JigSaw2D(sk.TreeClass):
 
     tiles: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         """Mixes up tiles of an image.
 

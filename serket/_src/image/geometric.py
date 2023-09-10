@@ -20,33 +20,34 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 from jax.scipy.ndimage import map_coordinates
+from typing_extensions import Annotated
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
-from serket._src.utils import IsInstance, validate_spatial_ndim
+from serket._src.utils import IsInstance, validate_spatial_nd
 
 
-def affine(image, matrix):
-    _, h, w = image.shape
+def affine_2d(
+    array: Annotated[jax.Array, "HW"], matrix: Annotated[jax.Array, "HW"]
+) -> Annotated[jax.Array, "HW"]:
+    h, w = array.shape
     center = jnp.array((h // 2, w // 2))
     coords = jnp.indices((h, w)).reshape(2, -1) - center.reshape(2, 1)
     coords = matrix @ coords + center.reshape(2, 1)
-
-    def affine_channel(array):
-        return map_coordinates(array, coords, order=1).reshape((h, w))
-
-    return jax.vmap(affine_channel)(image)
+    return map_coordinates(array, coords, order=1).reshape((h, w))
 
 
-def horizontal_shear(image: jax.Array, angle: float) -> jax.Array:
+def horizontal_shear_2d(
+    image: Annotated[jax.Array, "HW"], angle: float
+) -> Annotated[jax.Array, "HW"]:
     """shear rows by an angle in degrees"""
     shear = jnp.tan(jnp.deg2rad(angle))
     matrix = jnp.array([[1, 0], [shear, 1]])
-    return affine(image, matrix)
+    return affine_2d(image, matrix)
 
 
-def random_horizontal_shear(
+def random_horizontal_shear_2d(
     image: jax.Array,
     angle_range: tuple[float, float],
     key: jax.random.KeyArray,
@@ -54,51 +55,154 @@ def random_horizontal_shear(
     """shear rows by an angle in degrees"""
     minval, maxval = angle_range
     angle = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
-    return horizontal_shear(image, angle)
+    return horizontal_shear_2d(image, angle)
 
 
-def vertical_shear(image: jax.Array, angle: float) -> jax.Array:
+def vertical_shear_2d(
+    image: Annotated[jax.Array, "HW"],
+    angle: float,
+) -> Annotated[jax.Array, "HW"]:
     """shear cols by an angle in degrees"""
     shear = jnp.tan(jnp.deg2rad(angle))
     matrix = jnp.array([[1, shear], [0, 1]])
-    return affine(image, matrix)
+    return affine_2d(image, matrix)
 
 
-def random_vertical_shear(
-    image: jax.Array,
+def random_vertical_shear_2d(
+    image: Annotated[jax.Array, "HW"],
     angle_range: tuple[float, float],
     key: jax.random.KeyArray,
-) -> jax.Array:
+) -> Annotated[jax.Array, "HW"]:
     """shear cols by an angle in degrees"""
     minval, maxval = angle_range
     angle = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
-    return vertical_shear(image, angle)
+    return vertical_shear_2d(image, angle)
 
 
-def rotate(image: jax.Array, angle: float) -> jax.Array:
-    """Rotate a channel-first image by an angle in degrees in CCW direction."""
+def rotate_2d(
+    image: Annotated[jax.Array, "HW"], angle: float
+) -> Annotated[jax.Array, "HW"]:
+    """rotate an image by an angle in degrees in CCW direction."""
     θ = jnp.deg2rad(-angle)
     matrix = jnp.array([[jnp.cos(θ), -jnp.sin(θ)], [jnp.sin(θ), jnp.cos(θ)]])
-    return affine(image, matrix)
+    return affine_2d(image, matrix)
 
 
-def random_rotate(
-    image: jax.Array,
+def random_rotate_2d(
+    image: Annotated[jax.Array, "HW"],
     angle_range: tuple[float, float],
     key: jax.random.KeyArray,
-) -> jax.Array:
+) -> Annotated[jax.Array, "HW"]:
     minval, maxval = angle_range
     angle = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
-    return rotate(image, angle)
+    return rotate_2d(image, angle)
+
+
+def pixelate_2d(
+    image: Annotated[jax.Array, "HW"],
+    scale: int = 16,
+) -> Annotated[jax.Array, "HW"]:
+    """Return a pixelated image by downsizing and upsizing"""
+    dtype = image.dtype
+    h, w = image.shape
+    image = image.astype(jnp.float32)
+    image = jax.image.resize(image, (h // scale, w // scale), method="linear")
+    image = jax.image.resize(image, (h, w), method="linear")
+    image = image.astype(dtype)
+    return image
+
+
+def perspective_transform_2d(
+    image: Annotated[jax.Array, "HW"],
+    coeffs: jax.Array,
+) -> Annotated[jax.Array, "HW"]:
+    """Apply a perspective transform to an image."""
+
+    rows, cols = image.shape
+    y, x = jnp.meshgrid(jnp.arange(rows), jnp.arange(cols), indexing="ij")
+    a, b, c, d, e, f, g, h = coeffs
+    w = g * x + h * y + 1.0
+    x_prime = (a * x + b * y + c) / w
+    y_prime = (d * x + e * y + f) / w
+    coords = [y_prime.ravel(), x_prime.ravel()]
+    return map_coordinates(image, coords, order=1).reshape(rows, cols)
+
+
+def random_perspective_2d(
+    image: Annotated[jax.Array, "HW"],
+    key: jax.random.KeyArray,
+    scale: float = 1.0,
+) -> Annotated[jax.Array, "HW"]:
+    """Applies a random perspective transform to a channel-first image"""
+    _, _ = image.shape
+    a = e = 1.0
+    b = d = 0.0
+    c = f = 0.0  # no translation
+    g, h = jr.uniform(key, shape=(2,), minval=-1e-4, maxval=1e-4) * scale
+    coeffs = jnp.array([a, b, c, d, e, f, g, h])
+    return perspective_transform_2d(image, coeffs)
+
+
+def solarize_2d(
+    image: Annotated[jax.Array, "HW"],
+    threshold: float | int,
+    max_val: float | int,
+) -> Annotated[jax.Array, "HW"]:
+    """Inverts all values above a given threshold."""
+    _, _ = image.shape
+    return jnp.where(image < threshold, image, max_val - image)
+
+
+def horizontal_translate_2d(
+    image: Annotated[jax.Array, "HW"],
+    shift: int,
+) -> Annotated[jax.Array, "HW"]:
+    """Translate an image horizontally by a pixel value."""
+    _, _ = image.shape
+    if shift > 0:
+        return jnp.zeros_like(image).at[:, shift:].set(image[:, :-shift])
+    if shift < 0:
+        return jnp.zeros_like(image).at[:, :shift].set(image[:, -shift:])
+    return image
+
+
+def vertical_translate_2d(
+    image: Annotated[jax.Array, "HW"],
+    shift: int,
+) -> Annotated[jax.Array, "HW"]:
+    """Translate an image vertically by a pixel value."""
+    _, _ = image.shape
+    if shift > 0:
+        return jnp.zeros_like(image).at[shift:, :].set(image[:-shift, :])
+    if shift < 0:
+        return jnp.zeros_like(image).at[:shift, :].set(image[-shift:, :])
+    return image
+
+
+def random_horizontal_translate_2d(
+    image: Annotated[jax.Array, "HW"], key: jr.KeyArray
+) -> Annotated[jax.Array, "HW"]:
+    _, w = image.shape
+    shift = jr.randint(key, shape=(), minval=-w, maxval=w)
+    return horizontal_translate_2d(image, shift)
+
+
+def random_vertical_translate_2d(
+    image: Annotated[jax.Array, "HW"],
+    key: jr.KeyArray,
+) -> Annotated[jax.Array, "HW"]:
+    h, _ = image.shape
+    shift = jr.randint(key, shape=(), minval=-h, maxval=h)
+    return vertical_translate_2d(image, shift)
 
 
 class Rotate2D(sk.TreeClass):
-    """Rotate a 2D image by an angle in dgrees in CCW direction
+    """Rotate_2d a 2D image by an angle in dgrees in CCW direction
 
     .. image:: ../_static/rotate2d.png
 
     Args:
-        angle: angle to rotate in degrees counter-clockwise direction.
+        angle: angle to rotate_2d in degrees counter-clockwise direction.
 
     Example:
         >>> import serket as sk
@@ -115,9 +219,10 @@ class Rotate2D(sk.TreeClass):
     def __init__(self, angle: float):
         self.angle = angle
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        return rotate(x, jax.lax.stop_gradient(self.angle))
+        angle = jax.lax.stop_gradient(self.angle)
+        return jax.vmap(rotate_2d, in_axes=(0, None))(x, angle)
 
     @property
     def spatial_ndim(self) -> int:
@@ -125,7 +230,7 @@ class Rotate2D(sk.TreeClass):
 
 
 class RandomRotate2D(sk.TreeClass):
-    """Rotate a 2D image by an angle in dgrees in CCW direction
+    """Rotate_2d a 2D image by an angle in dgrees in CCW direction
 
     Args:
         angle_range: a tuple of min angle and max angle to randdomly choose from.
@@ -169,13 +274,14 @@ class RandomRotate2D(sk.TreeClass):
 
         self.angle_range = angle_range
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(
         self,
         x: jax.Array,
         key: jax.random.KeyArray = jax.random.PRNGKey(0),
     ) -> jax.Array:
-        return random_rotate(x, jax.lax.stop_gradient(self.angle_range), key)
+        angle_range = jax.lax.stop_gradient(self.angle_range)
+        return jax.vmap(random_rotate_2d, in_axes=(0, None, None))(x, angle_range, key)
 
     @property
     def spatial_ndim(self) -> int:
@@ -188,7 +294,7 @@ class HorizontalShear2D(sk.TreeClass):
     .. image:: ../_static/horizontalshear2d.png
 
     Args:
-        angle: angle to rotate in degrees counter-clockwise direction.
+        angle: angle to rotate_2d in degrees counter-clockwise direction.
 
     Example:
         >>> import serket as sk
@@ -205,9 +311,10 @@ class HorizontalShear2D(sk.TreeClass):
     def __init__(self, angle: float):
         self.angle = angle
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        return horizontal_shear(x, jax.lax.stop_gradient(self.angle))
+        angle = jax.lax.stop_gradient(self.angle)
+        return jax.vmap(horizontal_shear_2d, in_axes=(0, None))(x, angle)
 
     @property
     def spatial_ndim(self) -> int:
@@ -258,13 +365,15 @@ class RandomHorizontalShear2D(sk.TreeClass):
             raise ValueError(f"`{angle_range=}` must be a tuple of 2 floats")
         self.angle_range = angle_range
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(
         self,
         x: jax.Array,
         key: jax.random.KeyArray = jax.random.PRNGKey(0),
     ) -> jax.Array:
-        return random_horizontal_shear(x, jax.lax.stop_gradient(self.angle_range), key)
+        angle = jax.lax.stop_gradient(self.angle_range)
+        in_axes = (0, None, None)
+        return jax.vmap(random_horizontal_shear_2d, in_axes=in_axes)(x, angle, key)
 
     @property
     def spatial_ndim(self) -> int:
@@ -277,7 +386,7 @@ class VerticalShear2D(sk.TreeClass):
     .. image:: ../_static/verticalshear2d.png
 
     Args:
-        angle: angle to rotate in degrees counter-clockwise direction.
+        angle: angle to rotate_2d in degrees counter-clockwise direction.
 
     Example:
         >>> import serket as sk
@@ -294,9 +403,10 @@ class VerticalShear2D(sk.TreeClass):
     def __init__(self, angle: float):
         self.angle = angle
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        return vertical_shear(x, jax.lax.stop_gradient(self.angle))
+        angle = jax.lax.stop_gradient(self.angle)
+        return jax.vmap(vertical_shear_2d, in_axes=(0, None))(x, angle)
 
     @property
     def spatial_ndim(self) -> int:
@@ -347,28 +457,19 @@ class RandomVerticalShear2D(sk.TreeClass):
             raise ValueError(f"`{angle_range=}` must be a tuple of 2 floats")
         self.angle_range = angle_range
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(
         self,
         x: jax.Array,
         key: jax.random.KeyArray = jax.random.PRNGKey(0),
     ) -> jax.Array:
-        return random_vertical_shear(x, jax.lax.stop_gradient(self.angle_range), key)
+        angle = jax.lax.stop_gradient(self.angle_range)
+        in_axes = (0, None, None)
+        return jax.vmap(random_vertical_shear_2d, in_axes=in_axes)(x, angle, key)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
-
-
-def pixelate(image: jax.Array, scale: int = 16) -> jax.Array:
-    """Return a pixelated image by downsizing and upsizing"""
-    dtype = image.dtype
-    c, h, w = image.shape
-    image = image.astype(jnp.float32)
-    image = jax.image.resize(image, (c, h // scale, w // scale), method="linear")
-    image = jax.image.resize(image, (c, h, w), method="linear")
-    image = image.astype(dtype)
-    return image
 
 
 class Pixelate2D(sk.TreeClass):
@@ -399,45 +500,14 @@ class Pixelate2D(sk.TreeClass):
             raise ValueError(f"{scale=} must be a positive int")
         self.scale = scale
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        return pixelate(x, jax.lax.stop_gradient(self.scale))
+        scale = jax.lax.stop_gradient(self.scale)
+        return jax.vmap(pixelate_2d, in_axes=(0, None))(x, scale)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
-
-
-def perspective_transform(image: jax.Array, coeffs: jax.Array) -> jax.Array:
-    """Apply a perspective transform to an image."""
-
-    _, rows, cols = image.shape
-    y, x = jnp.meshgrid(jnp.arange(rows), jnp.arange(cols), indexing="ij")
-    a, b, c, d, e, f, g, h = coeffs
-    w = g * x + h * y + 1.0
-    x_prime = (a * x + b * y + c) / w
-    y_prime = (d * x + e * y + f) / w
-    coords = [y_prime.ravel(), x_prime.ravel()]
-
-    def transform_channel(image):
-        return map_coordinates(image, coords, order=1).reshape(rows, cols)
-
-    return jax.vmap(transform_channel)(image)
-
-
-def random_perspective(
-    image: jax.Array,
-    key: jax.random.KeyArray,
-    scale: float = 1.0,
-) -> jax.Array:
-    """Applies a random perspective transform to a channel-first image"""
-    _, __, ___ = image.shape
-    a = e = 1.0
-    b = d = 0.0
-    c = f = 0.0  # no translation
-    g, h = jr.uniform(key, shape=(2,), minval=-1e-4, maxval=1e-4) * scale
-    coeffs = jnp.array([a, b, c, d, e, f, g, h])
-    return perspective_transform(image, coeffs)
 
 
 class RandomPerspective2D(sk.TreeClass):
@@ -542,22 +612,14 @@ class RandomPerspective2D(sk.TreeClass):
     def __init__(self, scale: float = 1.0):
         self.scale = scale
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        return random_perspective(x, key, jax.lax.stop_gradient(self.scale))
+        scale = jax.lax.stop_gradient(self.scale)
+        return jax.vmap(random_perspective_2d, in_axes=(0, None, None))(x, key, scale)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
-
-
-def solarize(
-    image: jax.Array,
-    threshold: float | int,
-    max_val: float | int,
-) -> jax.Array:
-    """Inverts all values above a given threshold."""
-    return jnp.where(image < threshold, image, max_val - image)
 
 
 @sk.autoinit
@@ -590,46 +652,14 @@ class Solarize2D(sk.TreeClass):
     threshold: float
     max_val: float = 1.0
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
-        return solarize(x, threshold, max_val)
+        return jax.vmap(solarize_2d, in_axes=(0, None, None))(x, threshold, max_val)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
-
-
-def horizontal_translate(image: jax.Array, shift: int) -> jax.Array:
-    """Translate an image horizontally by a pixel value."""
-    _, _, _ = image.shape
-    if shift > 0:
-        return jnp.zeros_like(image).at[:, :, shift:].set(image[:, :, :-shift])
-    if shift < 0:
-        return jnp.zeros_like(image).at[:, :, :shift].set(image[:, :, -shift:])
-    return image
-
-
-def vertical_translate(image: jax.Array, shift: int) -> jax.Array:
-    """Translate an image vertically by a pixel value."""
-    _, _, _ = image.shape
-    if shift > 0:
-        return jnp.zeros_like(image).at[:, shift:, :].set(image[:, :-shift, :])
-    if shift < 0:
-        return jnp.zeros_like(image).at[:, :shift, :].set(image[:, -shift:, :])
-    return image
-
-
-def random_horizontal_translate(image: jax.Array, key: jr.KeyArray) -> jax.Array:
-    _, _, w = image.shape
-    shift = jr.randint(key, shape=(), minval=-w, maxval=w)
-    return horizontal_translate(image, shift)
-
-
-def random_vertical_translate(image: jax.Array, key: jr.KeyArray) -> jax.Array:
-    _, h, _ = image.shape
-    shift = jr.randint(key, shape=(), minval=-h, maxval=h)
-    return vertical_translate(image, shift)
 
 
 @sk.autoinit
@@ -655,9 +685,9 @@ class HorizontalTranslate2D(sk.TreeClass):
 
     shift: int = sk.field(on_setattr=[IsInstance(int)])
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        return horizontal_translate(x, self.shift)
+        return jax.vmap(horizontal_translate_2d, in_axes=(0, None))(x, self.shift)
 
     @property
     def spatial_ndim(self) -> int:
@@ -687,9 +717,9 @@ class VerticalTranslate2D(sk.TreeClass):
 
     shift: int = sk.field(on_setattr=[IsInstance(int)])
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        return vertical_translate(x, self.shift)
+        return jax.vmap(vertical_translate_2d, in_axes=(0, None))(x, self.shift)
 
     @property
     def spatial_ndim(self) -> int:
@@ -727,13 +757,13 @@ class RandomHorizontalTranslate2D(sk.TreeClass):
           [24 25  0  0  0]]]
     """
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(
         self,
         x: jax.Array,
         key: jr.KeyArray = jr.PRNGKey(0),
     ) -> jax.Array:
-        return random_horizontal_translate(x, key)
+        return jax.vmap(random_horizontal_translate_2d, in_axes=(0, None))(x, key)
 
     @property
     def spatial_ndim(self) -> int:
@@ -770,13 +800,9 @@ class RandomVerticalTranslate2D(sk.TreeClass):
           [ 0  0  0  0  0]]]
     """
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
-    def __call__(
-        self,
-        x: jax.Array,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ) -> jax.Array:
-        return random_vertical_translate(x, key)
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
+        return jax.vmap(random_vertical_translate_2d, in_axes=(0, None))(x, key)
 
     @property
     def spatial_ndim(self) -> int:
@@ -806,7 +832,7 @@ class HorizontalFlip2D(sk.TreeClass):
         - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.vmap(lambda x: jnp.flip(x, axis=1))(x)
 
@@ -838,7 +864,7 @@ class VerticalFlip2D(sk.TreeClass):
         - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.vmap(lambda x: jnp.flip(x, axis=0))(x)
 

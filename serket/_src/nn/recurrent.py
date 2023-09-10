@@ -36,7 +36,7 @@ from serket._src.utils import (
     maybe_lazy_init,
     positive_int_cb,
     validate_axis_shape,
-    validate_spatial_ndim,
+    validate_spatial_nd,
 )
 
 """Defines RNN related classes."""
@@ -172,7 +172,7 @@ class SimpleRNNCell(RNNCell):
         self.in_hidden_to_hidden_bias = i2h.bias
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: SimpleRNNState) -> SimpleRNNState:
         if not isinstance(state, SimpleRNNState):
@@ -260,7 +260,7 @@ class DenseCell(RNNCell):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: DenseState) -> DenseState:
         if not isinstance(state, DenseState):
@@ -370,7 +370,7 @@ class LSTMCell(RNNCell):
         self.in_hidden_to_hidden_bias = i2h.bias
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: LSTMState) -> LSTMState:
         if not isinstance(state, LSTMState):
@@ -484,7 +484,7 @@ class GRUCell(RNNCell):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: GRUState) -> GRUState:
         if not isinstance(state, GRUState):
@@ -562,7 +562,7 @@ class ConvLSTMNDCell(RNNCell):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: ConvLSTMNDState) -> ConvLSTMNDState:
         if not isinstance(state, ConvLSTMNDState):
@@ -990,7 +990,7 @@ class ConvGRUNDCell(RNNCell):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array, state: ConvGRUNDState) -> ConvGRUNDState:
         if not isinstance(state, ConvGRUNDState):

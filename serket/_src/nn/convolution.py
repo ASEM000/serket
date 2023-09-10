@@ -42,7 +42,7 @@ from serket._src.utils import (
     maybe_lazy_init,
     positive_int_cb,
     validate_axis_shape,
-    validate_spatial_ndim,
+    validate_spatial_nd,
 )
 
 
@@ -208,7 +208,7 @@ class BaseConvND(sk.TreeClass):
         ...
 
 
-def convolution_ndim(
+def convolution_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIHW"],
     bias: jax.Array | None,
@@ -249,7 +249,7 @@ def convolution_ndim(
 
 class ConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
@@ -259,7 +259,7 @@ class ConvND(BaseConvND):
             strides=self.strides,
         )
 
-        return convolution_ndim(
+        return convolution_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -555,7 +555,7 @@ class Conv3D(ConvND):
         return 3
 
 
-def fft_convolution_ndim(
+def fft_convolution_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIHW"],
     bias: jax.Array | None,
@@ -595,7 +595,7 @@ def fft_convolution_ndim(
 
 class FFTConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
@@ -605,7 +605,7 @@ class FFTConvND(BaseConvND):
             strides=self.strides,
         )
 
-        return fft_convolution_ndim(
+        return fft_convolution_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -947,7 +947,7 @@ class BaseConvNDTranspose(sk.TreeClass):
         ...
 
 
-def transposed_convolution_ndim(
+def transposed_convolution_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIHW"],
     bias: jax.Array | None,
@@ -992,7 +992,7 @@ def transposed_convolution_ndim(
 
 class ConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
@@ -1002,7 +1002,7 @@ class ConvNDTranspose(BaseConvNDTranspose):
             strides=self.strides,
         )
 
-        return transposed_convolution_ndim(
+        return transposed_convolution_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -1355,7 +1355,7 @@ def transposed_fft_convolution_ndim(
 
 class FFTConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
@@ -1709,7 +1709,7 @@ class BaseDepthwiseConvND(sk.TreeClass):
         ...
 
 
-def depthwise_convolution_ndim(
+def depthwise_convolution_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIHW"],
     bias: jax.Array | None,
@@ -1745,7 +1745,7 @@ def depthwise_convolution_ndim(
 
 class DepthwiseConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
@@ -1755,7 +1755,7 @@ class DepthwiseConvND(BaseDepthwiseConvND):
             strides=self.strides,
         )
 
-        return depthwise_convolution_ndim(
+        return depthwise_convolution_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -2011,7 +2011,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         return 3
 
 
-def depthwise_fft_convolution_ndim(
+def depthwise_fft_convolution_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIHW"],
     bias: jax.Array | None,
@@ -2046,7 +2046,7 @@ def depthwise_fft_convolution_ndim(
 
 class DepthwiseFFTConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
@@ -2056,7 +2056,7 @@ class DepthwiseFFTConvND(BaseDepthwiseConvND):
             strides=self.strides,
         )
 
-        return depthwise_fft_convolution_ndim(
+        return depthwise_fft_convolution_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -2959,7 +2959,7 @@ def infer_in_size(_, x, *__, **___) -> tuple[int, ...]:
 updates = {**dict(in_size=infer_in_size), **updates}
 
 
-def local_convolution_ndim(
+def local_convolution_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIHW"],
     bias: jax.Array | None,
@@ -3053,10 +3053,10 @@ class ConvNDLocal(sk.TreeClass):
         self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
-        return local_convolution_ndim(
+        return local_convolution_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,

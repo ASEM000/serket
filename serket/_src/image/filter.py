@@ -27,7 +27,7 @@ from serket._src.utils import (
     generate_conv_dim_numbers,
     positive_int_cb,
     resolve_string_padding,
-    validate_spatial_ndim,
+    validate_spatial_nd,
 )
 
 
@@ -141,7 +141,7 @@ class AvgBlur2D(AvgBlur2DBase):
           [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
     """
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         kernel = jax.lax.stop_gradient_p.bind(self.kernel)
         x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel)
@@ -170,7 +170,7 @@ class FFTAvgBlur2D(AvgBlur2DBase):
           [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
     """
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         kernel = jax.lax.stop_gradient_p.bind(self.kernel)
         x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel)
@@ -231,7 +231,7 @@ class GaussianBlur2D(GaussianBlur2DBase):
           [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
     """
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         kernel = jax.lax.stop_gradient_p.bind(self.kernel)
         x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel)
@@ -261,7 +261,7 @@ class FFTGaussianBlur2D(GaussianBlur2DBase):
           [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
     """
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         kernel = jax.lax.stop_gradient_p.bind(self.kernel)
         x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel)
@@ -300,7 +300,7 @@ class Filter2D(sk.TreeClass):
             raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
         self.kernel = kernel.astype(dtype)
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         kernel = jax.lax.stop_gradient_p.bind(self.kernel)
         x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel)
@@ -338,7 +338,7 @@ class FFTFilter2D(sk.TreeClass):
 
         self.kernel = kernel.astype(dtype)
 
-    @ft.partial(validate_spatial_ndim, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         kernel = jax.lax.stop_gradient_p.bind(self.kernel)
         x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel)
