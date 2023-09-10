@@ -1,0 +1,11 @@
+🚆  Training examples
+---------------------
+
+
+.. toctree::
+    :caption: Training examples
+    :maxdepth: 1
+
+    notebooks/train_mnist
+    notebooks/train_bilstm
+    notebooks/train_pinn_burgers

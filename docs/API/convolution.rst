@@ -29,6 +29,9 @@ Convolution
     .. image:: ../_static/fft_bench.svg
         :width: 600
         :align: center
+    
+
+    The benchmark use ``FFTConv2D`` against ``Conv2D`` with ``in_features=3``, ``out_features=64``, and ``input_size=(10, 3, 128, 128)``
 
 
 .. autoclass:: FFTConv1D

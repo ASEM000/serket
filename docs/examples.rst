@@ -1,12 +1,12 @@
 ``serket`` Examples
-======================
+==========================
+
+    
 
 .. toctree::
     :caption: Examples
     :maxdepth: 1
 
-    notebooks/train_mnist
-    notebooks/train_bilstm
-    notebooks/train_pinn_burgers
+    train_examples
     notebooks/train_mp
     notebooks/regularization
