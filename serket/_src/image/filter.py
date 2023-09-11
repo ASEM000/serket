@@ -103,7 +103,16 @@ def calculate_average_kernel(
     kernel_size: int,
     dtype: DType,
 ) -> Annotated[jax.Array, "HW"]:
-    kernel = jnp.ones((kernel_size))
+    """Calculate average kernel.
+
+    Args:
+        kernel_size: size of the convolving kernel. Accept an int.
+        dtype: data type of the kernel.
+
+    Returns:
+        Average kernel. shape is (1, kernel_size).
+    """
+    kernel = jnp.ones((kernel_size), dtype=dtype)
     kernel = kernel / jnp.sum(kernel)
     kernel = kernel.astype(dtype)
     kernel = jnp.expand_dims(kernel, 0)
@@ -190,7 +199,17 @@ def calculate_gaussian_kernel(
     sigma: float,
     dtype: DType,
 ) -> Annotated[jax.Array, "HW"]:
-    x = jnp.arange(kernel_size) - kernel_size // 2
+    """Calculate gaussian kernel.
+
+    Args:
+        kernel_size: size of the convolving kernel. Accept an int.
+        sigma: sigma of gaussian kernel.
+        dtype: data type of the kernel.
+
+    Returns:
+        gaussian kernel. shape is (1, kernel_size).
+    """
+    x = jnp.arange(kernel_size, dtype=dtype) - kernel_size // 2
     x = x + 0.5 if kernel_size % 2 == 0 else x
     kernel = jnp.exp(-(x**2) / (2 * sigma**2))
     kernel = kernel / jnp.sum(kernel)
@@ -340,6 +359,15 @@ class FFTUnsharpMask2D(GaussianBlur2DBase):
 
 
 def calculate_box_kernel(kernel_size: int, dtype: DType) -> Annotated[jax.Array, "HW"]:
+    """Calculate box kernel.
+
+    Args:
+        kernel_size: size of the convolving kernel. Accept an int.
+        dtype: data type of the kernel.
+
+    Returns:
+        Box kernel. shape is (1, kernel_size).
+    """
     kernel = jnp.ones((kernel_size))
     kernel = kernel.astype(dtype)
     kernel = jnp.expand_dims(kernel, 0)
@@ -425,6 +453,15 @@ def calculate_laplacian_kernel(
     kernel_size: tuple[int, int],
     dtype: DType,
 ) -> Annotated[jax.Array, "HW"]:
+    """Calculate laplacian kernel.
+
+    Args:
+        kernel_size: size of the convolving kernel. Accepts tuple of two ints.
+        dtype: data type of the kernel.
+
+    Returns:
+        Laplacian kernel. shape is (kernel_size[0], kernel_size[1]).
+    """
     ky, kx = kernel_size
     kernel = jnp.ones((ky, kx))
     kernel = kernel.at[ky // 2, kx // 2].set(1 - jnp.sum(kernel)).astype(dtype)
@@ -481,7 +518,7 @@ class FFTLaplacian2D(Laplacian2DBase):
     """Apply Laplacian filter to a channel-first image using FFT.
 
     .. image:: ../_static/laplacian2d.png
-    
+
     Args:
         kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
         dtype: data type of the layer. Defaults to ``jnp.float32``.

@@ -27,9 +27,12 @@ from serket._src.nn.linear import Identity
 from serket._src.utils import IsInstance, Range, validate_spatial_nd
 
 
-def pixel_shuffle_2d(x: jax.Array, upscale_factor: int | tuple[int, int]) -> jax.Array:
+def pixel_shuffle_2d(
+    array: jax.Array,
+    upscale_factor: int | tuple[int, int],
+) -> jax.Array:
     """Rearrange elements in a tensor."""
-    channels = x.shape[0]
+    channels = array.shape[0]
 
     sr, sw = upscale_factor
     oc = channels // (sr * sw)
@@ -37,11 +40,11 @@ def pixel_shuffle_2d(x: jax.Array, upscale_factor: int | tuple[int, int]) -> jax
     if not (channels % (sr * sw)) == 0:
         raise ValueError(f"{channels=} not divisible by {sr*sw}.")
 
-    ih, iw = x.shape[1], x.shape[2]
-    x = jnp.reshape(x, (sr, sw, oc, ih, iw))
-    x = jnp.transpose(x, (2, 3, 0, 4, 1))
-    x = jnp.reshape(x, (oc, ih * sr, iw * sw))
-    return x
+    ih, iw = array.shape[1], array.shape[2]
+    array = jnp.reshape(array, (sr, sw, oc, ih, iw))
+    array = jnp.transpose(array, (2, 3, 0, 4, 1))
+    array = jnp.reshape(array, (oc, ih * sr, iw * sw))
+    return array
 
 
 class PixelShuffle2D(sk.TreeClass):
@@ -83,21 +86,34 @@ class PixelShuffle2D(sk.TreeClass):
         return 2
 
 
-def adjust_contrast_nd(x: jax.Array, contrast_factor: float):
-    """Adjusts the contrast of an image by scaling the pixel values by a factor."""
-    μ = jnp.mean(x, axis=tuple(range(1, x.ndim)), keepdims=True)
-    return (contrast_factor * (x - μ) + μ).astype(x.dtype)
+def adjust_contrast_nd(array: jax.Array, contrast_factor: float):
+    """Adjusts the contrast of an image by scaling the pixel values by a factor.
+
+    Args:
+        array: input array
+        contrast_factor: contrast factor to adust the contrast by.
+
+
+    """
+    μ = jnp.mean(array, axis=tuple(range(1, array.ndim)), keepdims=True)
+    return (contrast_factor * (array - μ) + μ).astype(array.dtype)
 
 
 def random_contrast_nd(
-    x: jax.Array,
+    array: jax.Array,
     contrast_range: tuple[float, float],
     key: jr.KeyArray = jr.PRNGKey(0),
 ) -> jax.Array:
-    """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
+    """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.
+
+    Args:
+        array: input array
+        contrast_range: contrast range to adust the contrast by. accepts a tuple of length 2.
+        key: random key
+    """
     minval, maxval = contrast_range
     contrast_factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
-    return adjust_contrast_nd(x, contrast_factor)
+    return adjust_contrast_nd(array, contrast_factor)
 
 
 @sk.autoinit
