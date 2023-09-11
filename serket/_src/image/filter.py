@@ -421,6 +421,89 @@ class FFTBoxBlur2D(BoxBlur2DBase):
         return x
 
 
+def calculate_laplacian_kernel(
+    kernel_size: tuple[int, int],
+    dtype: DType,
+) -> Annotated[jax.Array, "HW"]:
+    ky, kx = kernel_size
+    kernel = jnp.ones((ky, kx))
+    kernel = kernel.at[ky // 2, kx // 2].set(1 - jnp.sum(kernel)).astype(dtype)
+    return kernel
+
+
+class Laplacian2DBase(sk.TreeClass):
+    def __init__(
+        self,
+        kernel_size: int | tuple[int, int],
+        *,
+        dtype: DType = jnp.float32,
+    ):
+        self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
+        self.kernel = calculate_laplacian_kernel(self.kernel_size, dtype)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class Laplacian2D(Laplacian2DBase):
+    """Apply Laplacian filter to a channel-first image.
+
+    Args:
+        kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.Laplacian2D(kernel_size=(3, 5))
+        >>> print(layer(jnp.ones((1, 5, 5))))
+        [[[-9. -7. -5. -7. -9.]
+          [-6. -3.  0. -3. -6.]
+          [-6. -3.  0. -3. -6.]
+          [-6. -3.  0. -3. -6.]
+          [-9. -7. -5. -7. -9.]]]
+
+    Note:
+        The laplacian considers all the neighbors of a pixel.
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array) -> jax.Array:
+        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
+        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel)
+        return x
+
+
+class FFTLaplacian2D(Laplacian2DBase):
+    """Apply Laplacian filter to a channel-first image using FFT.
+
+    Args:
+        kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.FFTLaplacian2D(kernel_size=(3, 5))
+        >>> print(layer(jnp.ones((1, 5, 5))))
+        [[[-9. -7. -5. -7. -9.]
+          [-6. -3.  0. -3. -6.]
+          [-6. -3.  0. -3. -6.]
+          [-6. -3.  0. -3. -6.]
+          [-9. -7. -5. -7. -9.]]]
+
+    Note:
+        The laplacian considers all the neighbors of a pixel.
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array) -> jax.Array:
+        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
+        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel)
+        return x
+
+
 class Filter2D(sk.TreeClass):
     """Apply 2D filter for each channel
 

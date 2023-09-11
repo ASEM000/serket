@@ -8,6 +8,8 @@ Filter API
 .. autoclass:: FFTBoxBlur2D
 .. autoclass:: GaussianBlur2D
 .. autoclass:: FFTGaussianBlur2D
+.. autoclass:: Laplacian2D
+.. autoclass:: FFTLaplacian2D
 .. autoclass:: UnsharpMask2D
 .. autoclass:: FFTUnsharpMask2D
 

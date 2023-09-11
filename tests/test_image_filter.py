@@ -411,3 +411,21 @@ def test_unsharp_mask():
         x + (x - guassian_x),
         atol=1e-5,
     )
+
+
+def test_laplacian():
+    x = jax.random.uniform(jax.random.PRNGKey(0), (2, 10, 10))
+
+    kernel = jnp.array(([[1.0, 1.0, 1.0], [1.0, -8.0, 1.0], [1.0, 1.0, 1.0]]))
+
+    npt.assert_allclose(
+        sk.image.Laplacian2D(3)(x),
+        sk.image.Filter2D(kernel)(x),
+        atol=1e-5,
+    )
+
+    npt.assert_allclose(
+        sk.image.FFTLaplacian2D(3)(x),
+        sk.image.Filter2D(kernel)(x),
+        atol=1e-5,
+    )
