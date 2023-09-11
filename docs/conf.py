@@ -71,7 +71,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 autodoc_default_options = {
     "member-order": "bysource",
     "special-members": "__call__",
-    "exclude-members": "__repr__, __str__, __weakref__",
+    "exclude-members": "__repr__, __str__, __weakref__, at",
     "inherited-members": True,
 }
 
