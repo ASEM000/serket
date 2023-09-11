@@ -99,6 +99,8 @@ updates = dict(normalized_shape=infer_normalized_shape)
 class LayerNorm(sk.TreeClass):
     """Layer Normalization
 
+    .. image:: ../_static/norm_figure.png
+    
     Transform the input by scaling and shifting to have zero mean and unit variance.
 
     Args:
@@ -128,7 +130,8 @@ class LayerNorm(sk.TreeClass):
         (5, 10)
 
     Reference:
-        https://nn.labml.ai/normalization/layer_norm/index.html
+        - https://nn.labml.ai/normalization/layer_norm/index.html
+        - https://openaccess.thecvf.com/content_ECCV_2018/html/Yuxin_Wu_Group_Normalization_ECCV_2018_paper.html
     """
 
     eps: float = sk.field(on_setattr=[Range(0, min_inclusive=False), ScalarLike()])
@@ -185,6 +188,8 @@ updates = dict(in_features=infer_in_features)
 class GroupNorm(sk.TreeClass):
     """Group Normalization
 
+    .. image:: ../_static/norm_figure.png
+
     Transform the input by scaling and shifting to have zero mean and unit variance.
 
     Args:
@@ -223,7 +228,8 @@ class GroupNorm(sk.TreeClass):
         (5, 10)
 
     Reference:
-        https://nn.labml.ai/normalization/group_norm/index.html
+        - https://nn.labml.ai/normalization/group_norm/index.html
+        - https://openaccess.thecvf.com/content_ECCV_2018/html/Yuxin_Wu_Group_Normalization_ECCV_2018_paper.html
     """
 
     eps: float = sk.field(on_setattr=[Range(0), ScalarLike()])
@@ -265,6 +271,8 @@ class GroupNorm(sk.TreeClass):
 class InstanceNorm(GroupNorm):
     """Instance Normalization
 
+    .. image:: ../_static/norm_figure.png
+
     Transform the input by scaling and shifting to have zero mean and unit variance.
 
     Args:
@@ -302,7 +310,8 @@ class InstanceNorm(GroupNorm):
         (5, 10)
 
     Reference:
-        https://nn.labml.ai/normalization/instance_norm/index.html
+        - https://nn.labml.ai/normalization/instance_norm/index.html
+        - https://openaccess.thecvf.com/content_ECCV_2018/html/Yuxin_Wu_Group_Normalization_ECCV_2018_paper.html
     """
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
@@ -435,6 +444,8 @@ updates = dict(in_features=infer_in_features)
 class BatchNorm(sk.TreeClass):
     """Applies normalization over batched inputs`
 
+    .. image:: ../_static/norm_figure.png
+
     .. warning::
         Works under
             - ``jax.vmap(BatchNorm(...), in_axes=(0, None))(x, state)``
@@ -510,7 +521,8 @@ class BatchNorm(sk.TreeClass):
         (5, 10)
 
     Reference:
-        https://keras.io/api/layers/normalization_layers/batch_normalization/
+        - https://keras.io/api/layers/normalization_layers/batch_normalization/
+        - https://openaccess.thecvf.com/content_ECCV_2018/html/Yuxin_Wu_Group_Normalization_ECCV_2018_paper.html
     """
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
