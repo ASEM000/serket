@@ -449,6 +449,8 @@ class Laplacian2DBase(sk.TreeClass):
 class Laplacian2D(Laplacian2DBase):
     """Apply Laplacian filter to a channel-first image.
 
+    .. image:: ../_static/laplacian2d.png
+
     Args:
         kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
         dtype: data type of the layer. Defaults to ``jnp.float32``.
@@ -478,6 +480,8 @@ class Laplacian2D(Laplacian2DBase):
 class FFTLaplacian2D(Laplacian2DBase):
     """Apply Laplacian filter to a channel-first image using FFT.
 
+    .. image:: ../_static/laplacian2d.png
+    
     Args:
         kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
         dtype: data type of the layer. Defaults to ``jnp.float32``.
