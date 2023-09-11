@@ -21,11 +21,15 @@ from serket._src.image.augment import (
 )
 from serket._src.image.filter import (
     AvgBlur2D,
+    BoxBlur2D,
     FFTAvgBlur2D,
+    FFTBoxBlur2D,
     FFTFilter2D,
     FFTGaussianBlur2D,
+    FFTUnsharpMask2D,
     Filter2D,
     GaussianBlur2D,
+    UnsharpMask2D,
 )
 from serket._src.image.geometric import (
     HorizontalFlip2D,
@@ -54,11 +58,15 @@ __all__ = [
     "RandomContrast2D",
     # filter
     "AvgBlur2D",
+    "BoxBlur2D",
     "FFTAvgBlur2D",
+    "FFTBoxBlur2D",
     "FFTFilter2D",
     "FFTGaussianBlur2D",
+    "FFTUnsharpMask2D",
     "Filter2D",
     "GaussianBlur2D",
+    "UnsharpMask2D",
     # geometric
     "HorizontalFlip2D",
     "HorizontalShear2D",

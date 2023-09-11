@@ -171,7 +171,7 @@ def delayed_canonicalize_padding(
 
 
 def canonicalize(value, ndim, name: str | None = None):
-    if isinstance(value, int):
+    if isinstance(value, (int, float)):
         return (value,) * ndim
     if isinstance(value, jax.Array):
         return jnp.repeat(value, ndim)

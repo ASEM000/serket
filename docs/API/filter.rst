@@ -4,7 +4,12 @@ Filter API
     
 .. autoclass:: AvgBlur2D
 .. autoclass:: FFTAvgBlur2D
+.. autoclass:: BoxBlur2D
+.. autoclass:: FFTBoxBlur2D
 .. autoclass:: GaussianBlur2D
 .. autoclass:: FFTGaussianBlur2D
-.. autoclass:: FFTFilter2D
+.. autoclass:: UnsharpMask2D
+.. autoclass:: FFTUnsharpMask2D
+
 .. autoclass:: Filter2D
+.. autoclass:: FFTFilter2D

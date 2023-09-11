@@ -64,9 +64,6 @@ def test_GaussBlur2D():
         atol=1e-5,
     )
 
-    with pytest.raises(ValueError):
-        sk.image.GaussianBlur2D(0, sigma=1.0)
-
     z = sk.image.FFTGaussianBlur2D(3, sigma=1.0)(jnp.ones([1, 5, 5])).astype(
         jnp.float32
     )
@@ -396,3 +393,21 @@ def test_pixel_shuffle():
 
     with pytest.raises(ValueError):
         sk.image.PixelShuffle2D(-3)(jnp.ones([9, 6, 4]))
+
+
+def test_unsharp_mask():
+    x = jax.random.uniform(jax.random.PRNGKey(0), (2, 10, 10))
+
+    guassian_x = sk.image.GaussianBlur2D(3, sigma=1.0)(x)
+
+    npt.assert_allclose(
+        sk.image.UnsharpMask2D(3, sigma=1.0)(x),
+        x + (x - guassian_x),
+        atol=1e-5,
+    )
+
+    npt.assert_allclose(
+        sk.image.FFTUnsharpMask2D(3, sigma=1.0)(x),
+        x + (x - guassian_x),
+        atol=1e-5,
+    )

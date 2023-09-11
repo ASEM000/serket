@@ -24,8 +24,8 @@ import serket as sk
 from serket._src.nn.convolution import fft_conv_general_dilated
 from serket._src.nn.initialization import DType
 from serket._src.utils import (
+    canonicalize,
     generate_conv_dim_numbers,
-    positive_int_cb,
     resolve_string_padding,
     validate_spatial_nd,
 )
@@ -111,9 +111,16 @@ def calculate_average_kernel(
 
 
 class AvgBlur2DBase(sk.TreeClass):
-    def __init__(self, kernel_size: int, *, dtype: DType = jnp.float32):
-        kernel_size = positive_int_cb(kernel_size)
-        self.kernel = calculate_average_kernel(kernel_size, dtype)
+    def __init__(
+        self,
+        kernel_size: int | tuple[int, int],
+        *,
+        dtype: DType = jnp.float32,
+    ):
+        self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
+        ky, kx = self.kernel_size
+        self.kernel_x = calculate_average_kernel(kx, dtype)
+        self.kernel_y = calculate_average_kernel(ky, dtype)
 
     @property
     def spatial_ndim(self) -> int:
@@ -133,7 +140,7 @@ class AvgBlur2D(AvgBlur2DBase):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.image.AvgBlur2D(kernel_size=3)
-        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
         [[[0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]
           [0.6666667  1.         1.         1.         0.6666667 ]
           [0.6666667  1.         1.         1.         0.6666667 ]
@@ -143,9 +150,9 @@ class AvgBlur2D(AvgBlur2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
-        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel)
-        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel.T)
+        kernel_x, kernel_y = jax.lax.stop_gradient((self.kernel_x, self.kernel_y))
+        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel_x)
+        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel_y.T)
         return x
 
 
@@ -162,7 +169,7 @@ class FFTAvgBlur2D(AvgBlur2DBase):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.image.FFTAvgBlur2D(kernel_size=3)
-        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
         [[[0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]
           [0.6666667  1.         1.         1.         0.6666667 ]
           [0.6666667  1.         1.         1.         0.6666667 ]
@@ -172,9 +179,9 @@ class FFTAvgBlur2D(AvgBlur2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
-        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel)
-        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel.T)
+        kernel_x, kernel_y = jax.lax.stop_gradient((self.kernel_x, self.kernel_y))
+        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel_x)
+        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel_y.T)
         return x
 
 
@@ -195,14 +202,17 @@ def calculate_gaussian_kernel(
 class GaussianBlur2DBase(sk.TreeClass):
     def __init__(
         self,
-        kernel_size: int,
+        kernel_size: int | tuple[int, int],
         *,
-        sigma: float = 1.0,
+        sigma: float | tuple[float, float] = 1.0,
         dtype: DType = jnp.float32,
     ):
-        self.kernel_size = positive_int_cb(kernel_size)
-        self.sigma = sigma
-        self.kernel = calculate_gaussian_kernel(self.kernel_size, sigma, dtype)
+        self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
+        self.sigma = canonicalize(sigma, ndim=2, name="sigma")
+        ky, kx = self.kernel_size
+        sigma_y, sigma_x = self.sigma
+        self.kernel_x = calculate_gaussian_kernel(kx, sigma_x, dtype)
+        self.kernel_y = calculate_gaussian_kernel(ky, sigma_y, dtype)
 
     @property
     def spatial_ndim(self) -> int:
@@ -215,15 +225,15 @@ class GaussianBlur2D(GaussianBlur2DBase):
     .. image:: ../_static/gaussianblur2d.png
 
     Args:
-        kernel_size: kernel size
-        sigma: sigma. Defaults to 1.
+        kernel_size: kernel size. accepts int or tuple of two ints.
+        sigma: sigma. Defaults to 1. accepts float or tuple of two floats.
         dtype: data type of the layer. Defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.image.GaussianBlur2D(kernel_size=3)
-        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
         [[[0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]
           [0.7259314 1.        1.        1.        0.7259314]
           [0.7259314 1.        1.        1.        0.7259314]
@@ -233,9 +243,9 @@ class GaussianBlur2D(GaussianBlur2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
-        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel)
-        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel.T)
+        kernel_x, kernel_y = jax.lax.stop_gradient((self.kernel_x, self.kernel_y))
+        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel_x)
+        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel_y.T)
         return x
 
 
@@ -245,15 +255,15 @@ class FFTGaussianBlur2D(GaussianBlur2DBase):
     .. image:: ../_static/gaussianblur2d.png
 
     Args:
-        kernel_size: kernel size
-        sigma: sigma. Defaults to 1.
+        kernel_size: kernel size. accepts int or tuple of two ints.
+        sigma: sigma. Defaults to 1. accepts float or tuple of two floats.
         dtype: data type of the layer. Defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.image.FFTGaussianBlur2D(kernel_size=3)
-        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
         [[[0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]
           [0.7259314 1.        1.        1.        0.7259314]
           [0.7259314 1.        1.        1.        0.7259314]
@@ -263,9 +273,151 @@ class FFTGaussianBlur2D(GaussianBlur2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
-        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel)
-        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel.T)
+        kernel_x, kernel_y = jax.lax.stop_gradient((self.kernel_x, self.kernel_y))
+        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel_x)
+        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel_y.T)
+        return x
+
+
+class UnsharpMask2D(GaussianBlur2DBase):
+    """Apply unsharp mask to a channel-first image.
+
+    .. image:: ../_static/unsharpmask2d.png
+
+    Args:
+        kernel_size: kernel size. accepts int or tuple of two ints.
+        sigma: sigma. Defaults to 1. accepts float or tuple of two floats.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.UnsharpMask2D(kernel_size=3)
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
+        [[[1.4730237 1.2740686 1.2740686 1.2740686 1.4730237]
+          [1.2740686 1.        1.        1.        1.2740686]
+          [1.2740686 1.        1.        1.        1.2740686]
+          [1.2740686 1.        1.        1.        1.2740686]
+          [1.4730237 1.2740686 1.2740686 1.2740686 1.4730237]]]
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array) -> jax.Array:
+        kernel_x, kernel_y = jax.lax.stop_gradient((self.kernel_x, self.kernel_y))
+        blur = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel_x)
+        blur = jax.vmap(filter_2d, in_axes=(0, None))(blur, kernel_y.T)
+        return x + (x - blur)
+
+
+class FFTUnsharpMask2D(GaussianBlur2DBase):
+    """Apply unsharp mask to a channel-first image using FFT.
+
+    .. image:: ../_static/unsharpmask2d.png
+
+    Args:
+        kernel_size: kernel size. accepts int or tuple of two ints.
+        sigma: sigma. Defaults to 1. accepts float or tuple of two floats.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.FFTUnsharpMask2D(kernel_size=3)
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
+        [[[1.4730237 1.2740686 1.2740686 1.2740686 1.4730237]
+          [1.2740686 1.        1.        1.        1.2740686]
+          [1.2740686 1.        1.        1.        1.2740686]
+          [1.2740686 1.        1.        1.        1.2740686]
+          [1.4730237 1.2740686 1.2740686 1.2740686 1.4730237]]]
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array) -> jax.Array:
+        kernel_x, kernel_y = jax.lax.stop_gradient((self.kernel_x, self.kernel_y))
+        blur = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel_x)
+        blur = jax.vmap(fft_filter_2d, in_axes=(0, None))(blur, kernel_y.T)
+        return x + (x - blur)
+
+
+def calculate_box_kernel(kernel_size: int, dtype: DType) -> Annotated[jax.Array, "HW"]:
+    kernel = jnp.ones((kernel_size))
+    kernel = kernel.astype(dtype)
+    kernel = jnp.expand_dims(kernel, 0)
+    return kernel / kernel_size
+
+
+class BoxBlur2DBase(sk.TreeClass):
+    def __init__(
+        self,
+        kernel_size: int | tuple[int, int],
+        *,
+        dtype: DType = jnp.float32,
+    ):
+        self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
+        ky, kx = self.kernel_size
+        self.kernel_x = calculate_box_kernel(kx, dtype)
+        self.kernel_y = calculate_box_kernel(ky, dtype)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class BoxBlur2D(BoxBlur2DBase):
+    """Box blur 2D layer.
+
+    .. image:: ../_static/boxblur2d.png
+
+    Args:
+        kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.BoxBlur2D((3, 5))
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
+        [[[0.40000004 0.53333336 0.6666667  0.53333336 0.40000004]
+          [0.6        0.8        1.         0.8        0.6       ]
+          [0.6        0.8        1.         0.8        0.6       ]
+          [0.6        0.8        1.         0.8        0.6       ]
+          [0.40000004 0.53333336 0.6666667  0.53333336 0.40000004]]]
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array) -> jax.Array:
+        kernel_x, kernel_y = jax.lax.stop_gradient((self.kernel_x, self.kernel_y))
+        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel_x)
+        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel_y.T)
+        return x
+
+
+class FFTBoxBlur2D(BoxBlur2DBase):
+    """Box blur 2D layer using FFT.
+
+    .. image:: ../_static/boxblur2d.png
+
+    Args:
+        kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.BoxBlur2D((3, 5))
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
+        [[[0.40000004 0.53333336 0.6666667  0.53333336 0.40000004]
+          [0.6        0.8        1.         0.8        0.6       ]
+          [0.6        0.8        1.         0.8        0.6       ]
+          [0.6        0.8        1.         0.8        0.6       ]
+          [0.40000004 0.53333336 0.6666667  0.53333336 0.40000004]]]
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array) -> jax.Array:
+        kernel_x, kernel_y = jax.lax.stop_gradient((self.kernel_x, self.kernel_y))
+        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel_x)
+        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel_y.T)
         return x
 
 
@@ -282,7 +434,7 @@ class Filter2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.image.Filter2D(kernel=jnp.ones((3,3)))
-        >>> print(layer(jnp.ones((1,5,5))))
+        >>> print(layer(jnp.ones((1, 5, 5))))
         [[[4. 6. 6. 6. 4.]
           [6. 9. 9. 9. 6.]
           [6. 9. 9. 9. 6.]
@@ -324,7 +476,7 @@ class FFTFilter2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.image.FFTFilter2D(kernel=jnp.ones((3,3)))
-        >>> print(layer(jnp.ones((1,5,5))))  # doctest: +SKIP
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
         [[[4.0000005 6.0000005 6.000001  6.0000005 4.0000005]
           [6.0000005 9.        9.        9.        6.0000005]
           [6.0000005 9.        9.        9.        6.0000005]
