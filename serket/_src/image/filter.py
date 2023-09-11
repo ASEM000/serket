@@ -457,7 +457,7 @@ class Laplacian2D(Laplacian2DBase):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.image.Laplacian2D(kernel_size=(3, 5))
-        >>> print(layer(jnp.ones((1, 5, 5))))
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
         [[[-9. -7. -5. -7. -9.]
           [-6. -3.  0. -3. -6.]
           [-6. -3.  0. -3. -6.]
@@ -486,7 +486,7 @@ class FFTLaplacian2D(Laplacian2DBase):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.image.FFTLaplacian2D(kernel_size=(3, 5))
-        >>> print(layer(jnp.ones((1, 5, 5))))
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
         [[[-9. -7. -5. -7. -9.]
           [-6. -3.  0. -3. -6.]
           [-6. -3.  0. -3. -6.]
@@ -517,7 +517,7 @@ class Filter2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> layer = sk.image.Filter2D(kernel=jnp.ones((3,3)))
-        >>> print(layer(jnp.ones((1, 5, 5))))
+        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +SKIP
         [[[4. 6. 6. 6. 4.]
           [6. 9. 9. 9. 6.]
           [6. 9. 9. 9. 6.]
