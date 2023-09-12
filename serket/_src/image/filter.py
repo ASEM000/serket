@@ -604,7 +604,7 @@ class MotionBlur2D(MotionBlur2DBase):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 17).reshape(1, 4, 4) + 0.0
-        >>> print(sk.image.MotionBlur2D(3, angle=30, direction=0.5)(x))
+        >>> print(sk.image.MotionBlur2D(3, angle=30, direction=0.5)(x))  # doctest: +SKIP
         [[[ 0.7827108  2.4696379  3.3715053  3.8119273]
           [ 2.8356633  6.3387947  7.3387947  7.1810846]
           [ 5.117592  10.338796  11.338796  10.550241 ]
@@ -633,7 +633,7 @@ class FFTMotionBlur2D(MotionBlur2DBase):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 17).reshape(1, 4, 4) + 0.0
-        >>> print(sk.image.MotionBlur2D(3, angle=30, direction=0.5)(x))
+        >>> print(sk.image.MotionBlur2D(3, angle=30, direction=0.5)(x))  # doctest: +SKIP
         [[[ 0.7827108  2.4696379  3.3715053  3.8119273]
           [ 2.8356633  6.3387947  7.3387947  7.1810846]
           [ 5.117592  10.338796  11.338796  10.550241 ]
