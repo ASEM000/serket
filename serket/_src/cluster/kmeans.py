@@ -100,9 +100,6 @@ def kmeans(
             - iters: The number of iterations until convergence.
     """
 
-    if not isinstance(state, KMeansState):
-        raise TypeError(f"{state=} not an instance of `KMeansState`")
-
     def step(state: KMeansState) -> KMeansState:
         # Float[n,d] -> Float[n,k]
         distances = distances_from_centers(data, state.centers)

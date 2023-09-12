@@ -50,6 +50,8 @@ def pixel_shuffle_2d(
 class PixelShuffle2D(sk.TreeClass):
     """Rearrange elements in a tensor.
 
+    .. image:: ../_static/pixelshuffle2d.png
+
     Args:
         upscale_factor: factor to increase spatial resolution by. accepts a
             single integer or a tuple of length 2. defaults to 1.

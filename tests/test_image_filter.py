@@ -413,6 +413,23 @@ def test_unsharp_mask():
     )
 
 
+def test_box_blur():
+    x = jnp.arange(1, 17).reshape(1, 4, 4).astype(jnp.float32)
+    y = jnp.array(
+        [
+            [
+                [1.6000001, 2.4, 2.4, 2.0],
+                [3.6000001, 5.2000003, 5.2000003, 4.2],
+                [6.0000005, 8.400001, 8.400001, 6.6],
+                [4.8, 6.666667, 6.666667, 5.2000003],
+            ]
+        ]
+    )
+
+    npt.assert_allclose(sk.image.BoxBlur2D((3, 5))(x), y, atol=1e-6)
+    npt.assert_allclose(sk.image.FFTBoxBlur2D((3, 5))(x), y, atol=1e-6)
+
+
 def test_laplacian():
     x = jax.random.uniform(jax.random.PRNGKey(0), (2, 10, 10))
 

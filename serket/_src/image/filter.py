@@ -566,14 +566,7 @@ class Filter2D(sk.TreeClass):
           [4. 6. 6. 6. 4.]]]
     """
 
-    def __init__(
-        self,
-        kernel: jax.Array,
-        *,
-        dtype: DType = jnp.float32,
-    ):
-        if not isinstance(kernel, jax.Array) or kernel.ndim != 2:
-            raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
+    def __init__(self, kernel: jax.Array, *, dtype: DType = jnp.float32):
         self.kernel = kernel.astype(dtype)
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
@@ -609,9 +602,6 @@ class FFTFilter2D(sk.TreeClass):
     """
 
     def __init__(self, kernel: jax.Array, *, dtype: DType = jnp.float32):
-        if kernel.ndim != 2:
-            raise ValueError("Expected `kernel` to be a 2D `ndarray` with shape (H, W)")
-
         self.kernel = kernel.astype(dtype)
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
