@@ -66,7 +66,7 @@ Install from github::
 
 
 .. toctree::
-    :caption: Introduction
+    :caption: 👋 Introduction
     :maxdepth: 1
     
     notebooks/mental_model
@@ -76,9 +76,9 @@ Install from github::
     :maxdepth: 1
     
     train_examples
-    notebooks/train_eval
+    notebooks/evaluation
     notebooks/lazy_initialization
-    notebooks/train_mp
+    notebooks/mixed_precision
     notebooks/checkpointing
     notebooks/regularization
 
@@ -88,7 +88,7 @@ Install from github::
 
 
 .. toctree::
-    :caption: API Documentation
+    :caption: 📃 API Documentation
     :maxdepth: 1
     
     API/common

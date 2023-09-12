@@ -34,6 +34,7 @@ from serket._src.image.filter import (
     UnsharpMask2D,
 )
 from serket._src.image.geometric import (
+    CenterCrop2D,
     HorizontalFlip2D,
     HorizontalShear2D,
     HorizontalTranslate2D,
@@ -72,6 +73,7 @@ __all__ = [
     "Laplacian2D",
     "UnsharpMask2D",
     # geometric
+    "CenterCrop2D",
     "HorizontalFlip2D",
     "HorizontalShear2D",
     "HorizontalTranslate2D",
