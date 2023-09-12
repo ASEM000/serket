@@ -453,3 +453,19 @@ def test_center_crop():
     assert sk.image.CenterCrop2D(3)(x).shape == (1, 3, 3)
     assert sk.image.CenterCrop2D(0)(x).shape == (1, 0, 0)
     npt.assert_allclose(sk.image.CenterCrop2D(3)(x), x[:, 1:-1, 1:-1])
+
+
+def test_motion():
+    x = jnp.arange(1, 17).reshape(1, 4, 4) + 0.0
+    y = sk.image.MotionBlur2D(3, angle=30, direction=0.5)(x)
+    ytrue = jnp.array(
+        [
+            [
+                [0.7827108, 2.4696379, 3.3715053, 3.8119273],
+                [2.8356633, 6.3387947, 7.3387947, 7.1810846],
+                [5.117592, 10.338796, 11.338796, 10.550241],
+                [6.472714, 10.020969, 10.770187, 9.100007],
+            ]
+        ]
+    )
+    npt.assert_allclose(y, ytrue)

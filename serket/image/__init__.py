@@ -28,10 +28,12 @@ from serket._src.image.filter import (
     FFTFilter2D,
     FFTGaussianBlur2D,
     FFTLaplacian2D,
+    FFTMotionBlur2D,
     FFTUnsharpMask2D,
     Filter2D,
     GaussianBlur2D,
     Laplacian2D,
+    MotionBlur2D,
     UnsharpMask2D,
 )
 from serket._src.image.geometric import (
@@ -68,10 +70,12 @@ __all__ = [
     "FFTFilter2D",
     "FFTGaussianBlur2D",
     "FFTLaplacian2D",
+    "FFTMotionBlur2D",
     "FFTUnsharpMask2D",
     "Filter2D",
     "GaussianBlur2D",
     "Laplacian2D",
+    "MotionBlur2D",
     "UnsharpMask2D",
     # geometric
     "CenterCrop2D",

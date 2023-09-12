@@ -21,6 +21,7 @@ import jax.numpy as jnp
 from typing_extensions import Annotated
 
 import serket as sk
+from serket._src.image.geometric import rotate_2d
 from serket._src.nn.convolution import fft_conv_general_dilated
 from serket._src.nn.initialization import DType
 from serket._src.utils import (
@@ -119,6 +120,88 @@ def calculate_average_kernel(
     return kernel
 
 
+def calculate_gaussian_kernel(
+    kernel_size: int,
+    sigma: float,
+    dtype: DType,
+) -> Annotated[jax.Array, "HW"]:
+    """Calculate gaussian kernel.
+
+    Args:
+        kernel_size: size of the convolving kernel. Accept an int.
+        sigma: sigma of gaussian kernel.
+        dtype: data type of the kernel.
+
+    Returns:
+        gaussian kernel. shape is (1, kernel_size).
+    """
+    x = jnp.arange(kernel_size, dtype=dtype) - kernel_size // 2
+    x = x + 0.5 if kernel_size % 2 == 0 else x
+    kernel = jnp.exp(-(x**2) / (2 * sigma**2))
+    kernel = kernel / jnp.sum(kernel)
+    kernel = kernel.astype(dtype)
+    kernel = jnp.expand_dims(kernel, (0))
+    return kernel
+
+
+def calculate_box_kernel(kernel_size: int, dtype: DType) -> Annotated[jax.Array, "HW"]:
+    """Calculate box kernel.
+
+    Args:
+        kernel_size: size of the convolving kernel. Accept an int.
+        dtype: data type of the kernel.
+
+    Returns:
+        Box kernel. shape is (1, kernel_size).
+    """
+    kernel = jnp.ones((kernel_size))
+    kernel = kernel.astype(dtype)
+    kernel = jnp.expand_dims(kernel, 0)
+    return kernel / kernel_size
+
+
+def calculate_laplacian_kernel(
+    kernel_size: tuple[int, int],
+    dtype: DType,
+) -> Annotated[jax.Array, "HW"]:
+    """Calculate laplacian kernel.
+
+    Args:
+        kernel_size: size of the convolving kernel. Accepts tuple of two ints.
+        dtype: data type of the kernel.
+
+    Returns:
+        Laplacian kernel. shape is (kernel_size[0], kernel_size[1]).
+    """
+    ky, kx = kernel_size
+    kernel = jnp.ones((ky, kx))
+    kernel = kernel.at[ky // 2, kx // 2].set(1 - jnp.sum(kernel)).astype(dtype)
+    return kernel
+
+
+def calculate_motion_kernel(
+    kernel_size: int, angle: float, direction=0.0, dtype: DType = jnp.float32
+) -> Annotated[jax.Array, "HW"]:
+    """Returns 2D motion blur filter.
+
+    Args:
+        kernel_size: motion kernel width and height. It should be odd and positive.
+        angle: angle of the motion blur in degrees (anti-clockwise rotation).
+        direction: direction of the motion blur.
+
+    Returns:
+        The motion blur kernel of shape (kernel_size, kernel_size).
+    """
+    kernel = jnp.zeros((kernel_size, kernel_size))
+    direction = (jnp.clip(direction, -1.0, 1.0) + 1.0) / 2.0
+    indices = jnp.arange(kernel_size)
+    set_value = direction + ((1 - 2 * direction) / (kernel_size - 1)) * indices
+    kernel = kernel.at[kernel_size // 2, indices].set(set_value)
+    kernel = rotate_2d(kernel, angle)
+    kernel = kernel / jnp.sum(kernel)
+    return kernel.astype(dtype)
+
+
 class AvgBlur2DBase(sk.TreeClass):
     def __init__(
         self,
@@ -192,30 +275,6 @@ class FFTAvgBlur2D(AvgBlur2DBase):
         x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel_x)
         x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel_y.T)
         return x
-
-
-def calculate_gaussian_kernel(
-    kernel_size: int,
-    sigma: float,
-    dtype: DType,
-) -> Annotated[jax.Array, "HW"]:
-    """Calculate gaussian kernel.
-
-    Args:
-        kernel_size: size of the convolving kernel. Accept an int.
-        sigma: sigma of gaussian kernel.
-        dtype: data type of the kernel.
-
-    Returns:
-        gaussian kernel. shape is (1, kernel_size).
-    """
-    x = jnp.arange(kernel_size, dtype=dtype) - kernel_size // 2
-    x = x + 0.5 if kernel_size % 2 == 0 else x
-    kernel = jnp.exp(-(x**2) / (2 * sigma**2))
-    kernel = kernel / jnp.sum(kernel)
-    kernel = kernel.astype(dtype)
-    kernel = jnp.expand_dims(kernel, (0))
-    return kernel
 
 
 class GaussianBlur2DBase(sk.TreeClass):
@@ -358,22 +417,6 @@ class FFTUnsharpMask2D(GaussianBlur2DBase):
         return x + (x - blur)
 
 
-def calculate_box_kernel(kernel_size: int, dtype: DType) -> Annotated[jax.Array, "HW"]:
-    """Calculate box kernel.
-
-    Args:
-        kernel_size: size of the convolving kernel. Accept an int.
-        dtype: data type of the kernel.
-
-    Returns:
-        Box kernel. shape is (1, kernel_size).
-    """
-    kernel = jnp.ones((kernel_size))
-    kernel = kernel.astype(dtype)
-    kernel = jnp.expand_dims(kernel, 0)
-    return kernel / kernel_size
-
-
 class BoxBlur2DBase(sk.TreeClass):
     def __init__(
         self,
@@ -449,25 +492,6 @@ class FFTBoxBlur2D(BoxBlur2DBase):
         return x
 
 
-def calculate_laplacian_kernel(
-    kernel_size: tuple[int, int],
-    dtype: DType,
-) -> Annotated[jax.Array, "HW"]:
-    """Calculate laplacian kernel.
-
-    Args:
-        kernel_size: size of the convolving kernel. Accepts tuple of two ints.
-        dtype: data type of the kernel.
-
-    Returns:
-        Laplacian kernel. shape is (kernel_size[0], kernel_size[1]).
-    """
-    ky, kx = kernel_size
-    kernel = jnp.ones((ky, kx))
-    kernel = kernel.at[ky // 2, kx // 2].set(1 - jnp.sum(kernel)).astype(dtype)
-    return kernel
-
-
 class Laplacian2DBase(sk.TreeClass):
     def __init__(
         self,
@@ -536,6 +560,84 @@ class FFTLaplacian2D(Laplacian2DBase):
 
     Note:
         The laplacian considers all the neighbors of a pixel.
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array) -> jax.Array:
+        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
+        x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel)
+        return x
+
+
+class MotionBlur2DBase(sk.TreeClass):
+    def __init__(
+        self,
+        kernel_size: int,
+        *,
+        angle: float = 0.0,
+        direction: float = 0.0,
+        dtype: DType = jnp.float32,
+    ):
+        self.kernel_size = kernel_size
+        self.angle = angle
+        self.direction = direction
+        args = (self.kernel_size, self.angle, self.direction, dtype)
+        self.kernel = calculate_motion_kernel(*args)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class MotionBlur2D(MotionBlur2DBase):
+    """Apply motion blur to a channel-first image.
+
+    .. image:: ../_static/motionblur2d.png
+
+    Args:
+        kernel_size: motion kernel width and height. It should be odd and positive.
+        angle: angle of the motion blur in degrees (anti-clockwise rotation).
+        direction: direction of the motion blur.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4) + 0.0
+        >>> print(sk.image.MotionBlur2D(3, angle=30, direction=0.5)(x))
+        [[[ 0.7827108  2.4696379  3.3715053  3.8119273]
+          [ 2.8356633  6.3387947  7.3387947  7.1810846]
+          [ 5.117592  10.338796  11.338796  10.550241 ]
+          [ 6.472714  10.020969  10.770187   9.100007 ]]]
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array) -> jax.Array:
+        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
+        x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel)
+        return x
+
+
+class FFTMotionBlur2D(MotionBlur2DBase):
+    """Apply motion blur to a channel-first image using FFT.
+
+    .. image:: ../_static/motionblur2d.png
+
+    Args:
+        kernel_size: motion kernel width and height. It should be odd and positive.
+        angle: angle of the motion blur in degrees (anti-clockwise rotation).
+        direction: direction of the motion blur.
+        dtype: data type of the layer. Defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4) + 0.0
+        >>> print(sk.image.MotionBlur2D(3, angle=30, direction=0.5)(x))
+        [[[ 0.7827108  2.4696379  3.3715053  3.8119273]
+          [ 2.8356633  6.3387947  7.3387947  7.1810846]
+          [ 5.117592  10.338796  11.338796  10.550241 ]
+          [ 6.472714  10.020969  10.770187   9.100007 ]]]
     """
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
