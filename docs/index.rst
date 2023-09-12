@@ -70,14 +70,17 @@ Install from github::
     :maxdepth: 1
     
     notebooks/mental_model
-    notebooks/train_eval
-    notebooks/lazy_initialization
 
 .. toctree::
-    :caption: Examples
+    :caption: 📖 Guides
     :maxdepth: 1
     
-    examples
+    train_examples
+    notebooks/train_eval
+    notebooks/lazy_initialization
+    notebooks/train_mp
+    notebooks/checkpointing
+    notebooks/regularization
 
 
 .. currentmodule:: serket
