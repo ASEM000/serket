@@ -121,16 +121,16 @@ class MultiHeadAttention(sk.TreeClass):
         k_features: Number of features for the key.
         v_features: Number of features for the value.
         out_features: Number of features for the output.
-        q_weight_init: Initializer for the query weight. Defaults to glorot_uniform.
+        q_weight_init: Initializer for the query weight. Defaults to ``glorot_uniform``.
         q_bias_init: Initializer for the query bias. Defaults to zeros. use
             ``None`` to disable bias.
-        k_weight_init: Initializer for the key weight. Defaults to glorot_uniform.
+        k_weight_init: Initializer for the key weight. Defaults to ``glorot_uniform``.
         k_bias_init: Initializer for the key bias. Defaults to zeros. use
             ``None`` to disable bias.
-        v_weight_init: Initializer for the value weight. Defaults to glorot_uniform.
+        v_weight_init: Initializer for the value weight. Defaults to ``glorot_uniform``.
         v_bias_init: Initializer for the value bias. Defaults to zeros. use
             ``None`` to disable bias.
-        out_weight_init: Initializer for the output weight. Defaults to glorot_uniform.
+        out_weight_init: Initializer for the output weight. Defaults to ``glorot_uniform``.
         out_bias_init: Initializer for the output bias. Defaults to zeros. use
             ``None`` to disable bias.
         drop_rate: Dropout rate. defaults to 0.0.

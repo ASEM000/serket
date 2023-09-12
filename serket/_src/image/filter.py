@@ -60,7 +60,7 @@ def filter_2d(
         dimension_numbers=generate_conv_dim_numbers(2),
         feature_group_count=array.shape[0],  # in_features
     )
-    return jax.lax.stop_gradient_p.bind(jnp.squeeze(x, (0, 1)))
+    return jnp.squeeze(x, (0, 1))
 
 
 def fft_filter_2d(
@@ -97,7 +97,7 @@ def fft_filter_2d(
         dilation=(1, 1),
         groups=array.shape[0],  # in_features
     )
-    return jax.lax.stop_gradient_p.bind(jnp.squeeze(x, (0, 1)))
+    return jnp.squeeze(x, (0, 1))
 
 
 def calculate_average_kernel(
@@ -180,7 +180,10 @@ def calculate_laplacian_kernel(
 
 
 def calculate_motion_kernel(
-    kernel_size: int, angle: float, direction=0.0, dtype: DType = jnp.float32
+    kernel_size: int,
+    angle: float,
+    direction=0.0,
+    dtype: DType = jnp.float32,
 ) -> Annotated[jax.Array, "HW"]:
     """Returns 2D motion blur filter.
 
