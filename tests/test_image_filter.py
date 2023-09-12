@@ -429,3 +429,10 @@ def test_laplacian():
         sk.image.Filter2D(kernel)(x),
         atol=1e-5,
     )
+
+
+def test_center_crop():
+    x = jnp.arange(1, 26).reshape(1, 5, 5)
+    assert sk.image.CenterCrop2D(3)(x).shape == (1, 3, 3)
+    assert sk.image.CenterCrop2D(0)(x).shape == (1, 0, 0)
+    npt.assert_allclose(sk.image.CenterCrop2D(3)(x), x[:, 1:-1, 1:-1])
