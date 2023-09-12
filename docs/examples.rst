@@ -9,4 +9,5 @@
 
     train_examples
     notebooks/train_mp
+    notebooks/checkpointing
     notebooks/regularization
