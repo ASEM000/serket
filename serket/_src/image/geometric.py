@@ -143,16 +143,6 @@ def random_perspective_2d(
     return perspective_transform_2d(image, coeffs)
 
 
-def solarize_2d(
-    image: Annotated[jax.Array, "HW"],
-    threshold: float | int,
-    max_val: float | int,
-) -> Annotated[jax.Array, "HW"]:
-    """Inverts all values above a given threshold."""
-    _, _ = image.shape
-    return jnp.where(image < threshold, image, max_val - image)
-
-
 def horizontal_translate_2d(
     image: Annotated[jax.Array, "HW"],
     shift: int,
@@ -633,46 +623,6 @@ class RandomPerspective2D(sk.TreeClass):
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         scale = jax.lax.stop_gradient(self.scale)
         return jax.vmap(random_perspective_2d, in_axes=(0, None, None))(x, key, scale)
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-@sk.autoinit
-class Solarize2D(sk.TreeClass):
-    """Inverts all values above a given threshold.
-
-    .. image:: ../_static/solarize2d.png
-
-    Args:
-        threshold: The threshold value above which to invert.
-        max_val: The maximum value of the image. e.g. 255 for uint8 images.
-            1.0 for float images. default: 1.0
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> layer = sk.image.Solarize2D(threshold=10, max_val=25)
-        >>> print(layer(x))
-        [[[ 1  2  3  4  5]
-          [ 6  7  8  9 15]
-          [14 13 12 11 10]
-          [ 9  8  7  6  5]
-          [ 4  3  2  1  0]]]
-
-    Reference:
-        - https://github.com/tensorflow/models/blob/v2.13.1/official/vision/ops/augment.py#L804-L809
-    """
-
-    threshold: float
-    max_val: float = 1.0
-
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
-        return jax.vmap(solarize_2d, in_axes=(0, None, None))(x, threshold, max_val)
 
     @property
     def spatial_ndim(self) -> int:

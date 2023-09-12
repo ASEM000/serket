@@ -18,6 +18,7 @@ from serket._src.image.augment import (
     PixelShuffle2D,
     Posterize2D,
     RandomContrast2D,
+    Solarize2D,
 )
 from serket._src.image.filter import (
     AvgBlur2D,
@@ -46,7 +47,6 @@ from serket._src.image.geometric import (
     RandomVerticalShear2D,
     RandomVerticalTranslate2D,
     Rotate2D,
-    Solarize2D,
     VerticalFlip2D,
     VerticalShear2D,
     VerticalTranslate2D,
@@ -59,6 +59,7 @@ __all__ = [
     "PixelShuffle2D",
     "Posterize2D",
     "RandomContrast2D",
+    "Solarize2D",
     # filter
     "AvgBlur2D",
     "BoxBlur2D",
@@ -85,7 +86,6 @@ __all__ = [
     "RandomVerticalShear2D",
     "RandomVerticalTranslate2D",
     "Rotate2D",
-    "Solarize2D",
     "VerticalFlip2D",
     "VerticalShear2D",
     "VerticalTranslate2D",

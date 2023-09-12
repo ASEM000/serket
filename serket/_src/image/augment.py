@@ -19,7 +19,7 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jax import lax
+from typing_extensions import Annotated
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
@@ -27,12 +27,12 @@ from serket._src.nn.linear import Identity
 from serket._src.utils import IsInstance, Range, validate_spatial_nd
 
 
-def pixel_shuffle_2d(
-    array: jax.Array,
-    upscale_factor: int | tuple[int, int],
-) -> jax.Array:
+def pixel_shuffle_3d(
+    array: Annotated[jax.Array, "CHW"],
+    upscale_factor: tuple[int, int],
+) -> Annotated[jax.Array, "CHW"]:
     """Rearrange elements in a tensor."""
-    channels = array.shape[0]
+    channels, _, _ = array.shape
 
     sr, sw = upscale_factor
     oc = channels // (sr * sw)
@@ -45,6 +45,94 @@ def pixel_shuffle_2d(
     array = jnp.transpose(array, (2, 3, 0, 4, 1))
     array = jnp.reshape(array, (oc, ih * sr, iw * sw))
     return array
+
+
+def solarize_2d(
+    image: Annotated[jax.Array, "HW"],
+    threshold: float | int,
+    max_val: float | int,
+) -> Annotated[jax.Array, "HW"]:
+    """Inverts all values above a given threshold."""
+    _, _ = image.shape
+    return jnp.where(image < threshold, image, max_val - image)
+
+
+def adjust_contrast_2d(image: Annotated[jax.Array, "HW"], contrast_factor: float):
+    """Adjusts the contrast of an image by scaling the pixel values by a factor.
+
+    Args:
+        array: input array
+        contrast_factor: contrast factor to adust the contrast by.
+    """
+    _, _ = image.shape
+    μ = jnp.mean(image, keepdims=True)
+    return (contrast_factor * (image - μ) + μ).astype(image.dtype)
+
+
+def random_contrast_2d(
+    array: Annotated[jax.Array, "HW"],
+    contrast_range: tuple[float, float],
+    key: jr.KeyArray = jr.PRNGKey(0),
+) -> Annotated[jax.Array, "HW"]:
+    """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
+    _, _ = array.shape
+    minval, maxval = contrast_range
+    contrast_factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
+    return adjust_contrast_2d(array, contrast_factor)
+
+
+def pixelate_2d(
+    image: Annotated[jax.Array, "HW"], scale: int = 16
+) -> Annotated[jax.Array, "HW"]:
+    """Return a pixelated image by downsizing and upsizing"""
+    dtype = image.dtype
+    h, w = image.shape
+    image = image.astype(jnp.float32)
+    image = jax.image.resize(image, (h // scale, w // scale), method="linear")
+    image = jax.image.resize(image, (h, w), method="linear")
+    image = image.astype(dtype)
+    return image
+
+
+@ft.partial(jax.jit, inline=True, static_argnums=1)
+def jigsaw_2d(
+    image: Annotated[jax.Array, "HW"],
+    tiles: int = 1,
+    key: jr.KeyArray = jr.PRNGKey(0),
+) -> Annotated[jax.Array, "HW"]:
+    """Jigsaw channel-first image"""
+    height, width = image.shape
+    tile_height = height // tiles
+    tile_width = width // tiles
+    image_ = image[: height - height % tiles, : width - width % tiles]
+    image_ = image_.reshape(tiles, tile_height, tiles, tile_width)
+    image_ = image_.transpose(0, 2, 1, 3)  # tiles, tiles, tile_height, tile_width
+    image_ = image_.reshape(-1, tile_height, tile_width)
+    indices = jr.permutation(key, len(image_))
+    image_ = jax.vmap(lambda x: image_[x])(indices)
+    image_ = image_.reshape(tiles, tiles, tile_height, tile_width)
+    image_ = image_.transpose(0, 2, 1, 3)  # tiles, tiles, tile_height, tile_width
+    image_ = image_.reshape(tiles * tile_height, tiles * tile_width)
+    image = image.at[: height - height % tiles, : width - width % tiles].set(image_)
+    return image
+
+
+def posterize_2d(
+    image: Annotated[jax.Array, "HW"],
+    bits: int,
+) -> Annotated[jax.Array, "HW"]:
+    """Reduce the number of bits for each color channel.
+
+    Args:
+        image: The image to posterize.
+        bits: The number of bits to keep for each channel (1-8).
+
+    Reference:
+        - https://github.com/tensorflow/models/blob/v2.13.1/official/vision/ops/augment.py#L859-L862
+        - https://github.com/python-pillow/Pillow/blob/6651a3143621181d94cc92d36e1490721ef0b44f/src/PIL/ImageOps.py#L547
+    """
+    shift = 8 - bits
+    return jnp.left_shift(jnp.right_shift(image, shift), shift)
 
 
 class PixelShuffle2D(sk.TreeClass):
@@ -80,42 +168,12 @@ class PixelShuffle2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        return pixel_shuffle_2d(x, self.upscale_factor)
+        return pixel_shuffle_3d(x, self.upscale_factor)
 
     @property
     def spatial_ndim(self) -> int:
         """Number of spatial dimensions of the image."""
         return 2
-
-
-def adjust_contrast_nd(array: jax.Array, contrast_factor: float):
-    """Adjusts the contrast of an image by scaling the pixel values by a factor.
-
-    Args:
-        array: input array
-        contrast_factor: contrast factor to adust the contrast by.
-
-
-    """
-    μ = jnp.mean(array, axis=tuple(range(1, array.ndim)), keepdims=True)
-    return (contrast_factor * (array - μ) + μ).astype(array.dtype)
-
-
-def random_contrast_nd(
-    array: jax.Array,
-    contrast_range: tuple[float, float],
-    key: jr.KeyArray = jr.PRNGKey(0),
-) -> jax.Array:
-    """Randomly adjusts the contrast of an image by scaling the pixel values by a factor.
-
-    Args:
-        array: input array
-        contrast_range: contrast range to adust the contrast by. accepts a tuple of length 2.
-        key: random key
-    """
-    minval, maxval = contrast_range
-    contrast_factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
-    return adjust_contrast_nd(array, contrast_factor)
 
 
 @sk.autoinit
@@ -137,7 +195,7 @@ class AdjustContrast2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         contrast_factor = jax.lax.stop_gradient(self.contrast_factor)
-        return adjust_contrast_nd(x, contrast_factor)
+        return jax.vmap(adjust_contrast_2d, in_axes=(0, None))(x, contrast_factor)
 
     @property
     def spatial_ndim(self) -> int:
@@ -175,22 +233,13 @@ class RandomContrast2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        return random_contrast_nd(x, lax.stop_gradient(self.contrast_range), key=key)
+        contrast_range = jax.lax.stop_gradient(self.contrast_range)
+        in_axes = (0, None, None)
+        return jax.vmap(random_contrast_2d, in_axes=in_axes)(x, contrast_range, key)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
-
-
-def pixelate(image: jax.Array, scale: int = 16) -> jax.Array:
-    """Return a pixelated image by downsizing and upsizing"""
-    dtype = image.dtype
-    c, h, w = image.shape
-    image = image.astype(jnp.float32)
-    image = jax.image.resize(image, (c, h // scale, w // scale), method="linear")
-    image = jax.image.resize(image, (c, h, w), method="linear")
-    image = image.astype(dtype)
-    return image
 
 
 class Pixelate2D(sk.TreeClass):
@@ -223,20 +272,12 @@ class Pixelate2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
-        return pixelate(x, jax.lax.stop_gradient(self.scale))
+        scale = jax.lax.stop_gradient(self.scale)
+        return jax.vmap(pixelate_2d, in_axes=(0, None))(x, scale)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
-
-
-def solarize(
-    image: jax.Array,
-    threshold: float | int,
-    max_val: float | int,
-) -> jax.Array:
-    """Inverts all values above a given threshold."""
-    return jnp.where(image < threshold, image, max_val - image)
 
 
 @sk.autoinit
@@ -272,26 +313,11 @@ class Solarize2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
-        return solarize(x, threshold, max_val)
+        return jax.vmap(solarize_2d, in_axes=(0, None, None))(x, threshold, max_val)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
-
-
-def posterize(image: jax.Array, bits: int) -> jax.Array:
-    """Reduce the number of bits for each color channel.
-
-    Args:
-        image: The image to posterize.
-        bits: The number of bits to keep for each channel (1-8).
-
-    Reference:
-        - https://github.com/tensorflow/models/blob/v2.13.1/official/vision/ops/augment.py#L859-L862
-        - https://github.com/python-pillow/Pillow/blob/6651a3143621181d94cc92d36e1490721ef0b44f/src/PIL/ImageOps.py#L547
-    """
-    shift = 8 - bits
-    return jnp.left_shift(jnp.right_shift(image, shift), shift)
 
 
 @sk.autoinit
@@ -341,46 +367,11 @@ class Posterize2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array) -> jax.Array:
         bits = jax.lax.stop_gradient(self.bits)
-        return jax.vmap(posterize, in_axes=(0, None))(x, bits)
+        return jax.vmap(posterize_2d, in_axes=(0, None))(x, bits)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
-
-
-@ft.partial(jax.jit, inline=True, static_argnums=1)
-def jigsaw(
-    image: jax.Array,
-    tiles: int = 1,
-    key: jr.KeyArray = jr.PRNGKey(0),
-) -> jax.Array:
-    """Jigsaw channel-first image
-
-    Args:
-        image: channel-first image (CHW)
-        tiles: number of tiles per side
-        key: random key
-    """
-    channels, height, width = image.shape
-    tile_height = height // tiles
-    tile_width = width // tiles
-
-    image_ = image[:, : height - height % tiles, : width - width % tiles]
-
-    image_ = image_.reshape(channels, tiles, tile_height, tiles, tile_width)
-    image_ = image_.transpose(1, 3, 0, 2, 4)
-    image_ = image_.reshape(-1, channels, tile_height, tile_width)
-
-    indices = jr.permutation(key, len(image_))
-    image_ = jax.vmap(lambda x: image_[x])(indices)
-
-    image_ = image_.reshape(tiles, tiles, channels, tile_height, tile_width)
-    image_ = image_.transpose(2, 0, 3, 1, 4)
-    image_ = image_.reshape(channels, tiles * tile_height, tiles * tile_width)
-
-    image = image.at[:, : height - height % tiles, : width - width % tiles].set(image_)
-
-    return image
 
 
 @sk.autoinit
@@ -436,7 +427,7 @@ class JigSaw2D(sk.TreeClass):
             x: channel-first image (CHW)
             key: random key
         """
-        return jigsaw(x, self.tiles, key)
+        return jax.vmap(jigsaw_2d, in_axes=(0, None, None))(x, self.tiles, key)
 
     @property
     def spatial_ndim(self) -> int:
