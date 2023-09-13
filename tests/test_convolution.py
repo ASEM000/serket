@@ -1621,3 +1621,42 @@ def test_lazy_conv(layer, array, expected_shape):
 
     assert value.shape == expected_shape
     assert materialized_layer.in_features == 10
+
+
+@pytest.mark.parametrize(
+    "direct_layer,fft_layer,kernel_size,strides,padding,dilation,ndim",
+    [
+        [sk.nn.Conv1D, sk.nn.FFTConv1D, 3, 2, 1, 1, 1],
+        [sk.nn.Conv2D, sk.nn.FFTConv2D, (3, 3), (2, 2), (1, 1), (2, 1), 2],
+        [sk.nn.Conv3D, sk.nn.FFTConv3D, (3, 3, 3), (2, 2, 2), (1, 1, 1), (1, 2, 1), 3],
+    ],
+)
+def test_direct_fft_conv(
+    direct_layer,
+    fft_layer,
+    kernel_size,
+    strides,
+    padding,
+    dilation,
+    ndim,
+):
+    array = jnp.ones([10] + [10] * ndim)
+    npt.assert_allclose(
+        direct_layer(
+            10,
+            1,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            dilation=dilation,
+        )(array),
+        fft_layer(
+            10,
+            1,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            dilation=dilation,
+        )(array),
+        atol=5e-6,
+    )

@@ -14,8 +14,10 @@
 
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 import numpy.testing as npt
+import pytest
 
 import serket as sk
 
@@ -138,15 +140,13 @@ def test_padding3d():
     assert layer(jnp.ones((1, 1, 1, 1))).shape == (1, 4, 8, 12)
 
 
-def test_random_zoom():
-    npt.assert_allclose(
-        sk.nn.RandomZoom1D((0, 0))(jnp.ones((10, 5))), jnp.ones((10, 5))
-    )
-
-    npt.assert_allclose(
-        sk.nn.RandomZoom2D((0.5, 0.5))(jnp.ones((10, 5, 5))).shape, (10, 5, 5)
-    )
-
-    npt.assert_allclose(
-        sk.nn.RandomZoom3D((0.5, 0.5))(jnp.ones((10, 5, 5, 5))).shape, (10, 5, 5, 5)
-    )
+@pytest.mark.parametrize(
+    "layer,shape,ndim",
+    [
+        [sk.nn.RandomZoom1D, (10, 5), 1],
+        [sk.nn.RandomZoom2D, (10, 5, 5), 2],
+        [sk.nn.RandomZoom3D, (10, 5, 5, 5), 3],
+    ],
+)
+def test_random_zoom(layer, shape, ndim):
+    npt.assert_allclose(layer((0, 0))(jnp.ones(shape)).shape, shape)

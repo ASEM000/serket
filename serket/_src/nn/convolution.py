@@ -144,10 +144,11 @@ def fft_conv_general_dilated(
     end = [z.shape[0], z.shape[1]]
     end += [max((x_shape[i] - w_shape[i] + 1), 0) for i in range(2, spatial_ndim + 2)]
 
-    if all(s == 1 for s in strides):
-        return jax.lax.dynamic_slice(z, start, end)
-
-    return jax.lax.slice(z, start, end, (1, 1, *strides))
+    return (
+        jax.lax.dynamic_slice(z, start, end)
+        if all(s == 1 for s in strides)
+        else jax.lax.slice(z, start, end, (1, 1, *strides))
+    )
 
 
 def is_lazy_call(instance, *_, **__) -> bool:

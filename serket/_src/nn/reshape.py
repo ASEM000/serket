@@ -48,12 +48,9 @@ class ResizeND(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        return jax.image.resize(
-            x,
-            shape=(x.shape[0], *self.size),
-            method=self.method,
-            antialias=self.antialias,
-        )
+        in_axes = (0, None, None, None)
+        args = (x, self.size, self.method, self.antialias)
+        return jax.vmap(jax.image.resize, in_axes=in_axes)(*args)
 
     @property
     @abc.abstractmethod
@@ -77,11 +74,9 @@ class UpsampleND(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         resized_shape = tuple(s * x.shape[i + 1] for i, s in enumerate(self.scale))
-        return jax.image.resize(
-            x,
-            shape=(x.shape[0], *resized_shape),
-            method=self.method,
-        )
+        in_axes = (0, None, None)
+        args = (x, resized_shape, self.method)
+        return jax.vmap(jax.image.resize, in_axes=in_axes)(*args)
 
     @property
     @abc.abstractmethod
@@ -91,7 +86,7 @@ class UpsampleND(sk.TreeClass):
 
 
 class CropND(sk.TreeClass):
-    """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
+    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
 
     Args:
         size: size of the slice, accepted values are integers or tuples of integers.
@@ -104,8 +99,9 @@ class CropND(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        shape = ((0, *self.start), (x.shape[0], *self.size))
-        return jax.lax.stop_gradient(jax.lax.dynamic_slice(x, *shape))
+        in_axes = (0, None, None)
+        args = (x, self.start, self.size)
+        return jax.vmap(jax.lax.dynamic_slice, in_axes=in_axes)(*args)
 
     @property
     @abc.abstractmethod
@@ -125,10 +121,9 @@ class PadND(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
-        # do not pad the channel axis
-        shape = ((0, 0), *self.padding)
         value = jax.lax.stop_gradient(self.value)
-        return jnp.pad(x, shape, constant_values=value)
+        pad = ft.partial(jnp.pad, pad_width=self.padding, constant_values=value)
+        return jax.vmap(pad)(x)
 
     @property
     @abc.abstractmethod
@@ -372,7 +367,7 @@ class Pad3D(PadND):
 
 
 class Crop1D(CropND):
-    """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
+    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
 
     Args:
         size: size of the slice, either a single int or a tuple of int.
@@ -393,7 +388,7 @@ class Crop1D(CropND):
 
 
 class Crop2D(CropND):
-    """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
+    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
 
     Args:
         size: size of the slice, either a single int or a tuple of two ints
@@ -425,7 +420,7 @@ class Crop2D(CropND):
 
 
 class Crop3D(CropND):
-    """Applies jax.lax.dynamic_slice_in_dim to the second dimension of the input.
+    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
 
     Args:
         size: size of the slice, either a single int or a tuple of three ints
@@ -469,7 +464,7 @@ class RandomCropND(sk.TreeClass):
 
 
 class RandomCrop1D(RandomCropND):
-    """Applies jax.lax.dynamic_slice_in_dim with a random start along each axis
+    """Applies ``jax.lax.dynamic_slice_in_dim`` with a random start along each axis
 
     Args:
         size: size of the slice, either a single int or a tuple of int. accepted
@@ -482,7 +477,7 @@ class RandomCrop1D(RandomCropND):
 
 
 class RandomCrop2D(RandomCropND):
-    """Applies jax.lax.dynamic_slice_in_dim with a random start along each axis
+    """Applies ``jax.lax.dynamic_slice_in_dim`` with a random start along each axis
 
     Args:
         size: size of the slice in each axis. accepted values are either a single int
@@ -495,7 +490,7 @@ class RandomCrop2D(RandomCropND):
 
 
 class RandomCrop3D(RandomCropND):
-    """Applies jax.lax.dynamic_slice_in_dim with a random start along each axis
+    """Applies ``jax.lax.dynamic_slice_in_dim`` with a random start along each axis
 
     Args:
         size: size of the slice in each axis. accepted values are either a single int
@@ -577,9 +572,9 @@ class RandomZoom1D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         k1, k2 = jr.split(key, 2)
-        low, high = self.length_factor
+        low, high = jax.lax.stop_gradient(self.length_factor)
         x = zoom_axis(x, jr.uniform(k1, minval=low, maxval=high), k2, axis=1)
-        return jax.lax.stop_gradient(x)
+        return x
 
     @property
     def spatial_ndim(self) -> int:
@@ -637,10 +632,10 @@ class RandomZoom2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         k1, k2, k3, k4 = jr.split(key, 4)
-        low, high = self.height_factor
-        x = zoom_axis(x, jr.uniform(k1, minval=low, maxval=high), k3, axis=1)
-        low, high == self.width_factor
-        x = zoom_axis(x, jr.uniform(k2, minval=low, maxval=high), k4, axis=2)
+        factors = (self.height_factor, self.width_factor)
+        ((hfl, hfh), (wfl, wfh)) = jax.lax.stop_gradient(factors)
+        x = zoom_axis(x, jr.uniform(k1, minval=hfl, maxval=hfh), k3, axis=1)
+        x = zoom_axis(x, jr.uniform(k2, minval=wfl, maxval=wfh), k4, axis=2)
         return jax.lax.stop_gradient(x)
 
     @property
@@ -660,9 +655,9 @@ class RandomZoom3D(sk.TreeClass):
         Positive values are zoom in, negative values are zoom out, and 0 is no zoom.
 
         Args:
-            height_factor: (min, max)
-            width_factor: (min, max)
-            depth_factor: (min, max)
+            height_factor: (min, max) for height
+            width_factor: (min, max) for width
+            depth_factor: (min, max)  for depth
 
         Reference:
             - https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
@@ -683,13 +678,12 @@ class RandomZoom3D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         k1, k2, k3, k4, k5, k6 = jr.split(key, 6)
-        low, high = self.height_factor
-        x = zoom_axis(x, jr.uniform(k1, minval=low, maxval=high), k3, axis=1)
-        low, high == self.width_factor
-        x = zoom_axis(x, jr.uniform(k2, minval=low, maxval=high), k4, axis=2)
-        low, high == self.depth_factor
-        x = zoom_axis(x, jr.uniform(k5, minval=low, maxval=high), k6, axis=3)
-        return jax.lax.stop_gradient(x)
+        factors = (self.height_factor, self.width_factor, self.depth_factor)
+        ((hfl, hfh), (wfl, wfh), (dfl, dfh)) = jax.lax.stop_gradient(factors)
+        x = zoom_axis(x, jr.uniform(k1, minval=hfl, maxval=hfh), k3, axis=1)
+        x = zoom_axis(x, jr.uniform(k2, minval=wfl, maxval=wfh), k4, axis=2)
+        x = zoom_axis(x, jr.uniform(k5, minval=dfl, maxval=dfh), k6, axis=3)
+        return x
 
     @property
     def spatial_ndim(self) -> int:
