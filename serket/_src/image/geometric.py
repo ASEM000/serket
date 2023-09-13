@@ -25,7 +25,7 @@ from typing_extensions import Annotated
 import serket as sk
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
-from serket._src.utils import IsInstance, canonicalize, validate_spatial_nd
+from serket._src.utils import IsInstance, validate_spatial_nd
 
 
 def affine_2d(
@@ -96,20 +96,6 @@ def random_rotate_2d(
     minval, maxval = angle_range
     angle = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
     return rotate_2d(image, angle)
-
-
-def pixelate_2d(
-    image: Annotated[jax.Array, "HW"],
-    scale: int = 16,
-) -> Annotated[jax.Array, "HW"]:
-    """Return a pixelated image by downsizing and upsizing"""
-    dtype = image.dtype
-    h, w = image.shape
-    image = image.astype(jnp.float32)
-    image = jax.image.resize(image, (h // scale, w // scale), method="linear")
-    image = jax.image.resize(image, (h, w), method="linear")
-    image = image.astype(dtype)
-    return image
 
 
 def perspective_transform_2d(
@@ -184,23 +170,6 @@ def random_vertical_translate_2d(
     h, _ = image.shape
     shift = jr.randint(key, shape=(), minval=-h, maxval=h)
     return vertical_translate_2d(image, shift)
-
-
-def center_crop_2d(image: Annotated[jax.Array, "HW"], height: int, width: int):
-    """Crops an image with the given size keeping the same center of the original.
-
-    Args:
-        image: 2D image.
-        height: target height to crop the image to. accepts an int
-        width: target width to crop the image to. accepts an int
-
-    """
-    _, _ = image.shape
-    h, w = image.shape
-    center_h, center_w = h // 2, w // 2
-    left = max(center_w - width // 2, 0)
-    top = max(center_h - height // 2, 0)
-    return jax.lax.dynamic_slice(image, (top, left), (height, width))
 
 
 class Rotate2D(sk.TreeClass):
@@ -473,44 +442,6 @@ class RandomVerticalShear2D(sk.TreeClass):
         angle = jax.lax.stop_gradient(self.angle_range)
         in_axes = (0, None, None)
         return jax.vmap(random_vertical_shear_2d, in_axes=in_axes)(x, angle, key)
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class Pixelate2D(sk.TreeClass):
-    """Pixelate an image by upsizing and downsizing an image
-
-    .. image:: ../_static/pixelate2d.png
-
-    Args:
-        scale: the scale to which the image will be downsized before being upsized
-            to the original shape. for example, ``scale=2`` means the image will
-            be downsized to half of its size before being updsized to the original
-            size. Higher scale will lead to higher degree of pixelation.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.image.Pixelate2D(2)(x))  # doctest: +SKIP
-        [[[ 7  7  8  8  9]
-          [ 8  8  9  9 10]
-          [12 12 13 13 14]
-          [16 16 17 17 18]
-          [17 17 18 18 19]]]
-    """
-
-    def __init__(self, scale: int):
-        if not isinstance(scale, int) and scale > 0:
-            raise ValueError(f"{scale=} must be a positive int")
-        self.scale = scale
-
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        scale = jax.lax.stop_gradient(self.scale)
-        return jax.vmap(pixelate_2d, in_axes=(0, None))(x, scale)
 
     @property
     def spatial_ndim(self) -> int:
@@ -834,50 +765,6 @@ class VerticalFlip2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, **k) -> jax.Array:
         return jax.vmap(lambda x: jnp.flip(x, axis=0))(x)
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class CenterCrop2D(sk.TreeClass):
-    """Crop the center of a channel-first image.
-
-    .. image:: ../_static/centercrop2d.png
-
-    Args:
-        size: The size of the output image. accepts a single int or a tuple of two ints.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 145).reshape(1, 12, 12)
-        >>> print(x)
-        [[[  1   2   3   4   5   6   7   8   9  10  11  12]
-          [ 13  14  15  16  17  18  19  20  21  22  23  24]
-          [ 25  26  27  28  29  30  31  32  33  34  35  36]
-          [ 37  38  39  40  41  42  43  44  45  46  47  48]
-          [ 49  50  51  52  53  54  55  56  57  58  59  60]
-          [ 61  62  63  64  65  66  67  68  69  70  71  72]
-          [ 73  74  75  76  77  78  79  80  81  82  83  84]
-          [ 85  86  87  88  89  90  91  92  93  94  95  96]
-          [ 97  98  99 100 101 102 103 104 105 106 107 108]
-          [109 110 111 112 113 114 115 116 117 118 119 120]
-          [121 122 123 124 125 126 127 128 129 130 131 132]
-          [133 134 135 136 137 138 139 140 141 142 143 144]]]
-        >>> print(sk.image.CenterCrop2D(4)(x))
-        [[[53 54 55 56]
-          [65 66 67 68]
-          [77 78 79 80]
-          [89 90 91 92]]]
-    """
-
-    def __init__(self, size: int | tuple[int, int]):
-        self.size = canonicalize(size, ndim=2, name="size")
-
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return jax.vmap(center_crop_2d, in_axes=(0, None, None))(x, *self.size)
 
     @property
     def spatial_ndim(self) -> int:

@@ -2,7 +2,6 @@ Geometric API
 ---------------------------------
 .. currentmodule:: serket.image
     
-.. autoclass:: CenterCrop2D
 .. autoclass:: HorizontalFlip2D
 .. autoclass:: HorizontalShear2D
 .. autoclass:: HorizontalTranslate2D

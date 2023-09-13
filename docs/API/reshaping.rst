@@ -2,6 +2,15 @@ Reshaping
 ---------------------------------
 .. currentmodule:: serket.nn
     
+.. autoclass:: CenterCrop1D
+.. autoclass:: CenterCrop2D
+.. autoclass:: CenterCrop3D
+.. autoclass:: Crop1D
+.. autoclass:: Crop2D
+.. autoclass:: Crop3D
+.. autoclass:: RandomCrop1D
+.. autoclass:: RandomCrop2D
+.. autoclass:: RandomCrop3D
 
 .. autoclass:: Resize1D
 .. autoclass:: Resize2D
@@ -14,13 +23,6 @@ Reshaping
 .. autoclass:: Pad1D
 .. autoclass:: Pad2D
 .. autoclass:: Pad3D
-
-.. autoclass:: Crop1D
-.. autoclass:: Crop2D
-.. autoclass:: Crop3D
-.. autoclass:: RandomCrop1D
-.. autoclass:: RandomCrop2D
-.. autoclass:: RandomCrop3D
 
 .. autoclass:: Flatten
 .. autoclass:: Unflatten

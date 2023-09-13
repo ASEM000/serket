@@ -35,6 +35,62 @@ from serket._src.utils import (
 MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 
 
+def random_crop_nd(
+    x: jax.Array,
+    *,
+    crop_size: tuple[int, ...],
+    key: jr.KeyArray,
+) -> jax.Array:
+    start: tuple[int, ...] = tuple(
+        jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)
+        for i, s in enumerate(crop_size)
+    )
+    return jax.lax.dynamic_slice(x, start, crop_size)
+
+
+def zoom_axis(
+    x: jax.Array,
+    factor: float,
+    key: jr.KeyArray,
+    axis: int,
+) -> jax.Array:
+    if factor == 0:
+        return x
+
+    axis_size = x.shape[axis]
+    dtype = x.dtype
+    resized_axis_size = int(axis_size * (1 + factor))
+
+    def zoom_in(x):
+        shape = list(x.shape)
+        resized_shape = list(shape)
+        resized_shape[axis] = resized_axis_size
+        x = jax.image.resize(x, shape=resized_shape, method="linear")
+        x = random_crop_nd(x, crop_size=shape, key=key)
+        return x.astype(dtype)
+
+    def zoom_out(x):
+        shape = list(x.shape)
+        resized_shape = list(shape)
+        resized_shape[axis] = resized_axis_size
+        x = jax.image.resize(x, shape=resized_shape, method="linear")
+        pad_width = [(0, 0)] * len(x.shape)
+        left = (axis_size - resized_axis_size) // 2
+        right = axis_size - resized_axis_size - left
+        pad_width[axis] = (left, right)
+        x = jnp.pad(x, pad_width=pad_width)
+        return x.astype(dtype)
+
+    return zoom_out(x) if factor < 0 else zoom_in(x)
+
+
+def center_crop_nd(array: jax.Array, sizes: tuple[int, ...])-> jax.Array:
+    """Crops an array to the given size at the center."""
+    shapes = array.shape
+    starts = tuple(max(shape // 2 - size//2, 0) for shape, size in zip(shapes, sizes))
+    return jax.lax.dynamic_slice(array, starts, sizes)
+
+
 class ResizeND(sk.TreeClass):
     def __init__(
         self,
@@ -434,19 +490,6 @@ class Crop3D(CropND):
         return 3
 
 
-def random_crop_nd(
-    x: jax.Array,
-    *,
-    crop_size: tuple[int, ...],
-    key: jr.KeyArray,
-) -> jax.Array:
-    start: tuple[int, ...] = tuple(
-        jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)
-        for i, s in enumerate(crop_size)
-    )
-    return jax.lax.dynamic_slice(x, start, crop_size)
-
-
 class RandomCropND(sk.TreeClass):
     def __init__(self, size: int | tuple[int, ...]):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
@@ -500,42 +543,6 @@ class RandomCrop3D(RandomCropND):
     @property
     def spatial_ndim(self) -> int:
         return 3
-
-
-def zoom_axis(
-    x: jax.Array,
-    factor: float,
-    key: jr.KeyArray,
-    axis: int,
-) -> jax.Array:
-    if factor == 0:
-        return x
-
-    axis_size = x.shape[axis]
-    dtype = x.dtype
-    resized_axis_size = int(axis_size * (1 + factor))
-
-    def zoom_in(x):
-        shape = list(x.shape)
-        resized_shape = list(shape)
-        resized_shape[axis] = resized_axis_size
-        x = jax.image.resize(x, shape=resized_shape, method="linear")
-        x = random_crop_nd(x, crop_size=shape, key=key)
-        return x.astype(dtype)
-
-    def zoom_out(x):
-        shape = list(x.shape)
-        resized_shape = list(shape)
-        resized_shape[axis] = resized_axis_size
-        x = jax.image.resize(x, shape=resized_shape, method="linear")
-        pad_width = [(0, 0)] * len(x.shape)
-        left = (axis_size - resized_axis_size) // 2
-        right = axis_size - resized_axis_size - left
-        pad_width[axis] = (left, right)
-        x = jnp.pad(x, pad_width=pad_width)
-        return x.astype(dtype)
-
-    return zoom_out(x) if factor < 0 else zoom_in(x)
 
 
 class RandomZoom1D(sk.TreeClass):
@@ -684,6 +691,87 @@ class RandomZoom3D(sk.TreeClass):
         x = zoom_axis(x, jr.uniform(k2, minval=wfl, maxval=wfh), k4, axis=2)
         x = zoom_axis(x, jr.uniform(k5, minval=dfl, maxval=dfh), k6, axis=3)
         return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
+
+class CenterCropND(sk.TreeClass):
+    def __init__(self, size: int | tuple[int, ...]):
+        self.size = canonicalize(size, self.spatial_ndim, name="size")
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
+        return jax.vmap(ft.partial(center_crop_nd, sizes=self.size))(x)
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the image."""
+        ...
+
+
+class CenterCrop1D(CenterCropND):
+    """Crops a 1D array to the given size at the center.
+    
+    Args:
+        size: The size of the output image. accepts a single int.
+    
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 13).reshape(1, 12)
+        >>> print(x)
+        [[ 1  2  3  4  5  6  7  8  9 10 11 12]]
+        >>> print(sk.nn.CenterCrop1D(4)(x))
+        [[5 6 7 8]]
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+
+class CenterCrop2D(CenterCropND):
+    """Crop the center of a channel-first image.
+
+    .. image:: ../_static/centercrop2d.png
+
+    Args:
+        size: The size of the output image. accepts a single int or a tuple of two ints.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 145).reshape(1, 12, 12)
+        >>> print(x)
+        [[[  1   2   3   4   5   6   7   8   9  10  11  12]
+          [ 13  14  15  16  17  18  19  20  21  22  23  24]
+          [ 25  26  27  28  29  30  31  32  33  34  35  36]
+          [ 37  38  39  40  41  42  43  44  45  46  47  48]
+          [ 49  50  51  52  53  54  55  56  57  58  59  60]
+          [ 61  62  63  64  65  66  67  68  69  70  71  72]
+          [ 73  74  75  76  77  78  79  80  81  82  83  84]
+          [ 85  86  87  88  89  90  91  92  93  94  95  96]
+          [ 97  98  99 100 101 102 103 104 105 106 107 108]
+          [109 110 111 112 113 114 115 116 117 118 119 120]
+          [121 122 123 124 125 126 127 128 129 130 131 132]
+          [133 134 135 136 137 138 139 140 141 142 143 144]]]
+        >>> print(sk.nn.CenterCrop2D(4)(x))
+        [[[53 54 55 56]
+          [65 66 67 68]
+          [77 78 79 80]
+          [89 90 91 92]]]
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class CenterCrop3D(CenterCropND):
+    """Crops a 3D array to the given size at the center."""
 
     @property
     def spatial_ndim(self) -> int:

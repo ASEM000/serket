@@ -472,12 +472,6 @@ def test_laplacian():
     npt.assert_allclose(grads.kernel, jnp.zeros_like(grads.kernel))
 
 
-def test_center_crop():
-    x = jnp.arange(1, 26).reshape(1, 5, 5)
-    assert sk.image.CenterCrop2D(3)(x).shape == (1, 3, 3)
-    assert sk.image.CenterCrop2D(0)(x).shape == (1, 0, 0)
-    npt.assert_allclose(sk.image.CenterCrop2D(3)(x), x[:, 1:-1, 1:-1])
-
 
 def test_motion():
     x = jnp.arange(1, 17).reshape(1, 4, 4) + 0.0

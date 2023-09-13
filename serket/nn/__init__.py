@@ -137,6 +137,9 @@ from serket._src.nn.recurrent import (
     SimpleRNNCell,
 )
 from serket._src.nn.reshape import (
+    CenterCrop1D,
+    CenterCrop2D,
+    CenterCrop3D,
     Crop1D,
     Crop2D,
     Crop3D,
@@ -287,6 +290,9 @@ __all__ = [
     "ScanRNN",
     "SimpleRNNCell",
     # reshape
+    "CenterCrop1D",
+    "CenterCrop2D",
+    "CenterCrop3D",
     "Crop1D",
     "Crop2D",
     "Crop3D",

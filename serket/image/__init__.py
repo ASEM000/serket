@@ -15,6 +15,7 @@
 from serket._src.image.augment import (
     AdjustContrast2D,
     JigSaw2D,
+    Pixelate2D,
     PixelShuffle2D,
     Posterize2D,
     RandomContrast2D,
@@ -37,11 +38,9 @@ from serket._src.image.filter import (
     UnsharpMask2D,
 )
 from serket._src.image.geometric import (
-    CenterCrop2D,
     HorizontalFlip2D,
     HorizontalShear2D,
     HorizontalTranslate2D,
-    Pixelate2D,
     RandomHorizontalShear2D,
     RandomHorizontalTranslate2D,
     RandomPerspective2D,
@@ -58,6 +57,7 @@ __all__ = [
     # augment
     "AdjustContrast2D",
     "JigSaw2D",
+    "Pixelate2D",
     "PixelShuffle2D",
     "Posterize2D",
     "RandomContrast2D",
@@ -82,7 +82,6 @@ __all__ = [
     "HorizontalFlip2D",
     "HorizontalShear2D",
     "HorizontalTranslate2D",
-    "Pixelate2D",
     "RandomHorizontalShear2D",
     "RandomHorizontalTranslate2D",
     "RandomPerspective2D",
