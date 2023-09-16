@@ -11,8 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 
+os.environ["KERAS_BACKEND"] = "jax"
+
+import jax
 import jax.numpy as jnp
+import keras_core as keras
 import numpy.testing as npt
 import pytest
 
@@ -1660,3 +1665,77 @@ def test_direct_fft_conv(
         )(array),
         atol=5e-6,
     )
+
+
+def transpose_keras_conv_weight(weight):
+    # for keras conv channels_first weight
+    # *KIO -> OI*K
+    axes = list(range(weight.ndim))
+    axes = axes[-2:][::-1] + axes[:-2]
+    return jnp.transpose(weight, axes)
+
+
+@pytest.mark.parametrize(
+    "sk_layer,keras_layer,kernel_size,strides,padding,dilation,ndim",
+    [
+        # conv1d
+        [sk.nn.Conv1D, keras.layers.Conv1D, 3, 2, "same", 1, 1],
+        [sk.nn.Conv1D, keras.layers.Conv1D, 3, 2, "valid", 1, 1],
+        [sk.nn.Conv1D, keras.layers.Conv1D, 3, 1, "valid", 2, 1],
+        [sk.nn.Conv1D, keras.layers.Conv1D, 4, 1, "valid", 2, 1],
+        [sk.nn.FFTConv1D, keras.layers.Conv1D, 3, 2, "same", 1, 1],
+        [sk.nn.FFTConv1D, keras.layers.Conv1D, 3, 2, "valid", 1, 1],
+        [sk.nn.FFTConv1D, keras.layers.Conv1D, 3, 1, "valid", 2, 1],
+        [sk.nn.FFTConv1D, keras.layers.Conv1D, 4, 1, "valid", 2, 1],
+        # conv2d
+        [sk.nn.Conv2D, keras.layers.Conv2D, (3, 3), (2, 2), "same", (1, 1), 2],
+        [sk.nn.Conv2D, keras.layers.Conv2D, (3, 5), (1, 2), "valid", (1, 1), 2],
+        [sk.nn.Conv2D, keras.layers.Conv2D, (3, 5), (1, 1), "valid", (1, 2), 2],
+        [sk.nn.FFTConv2D, keras.layers.Conv2D, (3, 3), (2, 2), "same", (1, 1), 2],
+        [sk.nn.FFTConv2D, keras.layers.Conv2D, (3, 5), (1, 2), "valid", (1, 1), 2],
+        [sk.nn.FFTConv2D, keras.layers.Conv2D, (3, 5), (1, 1), "valid", (1, 2), 2],
+        # conv3d
+        [sk.nn.Conv3D, keras.layers.Conv3D, (3, 3, 3), (2, 2, 2), "same", (1, 1, 1), 3],
+        [sk.nn.Conv3D, keras.layers.Conv3D, (3, 5, 3), (1, 2, 2), "valid", 1, 3],
+        [sk.nn.Conv3D, keras.layers.Conv3D, (3, 5, 3), (1, 1, 2), "valid", 1, 3],
+        [sk.nn.FFTConv3D, keras.layers.Conv3D, (3, 3, 3), (2, 2, 2), "same", 1, 3],
+        [sk.nn.FFTConv3D, keras.layers.Conv3D, (3, 5, 3), (1, 2, 2), "valid", 1, 3],
+        [sk.nn.FFTConv3D, keras.layers.Conv3D, (3, 5, 3), (1, 1, 2), "valid", 1, 3],
+    ],
+)
+def test_conv_keras(
+    sk_layer,
+    keras_layer,
+    kernel_size,
+    strides,
+    padding,
+    dilation,
+    ndim,
+):
+    shape = [4] + [10] * ndim
+    x = jax.random.uniform(jax.random.PRNGKey(0), shape)
+    layer_keras = keras_layer(
+        filters=3,
+        kernel_size=kernel_size,
+        padding=padding,
+        dilation_rate=dilation,
+        strides=strides,
+        data_format="channels_first",
+    )
+    layer_sk = sk_layer(
+        4,
+        3,
+        kernel_size=kernel_size,
+        padding=padding,
+        dilation=dilation,
+        strides=strides,
+    )
+
+    layer_keras.build((1, *shape))
+    layer_sk = (
+        layer_sk.at["weight"]
+        .set(transpose_keras_conv_weight(layer_keras.get_weights()[0]))
+        .at["bias"]
+        .set(jnp.expand_dims(layer_keras.get_weights()[1], list(range(1, ndim + 1))))
+    )
+    npt.assert_allclose(layer_sk(x), layer_keras(x[None])[0], atol=5e-6)
