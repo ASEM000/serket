@@ -516,8 +516,9 @@ class BatchNorm(sk.TreeClass):
         state: BatchNormState | None = None,
     ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
+        batchnorm = custom_vmap(lambda x, state: (x, state))
 
-        @ (batchnorm := custom_vmap(lambda x, state: (x, state))).def_vmap
+        @batchnorm.def_vmap
         def _(_, __, x: jax.Array, state: BatchNormState):
             output = _batchnorm_impl(
                 x=x,
@@ -617,8 +618,9 @@ class EvalNorm(sk.TreeClass):
         state: BatchNormState | None = None,
     ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
+        batchnorm = custom_vmap(lambda x, state: (x, state))
 
-        @ (batchnorm := custom_vmap(lambda x, state: (x, state))).def_vmap
+        @batchnorm.def_vmap
         def _(_, __, x: jax.Array, state: BatchNormState):
             output = _batchnorm_impl(
                 x=x,
