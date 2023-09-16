@@ -100,7 +100,7 @@ class LayerNorm(sk.TreeClass):
     """Layer Normalization
 
     .. image:: ../_static/norm_figure.png
-    
+
     Transform the input by scaling and shifting to have zero mean and unit variance.
 
     Args:
@@ -351,87 +351,42 @@ def _batchnorm_impl(
     beta: jax.Array = None,
     evalution: bool = False,
     axis: int = 1,
+    axis_name: str | None = None,
 ):
-    # reduce over axis=1
     broadcast_shape = [1] * x.ndim
     broadcast_shape[axis] = x.shape[axis]
 
-    def bn_eval_step(x, state):
+    def eval_step(x, state):
         run_mean, run_var = state.running_mean, state.running_var
         run_mean = jnp.reshape(run_mean, broadcast_shape)
         run_var = jnp.reshape(run_var, broadcast_shape)
         output = (x - run_mean) / jnp.sqrt(run_var + eps)
-
         return output, state
 
-    def bn_train_step(x, state):
-        # maybe support axes option
+    def train_step(x, state):
         run_mean, run_var = state.running_mean, state.running_var
         axes = list(range(x.ndim))
         with jax.ensure_compile_time_eval():
             del axes[axis]
         batch_mean = jnp.mean(x, axis=axes, keepdims=True)
+        if axis_name is not None:
+            batch_mean = jax.lax.pmean(batch_mean, axis_name)
         batch_var = jnp.mean(jnp.square(x), axis=axes, keepdims=True) - batch_mean**2
+        if axis_name is not None:
+            batch_var = jax.lax.pmean(batch_var, axis_name)
         output = (x - batch_mean) / jnp.sqrt(batch_var + eps)
         run_mean = momentum * run_mean + (1 - momentum) * jnp.squeeze(batch_mean)
         run_var = momentum * run_var + (1 - momentum) * jnp.squeeze(batch_var)
         return output, BatchNormState(run_mean, run_var)
 
-    output, state = jax.lax.cond(evalution, bn_eval_step, bn_train_step, x, state)
-
+    output, state = jax.lax.cond(evalution, eval_step, train_step, x, state)
     state = jax.lax.stop_gradient(state)
-
     if gamma is not None:
         output *= jnp.reshape(gamma, broadcast_shape)
-
     if beta is not None:
         output += jnp.reshape(beta, broadcast_shape)
-
     output = jax.lax.cond(evalution, jax.lax.stop_gradient, lambda x: x, output)
-
     return output, state
-
-
-@custom_vmap
-def batchnorm(
-    x: jax.Array,
-    state: BatchNormState,
-    momentum: float = 0.1,
-    eps: float = 1e-5,
-    gamma: jax.Array | None = None,
-    beta: jax.Array | None = None,
-    evaluation: bool = False,
-    axis: int = 1,
-) -> tuple[jax.Array, BatchNormState]:
-    del momentum, eps, gamma, beta, evaluation, axis
-    # no-op when unbatched
-    return x, state
-
-
-@batchnorm.def_vmap
-def _(
-    axis_size,
-    in_batched,
-    x: jax.Array,
-    state: BatchNormState,
-    momentum: float = 0.99,
-    eps: float = 1e-5,
-    gamma: jax.Array | None = None,
-    beta: jax.Array | None = None,
-    evaluation: bool = True,
-    axis: int = 1,
-) -> tuple[jax.Array, BatchNormState]:
-    output = _batchnorm_impl(
-        x=x,
-        state=state,
-        momentum=momentum,
-        eps=eps,
-        gamma=gamma,
-        beta=beta,
-        evalution=evaluation,
-        axis=axis,
-    )
-    return output, (True, BatchNormState(True, True))
 
 
 def infer_in_features(instance, x, *_, **__) -> int:
@@ -472,6 +427,7 @@ class BatchNorm(sk.TreeClass):
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
+        axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
         key: a random key to initialize the parameters.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -520,6 +476,10 @@ class BatchNorm(sk.TreeClass):
         >>> x.shape
         (5, 10)
 
+    Note:
+        If ``axis_name`` is specified, then ``axis_name`` argument must be passed
+        to ``jax.vmap`` or ``jax.pmap``.
+
     Reference:
         - https://keras.io/api/layers/normalization_layers/batch_normalization/
         - https://openaccess.thecvf.com/content_ECCV_2018/html/Yuxin_Wu_Group_Normalization_ECCV_2018_paper.html
@@ -535,6 +495,7 @@ class BatchNorm(sk.TreeClass):
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
         axis: int = 1,
+        axis_name: str | None = None,
         key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ) -> None:
@@ -544,7 +505,7 @@ class BatchNorm(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.axis = axis
-
+        self.axis_name = axis_name
         self.weight = resolve_init(weight_init)(key, (in_features,), dtype=dtype)
         self.bias = resolve_init(bias_init)(key, (in_features,), dtype=dtype)
 
@@ -556,17 +517,22 @@ class BatchNorm(sk.TreeClass):
     ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
 
-        x, state = batchnorm(
-            x,
-            state,
-            self.momentum,
-            self.eps,
-            self.weight,
-            self.bias,
-            False,
-            self.axis,
-        )
-        return x, state
+        @ (batchnorm := custom_vmap(lambda x, state: (x, state))).def_vmap
+        def _(_, __, x: jax.Array, state: BatchNormState):
+            output = _batchnorm_impl(
+                x=x,
+                state=state,
+                momentum=self.momentum,
+                eps=self.eps,
+                gamma=self.weight,
+                beta=self.bias,
+                evalution=False,
+                axis=self.axis,
+                axis_name=self.axis_name,
+            )
+            return output, (True, BatchNormState(True, True))
+
+        return batchnorm(x, state)
 
 
 class EvalNorm(sk.TreeClass):
@@ -597,6 +563,7 @@ class EvalNorm(sk.TreeClass):
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
+        axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
         key: a random key to initialize the parameters.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -610,6 +577,10 @@ class EvalNorm(sk.TreeClass):
         >>> # convert to evaluation mode
         >>> bn = sk.tree_eval(bn)
         >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
+
+    Note:
+        If ``axis_name`` is specified, then ``axis_name`` argument must be passed
+        to ``jax.vmap`` or ``jax.pmap``.
 
     Reference:
         https://keras.io/api/layers/normalization_layers/batch_normalization/
@@ -625,6 +596,7 @@ class EvalNorm(sk.TreeClass):
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
         axis: int = 1,
+        axis_name: str | None = None,
         key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ) -> None:
@@ -634,6 +606,7 @@ class EvalNorm(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
         self.axis = axis
+        self.axis_name = axis_name
         self.weight = resolve_init(weight_init)(key, (in_features,), dtype)
         self.bias = resolve_init(bias_init)(key, (in_features,), dtype)
 
@@ -645,17 +618,22 @@ class EvalNorm(sk.TreeClass):
     ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
 
-        x, state = batchnorm(
-            x,
-            state,
-            0.0,
-            self.eps,
-            self.weight,
-            self.bias,
-            True,
-            self.axis,
-        )
-        return x, state
+        @ (batchnorm := custom_vmap(lambda x, state: (x, state))).def_vmap
+        def _(_, __, x: jax.Array, state: BatchNormState):
+            output = _batchnorm_impl(
+                x=x,
+                state=state,
+                momentum=0.0,
+                eps=self.eps,
+                gamma=self.weight,
+                beta=self.bias,
+                evalution=True,
+                axis=self.axis,
+                axis_name=self.axis_name,
+            )
+            return output, (True, BatchNormState(True, True))
+
+        return batchnorm(x, state)
 
 
 @tree_eval.def_eval(BatchNorm)
@@ -667,6 +645,7 @@ def _(batchnorm: BatchNorm) -> EvalNorm:
         weight_init=lambda *_: batchnorm.weight,
         bias_init=lambda *_: batchnorm.bias,
         axis=batchnorm.axis,
+        axis_name=batchnorm.axis_name,
     )
 
 

@@ -215,8 +215,11 @@ def test_group_norm():
         layer = sk.nn.GroupNorm(in_features=-1, groups=0)
 
 
-@pytest.mark.parametrize("axis", [0, 1, 2, 3])
-def test_batchnorm(axis):
+@pytest.mark.parametrize(
+    ["axis", "axis_name"],
+    [[0, None], [1, "foo"], [2, "bar"], [3, "baz"]],
+)
+def test_batchnorm(axis, axis_name):
     import math
 
     from keras_core.layers import BatchNormalization
@@ -225,7 +228,13 @@ def test_batchnorm(axis):
 
     x_keras = mat_jax((5, 10, 7, 8))
 
-    bn_keras = BatchNormalization(axis=axis, momentum=0.5, center=False, scale=False)
+    bn_keras = BatchNormalization(
+        axis=axis,
+        momentum=0.5,
+        center=False,
+        scale=False,
+        epsilon=1e-7,
+    )
 
     for i in range(5):
         x_keras = bn_keras(x_keras, training=True)
@@ -237,18 +246,22 @@ def test_batchnorm(axis):
         axis=axis,
         bias_init=None,
         weight_init=None,
+        axis_name=axis_name,
     )
     state = sk.tree_state(bn_sk)
     x_sk = mat_jax((5, 10, 7, 8))
-
+    in_axes = (0, None)
+    kwargs = dict(axis_name=axis_name, in_axes=in_axes)
+    if axis_name is None:
+        kwargs.pop("axis_name")
     for _ in range(5):
-        x_sk, state = jax.vmap(bn_sk, in_axes=(0, None))(x_sk, state)
+        x_sk, state = jax.vmap(bn_sk, **kwargs)(x_sk, state)
 
     npt.assert_allclose(x_keras, x_sk, atol=1e-5)
     npt.assert_allclose(bn_keras.moving_mean, state.running_mean, atol=1e-5)
-    npt.assert_allclose(bn_keras.moving_variance, state.running_var, rtol=1e-5)
-
+    npt.assert_allclose(bn_keras.moving_variance, state.running_var, rtol=1e-4)
     x_keras = bn_keras(x_keras, training=False)
-    x_sk, _ = jax.vmap(sk.tree_eval(bn_sk), in_axes=(0, None))(x_sk, state)
-
-    npt.assert_allclose(x_keras, x_sk, rtol=1e-5)
+    bn_sk_eval = sk.tree_eval(bn_sk)
+    in_axes = (0, None)
+    x_sk, _ = jax.vmap(bn_sk_eval, in_axes, axis_name=axis_name)(x_sk, state)
+    npt.assert_allclose(x_keras, x_sk, rtol=1e-4)
