@@ -107,7 +107,7 @@ net = sk.tree_unmask(net)
 |Geometric| - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D`|
 
 
-## 🌈 Cluster package: `serket.cluster`
+### 🌈 Cluster package: `serket.cluster`
 
 | Group | Layers |
 | ------------- | ------------- |
