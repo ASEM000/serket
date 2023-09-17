@@ -14,6 +14,6 @@ Filter API
 .. autoclass:: FFTMotionBlur2D
 .. autoclass:: UnsharpMask2D
 .. autoclass:: FFTUnsharpMask2D
-
+.. autoclass:: MedianBlur2D
 .. autoclass:: Filter2D
 .. autoclass:: FFTFilter2D

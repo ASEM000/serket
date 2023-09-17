@@ -18,6 +18,7 @@ import functools as ft
 
 import jax
 import jax.numpy as jnp
+import kernex as kex
 from typing_extensions import Annotated
 
 import serket as sk
@@ -203,6 +204,20 @@ def calculate_motion_kernel(
     kernel = rotate_2d(kernel, angle)
     kernel = kernel / jnp.sum(kernel)
     return kernel.astype(dtype)
+
+
+@ft.partial(jax.jit, inline=True, static_argnums=1)
+def median_blur_2d(
+    array: Annotated[jax.Array, "HW"],
+    kernel_size: tuple[int, int],
+) -> Annotated[jax.Array, "HW"]:
+    _, _ = array.shape
+
+    @kex.kmap(kernel_size=kernel_size, padding="same")
+    def median_kernel(array: jax.Array) -> jax.Array:
+        return jnp.median(array)
+
+    return median_kernel(array)
 
 
 class AvgBlur2DBase(sk.TreeClass):
@@ -648,6 +663,45 @@ class FFTMotionBlur2D(MotionBlur2DBase):
         kernel = jax.lax.stop_gradient_p.bind(self.kernel)
         x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel)
         return x
+
+
+class MedianBlur2D(sk.TreeClass):
+    """Apply median filter to a channel-first image.
+
+    .. image:: ../_static/medianblur2d.png
+
+    Args:
+        kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5) + 0.0
+        >>> print(x)
+        [[[ 1.  2.  3.  4.  5.]
+          [ 6.  7.  8.  9. 10.]
+          [11. 12. 13. 14. 15.]
+          [16. 17. 18. 19. 20.]
+          [21. 22. 23. 24. 25.]]]
+        >>> print(sk.image.MedianBlur2D(3)(x))
+        [[[ 0.  2.  3.  4.  0.]
+          [ 2.  7.  8.  9.  5.]
+          [ 7. 12. 13. 14. 10.]
+          [12. 17. 18. 19. 15.]
+          [ 0. 17. 18. 19.  0.]]]
+    """
+
+    def __init__(self, kernel_size: int | tuple[int, int]):
+        self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array) -> jax.Array:
+        x = jax.vmap(median_blur_2d, in_axes=(0, None))(x, self.kernel_size)
+        return x
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 class Filter2D(sk.TreeClass):

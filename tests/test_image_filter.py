@@ -472,8 +472,7 @@ def test_laplacian():
     npt.assert_allclose(grads.kernel, jnp.zeros_like(grads.kernel))
 
 
-
-def test_motion():
+def test_motion_blur():
     x = jnp.arange(1, 17).reshape(1, 4, 4) + 0.0
     y = sk.image.MotionBlur2D(3, angle=30, direction=0.5)(x)
     ytrue = jnp.array(
@@ -491,3 +490,21 @@ def test_motion():
     layer = sk.tree_mask(sk.image.MotionBlur2D(3))
     grads = jax.grad(lambda node: jnp.sum(node(x)))(layer)
     npt.assert_allclose(grads.kernel, jnp.zeros_like(grads.kernel))
+
+
+def test_median_blur():
+    # against kornia
+    x = jnp.arange(1, 26).reshape(1, 5, 5) + 0.0
+    y = sk.image.MedianBlur2D(3)(x)
+    z = jnp.array(
+        [
+            [
+                [0.0, 2.0, 3.0, 4.0, 0.0],
+                [2.0, 7.0, 8.0, 9.0, 5.0],
+                [7.0, 12.0, 13.0, 14.0, 10.0],
+                [12.0, 17.0, 18.0, 19.0, 15.0],
+                [0.0, 17.0, 18.0, 19.0, 0.0],
+            ]
+        ]
+    )
+    npt.assert_allclose(y, z, atol=1e-6)

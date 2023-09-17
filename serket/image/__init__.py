@@ -34,6 +34,7 @@ from serket._src.image.filter import (
     Filter2D,
     GaussianBlur2D,
     Laplacian2D,
+    MedianBlur2D,
     MotionBlur2D,
     UnsharpMask2D,
 )
@@ -75,6 +76,7 @@ __all__ = [
     "Filter2D",
     "GaussianBlur2D",
     "Laplacian2D",
+    "MedianBlur2D",
     "MotionBlur2D",
     "UnsharpMask2D",
     # geometric
