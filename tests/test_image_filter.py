@@ -193,7 +193,7 @@ def test_jigsaw():
     x = jnp.arange(1, 17).reshape(1, 4, 4)
     layer = sk.image.JigSaw2D(2)
     npt.assert_allclose(
-        layer(x),
+        layer(x, key=jax.random.PRNGKey(0)),
         jnp.array([[[9, 10, 3, 4], [13, 14, 7, 8], [11, 12, 1, 2], [15, 16, 5, 6]]]),
     )
 
@@ -222,7 +222,7 @@ def test_rotate():
 
     layer = sk.image.RandomRotate2D((90, 90))
 
-    npt.assert_allclose(layer(x), rot)
+    npt.assert_allclose(layer(x, key=jax.random.PRNGKey(0)), rot)
     npt.assert_allclose(sk.tree_eval(layer)(x), x)
 
 
@@ -244,7 +244,7 @@ def test_horizontal_shear():
     npt.assert_allclose(layer(x), shear)
 
     layer = sk.image.RandomHorizontalShear2D((45, 45))
-    npt.assert_allclose(layer(x), shear)
+    npt.assert_allclose(layer(x, key=jax.random.PRNGKey(0)), shear)
 
     npt.assert_allclose(sk.tree_eval(layer)(x), x)
 
@@ -267,7 +267,7 @@ def test_vertical_shear():
     npt.assert_allclose(layer(x), shear)
 
     layer = sk.image.RandomVerticalShear2D((45, 45))
-    npt.assert_allclose(layer(x), shear)
+    npt.assert_allclose(layer(x, key=jax.random.PRNGKey(0)), shear)
 
     npt.assert_allclose(sk.tree_eval(layer)(x), x)
 

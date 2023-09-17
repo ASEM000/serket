@@ -23,7 +23,7 @@ from typing import Any, Callable, Sequence, Tuple, TypeVar, Union
 import jax
 import jax.numpy as jnp
 import numpy as np
-from typing_extensions import ParamSpec
+from typing_extensions import Annotated, ParamSpec
 
 import serket as sk
 
@@ -33,6 +33,8 @@ PaddingType = Union[str, int, Sequence[int], Sequence[Tuple[int, int]]]
 DilationType = Union[int, Sequence[int]]
 P = ParamSpec("P")
 T = TypeVar("T")
+HWArray = Annotated[jax.Array, "HW"]
+CHWArray = Annotated[jax.Array, "CHW"]
 
 
 @ft.lru_cache(maxsize=None)
