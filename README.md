@@ -103,12 +103,12 @@ net = sk.tree_unmask(net)
 | Group | Layers |
 | ------------- | ------------- |
 |Filter        | - `{FFT,_}{Avg,Box,Gaussian,Motion}Blur2D` <br> - `{FFT,_}{UnsharpMask}2D` <br> - `{FFT,_}Laplacian2D` <br> - `MedianBlur2D` |
-|Augment| - `AdjustContrast2D`, <br> - `JigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`, <br> - `Posterize2D`,`Solarize2D`  |
-|Geometric| - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D`|
+|Augment| - `{Adjust,Random}Contrast2D`, <br> - `JigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`, <br> - `Posterize2D`,`Solarize2D`  |
+|Geometric| - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D` |
 
 
 ### 🌈 Cluster package: `serket.cluster`
 
 | Group | Layers |
 | ------------- | ------------- |
-| Clustering        | - `Kmeans`| 
+| Clustering        | - `KMeans`| 
