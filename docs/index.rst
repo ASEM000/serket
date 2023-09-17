@@ -77,7 +77,6 @@ Install from github::
     
     train_examples
     notebooks/evaluation
-    notebooks/lazy_initialization
     notebooks/mixed_precision
     notebooks/checkpointing
     notebooks/regularization
