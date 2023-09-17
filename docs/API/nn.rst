@@ -9,7 +9,6 @@
    :maxdepth: 2
    :caption: API Documentation
    
-   ../notebooks/layers_overview
    activations
    attention
    containers

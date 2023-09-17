@@ -90,6 +90,7 @@ Install from github::
     :caption: 📃 API Documentation
     :maxdepth: 1
     
+    notebooks/layers_overview
     API/common
     API/cluster
     API/nn
