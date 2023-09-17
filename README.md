@@ -81,3 +81,34 @@ for j, (xb, yb) in enumerate(zip(x_train, y_train)):
 
 net = sk.tree_unmask(net)
 ```
+
+## _Layers catalog_
+
+### 🧠 Neural network package: `serket.nn`
+| Group | Layers |
+| ------------- | ------------- |
+|Attention| - `MultiHeadAttention`|
+| Containers| - `Sequential`, `RandomApply`, `RandomChoice` |
+| Convolution | - `{FFT,_}Conv{1D,2D,3D}` <br> - `{FFT,_}Conv{1D,2D,3D}Transpose` <br> - `Depthwise{FFT,_}Conv{1D,2D,3D}`  <br> - `Separable{FFT,_}Conv{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local` |
+|Dropout|- `Dropout`<br> - `Dropout{1D,2D,3D}` <br> - `GeneralDropout` <br> - `RandomCutout{1D,2D}` |
+| Linear  | - `Linear`, `Multilinear`, `GeneralLinear`, `Identity`  |
+|Densely connected| - `FNN` , <br> - `MLP` _compile time_ optimized |
+|Normalization|- `{Layer,Instance,Group,Batch}Norm`|
+|Pooling|- `{Avg,Max,LP}Pool{1D,2D,3D}`  <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `Adaptive{Avg,Max}Pool{1D,2D,3D}` |
+|Reshaping|- `Flatten`, `Unflatten`, <br> - `Resize{1D,2D,3D}` <br> - `Upsample{1D,2D,3D}` <br> - `Pad{1D,2D,3D}` <br> - `{Random,_}Crop{1D,2D,3D}` <br> - `RandomZoom{1D,2D,3D}` |
+|Recurrent cells| - `{SimpleRNN,LSTM,GRU,Dense}Cell` <br> - `{Conv,FFTConv}{LSTM,GRU}{1D,2D,3D}Cell` |
+|Activations|- `Adaptive{LeakyReLU,ReLU,Sigmoid,Tanh}`,<br> - `CeLU`,`ELU`,`GELU`,`GLU`<br>- `Hard{SILU,Shrink,Sigmoid,Swish,Tanh}`, <br> - `Soft{Plus,Sign,Shrink}` <br> - `LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> - `ReLU`,`ReLU6`,`SeLU`,`Sigmoid` <br> - `Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake`|
+
+### 🖼️ Image package: `serket.image`
+| Group | Layers |
+| ------------- | ------------- |
+|Filter        | - `{FFT,_}{Avg,Box,Gaussian,Motion}Blur2D` <br> - `{FFT,_}{UnsharpMask}2D` <br> - `{FFT,_}Laplacian2D` <br> - `MedianBlur2D` |
+|Augment| - `AdjustContrast2D`, <br> - `JigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`, <br> - `Posterize2D`,`Solarize2D`  |
+|Geometric| - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D`|
+
+
+## 🌈 Cluster package: `serket.cluster`
+
+| Group | Layers |
+| ------------- | ------------- |
+| Clustering        | - `Kmeans`| 
