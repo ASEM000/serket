@@ -84,7 +84,7 @@ net = sk.tree_unmask(net)
 
 <details>
 
-<summary>  Layers catalog </summary>
+<summary>  🧱 Layers catalog </summary>
 
 ### 🧠 Neural network package: `serket.nn`
 | Group | Layers |
