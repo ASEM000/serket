@@ -37,13 +37,13 @@ def dropout_nd(
     key: jr.KeyArray,
     x: jax.Array,
     drop_rate,
-    drop_axes: Sequence[int] | Literal["..."] = ...,
+    drop_axes: Sequence[int] | None = None
 ) -> jax.Array:
     """Drop some elements of the input array."""
     # drop_axes = None means dropout is applied to all axes
     shape = (
         x.shape
-        if drop_axes is ...
+        if drop_axes is None
         else (x.shape[i] if i in drop_axes else 1 for i in range(x.ndim))
     )
 
@@ -132,33 +132,7 @@ def random_cutout_2d(
 
 
 @sk.autoinit
-class GeneralDropout(sk.TreeClass):
-    """Drop some elements of the input array.
-
-    Args:
-        drop_rate: probability of an element to be zeroed. Default: 0.5
-        drop_axes: axes along which dropout is applied. default: ``...`` which means
-            dropout is applied to all axes.
-    """
-
-    drop_rate: float = sk.field(
-        default=0.5,
-        on_setattr=[IsInstance(float), Range(0, 1)],
-        on_getattr=[jax.lax.stop_gradient_p.bind],
-    )
-    drop_axes: tuple[int, ...] | Literal["..."] = ...
-
-    def __call__(self, x, *, key: jr.KeyArray):
-        """Drop some elements of the input array.
-
-        Args:
-            x: input array
-            key: random number generator key
-        """
-        return dropout_nd(key, x, self.drop_rate, self.drop_axes)
-
-
-class Dropout(GeneralDropout):
+class Dropout(sk.TreeClass):
     """Drop some elements of the input array.
 
     Randomly zeroes some of the elements of the input array with
@@ -166,6 +140,7 @@ class Dropout(GeneralDropout):
 
     Args:
         drop_rate: probability of an element to be zeroed. Default: 0.5
+        drop_axes: axes to apply dropout. Default: None to apply to all axes.
 
     Example:
         >>> import serket as sk
@@ -199,8 +174,21 @@ class Dropout(GeneralDropout):
         )
     """
 
-    def __init__(self, drop_rate: float = 0.5):
-        super().__init__(drop_rate=drop_rate, drop_axes=...)
+    drop_rate: float = sk.field(
+        default=0.5,
+        on_setattr=[IsInstance(float), Range(0, 1)],
+        on_getattr=[jax.lax.stop_gradient_p.bind],
+    )
+    drop_axes: tuple[int, ...] | None = None
+
+    def __call__(self, x, *, key: jr.KeyArray):
+        """Drop some elements of the input array.
+
+        Args:
+            x: input array
+            key: random number generator key
+        """
+        return dropout_nd(key, x, self.drop_rate, self.drop_axes)
 
 
 @sk.autoinit
@@ -467,7 +455,7 @@ class RandomCutout2D(sk.TreeClass):
 
 @tree_eval.def_eval(RandomCutout1D)
 @tree_eval.def_eval(RandomCutout2D)
-@tree_eval.def_eval(GeneralDropout)
 @tree_eval.def_eval(DropoutND)
+@tree_eval.def_eval(Dropout)
 def _(_) -> sk.nn.Identity:
     return sk.nn.Identity()

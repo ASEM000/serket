@@ -69,7 +69,7 @@ def calculate_attention(
     v_heads: jax.Array,
     mask: jax.Array,
     num_heads: int,
-    drop_layer: sk.nn.GeneralDropout,
+    drop_layer: sk.nn.Dropout,
     key: jr.KeyArray,
 ) -> jax.Array:
     """Applies multi-head attention to the given inputs.
@@ -176,7 +176,7 @@ class MultiHeadAttention(sk.TreeClass):
         >>> import serket as sk
         >>> layer = sk.nn.MultiHeadAttention(1, 1, key=jr.PRNGKey(0))
         >>> print(repr(layer.dropout))
-        GeneralDropout(drop_rate=0.0, drop_axes=Ellipsis)
+        Dropout(drop_rate=0.0, drop_axes=None)
         >>> print(repr(sk.tree_eval(layer).dropout))
         Identity()
 
@@ -247,8 +247,8 @@ class MultiHeadAttention(sk.TreeClass):
         qkey, kkey, vkey, okey = jr.split(key, 4)
 
         self.num_heads = num_heads
-        drop_axes = (-1, -2) if drop_broadcast else ...
-        self.dropout = sk.nn.GeneralDropout(drop_rate, drop_axes)
+        drop_axes = (-1, -2) if drop_broadcast else None
+        self.dropout = sk.nn.Dropout(drop_rate, drop_axes)
 
         self.q_projection = sk.nn.Linear(
             in_features=q_features,

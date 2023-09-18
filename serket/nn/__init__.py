@@ -80,7 +80,6 @@ from serket._src.nn.dropout import (
     Dropout1D,
     Dropout2D,
     Dropout3D,
-    GeneralDropout,
     RandomCutout1D,
     RandomCutout2D,
 )
@@ -233,7 +232,6 @@ __all__ = [
     "Dropout1D",
     "Dropout2D",
     "Dropout3D",
-    "GeneralDropout",
     "RandomCutout1D",
     "RandomCutout2D",
     # linear

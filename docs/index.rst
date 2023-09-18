@@ -79,6 +79,7 @@ Install from github::
     notebooks/evaluation
     notebooks/mixed_precision
     notebooks/checkpointing
+    notebooks/convert_tensorflow
     notebooks/regularization
     notebooks/subset_training
 
