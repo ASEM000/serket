@@ -903,6 +903,17 @@ def test_seperable_conv2d():
 
     npt.assert_allclose(y, layer_jax(x), atol=1e-5)
 
+    layer_jax = sk.nn.SeparableFFTConv2D(
+        in_features=2,
+        out_features=1,
+        kernel_size=3,
+        depth_multiplier=2,
+        key=jax.random.PRNGKey(0),
+    )
+    layer_jax = layer_jax.at["depthwise_weight"].set(w1)
+    layer_jax = layer_jax.at["pointwise_weight"].set(w2)
+    npt.assert_allclose(y, layer_jax(x), atol=1e-5)
+
 
 def test_conv1d_local():
     x = jnp.ones((2, 28))

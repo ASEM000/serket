@@ -157,7 +157,8 @@ def separable_convolution_nd(
     pointwise_weight: Annotated[jax.Array, "OIHW"],
     pointwise_bias: jax.Array | None,
     strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
+    depthwise_padding: tuple[tuple[int, int], ...],
+    pointwise_padding: tuple[tuple[int, int], ...],
 ) -> jax.Array:
     """Seprable convolution function wrapping ``jax.lax.conv_general_dilated``.
 
@@ -176,7 +177,7 @@ def separable_convolution_nd(
         weight=depthwise_weight,
         bias=None,
         strides=strides,
-        padding=padding,
+        padding=depthwise_padding,
     )
 
     return convolution_nd(
@@ -184,7 +185,7 @@ def separable_convolution_nd(
         weight=pointwise_weight,
         bias=pointwise_bias,
         strides=strides,
-        padding=padding,
+        padding=pointwise_padding,
         dilation=(1,) * (array.ndim - 1),
         groups=1,
     )
@@ -196,7 +197,8 @@ def separable_fft_convolution_nd(
     pointwise_weight: Annotated[jax.Array, "OIHW"],
     pointwise_bias: jax.Array | None,
     strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
+    depthwise_padding: tuple[tuple[int, int], ...],
+    pointwise_padding: tuple[tuple[int, int], ...],
 ) -> jax.Array:
     """Separable convolution function using
 
@@ -210,12 +212,13 @@ def separable_fft_convolution_nd(
         padding: padding of the input before convolution accepts tuple of integers
             for different padding in each dimension.
     """
+
     array = depthwise_fft_convolution_nd(
         array=array,
         weight=depthwise_weight,
         bias=None,
         strides=strides,
-        padding=padding,
+        padding=depthwise_padding,
     )
 
     return fft_convolution_nd(
@@ -223,7 +226,7 @@ def separable_fft_convolution_nd(
         weight=pointwise_weight,
         bias=pointwise_bias,
         strides=strides,
-        padding=padding,
+        padding=pointwise_padding,
         dilation=(1,) * (array.ndim - 1),
         groups=1,
     )
@@ -2473,8 +2476,8 @@ class SeparableConvNDBase(sk.TreeClass):
         weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)
         args = (key, weight_shape, dtype)
         self.depthwise_weight = resolve_init(self.depthwise_weight_init)(*args)
-        kernel_size = canonicalize(1, self.spatial_ndim)
         # pointwise initialization
+        kernel_size = canonicalize(1, self.spatial_ndim)
         weight_shape = (out_features, depth_multiplier * in_features, *kernel_size)
         args = (key, weight_shape, dtype)
         self.pointwise_weight = resolve_init(self.pointwise_bias_init)(*args)
@@ -2491,13 +2494,27 @@ class SeparableConvNDBase(sk.TreeClass):
 class SeparableConvND(SeparableConvNDBase):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array) -> jax.Array:
+        depthwise_padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
+            padding=self.padding,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+        )
+        pointwise_padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
+            padding=self.padding,
+            kernel_size=canonicalize(1, self.spatial_ndim),
+            strides=self.strides,
+        )
+
         return separable_convolution_nd(
             array=x,
             depthwise_weight=self.depthwise_weight,
             pointwise_weight=self.pointwise_weight,
             pointwise_bias=self.pointwise_bias,
             strides=self.strides,
-            padding=self.padding,
+            depthwise_padding=depthwise_padding,
+            pointwise_padding=pointwise_padding,
         )
 
 
@@ -2774,13 +2791,28 @@ class SeparableConv3D(SeparableConvND):
 class SeparableFFTConvND(SeparableConvNDBase):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, x: jax.Array) -> jax.Array:
-        return separable_convolution_nd(
+        depthwise_padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
+            padding=self.padding,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+        )
+
+        pointwise_padding = delayed_canonicalize_padding(
+            in_dim=x.shape[1:],
+            padding=self.padding,
+            kernel_size=canonicalize(1, self.spatial_ndim),
+            strides=self.strides,
+        )
+
+        return separable_fft_convolution_nd(
             array=x,
             depthwise_weight=self.depthwise_weight,
             pointwise_weight=self.pointwise_weight,
             pointwise_bias=self.pointwise_bias,
             strides=self.strides,
-            padding=self.padding,
+            depthwise_padding=depthwise_padding,
+            pointwise_padding=pointwise_padding,
         )
 
 
