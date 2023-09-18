@@ -82,7 +82,9 @@ for j, (xb, yb) in enumerate(zip(x_train, y_train)):
 net = sk.tree_unmask(net)
 ```
 
-## _Layers catalog_
+<details>
+
+<summary>  Layers catalog </summary>
 
 ### 🧠 Neural network package: `serket.nn`
 | Group | Layers |
@@ -112,3 +114,6 @@ net = sk.tree_unmask(net)
 | Group | Layers |
 | ------------- | ------------- |
 | Clustering        | - `KMeans`| 
+
+
+</details>

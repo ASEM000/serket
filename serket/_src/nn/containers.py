@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Any
+from typing import Any, Callable, Sequence
 
 import jax
 import jax.random as jr
@@ -25,26 +25,30 @@ from serket._src.custom_transform import tree_eval
 from serket._src.utils import Range
 
 
-def sequential(
-    layers: tuple[Any, ...],
-    array: jax.Array,
-    *,
-    key: jr.KeyArray,
-):
+@ft.singledispatch
+def sequential(key: jr.KeyArray, _, __):
+    raise TypeError(f"Invalid {type(key)=}")
+
+
+@sequential.register(type(None))
+def _(key: None, layers: Sequence[Callable[..., Any]], array: Any):
+    del key  # no key is supplied then no random number generation is needed
+    return ft.reduce(lambda x, layer: layer(x), layers, array)
+
+
+@sequential.register(jax.Array)
+def _(key: jr.KeyArray, layers: Sequence[Callable[..., Any]], array: Any):
     """Applies a sequence of layers to an array.
 
     Args:
-        layers: a tuple of layers a callable accepting an array and returning an
-            array with an optional ``key`` argument for random number generation.
+        key: a random number generator key supplied to the layers.
+        layers: a tuple callables.
         array: an array to apply the layers to.
-        key: a random number generator key.
-
     """
     for key, layer in zip(jr.split(key, len(layers)), layers):
         try:
             array = layer(array, key=key)
         except TypeError:
-            # key argument is not supported
             array = layer(array)
     return array
 
@@ -72,8 +76,8 @@ class Sequential(sk.TreeClass):
     def __init__(self, *layers):
         self.layers = layers
 
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        return sequential(layers=self.layers, array=x, key=key)
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray | None = None) -> jax.Array:
+        return sequential(key, self.layers, x)
 
     @ft.singledispatchmethod
     def __getitem__(self, key):
@@ -99,12 +103,11 @@ class Sequential(sk.TreeClass):
 
 
 def random_apply(
-    layer,
-    array: jax.Array,
-    *,
-    rate: float,
     key: jr.KeyArray,
-) -> jax.Array:
+    layer: Sequence[Callable[..., Any]],
+    array: Any,
+    rate: float,
+):
     """Randomly applies a layer with probability ``rate``.
 
     Args:
@@ -143,22 +146,14 @@ class RandomApply(sk.TreeClass):
     """
 
     layer: Any
-    rate: float = sk.field(
-        default=0.5,
-        on_setattr=[Range(0, 1)],
-        on_getattr=[jax.lax.stop_gradient_p.bind],
-    )
+    rate: float = sk.field(default=0.5, on_setattr=[Range(0, 1)])
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        return random_apply(layer=self.layer, array=x, rate=self.rate, key=key)
+        rate = jax.lax.stop_gradient(self.rate)
+        return random_apply(key, self.layer, x, rate)
 
 
-def random_choice(
-    layers: tuple[Any, ...],
-    array: jax.Array,
-    *,
-    key: jr.KeyArray,
-) -> jax.Array:
+def random_choice(key: jr.KeyArray, layers: tuple[Callable[..., Any], ...], array: Any):
     """Randomly selects one of the given layers/functions.
 
     Args:
@@ -205,7 +200,7 @@ class RandomChoice(sk.TreeClass):
         self.layers = layers
 
     def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        return random_choice(layers=self.layers, array=x, key=key)
+        return random_choice(key, self.layers, x)
 
 
 @tree_eval.def_eval(RandomChoice)

@@ -12,27 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import jax
+
 import serket as sk
 
 
 def test_sequential():
     model = sk.nn.Sequential(lambda x: x)
-    assert model(1.0) == 1.0
+    assert model(1.0, key=jax.random.PRNGKey(0)) == 1.0
 
     model = sk.nn.Sequential(lambda x: x + 1, lambda x: x + 1)
-    assert model(1.0) == 3.0
+    assert model(1.0, key=jax.random.PRNGKey(0)) == 3.0
 
     model = sk.nn.Sequential(lambda x, key: x)
-    assert model(1.0) == 1.0
+    assert model(1.0, key=jax.random.PRNGKey(0)) == 1.0
 
 
 def test_sequential_getitem():
     model = sk.nn.Sequential(lambda x: x + 1, lambda x: x + 1)
     assert model[0](1.0) == 2.0
     assert model[1](1.0) == 2.0
-    assert model[0:1](1.0) == 2.0
-    assert model[1:2](1.0) == 2.0
-    assert model[0:2](1.0) == 3.0
+    assert model[0:1](1.0, key=jax.random.PRNGKey(0)) == 2.0
+    assert model[1:2](1.0, key=jax.random.PRNGKey(0)) == 2.0
+    assert model[0:2](1.0, key=jax.random.PRNGKey(0)) == 3.0
 
 
 def test_sequential_len():

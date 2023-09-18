@@ -227,7 +227,7 @@ class EvalKMeans(sk.TreeClass):
 
 
 @tree_state.def_state(KMeans)
-def init_kmeans(layer: KMeans, array: jax.Array) -> KMeansState:
+def _(layer: KMeans, array: jax.Array) -> KMeansState:
     centers = jr.uniform(
         key=jr.PRNGKey(0),
         minval=array.min(),
@@ -239,5 +239,5 @@ def init_kmeans(layer: KMeans, array: jax.Array) -> KMeansState:
 
 
 @tree_eval.def_eval(KMeans)
-def eval_kmeans(_: KMeans) -> EvalKMeans:
+def _(_: KMeans) -> EvalKMeans:
     return EvalKMeans()

@@ -70,7 +70,7 @@ def calculate_attention(
     mask: jax.Array,
     num_heads: int,
     drop_layer: sk.nn.GeneralDropout,
-    key: jr.KeyArray = jr.PRNGKey(0),
+    key: jr.KeyArray,
 ) -> jax.Array:
     """Applies multi-head attention to the given inputs.
 
@@ -79,6 +79,8 @@ def calculate_attention(
         k_array: Key array. [..., k_length, k_features]
         mask: Mask array. [..., num_heads, q_length, kv_length]
         num_heads: Number of attention heads.
+        drop_layer: Dropout layer.
+        key: Key for the random number generator.
 
     Reference:
         - https://github.com/keras-team/keras/blob/v2.13.1/keras/layers/attention/multi_head_attention.py
@@ -121,6 +123,7 @@ class MultiHeadAttention(sk.TreeClass):
         k_features: Number of features for the key.
         v_features: Number of features for the value.
         out_features: Number of features for the output.
+        key: Key for the random number generator.
         q_weight_init: Initializer for the query weight. Defaults to ``glorot_uniform``.
         q_bias_init: Initializer for the query bias. Defaults to zeros. use
             ``None`` to disable bias.
@@ -136,7 +139,6 @@ class MultiHeadAttention(sk.TreeClass):
         drop_rate: Dropout rate. defaults to 0.0.
         drop_broadcast: Whether to broadcast the dropout mask across the batch
             dimension and the heads dimension. Defaults to False.
-        key: Key for the random number generator.
 
     Example:
         >>> import serket as sk
@@ -160,6 +162,7 @@ class MultiHeadAttention(sk.TreeClass):
         ...    k_features,
         ...    v_features,
         ...    drop_rate=0.0,
+        ...    key=jr.PRNGKey(0),
         ... )
         >>> print(layer(q, k, v, mask=mask, key=jr.PRNGKey(0)).shape)
         (3, 4, 4)
@@ -171,7 +174,7 @@ class MultiHeadAttention(sk.TreeClass):
           instantiated layer.
 
         >>> import serket as sk
-        >>> layer = sk.nn.MultiHeadAttention(1, 1)
+        >>> layer = sk.nn.MultiHeadAttention(1, 1, key=jr.PRNGKey(0))
         >>> print(repr(layer.dropout))
         GeneralDropout(drop_rate=0.0, drop_axes=Ellipsis)
         >>> print(repr(sk.tree_eval(layer).dropout))
@@ -191,9 +194,9 @@ class MultiHeadAttention(sk.TreeClass):
         >>> q = jr.uniform(jr.PRNGKey(0), (3, 2, 6))
         >>> k = jr.uniform(jr.PRNGKey(1), (3, 2, 6))
         >>> v = jr.uniform(jr.PRNGKey(2), (3, 2, 6))
-        >>> lazy_layer = sk.nn.MultiHeadAttention(2, None)
-        >>> _, materialized_layer = lazy_layer.at["__call__"](q, k, v)
-        >>> materialized_layer(q, k, v).shape
+        >>> lazy_layer = sk.nn.MultiHeadAttention(2, None, key=jr.PRNGKey(0))
+        >>> _, materialized_layer = lazy_layer.at["__call__"](q, k, v, key=jr.PRNGKey(0))
+        >>> materialized_layer(q, k, v, key=jr.PRNGKey(0)).shape
         (3, 2, 6)
 
     Reference:
@@ -212,6 +215,7 @@ class MultiHeadAttention(sk.TreeClass):
         v_features: int | None = None,
         out_features: int | None = None,
         *,
+        key: jr.KeyArray,
         q_weight_init: InitType = "glorot_uniform",
         q_bias_init: InitType = "zeros",
         k_weight_init: InitType = "glorot_uniform",
@@ -222,7 +226,6 @@ class MultiHeadAttention(sk.TreeClass):
         out_bias_init: InitType = "zeros",
         drop_rate: float = 0.0,
         drop_broadcast: bool = False,
-        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         k_features = q_features if k_features is None else k_features
         v_features = q_features if v_features is None else v_features
@@ -287,7 +290,7 @@ class MultiHeadAttention(sk.TreeClass):
         v_array: Annotated[jax.Array, "..., kv_length, v_features"],
         mask: Annotated[jax.Array, "..., num_heads, q_length, kv_length"] | None = None,
         *,
-        key: jr.KeyArray = jr.PRNGKey(0),
+        key: jr.KeyArray,
     ) -> Annotated[jax.Array, "..., q_length, out_features"]:
         """Applies multi-head attention to the given inputs.
 
@@ -296,7 +299,7 @@ class MultiHeadAttention(sk.TreeClass):
             k_array: Key array. [..., kv_length, k_features]
             v_array: Value array. [..., kv_length, v_features]
             mask: Mask array. [..., num_heads, q_length, kv_length]
-            key: Key for the random number generator.
+            key: Key for the random number generator used for dropout.
         """
 
         # [..., q_length, q_features] -> [..., q_length, head_features*num_heads]

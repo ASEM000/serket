@@ -43,9 +43,9 @@ def horizontal_shear_2d(image: HWArray, angle: float) -> HWArray:
 
 
 def random_horizontal_shear_2d(
+    key: jr.KeyArray,
     image: jax.Array,
     angle_range: tuple[float, float],
-    key: jr.KeyArray,
 ) -> jax.Array:
     """shear rows by an angle in degrees"""
     minval, maxval = angle_range
@@ -64,9 +64,9 @@ def vertical_shear_2d(
 
 
 def random_vertical_shear_2d(
+    key: jr.KeyArray,
     image: HWArray,
     angle_range: tuple[float, float],
-    key: jr.KeyArray,
 ) -> HWArray:
     """shear cols by an angle in degrees"""
     minval, maxval = angle_range
@@ -82,9 +82,9 @@ def rotate_2d(image: HWArray, angle: float) -> HWArray:
 
 
 def random_rotate_2d(
+    key: jr.KeyArray,
     image: HWArray,
     angle_range: tuple[float, float],
-    key: jr.KeyArray,
 ) -> HWArray:
     minval, maxval = angle_range
     angle = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
@@ -105,8 +105,8 @@ def perspective_transform_2d(image: HWArray, coeffs: jax.Array) -> HWArray:
 
 
 def random_perspective_2d(
-    image: HWArray,
     key: jr.KeyArray,
+    image: HWArray,
     scale: float,
 ) -> HWArray:
     """Applies a random perspective transform to a channel-first image"""
@@ -139,13 +139,13 @@ def vertical_translate_2d(image: HWArray, shift: int) -> HWArray:
     return image
 
 
-def random_horizontal_translate_2d(image: HWArray, key: jr.KeyArray) -> HWArray:
+def random_horizontal_translate_2d(key: jr.KeyArray, image: HWArray) -> HWArray:
     _, w = image.shape
     shift = jr.randint(key, shape=(), minval=-w, maxval=w)
     return horizontal_translate_2d(image, shift)
 
 
-def random_vertical_translate_2d(image: HWArray, key: jr.KeyArray) -> HWArray:
+def random_vertical_translate_2d(key: jr.KeyArray, image: HWArray) -> HWArray:
     h, _ = image.shape
     shift = jr.randint(key, shape=(), minval=-h, maxval=h)
     return vertical_translate_2d(image, shift)
@@ -232,7 +232,7 @@ class RandomRotate2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
         angle_range = jax.lax.stop_gradient(self.angle_range)
-        return jax.vmap(random_rotate_2d, in_axes=(0, None, None))(x, angle_range, key)
+        return jax.vmap(random_rotate_2d, in_axes=(None, 0, None))(key, x, angle_range)
 
     @property
     def spatial_ndim(self) -> int:
@@ -320,8 +320,8 @@ class RandomHorizontalShear2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
         angle = jax.lax.stop_gradient(self.angle_range)
-        in_axes = (0, None, None)
-        return jax.vmap(random_horizontal_shear_2d, in_axes=in_axes)(x, angle, key)
+        in_axes = (None, 0, None)
+        return jax.vmap(random_horizontal_shear_2d, in_axes=in_axes)(key, x, angle)
 
     @property
     def spatial_ndim(self) -> int:
@@ -409,8 +409,8 @@ class RandomVerticalShear2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
         angle = jax.lax.stop_gradient(self.angle_range)
-        in_axes = (0, None, None)
-        return jax.vmap(random_vertical_shear_2d, in_axes=in_axes)(x, angle, key)
+        in_axes = (None, 0, None)
+        return jax.vmap(random_vertical_shear_2d, in_axes=in_axes)(key, x, angle)
 
     @property
     def spatial_ndim(self) -> int:
@@ -522,7 +522,7 @@ class RandomPerspective2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
         scale = jax.lax.stop_gradient(self.scale)
-        return jax.vmap(random_perspective_2d, in_axes=(0, None, None))(x, key, scale)
+        return jax.vmap(random_perspective_2d, in_axes=(None, 0, None))(key, x, scale)
 
     @property
     def spatial_ndim(self) -> int:
@@ -626,7 +626,7 @@ class RandomHorizontalTranslate2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
-        return jax.vmap(random_horizontal_translate_2d, in_axes=(0, None))(x, key)
+        return jax.vmap(random_horizontal_translate_2d, in_axes=(None, 0))(key, x)
 
     @property
     def spatial_ndim(self) -> int:
@@ -665,7 +665,7 @@ class RandomVerticalTranslate2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray = jr.PRNGKey(0)) -> CHWArray:
-        return jax.vmap(random_vertical_translate_2d, in_axes=(0, None))(x, key)
+        return jax.vmap(random_vertical_translate_2d, in_axes=(None, 0))(key, x)
 
     @property
     def spatial_ndim(self) -> int:
@@ -742,5 +742,5 @@ class VerticalFlip2D(sk.TreeClass):
 @tree_eval.def_eval(RandomPerspective2D)
 @tree_eval.def_eval(RandomHorizontalTranslate2D)
 @tree_eval.def_eval(RandomVerticalTranslate2D)
-def random_image_transform(_):
+def _(_):
     return Identity()

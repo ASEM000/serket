@@ -25,7 +25,9 @@ os.environ["KERAS_BACKEND"] = "jax"
 
 
 def test_layer_norm():
-    layer = sk.nn.LayerNorm((5, 2), bias_init=None, weight_init=None)
+    layer = sk.nn.LayerNorm(
+        (5, 2), bias_init=None, weight_init=None, key=jax.random.PRNGKey(0)
+    )
 
     x = jnp.array(
         [
@@ -97,11 +99,13 @@ def test_instance_norm():
         ]
     )
 
-    layer = sk.nn.InstanceNorm(in_features=3)
+    layer = sk.nn.InstanceNorm(in_features=3, key=jax.random.PRNGKey(0))
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
-    layer = sk.nn.InstanceNorm(in_features=3, weight_init=None, bias_init=None)
+    layer = sk.nn.InstanceNorm(
+        in_features=3, weight_init=None, bias_init=None, key=jax.random.PRNGKey(0)
+    )
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
@@ -201,18 +205,18 @@ def test_group_norm():
         ]
     )
 
-    layer = sk.nn.GroupNorm(in_features=6, groups=2)
+    layer = sk.nn.GroupNorm(in_features=6, groups=2, key=jax.random.PRNGKey(0))
 
     npt.assert_allclose(layer(x), y, atol=1e-5)
 
     with pytest.raises(ValueError):
-        layer = sk.nn.GroupNorm(in_features=6, groups=4)
+        layer = sk.nn.GroupNorm(in_features=6, groups=4, key=jax.random.PRNGKey(0))
 
     with pytest.raises(ValueError):
-        layer = sk.nn.GroupNorm(in_features=0, groups=1)
+        layer = sk.nn.GroupNorm(in_features=0, groups=1, key=jax.random.PRNGKey(0))
 
     with pytest.raises(ValueError):
-        layer = sk.nn.GroupNorm(in_features=-1, groups=0)
+        layer = sk.nn.GroupNorm(in_features=-1, groups=0, key=jax.random.PRNGKey(0))
 
 
 @pytest.mark.parametrize(
@@ -247,6 +251,7 @@ def test_batchnorm(axis, axis_name):
         bias_init=None,
         weight_init=None,
         axis_name=axis_name,
+        key=jax.random.PRNGKey(0),
     )
     state = sk.tree_state(bn_sk)
     x_sk = mat_jax((5, 10, 7, 8))

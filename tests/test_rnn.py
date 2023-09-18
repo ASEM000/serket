@@ -64,6 +64,7 @@
 # reverse_cell = reverse_cell.at["hidden_to_hidden.bias"].set(b_hidden_to_hidden_reverse)
 
 
+import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
@@ -112,6 +113,7 @@ def test_vanilla_rnn():
         in_features=in_features,
         hidden_features=hidden_features,
         recurrent_weight_init="glorot_uniform",
+        key=jax.random.PRNGKey(0),
     )
 
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
@@ -227,6 +229,7 @@ def test_lstm():
         in_features=in_features,
         hidden_features=hidden_features,
         recurrent_weight_init="glorot_uniform",
+        key=jax.random.PRNGKey(0),
     )
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
     cell = cell.at["in_hidden_to_hidden_weight"].set(w_combined)
@@ -325,6 +328,7 @@ def test_lstm():
         in_features=in_features,
         hidden_features=hidden_features,
         recurrent_weight_init="glorot_uniform",
+        key=jax.random.PRNGKey(0),
     )
 
     w_combined = jnp.concatenate([w_in_to_hidden, w_hidden_to_hidden], axis=0)
@@ -355,6 +359,7 @@ def test_lstm():
         in_features=in_features,
         hidden_features=hidden_features,
         recurrent_weight_init="glorot_uniform",
+        key=jax.random.PRNGKey(0),
     )
 
     sk_layer = ScanRNN(cell, return_sequences=True)
@@ -416,7 +421,7 @@ def test_gru():
         ]
     )
 
-    cell = GRUCell(1, 3, bias_init=None)
+    cell = GRUCell(1, 3, bias_init=None, key=jax.random.PRNGKey(0))
     cell = cell.at["in_to_hidden"]["weight"].set(w1)
     cell = cell.at["hidden_to_hidden"]["weight"].set(w2)
     y = jnp.array([[-0.00142191, 0.11011646, 0.1613554]])
@@ -581,6 +586,7 @@ def test_conv_lstm1d(layer):
         weight_init="glorot_uniform",
         recurrent_weight_init="glorot_uniform",
         bias_init="zeros",
+        key=jax.random.PRNGKey(0),
     )
 
     cell = cell.at["in_to_hidden"]["weight"].set(w_in_to_hidden)
@@ -610,6 +616,7 @@ def test_conv_lstm1d(layer):
         weight_init="glorot_uniform",
         recurrent_weight_init="glorot_uniform",
         bias_init="zeros",
+        key=jax.random.PRNGKey(0),
     )
 
     res_sk = ScanRNN(cell, return_sequences=False)(x)
@@ -623,8 +630,8 @@ def test_bilstm():
     hidden_features = 2
 
     x = jnp.ones([time_steps, in_features])
-    cell = LSTMCell(in_features, hidden_features)
-    reverse_cell = LSTMCell(in_features, hidden_features)
+    cell = LSTMCell(in_features, hidden_features, key=jax.random.PRNGKey(0))
+    reverse_cell = LSTMCell(in_features, hidden_features, key=jax.random.PRNGKey(0))
 
     w_in_to_hidden = jnp.array(
         [
@@ -774,9 +781,12 @@ def test_rnn_error():
         ScanRNN(None)
 
     with pytest.raises(TypeError):
-        ScanRNN(SimpleRNNCell(3, 3), 1)
+        ScanRNN(SimpleRNNCell(3, 3, key=jax.random.PRNGKey(0)), 1)
 
-    layer = ScanRNN(SimpleRNNCell(3, 3), SimpleRNNCell(3, 3))
+    layer = ScanRNN(
+        SimpleRNNCell(3, 3, key=jax.random.PRNGKey(0)),
+        SimpleRNNCell(3, 3, key=jax.random.PRNGKey(0)),
+    )
     with pytest.raises(TypeError):
         layer(jnp.ones([10, 3]), 1.0)
 
@@ -791,6 +801,7 @@ def test_dense_cell():
         act=lambda x: x,
         weight_init="ones",
         bias_init=None,
+        key=jax.random.PRNGKey(0),
     )
     x = jnp.ones([10, 10])
     res = ScanRNN(cell)(x)

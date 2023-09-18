@@ -174,13 +174,13 @@ class BaseConvND(sk.TreeClass):
         out_features: int,
         kernel_size: KernelSizeType,
         *,
+        key: jr.KeyArray,
         strides: StridesType = 1,
         padding: PaddingType = "same",
         dilation: DilationType = 1,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
@@ -292,6 +292,7 @@ class Conv1D(ConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -312,14 +313,14 @@ class Conv1D(ConvND):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.Conv1D(in_features=1, out_features=2, kernel_size=3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.Conv1D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5))
         >>> print(layer(x).shape)
@@ -387,6 +388,7 @@ class Conv2D(ConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -407,14 +409,14 @@ class Conv2D(ConvND):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.Conv2D(in_features=1, out_features=2, kernel_size=3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.Conv2D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5))
         >>> print(layer(x).shape)
@@ -482,6 +484,7 @@ class Conv3D(ConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -502,14 +505,14 @@ class Conv3D(ConvND):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.Conv3D(in_features=1, out_features=2, kernel_size=3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.Conv3D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5, 5))
         >>> print(layer(x).shape)
@@ -638,6 +641,7 @@ class FFTConv1D(FFTConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -658,14 +662,14 @@ class FFTConv1D(FFTConvND):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.FFTConv1D(in_features=1, out_features=2, kernel_size=3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.FFTConv1D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5))
         >>> print(layer(x).shape)
@@ -733,6 +737,7 @@ class FFTConv2D(FFTConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -753,14 +758,14 @@ class FFTConv2D(FFTConvND):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.FFTConv2D(in_features=1, out_features=2, kernel_size=3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.FFTConv2D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5))
         >>> print(layer(x).shape)
@@ -828,6 +833,7 @@ class FFTConv3D(FFTConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -848,14 +854,14 @@ class FFTConv3D(FFTConvND):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.FFTConv3D(in_features=1, out_features=2, kernel_size=3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.FFTConv3D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5, 5))
         >>> print(layer(x).shape)
@@ -910,6 +916,7 @@ class BaseConvNDTranspose(sk.TreeClass):
         out_features: int,
         kernel_size: KernelSizeType,
         *,
+        key: jr.KeyArray,
         strides: StridesType = 1,
         padding: PaddingType = "same",
         out_padding: int = 0,
@@ -917,7 +924,6 @@ class BaseConvNDTranspose(sk.TreeClass):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         groups: int = 1,
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
@@ -1035,6 +1041,7 @@ class Conv1DTranspose(ConvNDTranspose):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -1059,14 +1066,14 @@ class Conv1DTranspose(ConvNDTranspose):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.Conv1DTranspose(1, 2, 3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.Conv1DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5))
         >>> print(layer(x).shape)
@@ -1134,6 +1141,7 @@ class Conv2DTranspose(ConvNDTranspose):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -1158,14 +1166,13 @@ class Conv2DTranspose(ConvNDTranspose):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.Conv2DTranspose(1, 2, 3)
+        >>> layer = sk.nn.Conv2DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5))
         >>> print(layer(x).shape)
@@ -1233,6 +1240,7 @@ class Conv3DTranspose(ConvNDTranspose):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -1257,14 +1265,14 @@ class Conv3DTranspose(ConvNDTranspose):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.Conv3DTranspose(1, 2, 3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.Conv3DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5, 5))
         >>> print(layer(x).shape)
@@ -1398,6 +1406,7 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -1422,14 +1431,14 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.FFTConv1DTranspose(1, 2, 3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.FFTConv1DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5))
         >>> print(layer(x).shape)
@@ -1497,6 +1506,7 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -1521,14 +1531,14 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.FFTConv2DTranspose(1, 2, 3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.FFTConv2DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5))
         >>> print(layer(x).shape)
@@ -1596,6 +1606,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -1620,14 +1631,14 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.FFTConv3DTranspose(1, 2, 3)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.FFTConv3DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
         >>> x = jnp.ones((1, 5, 5, 5))
         >>> print(layer(x).shape)
@@ -1681,12 +1692,12 @@ class BaseDepthwiseConvND(sk.TreeClass):
         in_features: int | None,
         kernel_size: KernelSizeType,
         *,
+        key: jr.KeyArray,
         depth_multiplier: int = 1,
         strides: int = 1,
         padding: PaddingType = "same",
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
@@ -1785,6 +1796,7 @@ class DepthwiseConv1D(DepthwiseConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -1799,13 +1811,13 @@ class DepthwiseConv1D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.DepthwiseConv1D(3, 3, depth_multiplier=2, strides=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.DepthwiseConv1D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
 
@@ -1867,6 +1879,7 @@ class DepthwiseConv2D(DepthwiseConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -1881,13 +1894,13 @@ class DepthwiseConv2D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.DepthwiseConv2D(3, 3, depth_multiplier=2, strides=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.DepthwiseConv2D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
 
@@ -1964,13 +1977,13 @@ class DepthwiseConv3D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.DepthwiseConv3D(3, 3, depth_multiplier=2, strides=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.DepthwiseConv3D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
 
@@ -2086,6 +2099,7 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -2100,13 +2114,13 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.DepthwiseFFTConv1D(3, 3, depth_multiplier=2, strides=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.DepthwiseFFTConv1D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
 
@@ -2168,6 +2182,7 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -2182,13 +2197,13 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.DepthwiseFFTConv2D(3, 3, depth_multiplier=2, strides=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.DepthwiseFFTConv2D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
 
@@ -2250,6 +2265,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -2264,13 +2280,13 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.DepthwiseFFTConv3D(3, 3, depth_multiplier=2, strides=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.DepthwiseFFTConv3D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
 
@@ -2319,13 +2335,13 @@ class SeparableConvND(sk.TreeClass):
         out_features: int,
         kernel_size: KernelSizeType,
         *,
+        key: jr.KeyArray,
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "same",
         depthwise_weight_init: InitType = "glorot_uniform",
         pointwise_weight_init: InitType = "glorot_uniform",
         pointwise_bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
     ):
         self.depthwise_conv = self._depthwise_convolution_layer(
             in_features=in_features,
@@ -2402,6 +2418,7 @@ class SeparableConv1D(SeparableConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -2416,13 +2433,13 @@ class SeparableConv1D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.SeparableConv1D(3, 3, 3, depth_multiplier=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.SeparableConv1D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
@@ -2499,6 +2516,7 @@ class SeparableConv2D(SeparableConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -2513,13 +2531,13 @@ class SeparableConv2D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.SeparableConv2D(3, 3, 3, depth_multiplier=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.SeparableConv2D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
@@ -2596,6 +2614,7 @@ class SeparableConv3D(SeparableConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -2610,13 +2629,13 @@ class SeparableConv3D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.SeparableConv3D(3, 3, 3, depth_multiplier=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.SeparableConv3D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
@@ -2693,6 +2712,7 @@ class SeparableFFTConv1D(SeparableConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -2707,13 +2727,13 @@ class SeparableFFTConv1D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.SeparableFFTConv1D(3, 3, 3, depth_multiplier=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.SeparableFFTConv1D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
@@ -2790,6 +2810,7 @@ class SeparableFFTConv2D(SeparableConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -2804,13 +2825,13 @@ class SeparableFFTConv2D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.SeparableFFTConv2D(3, 3, 3, depth_multiplier=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.SeparableFFTConv2D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
@@ -2887,6 +2908,7 @@ class SeparableFFTConv3D(SeparableConvND):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -2901,13 +2923,13 @@ class SeparableFFTConv3D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.SeparableFFTConv3D(3, 3, 3, depth_multiplier=2)
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.SeparableFFTConv3D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
@@ -3008,13 +3030,13 @@ class ConvNDLocal(sk.TreeClass):
         out_features: int,
         kernel_size: KernelSizeType,
         *,
+        key: jr.KeyArray,
         in_size: Sequence[int],
         strides: StridesType = 1,
         padding: PaddingType = "same",
         dilation: DilationType = 1,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
@@ -3101,6 +3123,7 @@ class Conv1DLocal(ConvNDLocal):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -3115,13 +3138,13 @@ class Conv1DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.Conv1DLocal(3, 3, 3, in_size=(32,))
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.Conv1DLocal(3, 3, 3, in_size=(32,), key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
@@ -3191,6 +3214,7 @@ class Conv2DLocal(ConvNDLocal):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -3205,13 +3229,13 @@ class Conv2DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.Conv2DLocal(3, 3, 3, in_size=(32, 32))
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.Conv2DLocal(3, 3, 3, in_size=(32, 32), key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
@@ -3281,6 +3305,7 @@ class Conv3DLocal(ConvNDLocal):
             - single integer for same stride in all dimensions.
             - sequence of integers for different strides in each dimension.
 
+        key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
             - single integer for same padding in all dimensions.
@@ -3295,13 +3320,13 @@ class Conv3DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> l1 = sk.nn.Conv3DLocal(3, 3, 3, in_size=(32, 32, 32))
+        >>> import jax.random as jr
+        >>> l1 = sk.nn.Conv3DLocal(3, 3, 3, in_size=(32, 32, 32), key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 

@@ -22,7 +22,7 @@ import serket as sk
 
 
 def test_embed():
-    table = sk.nn.Embedding(10, 3)
+    table = sk.nn.Embedding(10, 3, key=jax.random.PRNGKey(0))
     x = jnp.array([9])
     npt.assert_allclose(table(x), jnp.array([[0.43810904, 0.35078037, 0.13254273]]))
 
@@ -49,6 +49,7 @@ def test_linear():
         act="relu",
         weight_init="he_normal",
         bias_init="ones",
+        key=jax.random.PRNGKey(0),
     )
 
     nn = sk.tree_mask(nn)
@@ -58,13 +59,13 @@ def test_linear():
 
     npt.assert_allclose(jnp.array(4.933563e-05), value, atol=1e-3)
 
-    layer = sk.nn.Linear(1, 1, bias_init=None)
+    layer = sk.nn.Linear(1, 1, bias_init=None, key=jax.random.PRNGKey(0))
     w = jnp.array([[-0.31568417]])
     layer = layer.at["weight"].set(w)
     y = jnp.array([[-0.31568417]])
     npt.assert_allclose(layer(jnp.array([[1.0]])), y)
 
-    layer = sk.nn.Linear(None, 1, bias_init="zeros")
+    layer = sk.nn.Linear(None, 1, bias_init="zeros", key=jax.random.PRNGKey(0))
     _, layer = layer.at["__call__"](jnp.ones([100, 2]))
     assert layer.in_features == (2,)
 
@@ -86,12 +87,12 @@ def test_bilinear():
     x1 = jnp.array([[-0.7676, -0.7205, -0.0586]])
     x2 = jnp.array([[0.4600, -0.2508, 0.0115, 0.6155]])
     y = jnp.array([[-0.3001916, 0.28336674]])
-    layer = sk.nn.Multilinear((3, 4), 2, bias_init=None)
+    layer = sk.nn.Multilinear((3, 4), 2, bias_init=None, key=jax.random.PRNGKey(0))
     layer = layer.at["weight"].set(W)
 
     npt.assert_allclose(y, layer(x1, x2), atol=1e-4)
 
-    layer = sk.nn.Multilinear((3, 4), 2, bias_init="zeros")
+    layer = sk.nn.Multilinear((3, 4), 2, bias_init="zeros", key=jax.random.PRNGKey(0))
     layer = layer.at["weight"].set(W)
 
     npt.assert_allclose(y, layer(x1, x2), atol=1e-4)
@@ -105,62 +106,93 @@ def test_identity():
 
 def test_multi_linear():
     x = jnp.linspace(0, 1, 100)[:, None]
-    lhs = sk.nn.Linear(1, 10)
-    rhs = sk.nn.Multilinear((1,), 10)
+    lhs = sk.nn.Linear(1, 10, key=jax.random.PRNGKey(0))
+    rhs = sk.nn.Multilinear((1,), 10, key=jax.random.PRNGKey(0))
     npt.assert_allclose(lhs(x), rhs(x), atol=1e-4)
 
     with pytest.raises(ValueError):
-        sk.nn.Multilinear([1, 2], 10)
+        sk.nn.Multilinear([1, 2], 10, key=jax.random.PRNGKey(0))
 
 
 def test_general_linear():
     x = jnp.ones([1, 2, 3, 4])
-    layer = sk.nn.GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
+    layer = sk.nn.GeneralLinear(
+        in_features=(1, 2), in_axes=(0, 1), out_features=5, key=jax.random.PRNGKey(0)
+    )
     assert layer(x).shape == (3, 4, 5)
 
     x = jnp.ones([1, 2, 3, 4])
-    layer = sk.nn.GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
+    layer = sk.nn.GeneralLinear(
+        in_features=(1, 2), in_axes=(0, 1), out_features=5, key=jax.random.PRNGKey(0)
+    )
     assert layer(x).shape == (3, 4, 5)
 
     x = jnp.ones([1, 2, 3, 4])
-    layer = sk.nn.GeneralLinear(in_features=(1, 2), in_axes=(0, -3), out_features=5)
+    layer = sk.nn.GeneralLinear(
+        in_features=(1, 2), in_axes=(0, -3), out_features=5, key=jax.random.PRNGKey(0)
+    )
     assert layer(x).shape == (3, 4, 5)
 
     x = jnp.ones([1, 2, 3, 4])
-    layer = sk.nn.GeneralLinear(in_features=(2, 3), in_axes=(1, -2), out_features=5)
+    layer = sk.nn.GeneralLinear(
+        in_features=(2, 3), in_axes=(1, -2), out_features=5, key=jax.random.PRNGKey(0)
+    )
     assert layer(x).shape == (1, 4, 5)
 
     with pytest.raises(TypeError):
-        sk.nn.GeneralLinear(in_features=2, in_axes=(1, -2), out_features=5)
+        sk.nn.GeneralLinear(
+            in_features=2, in_axes=(1, -2), out_features=5, key=jax.random.PRNGKey(0)
+        )
 
     with pytest.raises(TypeError):
-        sk.nn.GeneralLinear(in_features=(2, 3), in_axes=2, out_features=5)
+        sk.nn.GeneralLinear(
+            in_features=(2, 3), in_axes=2, out_features=5, key=jax.random.PRNGKey(0)
+        )
 
     with pytest.raises(ValueError):
-        sk.nn.GeneralLinear(in_features=(1,), in_axes=(0, -3), out_features=5)
+        sk.nn.GeneralLinear(
+            in_features=(1,), in_axes=(0, -3), out_features=5, key=jax.random.PRNGKey(0)
+        )
 
     with pytest.raises(TypeError):
-        sk.nn.GeneralLinear(in_features=(1, "s"), in_axes=(0, -3), out_features=5)
+        sk.nn.GeneralLinear(
+            in_features=(1, "s"),
+            in_axes=(0, -3),
+            out_features=5,
+            key=jax.random.PRNGKey(0),
+        )
 
     with pytest.raises(TypeError):
-        sk.nn.GeneralLinear(in_features=(1, 2), in_axes=(0, "s"), out_features=3)
+        sk.nn.GeneralLinear(
+            in_features=(1, 2),
+            in_axes=(0, "s"),
+            out_features=3,
+            key=jax.random.PRNGKey(0),
+        )
 
 
 def test_mlp():
     x = jnp.linspace(0, 1, 100)[:, None]
 
-    fnn = sk.nn.FNN([1, 2, 1])
-    mlp = sk.nn.MLP(in_features=1, out_features=1, hidden_size=2, num_hidden_layers=1)
+    fnn = sk.nn.FNN([1, 2, 1], key=jax.random.PRNGKey(0))
+    mlp = sk.nn.MLP(
+        in_features=1,
+        out_features=1,
+        hidden_size=2,
+        num_hidden_layers=1,
+        key=jax.random.PRNGKey(0),
+    )
 
     npt.assert_allclose(fnn(x), mlp(x), atol=1e-4)
 
-    fnn = sk.nn.FNN([1, 2, 2, 1], act=("relu", "tanh"))
+    fnn = sk.nn.FNN([1, 2, 2, 1], act=("relu", "tanh"), key=jax.random.PRNGKey(0))
     mlp = sk.nn.MLP(
         in_features=1,
         out_features=1,
         hidden_size=2,
         num_hidden_layers=2,
         act=("relu", "tanh"),
+        key=jax.random.PRNGKey(0),
     )
 
     npt.assert_allclose(fnn(x), mlp(x), atol=1e-4)
@@ -172,6 +204,7 @@ def test_mlp():
         num_hidden_layers=2,
         act=("relu", "tanh"),
         bias_init=None,
+        key=jax.random.PRNGKey(0),
     )
 
     x = jax.random.normal(jax.random.PRNGKey(0), (10, 1))
@@ -196,7 +229,7 @@ def test_mlp():
 
 
 def test_fnn():
-    layer = sk.nn.FNN([1, 2, 3, 4], act=("relu", "tanh"))
+    layer = sk.nn.FNN([1, 2, 3, 4], act=("relu", "tanh"), key=jax.random.PRNGKey(0))
     assert layer.act[0] is not layer.act[1]
     assert layer.layers[0] is not layer.layers[1]
 
@@ -211,7 +244,9 @@ def test_fnn():
     y = jax.nn.relu(y)
     y = y @ w3
 
-    l1 = sk.nn.FNN([1, 5, 3, 4], act=("tanh", "relu"), bias_init=None)
+    l1 = sk.nn.FNN(
+        [1, 5, 3, 4], act=("tanh", "relu"), bias_init=None, key=jax.random.PRNGKey(0)
+    )
     l1 = l1.at["layers"][0]["weight"].set(w1)
     l1 = l1.at["layers"][1]["weight"].set(w2)
     l1 = l1.at["layers"][2]["weight"].set(w3)
@@ -220,7 +255,9 @@ def test_fnn():
 
 
 def test_fnn_mlp():
-    fnn = sk.nn.FNN(layers=[2, 4, 4, 2], act="relu")
-    mlp = sk.nn.MLP(2, 2, hidden_size=4, num_hidden_layers=2, act="relu")
+    fnn = sk.nn.FNN(layers=[2, 4, 4, 2], act="relu", key=jax.random.PRNGKey(0))
+    mlp = sk.nn.MLP(
+        2, 2, hidden_size=4, num_hidden_layers=2, act="relu", key=jax.random.PRNGKey(0)
+    )
     x = jax.random.normal(jax.random.PRNGKey(0), (10, 2))
     npt.assert_allclose(fnn(x), mlp(x))

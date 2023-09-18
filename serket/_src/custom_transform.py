@@ -80,7 +80,8 @@ def tree_state(tree: T, array: jax.Array | None = None) -> T:
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> tree = [1, 2, sk.nn.BatchNorm(5)]
+        >>> import jax.random as jr
+        >>> tree = [1, 2, sk.nn.BatchNorm(5, key=jr.PRNGKey(0))]
         >>> sk.tree_state(tree)
         [NoState(), NoState(), BatchNormState(
           running_mean=f32[5](μ=0.00, σ=0.00, ∈[0.00,0.00]),

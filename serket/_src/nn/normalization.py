@@ -105,12 +105,12 @@ class LayerNorm(sk.TreeClass):
 
     Args:
         normalized_shape: the shape of the input to be normalized.
+        key: a random key for initialization.
         eps: a value added to the denominator for numerical stability.
         weight_init: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
-        key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Note:
@@ -141,10 +141,10 @@ class LayerNorm(sk.TreeClass):
         self,
         normalized_shape: int | tuple[int, ...] | None,
         *,
+        key: jr.KeyArray,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         self.normalized_shape = (
@@ -160,7 +160,7 @@ class LayerNorm(sk.TreeClass):
         self.beta = resolve_init(bias_init)(key, self.normalized_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return layer_norm(
             x,
             gamma=self.gamma,
@@ -194,20 +194,21 @@ class GroupNorm(sk.TreeClass):
 
     Args:
         in_features: the shape of the input to be normalized.
+        key: a random key for initialization.
         groups: number of groups to separate the channels into.
         eps: a value added to the denominator for numerical stability.
         weight_init: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
-        key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> x = jnp.ones((5,10))
-        >>> _, layer = sk.nn.GroupNorm(5, groups=1).at['__call__'](x)
+        >>> _, layer = sk.nn.GroupNorm(5, groups=1, key=jr.PRNGKey(0)).at['__call__'](x)
         >>> layer(x).shape
         (5, 10)
 
@@ -239,11 +240,11 @@ class GroupNorm(sk.TreeClass):
         self,
         in_features,
         *,
+        key: jr.KeyArray,
         groups: int,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
@@ -258,7 +259,7 @@ class GroupNorm(sk.TreeClass):
         self.bias = resolve_init(bias_init)(key, (in_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return group_norm(
             x=x,
             gamma=self.weight,
@@ -277,19 +278,20 @@ class InstanceNorm(GroupNorm):
 
     Args:
         in_features: the shape of the input to be normalized.
+        key: a random key for initialization.
         eps: a value added to the denominator for numerical stability.
         weight_init: a function to initialize the scale. Defaults to ones.
             if None, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
-        key: a random key for initialization. Defaults to jax.random.PRNGKey(0).
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> x = jnp.ones((5,10))
-        >>> _, layer = sk.nn.InstanceNorm(5).at['__call__'](x)
+        >>> _, layer = sk.nn.InstanceNorm(5, key=jr.PRNGKey(0)).at['__call__'](x)
         >>> layer(x).shape
         (5, 10)
 
@@ -319,19 +321,19 @@ class InstanceNorm(GroupNorm):
         self,
         in_features: int,
         *,
+        key: jr.KeyArray,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         super().__init__(
             in_features=in_features,
+            key=key,
             groups=in_features,
             eps=eps,
             weight_init=weight_init,
             bias_init=bias_init,
-            key=key,
             dtype=dtype,
         )
 
@@ -419,6 +421,7 @@ class BatchNorm(sk.TreeClass):
 
     Args:
         in_features: the shape of the input to be normalized.
+        key: a random key to initialize the parameters.
         momentum: the value used for the ``running_mean`` and ``running_var``
             computation. must be a number between ``0`` and ``1``.
         eps: a value added to the denominator for numerical stability.
@@ -428,13 +431,13 @@ class BatchNorm(sk.TreeClass):
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
         axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
-        key: a random key to initialize the parameters.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax
         >>> import serket as sk
-        >>> bn = sk.nn.BatchNorm(10)
+        >>> import jax.random as jr
+        >>> bn = sk.nn.BatchNorm(10, key=jr.PRNGKey(0))
         >>> state = sk.tree_state(bn)
         >>> x = jax.random.uniform(jax.random.PRNGKey(0), shape=(5, 10))
         >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
@@ -443,10 +446,12 @@ class BatchNorm(sk.TreeClass):
         >>> # working with multiple states
         >>> import jax
         >>> import serket as sk
+        >>> import jax.random as jr
+        >>> k1, k2 = jax.random.split(jr.PRNGKey(0))
         >>> @sk.autoinit
         ... class Tree(sk.TreeClass):
-        ...    bn1: sk.nn.BatchNorm = sk.nn.BatchNorm(10)
-        ...    bn2: sk.nn.BatchNorm = sk.nn.BatchNorm(10)
+        ...    bn1: sk.nn.BatchNorm = sk.nn.BatchNorm(10, key=k1)
+        ...    bn2: sk.nn.BatchNorm = sk.nn.BatchNorm(10, key=k2)
         ...    def __call__(self, x, state):
         ...        x, bn1 = self.bn1(x, state.bn1)
         ...        x, bn2 = self.bn2(x, state.bn2)
@@ -470,8 +475,9 @@ class BatchNorm(sk.TreeClass):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> x = jnp.ones((5,10))
-        >>> _, layer = sk.nn.BatchNorm(None).at['__call__'](x)
+        >>> _, layer = sk.nn.BatchNorm(None, key=jr.PRNGKey(0)).at['__call__'](x)
         >>> x, state = jax.vmap(layer)(x)
         >>> x.shape
         (5, 10)
@@ -490,13 +496,13 @@ class BatchNorm(sk.TreeClass):
         self,
         in_features: int,
         *,
+        key: jr.KeyArray,
         momentum: float = 0.99,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
         axis: int = 1,
         axis_name: str | None = None,
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ) -> None:
         self.in_features = in_features
@@ -554,6 +560,7 @@ class EvalNorm(sk.TreeClass):
 
     Args:
         in_features: the shape of the input to be normalized.
+        key: a random key to initialize the parameters.
         momentum: the value used for the ``running_mean`` and ``running_var``
             computation. must be a number between ``0`` and ``1``. this value
             is ignored in evaluation mode, but kept for conversion to
@@ -565,13 +572,13 @@ class EvalNorm(sk.TreeClass):
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
         axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
-        key: a random key to initialize the parameters.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax
         >>> import serket as sk
-        >>> bn = sk.nn.BatchNorm(10)
+        >>> import jax.random as jr
+        >>> bn = sk.nn.BatchNorm(10, key=jr.PRNGKey(0))
         >>> state = sk.tree_state(bn)
         >>> x = jax.random.uniform(jax.random.PRNGKey(0), shape=(5, 10))
         >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
@@ -652,7 +659,7 @@ def _(batchnorm: BatchNorm) -> EvalNorm:
 
 
 @tree_state.def_state(BatchNorm)
-def batchnorm_init_state(
+def _(
     batchnorm: BatchNorm,
     array: jax.Array | None,
 ) -> BatchNormState:

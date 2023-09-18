@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import jax
 import jax.random as jr
 
 import serket as sk
@@ -21,7 +22,7 @@ import serket as sk
 
 def test_sequential_without_key():
     layer = sk.nn.Sequential(lambda x: x + 1, lambda x: x * 2)
-    assert layer(1) == 4
+    assert layer(1, key=jax.random.PRNGKey(0)) == 4
 
 
 def test_sequential_with_key():
@@ -46,4 +47,4 @@ def test_random_choice():
     assert layer(1, key=key) == 2.0
 
     # convert all choices to sequential
-    assert sk.tree_eval(layer)(1) == (1.0 + 2.0) * 2.0
+    assert sk.tree_eval(layer)(1, key=jax.random.PRNGKey(0)) == (1.0 + 2.0) * 2.0

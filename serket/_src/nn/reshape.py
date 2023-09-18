@@ -84,10 +84,10 @@ def zoom_axis(
     return zoom_out(x) if factor < 0 else zoom_in(x)
 
 
-def center_crop_nd(array: jax.Array, sizes: tuple[int, ...])-> jax.Array:
+def center_crop_nd(array: jax.Array, sizes: tuple[int, ...]) -> jax.Array:
     """Crops an array to the given size at the center."""
     shapes = array.shape
-    starts = tuple(max(shape // 2 - size//2, 0) for shape, size in zip(shapes, sizes))
+    starts = tuple(max(shape // 2 - size // 2, 0) for shape, size in zip(shapes, sizes))
     return jax.lax.dynamic_slice(array, starts, sizes)
 
 
@@ -714,10 +714,10 @@ class CenterCropND(sk.TreeClass):
 
 class CenterCrop1D(CenterCropND):
     """Crops a 1D array to the given size at the center.
-    
+
     Args:
         size: The size of the output image. accepts a single int.
-    
+
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -784,5 +784,5 @@ class CenterCrop3D(CenterCropND):
 @tree_eval.def_eval(RandomZoom1D)
 @tree_eval.def_eval(RandomZoom2D)
 @tree_eval.def_eval(RandomZoom3D)
-def random_transform_eval(_) -> Identity:
+def _(_) -> Identity:
     return Identity()
