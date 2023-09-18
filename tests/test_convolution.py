@@ -817,8 +817,8 @@ def test_seperable_conv1d():
         key=jax.random.PRNGKey(0),
     )
 
-    layer = layer.at["depthwise_conv"]["weight"].set(w1)
-    layer = layer.at["pointwise_conv"]["weight"].set(w2)
+    layer = layer.at["depthwise_weight"].set(w1)
+    layer = layer.at["pointwise_weight"].set(w2)
 
     npt.assert_allclose(y, layer(x), atol=1e-5)
 
@@ -898,8 +898,8 @@ def test_seperable_conv2d():
         key=jax.random.PRNGKey(0),
     )
 
-    layer_jax = layer_jax.at["depthwise_conv"]["weight"].set(w1)
-    layer_jax = layer_jax.at["pointwise_conv"]["weight"].set(w2)
+    layer_jax = layer_jax.at["depthwise_weight"].set(w1)
+    layer_jax = layer_jax.at["pointwise_weight"].set(w2)
 
     npt.assert_allclose(y, layer_jax(x), atol=1e-5)
 

@@ -151,6 +151,122 @@ def fft_conv_general_dilated(
     )
 
 
+def separable_convolution_nd(
+    array: jax.Array,
+    depthwise_weight: Annotated[jax.Array, "OIHW"],
+    pointwise_weight: Annotated[jax.Array, "OIHW"],
+    pointwise_bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+) -> jax.Array:
+    """Seprable convolution function wrapping ``jax.lax.conv_general_dilated``.
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        depthwise_weight: depthwise convolutional kernel.
+        pointwise_weight: pointwise convolutional kernel.
+        pointwise_bias: bias for the pointwise convolution.
+        strides: stride of the convolution accepts tuple of integers for different
+            strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+            for different padding in each dimension.
+    """
+    array = depthwise_convolution_nd(
+        array=array,
+        weight=depthwise_weight,
+        bias=None,
+        strides=strides,
+        padding=padding,
+    )
+
+    return convolution_nd(
+        array=array,
+        weight=pointwise_weight,
+        bias=pointwise_bias,
+        strides=strides,
+        padding=padding,
+        dilation=(1,) * (array.ndim - 1),
+        groups=1,
+    )
+
+
+def separable_fft_convolution_nd(
+    array: jax.Array,
+    depthwise_weight: Annotated[jax.Array, "OIHW"],
+    pointwise_weight: Annotated[jax.Array, "OIHW"],
+    pointwise_bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+) -> jax.Array:
+    """Separable convolution function using
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        depthwise_weight: depthwise convolutional kernel.
+        pointwise_weight: pointwise convolutional kernel.
+        pointwise_bias: bias for the pointwise convolution.
+        strides: stride of the convolution accepts tuple of integers for different
+            strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+            for different padding in each dimension.
+    """
+    array = depthwise_fft_convolution_nd(
+        array=array,
+        weight=depthwise_weight,
+        bias=None,
+        strides=strides,
+        padding=padding,
+    )
+
+    return fft_convolution_nd(
+        array=array,
+        weight=pointwise_weight,
+        bias=pointwise_bias,
+        strides=strides,
+        padding=padding,
+        dilation=(1,) * (array.ndim - 1),
+        groups=1,
+    )
+
+
+def local_convolution_nd(
+    array: jax.Array,
+    weight: Annotated[jax.Array, "OIHW"],
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+    dilation: tuple[int, ...],
+    kernel_size: tuple[int, ...],
+) -> jax.Array:
+    """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
+
+    Args:
+        array: input array. shape is (in_features, *spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
+        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+        dilation: dilation of the convolution accepts tuple of integers for different
+            dilation in each dimension.
+        kernel_size: size of the convolutional kernel accepts tuple of integers for
+            different kernel sizes in each dimension.
+    """
+
+    x = jax.lax.conv_general_dilated_local(
+        lhs=jnp.expand_dims(array, 0),
+        rhs=weight,
+        window_strides=strides,
+        padding=padding,
+        filter_shape=kernel_size,
+        rhs_dilation=dilation,
+        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
+    )
+
+    return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
+
+
 def is_lazy_call(instance, *_, **__) -> bool:
     return getattr(instance, "in_features", False) is None
 
@@ -2327,7 +2443,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         return 3
 
 
-class SeparableConvND(sk.TreeClass):
+class SeparableConvNDBase(sk.TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -2342,49 +2458,47 @@ class SeparableConvND(sk.TreeClass):
         depthwise_weight_init: InitType = "glorot_uniform",
         pointwise_weight_init: InitType = "glorot_uniform",
         pointwise_bias_init: InitType = "zeros",
+        dtype: DType = jnp.float32,
     ):
-        self.depthwise_conv = self._depthwise_convolution_layer(
-            in_features=in_features,
-            depth_multiplier=depth_multiplier,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            weight_init=depthwise_weight_init,
-            bias_init=None,  # no bias for lhs
-            key=key,
-        )
+        self.in_features = positive_int_cb(in_features)
+        self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
+        self.depth_multiplier = positive_int_cb(depth_multiplier)
+        self.strides = canonicalize(strides, self.spatial_ndim, "strides")
+        self.padding = padding  # delayed canonicalization
+        self.depthwise_weight_init = depthwise_weight_init
+        self.pointwise_weight_init = pointwise_weight_init
+        self.pointwise_bias_init = pointwise_bias_init
 
-        self.pointwise_conv = self._pointwise_convolution_layer(
-            in_features=in_features * depth_multiplier,
-            out_features=out_features,
-            kernel_size=1,
-            strides=strides,
-            padding=padding,
-            weight_init=pointwise_weight_init,
-            bias_init=pointwise_bias_init,
-            key=key,
-        )
-
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        x = self.depthwise_conv(x)
-        x = self.pointwise_conv(x)
-        return x
+        # depthwise initialization
+        weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)
+        args = (key, weight_shape, dtype)
+        self.depthwise_weight = resolve_init(self.depthwise_weight_init)(*args)
+        kernel_size = canonicalize(1, self.spatial_ndim)
+        # pointwise initialization
+        weight_shape = (out_features, depth_multiplier * in_features, *kernel_size)
+        args = (key, weight_shape, dtype)
+        self.pointwise_weight = resolve_init(self.pointwise_bias_init)(*args)
+        bias_shape = (out_features, *(1,) * self.spatial_ndim)
+        args = (key, bias_shape, dtype)
+        self.pointwise_bias = resolve_init(self.pointwise_bias_init)(*args)
 
     @property
     @abc.abstractmethod
     def spatial_ndim(self) -> int:
         ...
 
-    @property
-    @abc.abstractmethod
-    def _pointwise_convolution_layer(self) -> type[BaseDepthwiseConvND]:
-        ...
 
-    @property
-    @abc.abstractmethod
-    def _depthwise_convolution_layer(self) -> type[BaseDepthwiseConvND]:
-        ...
+class SeparableConvND(SeparableConvNDBase):
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
+    def __call__(self, x: jax.Array) -> jax.Array:
+        return separable_convolution_nd(
+            array=x,
+            depthwise_weight=self.depthwise_weight,
+            pointwise_weight=self.pointwise_weight,
+            pointwise_bias=self.pointwise_bias,
+            strides=self.strides,
+            padding=self.padding,
+        )
 
 
 class SeparableConv1D(SeparableConvND):
@@ -2476,14 +2590,6 @@ class SeparableConv1D(SeparableConvND):
     def spatial_ndim(self) -> int:
         return 1
 
-    @property
-    def _pointwise_convolution_layer(self):
-        return Conv1D
-
-    @property
-    def _depthwise_convolution_layer(self):
-        return DepthwiseConv1D
-
 
 class SeparableConv2D(SeparableConvND):
     """2D Separable convolution layer.
@@ -2573,14 +2679,6 @@ class SeparableConv2D(SeparableConvND):
     @property
     def spatial_ndim(self) -> int:
         return 2
-
-    @property
-    def _pointwise_convolution_layer(self):
-        return Conv2D
-
-    @property
-    def _depthwise_convolution_layer(self):
-        return DepthwiseConv2D
 
 
 class SeparableConv3D(SeparableConvND):
@@ -2672,16 +2770,21 @@ class SeparableConv3D(SeparableConvND):
     def spatial_ndim(self) -> int:
         return 3
 
-    @property
-    def _pointwise_convolution_layer(self):
-        return Conv3D
 
-    @property
-    def _depthwise_convolution_layer(self):
-        return DepthwiseConv3D
+class SeparableFFTConvND(SeparableConvNDBase):
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
+    def __call__(self, x: jax.Array) -> jax.Array:
+        return separable_convolution_nd(
+            array=x,
+            depthwise_weight=self.depthwise_weight,
+            pointwise_weight=self.pointwise_weight,
+            pointwise_bias=self.pointwise_bias,
+            strides=self.strides,
+            padding=self.padding,
+        )
 
 
-class SeparableFFTConv1D(SeparableConvND):
+class SeparableFFTConv1D(SeparableFFTConvND):
     """1D Separable FFT convolution layer.
 
     Separable convolution is a depthwise convolution followed by a pointwise
@@ -2769,14 +2872,6 @@ class SeparableFFTConv1D(SeparableConvND):
     @property
     def spatial_ndim(self) -> int:
         return 1
-
-    @property
-    def _pointwise_convolution_layer(self):
-        return FFTConv1D
-
-    @property
-    def _depthwise_convolution_layer(self):
-        return DepthwiseFFTConv1D
 
 
 class SeparableFFTConv2D(SeparableConvND):
@@ -2868,14 +2963,6 @@ class SeparableFFTConv2D(SeparableConvND):
     def spatial_ndim(self) -> int:
         return 2
 
-    @property
-    def _pointwise_convolution_layer(self):
-        return FFTConv2D
-
-    @property
-    def _depthwise_convolution_layer(self):
-        return DepthwiseFFTConv2D
-
 
 class SeparableFFTConv3D(SeparableConvND):
     """3D Separable FFT convolution layer.
@@ -2966,60 +3053,12 @@ class SeparableFFTConv3D(SeparableConvND):
     def spatial_ndim(self) -> int:
         return 3
 
-    @property
-    def _pointwise_convolution_layer(self):
-        return FFTConv3D
-
-    @property
-    def _depthwise_convolution_layer(self):
-        return DepthwiseFFTConv3D
-
 
 def infer_in_size(_, x, *__, **___) -> tuple[int, ...]:
     return x.shape[1:]
 
 
 updates = {**dict(in_size=infer_in_size), **updates}
-
-
-def local_convolution_nd(
-    array: jax.Array,
-    weight: Annotated[jax.Array, "OIHW"],
-    bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
-    dilation: tuple[int, ...],
-    kernel_size: tuple[int, ...],
-) -> jax.Array:
-    """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
-
-    Args:
-        array: input array. shape is (in_features, *spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
-        strides: stride of the convolution accepts tuple of integers for different
-         strides in each dimension.
-        padding: padding of the input before convolution accepts tuple of integers
-         for different padding in each dimension.
-        dilation: dilation of the convolution accepts tuple of integers for different
-            dilation in each dimension.
-        kernel_size: size of the convolutional kernel accepts tuple of integers for
-            different kernel sizes in each dimension.
-    """
-
-    x = jax.lax.conv_general_dilated_local(
-        lhs=jnp.expand_dims(array, 0),
-        rhs=weight,
-        window_strides=strides,
-        padding=padding,
-        filter_shape=kernel_size,
-        rhs_dilation=dilation,
-        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
-    )
-
-    if bias is None:
-        return jnp.squeeze(x, 0)
-    return jnp.squeeze(x + bias, 0)
 
 
 class ConvNDLocal(sk.TreeClass):
