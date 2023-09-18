@@ -80,6 +80,7 @@ Install from github::
     notebooks/mixed_precision
     notebooks/checkpointing
     notebooks/regularization
+    notebooks/subset_training
 
 
 .. currentmodule:: serket
