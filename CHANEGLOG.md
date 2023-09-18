@@ -36,8 +36,8 @@
 
   ```python
   @sk.tree_state.def_state(sk.nn.SimpleRNNCell)
-  def simple_rnn_init_state(cell: SimpleRNNCell, array: jax.Array  | None) -> SimpleRNNState:
-      del array  # unused
+  def simple_rnn_init_state(cell: SimpleRNNCell, array: jax.Array  | None, **kwargs) -> SimpleRNNState:
+      del kwargs # unused
       return SimpleRNNState(jnp.zeros([cell.hidden_features]))
   ```
 

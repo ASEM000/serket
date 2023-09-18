@@ -1582,30 +1582,23 @@ def _no_accumulate_scan(
 
 
 @tree_state.def_state(SimpleRNNCell)
-def _(
-    cell: SimpleRNNCell,
-    array: jax.Array | None,
-) -> SimpleRNNState:
-    del array
+def _(cell: SimpleRNNCell, **_) -> SimpleRNNState:
     return SimpleRNNState(jnp.zeros([cell.hidden_features]))
 
 
 @tree_state.def_state(DenseCell)
-def _(cell: DenseCell, array: jax.Array | None) -> DenseState:
-    del array
+def _(cell: DenseCell, **_) -> DenseState:
     return DenseState(jnp.empty([cell.hidden_features]))
 
 
 @tree_state.def_state(LSTMCell)
-def _(cell: LSTMCell, array: jax.Array | None) -> LSTMState:
-    del array
+def _(cell: LSTMCell, **_) -> LSTMState:
     shape = [cell.hidden_features]
     return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
 @tree_state.def_state(GRUCell)
-def _(cell: GRUCell, array: jax.Array | None) -> GRUState:
-    del array
+def _(cell: GRUCell, **_) -> GRUState:
     return GRUState(jnp.zeros([cell.hidden_features]))
 
 
@@ -1631,7 +1624,7 @@ def _check_rnn_cell_tree_state_input(cell: RNNCell, array):
 
 
 @tree_state.def_state(ConvLSTMNDCell)
-def _(cell: ConvLSTMNDCell, array: Any) -> ConvLSTMNDState:
+def _(cell: ConvLSTMNDCell, array, **_) -> ConvLSTMNDState:
     array = _check_rnn_cell_tree_state_input(cell, array)
     shape = (cell.hidden_features, *array.shape[1:])
     zeros = jnp.zeros(shape).astype(array.dtype)
@@ -1639,14 +1632,14 @@ def _(cell: ConvLSTMNDCell, array: Any) -> ConvLSTMNDState:
 
 
 @tree_state.def_state(ConvGRUNDCell)
-def _(cell: ConvGRUNDCell, array: Any) -> ConvGRUNDState:
+def _(cell: ConvGRUNDCell, *, array: Any, **_) -> ConvGRUNDState:
     array = _check_rnn_cell_tree_state_input(cell, array)
     shape = (cell.hidden_features, *array.shape[1:])
     return ConvGRUNDState(jnp.zeros(shape).astype(array.dtype))
 
 
 @tree_state.def_state(ScanRNN)
-def _(rnn: ScanRNN, array: jax.Array | None = None) -> RNNState:
+def _(rnn: ScanRNN, array: jax.Array | None = None, **_) -> RNNState:
     # the idea here is to combine the state of the forward and backward cells
     # if backward cell exists. to have single state input for `ScanRNN` and
     # single state output not to complicate the ``__call__`` signature on the

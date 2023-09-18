@@ -152,7 +152,9 @@ class KMeans(sk.TreeClass):
         >>> clusters = 4
         >>> x = jr.uniform(jr.PRNGKey(0), shape=(100, features))
         >>> layer = sk.cluster.KMeans(clusters=clusters, tol=1e-6)
-        >>> labels, state = layer(x)
+        >>> # if initial state is not provided, it is initialized automatically
+        >>> state0 = sk.tree_state(layer, array=x, key=jr.PRNGKey(0))
+        >>> labels, state = layer(x, state0)
         >>> centers = state.centers
         >>> assert labels.shape == (100, 1)
         >>> assert centers.shape == (clusters, features)
@@ -200,8 +202,8 @@ class KMeans(sk.TreeClass):
         Returns:
             A tuple containing the labels and a ``KMeansState``.
         """
-
-        state = sk.tree_state(self, x) if state is None else state
+        if state is None:
+            state = sk.tree_state(self, array=x, key=jr.PRNGKey(0))
         clusters, tol, state = jax.lax.stop_gradient((self.clusters, self.tol, state))
         state = kmeans(x, state, clusters=clusters, tol=tol)
         distances = distances_from_centers(x, state.centers)
@@ -227,9 +229,14 @@ class EvalKMeans(sk.TreeClass):
 
 
 @tree_state.def_state(KMeans)
-def _(layer: KMeans, array: jax.Array) -> KMeansState:
+def _(
+    layer: KMeans,
+    *,
+    array: jax.Array,
+    key: jr.KeyArray**_,
+) -> KMeansState:
     centers = jr.uniform(
-        key=jr.PRNGKey(0),
+        key=key,
         minval=array.min(),
         maxval=array.max(),
         shape=(layer.clusters, array.shape[1]),

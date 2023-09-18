@@ -659,11 +659,7 @@ def _(batchnorm: BatchNorm) -> EvalNorm:
 
 
 @tree_state.def_state(BatchNorm)
-def _(
-    batchnorm: BatchNorm,
-    array: jax.Array | None,
-) -> BatchNormState:
-    del array
+def _(batchnorm: BatchNorm, **_) -> BatchNormState:
     running_mean = jnp.zeros([batchnorm.in_features])
     running_var = jnp.ones([batchnorm.in_features])
     return BatchNormState(running_mean, running_var)
