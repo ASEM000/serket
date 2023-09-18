@@ -109,21 +109,22 @@ class Multilinear(sk.TreeClass):
     Args:
         in_features: number of input features for each input
         out_features: number of output features
+        key: key for the random number generator.
         weight_init: function to initialize the weights. Defaults to ``glorot_uniform``.
         bias_init: function to initialize the bias. Defaults to ``zeros``.
-        key: key for the random number generator. Defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights and bias. defaults to ``jnp.float32``.
 
     Example:
         >>> # Bilinear layer
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> import serket as sk
-        >>> layer = sk.nn.Multilinear((5,6), 7)
+        >>> layer = sk.nn.Multilinear((5,6), 7, key=jr.PRNGKey(0))
         >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
         (1, 7)
 
         >>> # Trilinear layer
-        >>> layer = sk.nn.Multilinear((5,6,7), 8)
+        >>> layer = sk.nn.Multilinear((5,6,7), 8, key=jr.PRNGKey(0))
         >>> layer(jnp.ones((1,5)), jnp.ones((1,6)), jnp.ones((1,7))).shape
         (1, 8)
 
@@ -160,10 +161,10 @@ class Multilinear(sk.TreeClass):
         self,
         in_features: tuple[int, ...] | None,
         out_features: int,
+        key: jr.KeyArray,
         *,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         self.in_features = in_features
@@ -192,15 +193,16 @@ class Linear(Multilinear):
     Args:
         in_features: number of input features
         out_features: number of output features
+        key: key for the random number generator.
         weight_init: function to initialize the weights. Defaults to ``glorot_uniform``.
         bias_init: function to initialize the bias. Defaults to ``zeros``.
-        key: key for the random number generator. Defaults to ``jax.random.PRNGKey(0)``.
         dtype: data type of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> layer = sk.nn.Linear(5, 6)
+        >>> import jax.random as jr
+        >>> layer = sk.nn.Linear(5, 6, key=jr.PRNGKey(0))
         >>> layer(jnp.ones((1,5))).shape
         (1, 6)
 
@@ -236,17 +238,17 @@ class Linear(Multilinear):
         in_features: int | None,
         out_features: int,
         *,
+        key: jr.KeyArray,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         super().__init__(
             in_features if in_features is None else (in_features,),
             out_features,
+            key=key,
             weight_init=weight_init,
             bias_init=bias_init,
-            key=key,
             dtype=dtype,
         )
 
@@ -265,17 +267,18 @@ class GeneralLinear(sk.TreeClass):
     Args:
         in_features: number of input features corresponding to in_axes
         out_features: number of output features
+        key: key to use for initializing the weights.
         in_axes: axes to apply the linear layer to
         weight_init: weight initialization function. Defaults to ``glorot_uniform``.
         bias_init: bias initialization function. Defaults to ``zeros``.
-        key: key to use for initializing the weights. defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax.random as jr
         >>> x = jnp.ones([1, 2, 3, 4])
-        >>> layer = sk.nn.GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5)
+        >>> layer = sk.nn.GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5, key=jr.PRNGKey(0))
         >>> layer(x).shape
         (3, 4, 5)
 
@@ -295,7 +298,8 @@ class GeneralLinear(sk.TreeClass):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> lazy_linear = sk.nn.GeneralLinear(None, 12, in_axes=(0, 2))
+        >>> import jax.random as jr
+        >>> lazy_linear = sk.nn.GeneralLinear(None, 12, in_axes=(0, 2), key=jr.PRNGKey(0))
         >>> _, materialized_linear = lazy_linear.at['__call__'](jnp.ones((10, 5, 4)))
         >>> materialized_linear.in_features
         (10, 4)
@@ -309,10 +313,10 @@ class GeneralLinear(sk.TreeClass):
         in_features: tuple[int, ...] | None,
         out_features: int,
         *,
+        key: jr.KeyArray,
         in_axes: tuple[int, ...],
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         self.in_features = in_features
@@ -347,7 +351,7 @@ class GeneralLinear(sk.TreeClass):
 class Identity(sk.TreeClass):
     """Identity layer. Returns the input."""
 
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, **_) -> jax.Array:
         return x
 
 
@@ -362,19 +366,15 @@ class Embedding(sk.TreeClass):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax.random as jr
         >>> # 10 words in the vocabulary, each word is represented by a 3 dimensional vector
-        >>> table = sk.nn.Embedding(10,3)
+        >>> table = sk.nn.Embedding(10, 3, key=jr.PRNGKey(0))
         >>> # take the last word in the vocab
         >>> table(jnp.array([9]))
         Array([[0.43810904, 0.35078037, 0.13254273]], dtype=float32)
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        key: jr.KeyArray = jr.PRNGKey(0),
-    ):
+    def __init__(self, in_features: int, out_features: int, key: jr.KeyArray):
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.weight = jr.uniform(key, (self.in_features, self.out_features))
@@ -400,18 +400,19 @@ class FNN(sk.TreeClass):
 
     Args:
         layers: Sequence of layer sizes
+        key: Random number generator key.
         act: a single Activation function to be applied between layers or
             ``len(layers)-2`` Sequence of activation functions applied between
             layers. Defaults to ``tanh``.
         weight_init: Weight initializer function. Defaults to ``glorot_uniform``.
         bias_init: Bias initializer function. Defaults to ``zeros``.
-        key: Random key for weight and bias initialization. Defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> fnn = sk.nn.FNN([10, 5, 2])
+        >>> import jax.random as jr
+        >>> fnn = sk.nn.FNN([10, 5, 2], key=jr.PRNGKey(0))
         >>> fnn(jnp.ones((3, 10))).shape
         (3, 2)
 
@@ -444,10 +445,10 @@ class FNN(sk.TreeClass):
         self,
         layers: Sequence[int],
         *,
-        act: ActivationType | tuple[ActivationType, ...] = "tanh",
+        key: jr.KeyArray,
+        act: ActivationType | Sequence[ActivationType] = "tanh",
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         keys = jr.split(key, len(layers) - 1)
@@ -540,18 +541,19 @@ class MLP(sk.TreeClass):
     Args:
         in_features: Number of input features.
         out_features: Number of output features.
+        key: Random number generator key.
         hidden_size: Number of hidden units in each hidden layer.
         num_hidden_layers: Number of hidden layers including the output layer.
         act: Activation function. Defaults to ``tanh``.
         weight_init: Weight initialization function. Defaults to ``glorot_uniform``.
         bias_init: Bias initialization function. Defaults to ``zeros``.
-        key: Random number generator key. Defaults to ``jax.random.PRNGKey(0)``.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> mlp = sk.nn.MLP(1, 2, hidden_size=4, num_hidden_layers=2)
+        >>> import jax.random as jr
+        >>> mlp = sk.nn.MLP(1, 2, hidden_size=4, num_hidden_layers=2, key=jr.PRNGKey(0))
         >>> mlp(jnp.ones((3, 1))).shape
         (3, 2)
 
@@ -572,10 +574,11 @@ class MLP(sk.TreeClass):
 
         >>> import jax
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> import serket as sk
         >>> import numpy.testing as npt
-        >>> fnn = sk.nn.FNN([1] + [4] * 100 + [2])
-        >>> mlp = sk.nn.MLP(1, 2, hidden_size=4, num_hidden_layers=100)
+        >>> fnn = sk.nn.FNN([1] + [4] * 100 + [2], key=jr.PRNGKey(0))
+        >>> mlp = sk.nn.MLP(1, 2, hidden_size=4, num_hidden_layers=100, key=jr.PRNGKey(0))
         >>> x = jnp.ones((100, 1))
         >>> fnn_jaxpr = jax.make_jaxpr(fnn)(x)
         >>> mlp_jaxpr = jax.make_jaxpr(mlp)(x)
@@ -596,7 +599,8 @@ class MLP(sk.TreeClass):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> lazy_mlp = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_size=10)
+        >>> import jax.random as jr
+        >>> lazy_mlp = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_size=10, key=jr.PRNGKey(0))
         >>> _, materialized_mlp = lazy_mlp.at['__call__'](jnp.ones([1, 10]))
         >>> materialized_mlp.layers[0].in_features
         (10,)
@@ -607,12 +611,12 @@ class MLP(sk.TreeClass):
         in_features: int,
         out_features: int,
         *,
+        key: jr.KeyArray,
         hidden_size: int,
         num_hidden_layers: int,
         act: ActivationType | tuple[ActivationType, ...] = "tanh",
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         if hidden_size < 1:
@@ -633,7 +637,7 @@ class MLP(sk.TreeClass):
         def batched_linear(key: jr.KeyArray) -> Batched[Linear]:
             return sk.tree_mask(Linear(hidden_size, hidden_size, key=key, **kwargs))
 
-        self.layers = (
+        self.layers: tuple[Linear, Batched[Linear], Linear] = (
             Linear(in_features, hidden_size, key=keys[0], **kwargs),
             sk.tree_unmask(batched_linear(keys[1:-1])),
             Linear(hidden_size, out_features, key=keys[-1], **kwargs),

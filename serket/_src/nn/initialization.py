@@ -104,11 +104,12 @@ def def_init_entry(key: str, init_func: InitFuncType) -> None:
         >>> import jax
         >>> import jax.numpy as jnp
         >>> import serket as sk
+        >>> import jax.random as jr
         >>> import math
         >>> def my_init_func(key, shape, dtype=jnp.float32):
         ...     return jnp.arange(math.prod(shape), dtype=dtype).reshape(shape)
         >>> sk.def_init_entry("my_init", my_init_func)
-        >>> sk.nn.Linear(1, 5, weight_init="my_init").weight
+        >>> sk.nn.Linear(1, 5, weight_init="my_init", key=jr.PRNGKey(0)).weight
         Array([[0., 1., 2., 3., 4.]], dtype=float32)
     """
     import inspect

@@ -74,9 +74,9 @@ def adjust_contrast_2d(image: HWArray, contrast_factor: float):
 
 
 def random_contrast_2d(
+    key: jr.KeyArray,
     array: HWArray,
     contrast_range: tuple[float, float],
-    key: jr.KeyArray,
 ) -> HWArray:
     """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
     _, _ = array.shape
@@ -96,8 +96,8 @@ def pixelate_2d(image: HWArray, scale: int = 16) -> HWArray:
     return image
 
 
-@ft.partial(jax.jit, inline=True, static_argnums=1)
-def jigsaw_2d(image: HWArray, tiles: int, key: jr.KeyArray) -> HWArray:
+@ft.partial(jax.jit, inline=True, static_argnums=2)
+def jigsaw_2d(key: jr.KeyArray, image: HWArray, tiles: int) -> HWArray:
     """Jigsaw an image by mixing up tiles.
 
     Args:
@@ -232,8 +232,8 @@ class RandomContrast2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
         contrast_range = jax.lax.stop_gradient(self.contrast_range)
-        in_axes = (0, None, None)
-        return jax.vmap(random_contrast_2d, in_axes=in_axes)(x, contrast_range, key)
+        in_axes = (None, 0, None)
+        return jax.vmap(random_contrast_2d, in_axes=in_axes)(key, x, contrast_range)
 
     @property
     def spatial_ndim(self) -> int:
@@ -424,7 +424,7 @@ class JigSaw2D(sk.TreeClass):
             x: channel-first image (CHW)
             key: random key
         """
-        return jax.vmap(jigsaw_2d, in_axes=(0, None, None))(x, self.tiles, key)
+        return jax.vmap(jigsaw_2d, in_axes=(None, 0, None))(key, x, self.tiles)
 
     @property
     def spatial_ndim(self) -> int:
@@ -433,5 +433,5 @@ class JigSaw2D(sk.TreeClass):
 
 @tree_eval.def_eval(RandomContrast2D)
 @tree_eval.def_eval(JigSaw2D)
-def random_image_transform(_):
+def _(_):
     return Identity()

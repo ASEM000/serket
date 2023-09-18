@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import abc
 import functools as ft
-from typing import Literal
+from typing import Literal, Sequence
 
 import jax
 import jax.numpy as jnp
@@ -34,12 +34,12 @@ from serket._src.utils import (
 
 
 def dropout_nd(
+    key: jr.KeyArray,
     x: jax.Array,
     drop_rate,
-    key: jr.KeyArray,
-    drop_axes: tuple[int, ...] | Literal["..."] = ...,
+    drop_axes: Sequence[int] | Literal["..."] = ...,
 ) -> jax.Array:
-    """Drop some elements of the input tensor."""
+    """Drop some elements of the input array."""
     # drop_axes = None means dropout is applied to all axes
     shape = (
         x.shape
@@ -54,9 +54,86 @@ def dropout_nd(
     )
 
 
+def random_cutout_1d(
+    key: jr.KeyArray,
+    x: jax.Array,
+    shape: tuple[int] | int,
+    cutout_count: int,
+    fill_value: int,
+) -> jax.Array:
+    """Random Cutouts for spatial 1D array.
+
+    Args:
+        x: input array
+        shape: shape of the cutout
+        cutout_count: number of holes. Defaults to 1.
+        fill_value: fill_value to fill. Defaults to 0.
+    """
+    size = shape[0] if isinstance(shape, tuple) else shape
+    row_arange = jnp.arange(x.shape[1])
+
+    # split the key into subkeys, in essence, one for each cutout
+    keys = jr.split(key, cutout_count)
+
+    def scan_step(x, key):
+        # define the start and end of the cutout region
+        minval, maxval = 0, x.shape[1] - size
+        # sample the start of the cutout region
+        start = jnp.int32(jr.randint(key, shape=(), minval=minval, maxval=maxval))
+        # define the mask for the cutout region
+        row_mask = (row_arange >= start) & (row_arange < start + size)
+        # apply the mask
+        x = x * ~row_mask[None, :]
+        # return the updated array as carry, skip the scan output
+        return x, None
+
+    x, _ = jax.lax.scan(scan_step, x, keys)
+
+    return jnp.where(fill_value == 0, x, jnp.where(x == 0, fill_value, x))
+
+
+def random_cutout_2d(
+    key: jr.KeyArray,
+    x: jax.Array,
+    shape: tuple[int, int],
+    cutout_count: int,
+    fill_value: int,
+) -> jax.Array:
+    height, width = shape
+    row_arange = jnp.arange(x.shape[1])
+    col_arange = jnp.arange(x.shape[2])
+
+    # split the key into `cutout_count` keys, in essence, one for each cutout
+    keys = jr.split(key, cutout_count)
+
+    def scan_step(x, key):
+        # define a subkey for each dimension
+        ktop, kleft = jr.split(key, 2)
+
+        # for top define the start and end of the cutout region
+        minval, maxval = 0, x.shape[1] - shape[0]
+        # sample the start of the cutout region
+        top = jnp.int32(jr.randint(ktop, shape=(), minval=minval, maxval=maxval))
+
+        # for left define the start and end of the cutout region
+        minval, maxval = 0, x.shape[2] - shape[1]
+        left = jnp.int32(jr.randint(kleft, shape=(), minval=minval, maxval=maxval))
+
+        # define the mask for the cutout region
+        row_mask = (row_arange >= top) & (row_arange < top + height)
+        col_mask = (col_arange >= left) & (col_arange < left + width)
+
+        x = x * (~jnp.outer(row_mask, col_mask))
+        return x, None
+
+    x, _ = jax.lax.scan(scan_step, x, keys)
+
+    return jnp.where(fill_value == 0, x, jnp.where(x == 0, fill_value, x))
+
+
 @sk.autoinit
 class GeneralDropout(sk.TreeClass):
-    """Drop some elements of the input tensor.
+    """Drop some elements of the input array.
 
     Args:
         drop_rate: probability of an element to be zeroed. Default: 0.5
@@ -71,14 +148,20 @@ class GeneralDropout(sk.TreeClass):
     )
     drop_axes: tuple[int, ...] | Literal["..."] = ...
 
-    def __call__(self, x, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        return dropout_nd(x, self.drop_rate, key, self.drop_axes)
+    def __call__(self, x, *, key: jr.KeyArray):
+        """Drop some elements of the input array.
+
+        Args:
+            x: input array
+            key: random number generator key
+        """
+        return dropout_nd(key, x, self.drop_rate, self.drop_axes)
 
 
 class Dropout(GeneralDropout):
-    """Drop some elements of the input tensor.
+    """Drop some elements of the input array.
 
-    Randomly zeroes some of the elements of the input tensor with
+    Randomly zeroes some of the elements of the input array with
     probability ``drop_rate`` using samples from a Bernoulli distribution.
 
     Args:
@@ -87,15 +170,19 @@ class Dropout(GeneralDropout):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> layer = sk.nn.Dropout(0.5)
-        >>> print(layer(jnp.ones([10])))
+        >>> print(layer(jnp.ones([10]), key=jr.PRNGKey(0)))
         [2. 0. 2. 2. 2. 2. 2. 2. 0. 0.]
 
     Note:
         Use :func:`.tree_eval` to turn off dropout during evaluation.
 
         >>> import serket as sk
-        >>> layers = sk.nn.Sequential(sk.nn.Dropout(0.5), sk.nn.Linear(10, 10))
+        >>> import jax.random as jr
+        >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
+        >>> dropout = sk.nn.Dropout(0.5)
+        >>> layers = sk.nn.Sequential(dropout, linear)
         >>> sk.tree_eval(layers)
         Sequential(
           layers=(
@@ -125,9 +212,14 @@ class DropoutND(sk.TreeClass):
     )
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x, *, key=jr.PRNGKey(0)):
-        # drops full feature maps along first axis.
-        return dropout_nd(x, self.drop_rate, key, (0,))
+    def __call__(self, x, *, key):
+        """Drop some elements of the input array.
+
+        Args:
+            x: input array
+            key: random number generator key
+        """
+        return dropout_nd(key, x, self.drop_rate, [0])
 
     @property
     @abc.abstractmethod
@@ -144,15 +236,19 @@ class Dropout1D(DropoutND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> layer = sk.nn.Dropout1D(0.5)
-        >>> print(layer(jnp.ones((1, 10))))
+        >>> print(layer(jnp.ones((1, 10)), key=jr.PRNGKey(0)))
         [[2. 2. 2. 2. 2. 2. 2. 2. 2. 2.]]
 
     Note:
         Use :func:`.tree_eval` to turn off dropout during evaluation.
 
         >>> import serket as sk
-        >>> layers = sk.nn.Sequential(sk.nn.Dropout1D(0.5), sk.nn.Linear(10, 10))
+        >>> import jax.random as jr
+        >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
+        >>> dropout = sk.nn.Dropout1D(0.5)
+        >>> layers = sk.nn.Sequential(dropout, linear)
         >>> sk.tree_eval(layers)
         Sequential(
           layers=(
@@ -187,19 +283,23 @@ class Dropout2D(DropoutND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> layer = sk.nn.Dropout2D(0.5)
-        >>> print(layer(jnp.ones((1, 5, 5))))  # doctest: +NORMALIZE_WHITESPACE
+        >>> print(layer(jnp.ones((1, 5, 5)), key=jr.PRNGKey(0)))
         [[[2. 2. 2. 2. 2.]
-            [2. 2. 2. 2. 2.]
-            [2. 2. 2. 2. 2.]
-            [2. 2. 2. 2. 2.]
-            [2. 2. 2. 2. 2.]]]
+          [2. 2. 2. 2. 2.]
+          [2. 2. 2. 2. 2.]
+          [2. 2. 2. 2. 2.]
+          [2. 2. 2. 2. 2.]]]
 
     Note:
         Use :func:`.tree_eval` to turn off dropout during evaluation.
 
         >>> import serket as sk
-        >>> layers = sk.nn.Sequential(sk.nn.Dropout2D(0.5), sk.nn.Linear(10, 10))
+        >>> import jax.random as jr
+        >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
+        >>> dropout = sk.nn.Dropout2D(0.5)
+        >>> layers = sk.nn.Sequential(dropout, linear)
         >>> sk.tree_eval(layers)
         Sequential(
           layers=(
@@ -234,8 +334,9 @@ class Dropout3D(DropoutND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> layer = sk.nn.Dropout3D(0.5)
-        >>> print(layer(jnp.ones((1, 2, 2, 2))))  # doctest: +NORMALIZE_WHITESPACE
+        >>> print(layer(jnp.ones((1, 2, 2, 2)), key=jr.PRNGKey(0)))  # doctest: +NORMALIZE_WHITESPACE
         [[[[2. 2.]
         [2. 2.]]
         <BLANKLINE>
@@ -246,7 +347,10 @@ class Dropout3D(DropoutND):
         Use :func:`.tree_eval` to turn off dropout during evaluation.
 
         >>> import serket as sk
-        >>> layers = sk.nn.Sequential(sk.nn.Dropout2D(0.5), sk.nn.Linear(10, 10))
+        >>> import jax.random as jr
+        >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
+        >>> dropout = sk.nn.Dropout3D(0.5)
+        >>> layers = sk.nn.Sequential(dropout, linear)
         >>> sk.tree_eval(layers)
         Sequential(
           layers=(
@@ -272,83 +376,6 @@ class Dropout3D(DropoutND):
         return 3
 
 
-def random_cutout_1d(
-    x: jax.Array,
-    shape: tuple[int] | int,
-    cutout_count: int = 1,
-    fill_value: int = 0,
-    key: jr.KeyArray = jr.PRNGKey(0),
-) -> jax.Array:
-    """Random Cutouts for spatial 1D array.
-
-    Args:
-        x: input array
-        shape: shape of the cutout
-        cutout_count: number of holes. Defaults to 1.
-        fill_value: fill_value to fill. Defaults to 0.
-    """
-    size = shape[0] if isinstance(shape, tuple) else shape
-    row_arange = jnp.arange(x.shape[1])
-
-    # split the key into subkeys, in essence, one for each cutout
-    keys = jr.split(key, cutout_count)
-
-    def scan_step(x, key):
-        # define the start and end of the cutout region
-        minval, maxval = 0, x.shape[1] - size
-        # sample the start of the cutout region
-        start = jnp.int32(jr.randint(key, shape=(), minval=minval, maxval=maxval))
-        # define the mask for the cutout region
-        row_mask = (row_arange >= start) & (row_arange < start + size)
-        # apply the mask
-        x = x * ~row_mask[None, :]
-        # return the updated array as carry, skip the scan output
-        return x, None
-
-    x, _ = jax.lax.scan(scan_step, x, keys)
-
-    return jnp.where(fill_value == 0, x, jnp.where(x == 0, fill_value, x))
-
-
-def random_cutout_2d(
-    x: jax.Array,
-    shape: tuple[int, int],
-    cutout_count: int = 1,
-    fill_value: int = 0,
-    key: jr.KeyArray = jr.PRNGKey(0),
-) -> jax.Array:
-    height, width = shape
-    row_arange = jnp.arange(x.shape[1])
-    col_arange = jnp.arange(x.shape[2])
-
-    # split the key into `cutout_count` keys, in essence, one for each cutout
-    keys = jr.split(key, cutout_count)
-
-    def scan_step(x, key):
-        # define a subkey for each dimension
-        ktop, kleft = jr.split(key, 2)
-
-        # for top define the start and end of the cutout region
-        minval, maxval = 0, x.shape[1] - shape[0]
-        # sample the start of the cutout region
-        top = jnp.int32(jr.randint(ktop, shape=(), minval=minval, maxval=maxval))
-
-        # for left define the start and end of the cutout region
-        minval, maxval = 0, x.shape[2] - shape[1]
-        left = jnp.int32(jr.randint(kleft, shape=(), minval=minval, maxval=maxval))
-
-        # define the mask for the cutout region
-        row_mask = (row_arange >= top) & (row_arange < top + height)
-        col_mask = (col_arange >= left) & (col_arange < left + width)
-
-        x = x * (~jnp.outer(row_mask, col_mask))
-        return x, None
-
-    x, _ = jax.lax.scan(scan_step, x, keys)
-
-    return jnp.where(fill_value == 0, x, jnp.where(x == 0, fill_value, x))
-
-
 class RandomCutout1D(sk.TreeClass):
     """Random Cutouts for spatial 1D array.
 
@@ -363,7 +390,8 @@ class RandomCutout1D(sk.TreeClass):
     Examples:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> print(sk.nn.RandomCutout1D(5)(jnp.ones((1, 10)) * 100))
+        >>> import jax.random as jr
+        >>> print(sk.nn.RandomCutout1D(5)(jnp.ones((1, 10)) * 100, key=jr.PRNGKey(0)))
         [[100. 100. 100. 100.   0.   0.   0.   0.   0. 100.]]
 
     Reference:
@@ -382,9 +410,16 @@ class RandomCutout1D(sk.TreeClass):
         self.fill_value = fill_value
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        out = random_cutout_1d(x, self.shape, self.cutout_count, self.fill_value, key)
-        return jax.lax.stop_gradient(out)
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray) -> jax.Array:
+        """Drop some elements of the input array.
+
+        Args:
+            x: input array
+            key: random number generator key
+        """
+        fill_value = jax.lax.stop_gradient(self.fill_value)
+        out = random_cutout_1d(key, x, self.shape, self.cutout_count, fill_value)
+        return out
 
     @property
     def spatial_ndim(self) -> int:
@@ -420,9 +455,10 @@ class RandomCutout2D(sk.TreeClass):
         self.fill_value = fill_value
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
-        out = random_cutout_2d(x, self.shape, self.cutout_count, self.fill_value, key)
-        return jax.lax.stop_gradient(out)
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray) -> jax.Array:
+        fill_value = jax.lax.stop_gradient(self.fill_value)
+        out = random_cutout_2d(key, x, self.shape, self.cutout_count, fill_value)
+        return out
 
     @property
     def spatial_ndim(self) -> int:
@@ -433,5 +469,5 @@ class RandomCutout2D(sk.TreeClass):
 @tree_eval.def_eval(RandomCutout2D)
 @tree_eval.def_eval(GeneralDropout)
 @tree_eval.def_eval(DropoutND)
-def dropout_evaluation(_) -> sk.nn.Identity:
+def _(_) -> sk.nn.Identity:
     return sk.nn.Identity()

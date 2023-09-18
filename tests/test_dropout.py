@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import jax
 import jax.numpy as jnp
 import numpy.testing as npt
 import pytest
@@ -23,10 +24,12 @@ def test_dropout():
     x = jnp.array([1, 2, 3, 4, 5])
 
     layer = sk.nn.Dropout(1.0)
-    npt.assert_allclose(layer(x), jnp.array([0.0, 0.0, 0.0, 0.0, 0.0]))
+    npt.assert_allclose(
+        layer(x, key=jax.random.PRNGKey(0)), jnp.array([0.0, 0.0, 0.0, 0.0, 0.0])
+    )
 
     layer = layer.at["drop_rate"].set(0.0, is_leaf=sk.is_frozen)
-    npt.assert_allclose(layer(x), x)
+    npt.assert_allclose(layer(x, key=jax.random.PRNGKey(0)), x)
 
     with pytest.raises(ValueError):
         sk.nn.Dropout(1.1)
@@ -38,12 +41,12 @@ def test_dropout():
 def test_random_cutout_1d():
     layer = sk.nn.RandomCutout1D(3, 1)
     x = jnp.ones((1, 10))
-    y = layer(x)
+    y = layer(x, key=jax.random.PRNGKey(0))
     npt.assert_equal(y.shape, (1, 10))
 
 
 def test_random_cutout_2d():
     layer = sk.nn.RandomCutout2D((3, 3), 1)
     x = jnp.ones((1, 10, 10))
-    y = layer(x)
+    y = layer(x, key=jax.random.PRNGKey(0))
     npt.assert_equal(y.shape, (1, 10, 10))

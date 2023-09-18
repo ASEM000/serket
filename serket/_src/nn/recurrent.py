@@ -73,12 +73,12 @@ class RNNCell(sk.TreeClass):
     of inputs. for example, check out `SimpleRNNCell`.
     """
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def __call__(self, x: jax.Array, state: RNNState) -> RNNState:
         ...
 
     @property
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def spatial_ndim(self) -> int:
         # 0 for non-spatial, 1 for 1D, 2 for 2D, 3 for 3D etc.
         ...
@@ -95,11 +95,11 @@ class SimpleRNNCell(RNNCell):
         in_features: int,
         hidden_features: int,
         *,
+        key: jr.KeyArray,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         recurrent_weight_init: InitType = "orthogonal",
         act: ActivationType = jax.nn.tanh,
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         """Vanilla RNN cell that defines the update rule for the hidden state
@@ -107,18 +107,21 @@ class SimpleRNNCell(RNNCell):
         Args:
             in_features: the number of input features
             hidden_features: the number of hidden features
+            key: the key to use to initialize the weights
             weight_init: the function to use to initialize the weights
             bias_init: the function to use to initialize the bias
             recurrent_weight_init: the function to use to initialize the recurrent weights
             act: the activation function to use for the hidden state update
-            key: the key to use to initialize the weights
             dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
         Example:
             >>> import serket as sk
             >>> import jax.numpy as jnp
-            >>> cell = sk.nn.SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
-            >>> rnn_state = sk.tree_state(cell)  # 20-dimensional hidden state
+            >>> import jax.random as jr
+            >>> # 10-dimensional input, 20-dimensional hidden state
+            >>> cell = sk.nn.SimpleRNNCell(10, 20, key=jr.PRNGKey(0))
+            >>> # 20-dimensional hidden state
+            >>> rnn_state = sk.tree_state(cell)
             >>> x = jnp.ones((10,)) # 10 features
             >>> result = cell(x, rnn_state)
             >>> result.hidden_state.shape  # 20 features
@@ -135,7 +138,9 @@ class SimpleRNNCell(RNNCell):
 
             >>> import serket as sk
             >>> import jax.numpy as jnp
-            >>> lazy_layer = sk.nn.ScanRNN(sk.nn.SimpleRNNCell(None, 20), return_sequences=True)
+            >>> import jax.random as jr
+            >>> lazy_cell = sk.nn.SimpleRNNCell(None, 20, key=jr.PRNGKey(0))
+            >>> lazy_layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)
             >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
             >>> _, materialized_layer = lazy_layer.at["__call__"](x)
             >>> materialized_layer(x).shape
@@ -197,18 +202,19 @@ class DenseCell(RNNCell):
     Args:
         in_features: the number of input features
         hidden_features: the number of hidden features
+        key: the key to use to initialize the weights
         weight_init: the function to use to initialize the weights
         bias_init: the function to use to initialize the bias
         act: the activation function to use for the hidden state update,
             use `None` for no activation
-        key: the key to use to initialize the weights
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> # 10-dimensional input, 20-dimensional hidden state
-        >>> cell = sk.nn.DenseCell(10, 20)
+        >>> cell = sk.nn.DenseCell(10, 20, key=jr.PRNGKey(0))
         >>> # 20-dimensional hidden state
         >>> dummy_state = sk.tree_state(cell)
         >>> x = jnp.ones((10,)) # 10 features
@@ -227,7 +233,9 @@ class DenseCell(RNNCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> lazy_layer = sk.nn.ScanRNN(sk.nn.DenseCell(None, 20), return_sequences=True)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.DenseCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy_layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)
         >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
         >>> _, materialized_layer = lazy_layer.at["__call__"](x)
         >>> materialized_layer(x).shape
@@ -243,7 +251,7 @@ class DenseCell(RNNCell):
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         act: ActivationType = jax.nn.tanh,
-        key: jr.KeyArray = jr.PRNGKey(0),
+        key: jr.KeyArray,
         dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
@@ -296,8 +304,9 @@ class LSTMCell(RNNCell):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> # 10-dimensional input, 20-dimensional hidden state
-        >>> cell = sk.nn.LSTMCell(10, 20)
+        >>> cell = sk.nn.LSTMCell(10, 20, key=jr.PRNGKey(0))
         >>> # 20-dimensional hidden state
         >>> dummy_state = sk.tree_state(cell)
         >>> x = jnp.ones((10,)) # 10 features
@@ -316,7 +325,9 @@ class LSTMCell(RNNCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> lazy_layer = sk.nn.ScanRNN(sk.nn.LSTMCell(None, 20), return_sequences=True)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.LSTMCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy_layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)
         >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
         >>> _, materialized_layer = lazy_layer.at["__call__"](x)
         >>> materialized_layer(x).shape
@@ -333,12 +344,12 @@ class LSTMCell(RNNCell):
         in_features: int,
         hidden_features: int,
         *,
+        key: jr.KeyArray,
         weight_init: str | Callable = "glorot_uniform",
         bias_init: str | Callable | None = "zeros",
         recurrent_weight_init: str | Callable = "orthogonal",
         act: str | Callable[[Any], Any] | None = "tanh",
         recurrent_act: ActivationType | None = "sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         k1, k2 = jr.split(key, 2)
@@ -403,19 +414,20 @@ class GRUCell(RNNCell):
     Args:
         in_features: the number of input features
         hidden_features: the number of hidden features
+        key: the key to use to initialize the weights
         weight_init: the function to use to initialize the weights
         bias_init: the function to use to initialize the bias
         recurrent_weight_init: the function to use to initialize the recurrent weights
         act: the activation function to use for the hidden state update
         recurrent_act: the activation function to use for the cell state update
-        key: the key to use to initialize the weights
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> # 10-dimensional input, 20-dimensional hidden state
-        >>> cell = sk.nn.GRUCell(10, 20)
+        >>> cell = sk.nn.GRUCell(10, 20, key=jr.PRNGKey(0))
         >>> # 20-dimensional hidden state
         >>> dummy_state = sk.tree_state(cell)
         >>> x = jnp.ones((10,)) # 10 features
@@ -434,7 +446,9 @@ class GRUCell(RNNCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> lazy_layer = sk.nn.ScanRNN(sk.nn.GRUCell(None, 20), return_sequences=True)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.GRUCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy_layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)
         >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
         >>> _, materialized_layer = lazy_layer.at["__call__"](x)
         >>> materialized_layer(x).shape
@@ -450,12 +464,12 @@ class GRUCell(RNNCell):
         in_features: int,
         hidden_features: int,
         *,
+        key: jr.KeyArray,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         recurrent_weight_init: InitType = "orthogonal",
         act: ActivationType | None = "tanh",
         recurrent_act: ActivationType | None = "sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         k1, k2 = jr.split(key, 2)
@@ -517,6 +531,7 @@ class ConvLSTMNDCell(RNNCell):
         hidden_features: int,
         kernel_size: KernelSizeType,
         *,
+        key: jr.KeyArray,
         strides: StridesType = 1,
         padding: PaddingType = "same",
         dilation: DilationType = 1,
@@ -525,7 +540,6 @@ class ConvLSTMNDCell(RNNCell):
         recurrent_weight_init: InitType = "orthogonal",
         act: ActivationType | None = "tanh",
         recurrent_act: ActivationType | None = "hard_sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         k1, k2 = jr.split(key, 2)
@@ -591,6 +605,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: PRNG key
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -600,13 +615,13 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvLSTM1DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.ConvLSTM1DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -623,9 +638,10 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvLSTM1DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.ConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
-        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
         >>> layer(x).shape
         (1, 2, 4)
@@ -649,6 +665,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: PRNG key
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -658,13 +675,13 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvLSTM1DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.FFTConvLSTM1DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -681,7 +698,8 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvLSTM1DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.FFTConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
@@ -707,6 +725,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to use to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -716,13 +735,13 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvLSTM2DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.ConvLSTM2DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -739,7 +758,8 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvLSTM2DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.ConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
@@ -765,6 +785,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -774,13 +795,13 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvLSTM2DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.FFTConvLSTM2DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -797,7 +818,8 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvLSTM2DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.FFTConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
@@ -823,6 +845,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -832,13 +855,13 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvLSTM3DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.ConvLSTM3DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -855,7 +878,8 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvLSTM3DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.ConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
@@ -881,6 +905,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -890,13 +915,13 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvLSTM3DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.FFTConvLSTM3DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -913,7 +938,8 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvLSTM3DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.FFTConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
@@ -945,6 +971,7 @@ class ConvGRUNDCell(RNNCell):
         hidden_features: int,
         kernel_size: int | tuple[int, ...],
         *,
+        key: jr.KeyArray,
         strides: StridesType = 1,
         padding: PaddingType = "same",
         dilation: DilationType = 1,
@@ -953,7 +980,6 @@ class ConvGRUNDCell(RNNCell):
         recurrent_weight_init: InitType = "orthogonal",
         act: ActivationType | None = "tanh",
         recurrent_act: ActivationType | None = "sigmoid",
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ):
         k1, k2 = jr.split(key, 2)
@@ -1017,6 +1043,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -1026,13 +1053,13 @@ class ConvGRU1DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvGRU1DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.ConvGRU1DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -1049,7 +1076,8 @@ class ConvGRU1DCell(ConvGRUNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvGRU1DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.ConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
@@ -1072,6 +1100,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -1081,13 +1110,13 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvGRU1DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.FFTConvGRU1DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -1104,7 +1133,8 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvGRU1DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.FFTConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
@@ -1127,6 +1157,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -1136,13 +1167,13 @@ class ConvGRU2DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvGRU2DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.ConvGRU2DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -1159,9 +1190,10 @@ class ConvGRU2DCell(ConvGRUNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvGRU2DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.ConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
-        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
         >>> layer(x).shape
         (1, 2, 4, 4)
@@ -1182,6 +1214,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -1191,13 +1224,13 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvGRU2DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.FFTConvGRU2DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -1214,9 +1247,10 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvGRU2DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.FFTConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4))  # time, in_features, spatial dimensions
-        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
         >>> layer(x).shape
         (1, 2, 4, 4)
@@ -1237,6 +1271,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -1246,15 +1281,15 @@ class ConvGRU3DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvGRU3DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.ConvGRU3DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
-        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
         (1, 2, 4, 4, 4)
 
@@ -1269,9 +1304,10 @@ class ConvGRU3DCell(ConvGRUNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.ConvGRU3DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.ConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
-        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
         >>> layer(x).shape
         (1, 2, 4, 4, 4)
@@ -1292,6 +1328,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
     Args:
         in_features: Number of input features
         hidden_features: Number of output features
+        key: random key to initialize weights.
         kernel_size: Size of the convolutional kernel
         strides: Stride of the convolution
         padding: Padding of the convolution
@@ -1301,13 +1338,13 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        key: PRNG key
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvGRU3DCell(10, 2, 3)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.FFTConvGRU3DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
         >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
         >>> layer(x).shape
@@ -1324,9 +1361,10 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> cell = sk.nn.FFTConvGRU3DCell(None, 2, 3)
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.FFTConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> x = jnp.ones((1, 10, 4, 4, 4))  # time, in_features, spatial dimensions
-        >>> layer = sk.nn.ScanRNN(cell, return_sequences=True)  # return time steps results
+        >>> layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)  # return time steps results
         >>> _, layer = layer.at["__call__"](x)  # materialize the layer
         >>> layer(x).shape
         (1, 2, 4, 4, 4)
@@ -1391,7 +1429,9 @@ class ScanRNN(sk.TreeClass):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> cell = sk.nn.SimpleRNNCell(10, 20) # 10-dimensional input, 20-dimensional hidden state
+        >>> import jax.random as jr
+        >>> # 10-dimensional input, 20-dimensional hidden state
+        >>> cell = sk.nn.SimpleRNNCell(10, 20, key=jr.PRNGKey(0))
         >>> rnn = sk.nn.ScanRNN(cell, return_state=True)
         >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
         >>> result, state = rnn(x)  # 20 features
@@ -1401,7 +1441,8 @@ class ScanRNN(sk.TreeClass):
     Example:
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> cell = sk.nn.SimpleRNNCell(10, 20)
+        >>> import jax.random as jr
+        >>> cell = sk.nn.SimpleRNNCell(10, 20, key=jr.PRNGKey(0))
         >>> rnn = sk.nn.ScanRNN(cell, return_sequences=True, return_state=True)
         >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
         >>> result, state = rnn(x)  # 5 timesteps, 20 features
@@ -1541,7 +1582,7 @@ def _no_accumulate_scan(
 
 
 @tree_state.def_state(SimpleRNNCell)
-def simple_rnn_init_state(
+def _(
     cell: SimpleRNNCell,
     array: jax.Array | None,
 ) -> SimpleRNNState:
@@ -1550,20 +1591,20 @@ def simple_rnn_init_state(
 
 
 @tree_state.def_state(DenseCell)
-def dense_init_state(cell: DenseCell, array: jax.Array | None) -> DenseState:
+def _(cell: DenseCell, array: jax.Array | None) -> DenseState:
     del array
     return DenseState(jnp.empty([cell.hidden_features]))
 
 
 @tree_state.def_state(LSTMCell)
-def lstm_init_state(cell: LSTMCell, array: jax.Array | None) -> LSTMState:
+def _(cell: LSTMCell, array: jax.Array | None) -> LSTMState:
     del array
     shape = [cell.hidden_features]
     return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
 @tree_state.def_state(GRUCell)
-def gru_init_state(cell: GRUCell, array: jax.Array | None) -> GRUState:
+def _(cell: GRUCell, array: jax.Array | None) -> GRUState:
     del array
     return GRUState(jnp.zeros([cell.hidden_features]))
 
@@ -1590,7 +1631,7 @@ def _check_rnn_cell_tree_state_input(cell: RNNCell, array):
 
 
 @tree_state.def_state(ConvLSTMNDCell)
-def conv_lstm_init_state(cell: ConvLSTMNDCell, array: Any) -> ConvLSTMNDState:
+def _(cell: ConvLSTMNDCell, array: Any) -> ConvLSTMNDState:
     array = _check_rnn_cell_tree_state_input(cell, array)
     shape = (cell.hidden_features, *array.shape[1:])
     zeros = jnp.zeros(shape).astype(array.dtype)
@@ -1598,14 +1639,14 @@ def conv_lstm_init_state(cell: ConvLSTMNDCell, array: Any) -> ConvLSTMNDState:
 
 
 @tree_state.def_state(ConvGRUNDCell)
-def conv_gru_init_state(cell: ConvGRUNDCell, array: Any) -> ConvGRUNDState:
+def _(cell: ConvGRUNDCell, array: Any) -> ConvGRUNDState:
     array = _check_rnn_cell_tree_state_input(cell, array)
     shape = (cell.hidden_features, *array.shape[1:])
     return ConvGRUNDState(jnp.zeros(shape).astype(array.dtype))
 
 
 @tree_state.def_state(ScanRNN)
-def scan_rnn_init_state(rnn: ScanRNN, array: jax.Array | None = None) -> RNNState:
+def _(rnn: ScanRNN, array: jax.Array | None = None) -> RNNState:
     # the idea here is to combine the state of the forward and backward cells
     # if backward cell exists. to have single state input for `ScanRNN` and
     # single state output not to complicate the ``__call__`` signature on the

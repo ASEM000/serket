@@ -553,6 +553,7 @@ def def_act_entry(key: str, act: ActivationFunctionType) -> None:
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> @sk.autoinit
         ... class MyTrainableActivation(sk.TreeClass):
         ...    my_param: float = 10.0
@@ -560,7 +561,7 @@ def def_act_entry(key: str, act: ActivationFunctionType) -> None:
         ...        return x * self.my_param
         >>> sk.def_act_entry("my_act", MyTrainableActivation())
         >>> x = jnp.ones((1, 1))
-        >>> sk.nn.FNN([1, 1, 1], act="my_act", weight_init="ones", bias_init=None)(x)
+        >>> sk.nn.FNN([1, 1, 1], act="my_act", weight_init="ones", bias_init=None, key=jr.PRNGKey(0))(x)
         Array([[10.]], dtype=float32)
     """
     if key in act_map:
