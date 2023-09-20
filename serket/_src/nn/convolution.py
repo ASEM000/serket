@@ -153,7 +153,7 @@ def fft_conv_general_dilated(
 
 def fft_convolution_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIHW"],
+    weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
@@ -191,7 +191,7 @@ def fft_convolution_nd(
 
 def transposed_fft_convolution_ndim(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIHW"],
+    weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
@@ -232,7 +232,7 @@ def transposed_fft_convolution_ndim(
 
 def depthwise_fft_convolution_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIHW"],
+    weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
@@ -263,8 +263,8 @@ def depthwise_fft_convolution_nd(
 
 def separable_fft_convolution_nd(
     array: jax.Array,
-    depthwise_weight: Annotated[jax.Array, "OIHW"],
-    pointwise_weight: Annotated[jax.Array, "OIHW"],
+    depthwise_weight: Annotated[jax.Array, "OIH..."],
+    pointwise_weight: Annotated[jax.Array, "OIH..."],
     pointwise_bias: jax.Array | None,
     strides: tuple[int, ...],
     depthwise_padding: tuple[tuple[int, int], ...],
@@ -304,7 +304,7 @@ def separable_fft_convolution_nd(
 
 def convolution_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIHW"],
+    weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
@@ -334,7 +334,7 @@ def convolution_nd(
         window_strides=strides,
         padding=padding,
         rhs_dilation=dilation,
-        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
+        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),  # OIH...
         feature_group_count=groups,
     )
 
@@ -343,7 +343,7 @@ def convolution_nd(
 
 def transposed_convolution_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIHW"],
+    weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
@@ -384,8 +384,8 @@ def transposed_convolution_nd(
 
 def separable_convolution_nd(
     array: jax.Array,
-    depthwise_weight: Annotated[jax.Array, "OIHW"],
-    pointwise_weight: Annotated[jax.Array, "OIHW"],
+    depthwise_weight: Annotated[jax.Array, "OIH..."],
+    pointwise_weight: Annotated[jax.Array, "OIH..."],
     pointwise_bias: jax.Array | None,
     strides: tuple[int, ...],
     depthwise_padding: tuple[tuple[int, int], ...],
@@ -424,7 +424,7 @@ def separable_convolution_nd(
 
 def local_convolution_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIHW"],
+    weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
@@ -462,7 +462,7 @@ def local_convolution_nd(
 
 def depthwise_convolution_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIHW"],
+    weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
@@ -1205,7 +1205,11 @@ class BaseConvNDTranspose(sk.TreeClass):
             raise ValueError(f"{(self.out_features % self.groups ==0)=}")
 
         in_features = positive_int_cb(self.in_features)
-        weight_shape = (out_features, in_features // groups, *self.kernel_size)  # OIHW
+        weight_shape = (
+            out_features,
+            in_features // groups,
+            *self.kernel_size,
+        )  # OIH...
         self.weight = resolve_init(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
@@ -1886,7 +1890,7 @@ class BaseDepthwiseConvND(sk.TreeClass):
         self.weight_init = weight_init
         self.bias_init = bias_init
 
-        weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIHW
+        weight_shape = (depth_multiplier * in_features, 1, *self.kernel_size)  # OIH...
         self.weight = resolve_init(self.weight_init)(key, weight_shape, dtype)
 
         bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
@@ -3126,7 +3130,7 @@ class ConvNDLocal(sk.TreeClass):
             strides=self.strides,
         )
 
-        # OIHW
+        # OIH...
         weight_shape = (
             self.out_features,
             self.in_features * ft.reduce(op.mul, self.kernel_size),

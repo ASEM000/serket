@@ -61,28 +61,52 @@ def solarize_2d(
     return jnp.where(image < threshold, image, max_val - image)
 
 
-def adjust_contrast_2d(image: HWArray, contrast_factor: float):
+def adjust_contrast_2d(image: HWArray, factor: float):
     """Adjusts the contrast of an image by scaling the pixel values by a factor.
 
     Args:
-        array: input array
+        array: input array \in [0, 1] with shape (height, width)
         contrast_factor: contrast factor to adust the contrast by.
     """
     _, _ = image.shape
     μ = jnp.mean(image, keepdims=True)
-    return (contrast_factor * (image - μ) + μ).astype(image.dtype)
+    return (factor * (image - μ) + μ).astype(image.dtype).clip(0.0, 1.0)
 
 
 def random_contrast_2d(
     key: jr.KeyArray,
     array: HWArray,
-    contrast_range: tuple[float, float],
+    factor_range: tuple[float, float],
 ) -> HWArray:
     """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
     _, _ = array.shape
-    minval, maxval = contrast_range
+    minval, maxval = factor_range
     contrast_factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
     return adjust_contrast_2d(array, contrast_factor)
+
+
+def adjust_brightness_2d(image: HWArray, factor: float) -> HWArray:
+    """Adjusts the brightness of an image by adding a value to the pixel values.
+
+    Args:
+        array: input array \in [0, 1] with shape (height, width)
+        factor: brightness factor to adust the brightness by.
+    """
+    _, _ = image.shape
+    return jnp.clip((image + factor).astype(image.dtype), 0.0, 1.0)
+
+
+def random_brightness_2d(
+    key: jr.KeyArray,
+    image: HWArray,
+    factor_range: tuple[float, float],
+) -> HWArray:
+    """Randomly adjusts the brightness of an image by adding a value to the pixel values."""
+    _, _ = image.shape
+    minval, maxval = factor_range
+    assert 0 <= minval <= maxval <= 1
+    factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
+    return adjust_brightness_2d(image, factor)
 
 
 def pixelate_2d(image: HWArray, scale: int = 16) -> HWArray:
@@ -234,6 +258,59 @@ class RandomContrast2D(sk.TreeClass):
         contrast_range = jax.lax.stop_gradient(self.contrast_range)
         in_axes = (None, 0, None)
         return jax.vmap(random_contrast_2d, in_axes=in_axes)(key, x, contrast_range)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+@sk.autoinit
+class AdjustBrightness2D(sk.TreeClass):
+    """Adjusts the brightness of an 2D input by adding a value to the pixel values.
+
+    .. image:: ../_static/adjustbrightness2d.png
+
+    Args:
+        factor: brightness factor to adust the brightness by. Defaults to 1.0.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4) / 16.0
+        >>> print(sk.image.AdjustBrightness2D(0.5)(x))
+        [[[0.5625 0.625  0.6875 0.75  ]
+          [0.8125 0.875  0.9375 1.    ]
+          [1.     1.     1.     1.    ]
+          [1.     1.     1.     1.    ]]]
+    """
+
+    factor: float = sk.field(on_setattr=[IsInstance(float), Range(0, 1)])
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray) -> CHWArray:
+        factor = jax.lax.stop_gradient(self.factor)
+        return jax.vmap(adjust_brightness_2d, in_axes=(0, None))(x, factor)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+@sk.autoinit
+class RandomBrightness2D(sk.TreeClass):
+    """Randomly adjusts the brightness of an 2D input by adding a value to the pixel values.
+
+    Args:
+        range: brightness range to adust the brightness by. Defaults to (0.5, 1).
+    """
+
+    factor_range: tuple[float, float] = sk.field(on_setattr=[IsInstance(tuple)])
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+        factor_range = jax.lax.stop_gradient(self.factor_range)
+        in_axes = (None, 0, None)
+        return jax.vmap(random_brightness_2d, in_axes=in_axes)(key, x, factor_range)
 
     @property
     def spatial_ndim(self) -> int:

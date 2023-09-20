@@ -13,11 +13,13 @@
 # limitations under the License.
 
 from serket._src.image.augment import (
+    AdjustBrightness2D,
     AdjustContrast2D,
     JigSaw2D,
     Pixelate2D,
     PixelShuffle2D,
     Posterize2D,
+    RandomBrightness2D,
     RandomContrast2D,
     Solarize2D,
 )
@@ -56,11 +58,13 @@ from serket._src.image.geometric import (
 
 __all__ = [
     # augment
+    "AdjustBrightness2D",
     "AdjustContrast2D",
     "JigSaw2D",
     "Pixelate2D",
     "PixelShuffle2D",
     "Posterize2D",
+    "RandomBrightness2D",
     "RandomContrast2D",
     "Solarize2D",
     # filter
