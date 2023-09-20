@@ -42,7 +42,6 @@ See [🧠 `serket` mental model](https://serket.readthedocs.io/en/latest/noteboo
 ```python
 import jax, jax.numpy as jnp
 import serket as sk
-import optax
 
 x_train, y_train = ..., ...
 k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
@@ -56,27 +55,30 @@ net = sk.nn.Sequential(
     sk.nn.Linear(64, 10, key=k3),
 )
 
-net = sk.tree_mask(net)  # pass non-jaxtype through jax-transforms
-optim = optax.adam(LR)
-optim_state = optim.init(net)
+net = sk.tree_mask(net)
+
+def softmax_cross_entropy(logits, onehot):
+    return -jnp.sum(labels * jax.nn.log_softmax(logits, axis=-1), axis=-1)
+
+def update(param,grad):
+    return param - grad * 1e-3
 
 @ft.partial(jax.grad, has_aux=True)
 def loss_func(net, x, y):
     net = sk.tree_unmask(net)
     logits = jax.vmap(net)(x)
     onehot = jax.nn.one_hot(y, 10)
-    loss = jnp.mean(optax.softmax_cross_entropy(logits, onehot))
+    loss = jnp.mean(softmax_cross_entropy(logits, onehot))
     return loss, (loss, logits)
 
 @jax.jit
-def train_step(net, optim_state, x, y):
+def train_step(net, x, y):
     grads, (loss, logits) = loss_func(net, x, y)
-    updates, optim_state = optim.update(grads, optim_state)
-    net = optax.apply_updates(net, updates)
-    return net, optim_state, (loss, logits)
+    net = jax.tree_map(update, net, grads)
+    return net, (loss, logits)
 
 for j, (xb, yb) in enumerate(zip(x_train, y_train)):
-    net, optim_state, (loss, logits) = train_step(net, optim_state, xb, yb)
+    net, (loss, logits) = train_step(net, xb, yb)
     accuracy = accuracy_func(logits, y_train)
 
 net = sk.tree_unmask(net)
