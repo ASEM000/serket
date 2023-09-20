@@ -362,7 +362,7 @@ def _batchnorm_impl(
         run_mean, run_var = state.running_mean, state.running_var
         run_mean = jnp.reshape(run_mean, broadcast_shape)
         run_var = jnp.reshape(run_var, broadcast_shape)
-        output = (x - run_mean) / jnp.sqrt(run_var + eps)
+        output = (x - run_mean) * jax.lax.rsqrt(run_var + eps)
         return output, state
 
     def train_step(x, state):
@@ -599,13 +599,13 @@ class EvalNorm(sk.TreeClass):
         self,
         in_features: int,
         *,
+        key: jr.KeyArray,
         momentum: float = 0.99,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
         axis: int = 1,
         axis_name: str | None = None,
-        key: jr.KeyArray = jr.PRNGKey(0),
         dtype: DType = jnp.float32,
     ) -> None:
         self.in_features = in_features
@@ -655,6 +655,7 @@ def _(batchnorm: BatchNorm) -> EvalNorm:
         bias_init=lambda *_: batchnorm.bias,
         axis=batchnorm.axis,
         axis_name=batchnorm.axis_name,
+        key=None,
     )
 
 
