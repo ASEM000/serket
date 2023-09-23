@@ -194,7 +194,6 @@ class KMeans(sk.TreeClass):
         >>> fig, axes = plt.subplots(2, 2, figsize=(10, 10))
         >>> image = ... # doctest: +SKIP
         >>> for clusters, axis in zip([2, 4, 8, 16], axes.ravel()):
-        ...    layer = sk.cluster.KMeans(clusters=clusters, tol=1e-7)
         ...    keys = jr.split(jr.PRNGKey(0), 3)
         ...    quantized = channel_wise_quantize(keys, image, clusters, 1e-7)
         ...    title = f"Clusters: {clusters}"

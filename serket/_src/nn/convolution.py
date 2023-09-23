@@ -2489,6 +2489,8 @@ class SeparableConvNDBase(sk.TreeClass):
 
 class SeparableConvND(SeparableConvNDBase):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
         depthwise_padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],

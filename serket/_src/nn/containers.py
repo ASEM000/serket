@@ -199,7 +199,7 @@ class RandomChoice(sk.TreeClass):
     def __init__(self, *layers):
         self.layers = layers
 
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)):
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray):
         return random_choice(key, self.layers, x)
 
 
