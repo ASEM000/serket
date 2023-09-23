@@ -230,11 +230,11 @@ class KMeans(sk.TreeClass):
         Note:
             Use :func:`.tree_state` to initialize the state.
 
-            # >>> import serket as sk
-            # >>> import jax.random as jr
-            # >>> key = jr.PRNGKey(0)
-            # >>> layer = sk.cluster.KMeans(clusters=5, tol=1e-6)
-            # >>> state = sk.tree_state(layer, array=x, key=key)
+            >>> import serket as sk
+            >>> import jax.random as jr
+            >>> key = jr.PRNGKey(0)
+            >>> layer = sk.cluster.KMeans(clusters=5, tol=1e-6)
+            >>> state = sk.tree_state(layer, array=x, key=key)
 
         Returns:
             A tuple containing the labels and a ``KMeansState``.
