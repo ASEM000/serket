@@ -28,8 +28,8 @@ from serket._src.utils import IsInstance, Range
 
 """K-means utility functions."""
 
-
-class KMeansState(NamedTuple):
+@sk.autoinit
+class KMeansState(sk.TreeClass):
     centers: Annotated[jax.Array, "Float[k,d]"]
     error: Annotated[jax.Array, "Float[k,d]"]
     iters: int = 0
@@ -137,27 +137,15 @@ class KMeans(sk.TreeClass):
         >>> import serket as sk
         >>> x = jr.uniform(jr.PRNGKey(0), shape=(500, 2))
         >>> layer = sk.cluster.KMeans(clusters=5, tol=1e-6)
-        >>> labels, state = layer(x)
+        >>> # state initialization by array and key to initialize the centers
+        >>> state = sk.tree_state(layer, array=x, key=jr.PRNGKey(0))
+        >>> labels, state = layer(x, state)
         >>> plt.scatter(x[:, 0], x[:, 1], c=labels[:, 0], cmap="jet_r")  # doctest: +SKIP
         >>> plt.scatter(state.centers[:, 0], state.centers[:, 1], c="r", marker="o", linewidths=4)  # doctest: +SKIP
 
         .. image:: ../_static/kmeans.svg
             :width: 600
             :align: center
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.random as jr
-        >>> features = 3
-        >>> clusters = 4
-        >>> x = jr.uniform(jr.PRNGKey(0), shape=(100, features))
-        >>> layer = sk.cluster.KMeans(clusters=clusters, tol=1e-6)
-        >>> # if initial state is not provided, it is initialized automatically
-        >>> state0 = sk.tree_state(layer, array=x, key=jr.PRNGKey(0))
-        >>> labels, state = layer(x, state0)
-        >>> centers = state.centers
-        >>> assert labels.shape == (100, 1)
-        >>> assert centers.shape == (clusters, features)
 
     Note:
         To use the :class:`.cluster.KMeans` layer in evaluation mode, use :func:`.tree_eval` to
@@ -169,13 +157,55 @@ class KMeans(sk.TreeClass):
         >>> features = 3
         >>> clusters = 4
         >>> x = jr.uniform(jr.PRNGKey(0), shape=(100, features))
+        >>> # layer definition
         >>> layer = sk.cluster.KMeans(clusters=clusters, tol=1e-6)
-        >>> x, state = layer(x)
+        >>> # state initialization
+        >>> state = sk.tree_state(layer, array=x, key=jr.PRNGKey(0))
+        >>> x, state = layer(x, state)
         >>> eval_layer = sk.tree_eval(layer)
         >>> y = jr.uniform(jr.PRNGKey(0), shape=(1, features))
         >>> y, eval_state = eval_layer(y, state)
         >>> # centers are not updated
         >>> assert jnp.all(eval_state.centers == state.centers)
+
+    Example:
+
+        Color quantization using :class:`.cluster.KMeans`
+    
+        >>> import jax.random as jr
+        >>> import matplotlib.pyplot as plt
+        >>> import serket as sk
+        >>> from typing_extensions import Annotated
+        >>> import functools as ft
+        >>> @ft.partial(jax.vmap, in_axes=(0, 2, None, None), out_axes=2)
+        ... def channel_wise_quantize(
+        ...    key: jax.Array,
+        ...    image: Annotated[jax.Array, "HWC"],
+        ...    clusters: int,
+        ...    tol: float,
+        ... ) -> jax.Array:
+        ...    layer = sk.cluster.KMeans(clusters=clusters, tol=tol)
+        ...    shape = image.shape
+        ...    image = image.reshape(-1, 1)
+        ...    state = sk.tree_state(layer, array=image, key=key)
+        ...    labels, state = layer(image, state)
+        ...    return state.centers[labels].reshape(shape).astype(jnp.uint8)
+        >>> fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+        >>> image = ... # doctest: +SKIP
+        >>> for clusters, axis in zip([2, 4, 8, 16], axes.ravel()):
+        ...    layer = sk.cluster.KMeans(clusters=clusters, tol=1e-7)
+        ...    keys = jr.split(jr.PRNGKey(0), 3)
+        ...    quantized = channel_wise_quantize(keys, image, clusters, 1e-7)
+        ...    title = f"Clusters: {clusters}"
+        ...    axis.imshow(quantized)
+        ...    axis.set_title(title)
+        ...    axis.axis("off")
+        ...    plt.tight_layout()  # doctest: +SKIP
+
+        .. image:: ../_static/kmeans_quantization.png
+            :width: 600
+            :align: center
+
     """
 
     clusters: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
@@ -196,14 +226,18 @@ class KMeans(sk.TreeClass):
                 - error: The initial error of the centers at each iteration.
                 - iters: The inital number of iterations (i.e. 0)
 
-                if ``None`` then the initial state is initialized using the rule
-                defined in :func:`.tree_state`
+        Note:
+            Use :func:`.tree_state` to initialize the state.
+
+            # >>> import serket as sk
+            # >>> import jax.random as jr
+            # >>> key = jr.PRNGKey(0)
+            # >>> layer = sk.cluster.KMeans(clusters=5, tol=1e-6)
+            # >>> state = sk.tree_state(layer, array=x, key=key)
 
         Returns:
             A tuple containing the labels and a ``KMeansState``.
         """
-        if state is None:
-            state = sk.tree_state(self, array=x, key=jr.PRNGKey(0))
         clusters, tol, state = jax.lax.stop_gradient((self.clusters, self.tol, state))
         state = kmeans(x, state, clusters=clusters, tol=tol)
         distances = distances_from_centers(x, state.centers)
@@ -233,7 +267,8 @@ def _(
     layer: KMeans,
     *,
     array: jax.Array,
-    key: jr.KeyArray**_,
+    key: jr.KeyArray,
+    **_,
 ) -> KMeansState:
     centers = jr.uniform(
         key=key,

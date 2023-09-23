@@ -20,8 +20,6 @@
 
 </h5>
 
-
-
 ## 🛠️ Installation<a id="Installation"></a>
 
 **Install development version**
@@ -60,7 +58,7 @@ net = sk.tree_mask(net)
 def softmax_cross_entropy(logits, onehot):
     return -jnp.sum(labels * jax.nn.log_softmax(logits, axis=-1), axis=-1)
 
-def update(param,grad):
+def update(param, grad):
     return param - grad * 1e-3
 
 @ft.partial(jax.grad, has_aux=True)
@@ -89,33 +87,33 @@ net = sk.tree_unmask(net)
 <summary>  🧱 Layers catalog </summary>
 
 ### 🧠 Neural network package: `serket.nn`
-| Group | Layers |
-| ------------- | ------------- |
-|Attention| - `MultiHeadAttention`|
-| Containers| - `Sequential`, `RandomApply`, `RandomChoice` |
-| Convolution | - `{FFT,_}Conv{1D,2D,3D}` <br> - `{FFT,_}Conv{1D,2D,3D}Transpose` <br> - `Depthwise{FFT,_}Conv{1D,2D,3D}`  <br> - `Separable{FFT,_}Conv{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local` |
-|Dropout|- `Dropout`<br> - `Dropout{1D,2D,3D}`  <br> - `RandomCutout{1D,2D}` |
-| Linear  | - `Linear`, `Multilinear`, `GeneralLinear`, `Identity`  |
-|Densely connected| - `FNN` , <br> - `MLP` _compile time_ optimized |
-|Normalization|- `{Layer,Instance,Group,Batch}Norm`|
-|Pooling|- `{Avg,Max,LP}Pool{1D,2D,3D}`  <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `Adaptive{Avg,Max}Pool{1D,2D,3D}` |
-|Reshaping|- `Flatten`, `Unflatten`, <br> - `Resize{1D,2D,3D}` <br> - `Upsample{1D,2D,3D}` <br> - `Pad{1D,2D,3D}` <br> - `{Random,Center,_}Crop{1D,2D,3D}` <br> - `RandomZoom{1D,2D,3D}` |
-|Recurrent cells| - `{SimpleRNN,LSTM,GRU,Dense}Cell` <br> - `{Conv,FFTConv}{LSTM,GRU}{1D,2D,3D}Cell` |
-|Activations|- `Adaptive{LeakyReLU,ReLU,Sigmoid,Tanh}`,<br> - `CeLU`,`ELU`,`GELU`,`GLU`<br>- `Hard{SILU,Shrink,Sigmoid,Swish,Tanh}`, <br> - `Soft{Plus,Sign,Shrink}` <br> - `LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> - `ReLU`,`ReLU6`,`SeLU`,`Sigmoid` <br> - `Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake`|
+
+| Group             | Layers                                                                                                                                                                                                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Attention         | - `MultiHeadAttention`                                                                                                                                                                                                                                                                                                    |
+| Containers        | - `Sequential`, `RandomApply`, `RandomChoice`                                                                                                                                                                                                                                                                             |
+| Convolution       | - `{FFT,_}Conv{1D,2D,3D}` <br> - `{FFT,_}Conv{1D,2D,3D}Transpose` <br> - `Depthwise{FFT,_}Conv{1D,2D,3D}` <br> - `Separable{FFT,_}Conv{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local`                                                                                                                                            |
+| Dropout           | - `Dropout`<br> - `Dropout{1D,2D,3D}` <br> - `RandomCutout{1D,2D}`                                                                                                                                                                                                                                                        |
+| Linear            | - `Linear`, `Multilinear`, `GeneralLinear`, `Identity`                                                                                                                                                                                                                                                                    |
+| Densely connected | - `FNN` , <br> - `MLP` _compile time_ optimized                                                                                                                                                                                                                                                                           |
+| Normalization     | - `{Layer,Instance,Group,Batch}Norm`                                                                                                                                                                                                                                                                                      |
+| Pooling           | - `{Avg,Max,LP}Pool{1D,2D,3D}` <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `Adaptive{Avg,Max}Pool{1D,2D,3D}`                                                                                                                                                                                                            |
+| Reshaping         | - `Flatten`, `Unflatten`, <br> - `Resize{1D,2D,3D}` <br> - `Upsample{1D,2D,3D}` <br> - `Pad{1D,2D,3D}` <br> - `{Random,Center,_}Crop{1D,2D,3D}` <br> - `RandomZoom{1D,2D,3D}`                                                                                                                                             |
+| Recurrent cells   | - `{SimpleRNN,LSTM,GRU,Dense}Cell` <br> - `{Conv,FFTConv}{LSTM,GRU}{1D,2D,3D}Cell`                                                                                                                                                                                                                                        |
+| Activations       | - `Adaptive{LeakyReLU,ReLU,Sigmoid,Tanh}`,<br> - `CeLU`,`ELU`,`GELU`,`GLU`<br>- `Hard{SILU,Shrink,Sigmoid,Swish,Tanh}`, <br> - `Soft{Plus,Sign,Shrink}` <br> - `LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> - `ReLU`,`ReLU6`,`SeLU`,`Sigmoid` <br> - `Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake` |
 
 ### 🖼️ Image package: `serket.image`
-| Group | Layers |
-| ------------- | ------------- |
-|Filter        | - `{FFT,_}{Avg,Box,Gaussian,Motion}Blur2D` <br> - `{FFT,_}{UnsharpMask}2D` <br> - `{FFT,_}Laplacian2D` <br> - `MedianBlur2D` |
-|Augment| - `{Adjust,Random}{Brightness,Contrast}2D`, <br> - `JigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`, <br> - `Posterize2D`,`Solarize2D`  |
-|Geometric| - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D` |
 
+| Group     | Layers                                                                                                                                 |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Filter    | - `{FFT,_}{Avg,Box,Gaussian,Motion}Blur2D` <br> - `{FFT,_}{UnsharpMask}2D` <br> - `{FFT,_}Laplacian2D` <br> - `MedianBlur2D`           |
+| Augment   | - `{Adjust,Random}{Brightness,Contrast}2D`, <br> - `JigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`, <br> - `Posterize2D`,`Solarize2D` |
+| Geometric | - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D`                 |
 
 ### 🌈 Cluster package: `serket.cluster`
 
-| Group | Layers |
-| ------------- | ------------- |
-| Clustering        | - `KMeans`| 
-
+| Group      | Layers     |
+| ---------- | ---------- |
+| Clustering | - `KMeans` |
 
 </details>
