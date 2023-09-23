@@ -28,6 +28,7 @@ from serket._src.utils import IsInstance, Range
 
 """K-means utility functions."""
 
+
 @sk.autoinit
 class KMeansState(sk.TreeClass):
     centers: Annotated[jax.Array, "Float[k,d]"]
@@ -171,7 +172,7 @@ class KMeans(sk.TreeClass):
     Example:
 
         Color quantization using :class:`.cluster.KMeans`
-    
+
         >>> import jax.random as jr
         >>> import matplotlib.pyplot as plt
         >>> import serket as sk
@@ -214,7 +215,7 @@ class KMeans(sk.TreeClass):
     def __call__(
         self,
         x: jax.Array,
-        state: KMeansState | None = None,
+        state: KMeansState,
     ) -> tuple[jax.Array, KMeansState]:
         """K-means clustering algorithm.
 

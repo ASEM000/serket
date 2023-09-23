@@ -16,8 +16,8 @@
 import warnings
 
 import jax.numpy as jnp
+import jax.random as jr
 import numpy.testing as npt
-from jax import random
 
 import serket as sk
 
@@ -28,12 +28,13 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 def test_kmeans():
     from sklearn.cluster import KMeans
 
-    rng = random.PRNGKey(42)
+    rng = jr.PRNGKey(42)
     k = 3
-    x = random.uniform(rng, (100, 2))
+    x = jr.uniform(rng, (100, 2))
     sc_ = KMeans(n_clusters=k, tol=1e-5).fit(x)
     layer = sk.cluster.KMeans(k, tol=1e-5)
-    _, state = layer(x)
+    state = sk.tree_state(layer, array=x, key=jr.PRNGKey(0))
+    _, state = layer(x, state)
     npt.assert_allclose(
         jnp.sort(sc_.cluster_centers_, axis=0),
         jnp.sort(state.centers, axis=0),
