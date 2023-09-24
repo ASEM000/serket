@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import abc
 import functools as ft
-from typing import Literal, Sequence
+from typing import Sequence
 
 import jax
 import jax.numpy as jnp

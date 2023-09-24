@@ -151,7 +151,7 @@ def fft_conv_general_dilated(
     )
 
 
-def fft_convolution_nd(
+def fft_conv_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
@@ -189,7 +189,7 @@ def fft_convolution_nd(
     return jnp.squeeze(x, 0) if bias is None else jnp.squeeze((x + bias), 0)
 
 
-def transposed_fft_convolution_nd(
+def fft_conv_nd_transpose(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
@@ -230,7 +230,7 @@ def transposed_fft_convolution_nd(
     return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
 
 
-def depthwise_fft_convolution_nd(
+def depthwise_fft_conv_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
@@ -261,7 +261,7 @@ def depthwise_fft_convolution_nd(
     return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
 
 
-def separable_fft_convolution_nd(
+def separable_fft_conv_nd(
     array: jax.Array,
     depthwise_weight: Annotated[jax.Array, "OIH..."],
     pointwise_weight: Annotated[jax.Array, "OIH..."],
@@ -285,7 +285,7 @@ def separable_fft_convolution_nd(
             tuple of integers for different padding in each dimension.
     """
 
-    array = depthwise_fft_convolution_nd(
+    array = depthwise_fft_conv_nd(
         array=array,
         weight=depthwise_weight,
         bias=None,
@@ -293,7 +293,7 @@ def separable_fft_convolution_nd(
         padding=depthwise_padding,
     )
 
-    return fft_convolution_nd(
+    return fft_conv_nd(
         array=array,
         weight=pointwise_weight,
         bias=pointwise_bias,
@@ -304,7 +304,7 @@ def separable_fft_convolution_nd(
     )
 
 
-def convolution_nd(
+def conv_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
@@ -343,7 +343,7 @@ def convolution_nd(
     return jnp.squeeze(x, 0) if bias is None else jnp.squeeze((x + bias), 0)
 
 
-def transposed_convolution_nd(
+def conv_nd_transpose(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
@@ -384,7 +384,7 @@ def transposed_convolution_nd(
     return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
 
 
-def separable_convolution_nd(
+def separable_conv_nd(
     array: jax.Array,
     depthwise_weight: Annotated[jax.Array, "OIH..."],
     pointwise_weight: Annotated[jax.Array, "OIH..."],
@@ -407,7 +407,7 @@ def separable_convolution_nd(
         pointwise_padding: padding of the input before pointwise convolution accepts
             tuple of integers for different padding in each dimension.
     """
-    array = depthwise_convolution_nd(
+    array = depthwise_conv_nd(
         array=array,
         weight=depthwise_weight,
         bias=None,
@@ -415,7 +415,7 @@ def separable_convolution_nd(
         padding=depthwise_padding,
     )
 
-    return convolution_nd(
+    return conv_nd(
         array=array,
         weight=pointwise_weight,
         bias=pointwise_bias,
@@ -426,7 +426,7 @@ def separable_convolution_nd(
     )
 
 
-def local_convolution_nd(
+def local_conv_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
@@ -464,7 +464,7 @@ def local_convolution_nd(
     return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
 
 
-def depthwise_convolution_nd(
+def depthwise_conv_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
@@ -566,7 +566,7 @@ class ConvND(BaseConvND):
             strides=self.strides,
         )
 
-        return convolution_nd(
+        return conv_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -877,7 +877,7 @@ class FFTConvND(BaseConvND):
             strides=self.strides,
         )
 
-        return fft_convolution_nd(
+        return fft_conv_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -1238,7 +1238,7 @@ class ConvNDTranspose(BaseConvNDTranspose):
             strides=self.strides,
         )
 
-        return transposed_convolution_nd(
+        return conv_nd_transpose(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -1560,7 +1560,7 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
             strides=self.strides,
         )
 
-        return transposed_fft_convolution_nd(
+        return fft_conv_nd_transpose(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -1919,7 +1919,7 @@ class DepthwiseConvND(BaseDepthwiseConvND):
             strides=self.strides,
         )
 
-        return depthwise_convolution_nd(
+        return depthwise_conv_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -2189,7 +2189,7 @@ class DepthwiseFFTConvND(BaseDepthwiseConvND):
             strides=self.strides,
         )
 
-        return depthwise_fft_convolution_nd(
+        return depthwise_fft_conv_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
@@ -2509,7 +2509,7 @@ class SeparableConvND(SeparableConvNDBase):
             strides=self.strides,
         )
 
-        return separable_convolution_nd(
+        return separable_conv_nd(
             array=x,
             depthwise_weight=self.depthwise_weight,
             pointwise_weight=self.pointwise_weight,
@@ -2807,7 +2807,7 @@ class SeparableFFTConvND(SeparableConvNDBase):
             strides=self.strides,
         )
 
-        return separable_fft_convolution_nd(
+        return separable_fft_conv_nd(
             array=x,
             depthwise_weight=self.depthwise_weight,
             pointwise_weight=self.pointwise_weight,
@@ -3152,7 +3152,7 @@ class ConvNDLocal(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, x: jax.Array) -> jax.Array:
-        return local_convolution_nd(
+        return local_conv_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,
