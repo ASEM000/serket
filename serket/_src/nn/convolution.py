@@ -160,15 +160,15 @@ def fft_convolution_nd(
     dilation: tuple[int, ...],
     groups: int,
 ) -> jax.Array:
-    """Convolution function wrapping ``fft_conv_general_dilated``.
+    """Convolution function using fft.
 
     Note:
         Use ``jax.vmap`` to apply the convolution to a batch of inputs.
 
     Args:
-        array: input array. shape is (in_features, *spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
+        array: input array. shape is (in_features, spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, kernel).
+        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -189,7 +189,7 @@ def fft_convolution_nd(
     return jnp.squeeze(x, 0) if bias is None else jnp.squeeze((x + bias), 0)
 
 
-def transposed_fft_convolution_ndim(
+def transposed_fft_convolution_nd(
     array: jax.Array,
     weight: Annotated[jax.Array, "OIH..."],
     bias: jax.Array | None,
@@ -198,12 +198,12 @@ def transposed_fft_convolution_ndim(
     dilation: tuple[int, ...],
     out_padding: int,
 ) -> jax.Array:
-    """Transposed convolution function wrapping ``fft_conv_general_dilated``.
+    """Transposed convolution function using fft.
 
     Args:
-        array: input array. shape is (in_features, *spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
+        array: input array. shape is (in_features, spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, kernel).
+        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -237,12 +237,12 @@ def depthwise_fft_convolution_nd(
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
 ) -> jax.Array:
-    """Depthwise convolution function wrapping ``jax.lax.conv_general_dilated``.
+    """Depthwise convolution function using fft.
 
     Args:
-        array: input array. shape is (in_features, *spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
+        array: input array. shape is (in_features, spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, kernel).
+        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -270,17 +270,19 @@ def separable_fft_convolution_nd(
     depthwise_padding: tuple[tuple[int, int], ...],
     pointwise_padding: tuple[tuple[int, int], ...],
 ) -> jax.Array:
-    """Separable convolution function using
+    """Separable convolution function using fft.
 
     Args:
-        array: input array. shape is (in_features, *spatial).
+        array: input array. shape is (in_features, spatial).
         depthwise_weight: depthwise convolutional kernel.
         pointwise_weight: pointwise convolutional kernel.
         pointwise_bias: bias for the pointwise convolution.
         strides: stride of the convolution accepts tuple of integers for different
             strides in each dimension.
-        padding: padding of the input before convolution accepts tuple of integers
-            for different padding in each dimension.
+        depthwise_padding: padding of the input before depthwise convolution accepts
+            tuple of integers for different padding in each dimension.
+        pointwise_padding: padding of the input before pointwise convolution accepts
+            tuple of integers for different padding in each dimension.
     """
 
     array = depthwise_fft_convolution_nd(
@@ -317,13 +319,13 @@ def convolution_nd(
         Use ``jax.vmap`` to apply the convolution to a batch of inputs.
 
     Args:
-        array: input array. shape is (in_features, *spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
+        array: input array. shape is (in_features, spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, kernel).
+        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
-         strides in each dimension.
-        padding: padding of the input before convolution accepts tuple of integers
-         for different padding in each dimension.
+            strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of two integers
+            for different padding in each dimension.
         dilation: dilation of the convolutional kernel accepts tuple of integers
             for different dilation in each dimension.
         groups: number of groups to use for grouped convolution.
@@ -353,9 +355,9 @@ def transposed_convolution_nd(
     """Transposed convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is (in_features, *spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
+        array: input array. shape is (in_features, spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, kernel).
+        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -394,14 +396,16 @@ def separable_convolution_nd(
     """Seprable convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is (in_features, *spatial).
+        array: input array. shape is (in_features, spatial).
         depthwise_weight: depthwise convolutional kernel.
         pointwise_weight: pointwise convolutional kernel.
         pointwise_bias: bias for the pointwise convolution.
         strides: stride of the convolution accepts tuple of integers for different
             strides in each dimension.
-        padding: padding of the input before convolution accepts tuple of integers
-            for different padding in each dimension.
+        depthwise_padding: padding of the input before depthwise convolution accepts
+            tuple of integers for different padding in each dimension.
+        pointwise_padding: padding of the input before pointwise convolution accepts
+            tuple of integers for different padding in each dimension.
     """
     array = depthwise_convolution_nd(
         array=array,
@@ -434,9 +438,9 @@ def local_convolution_nd(
     """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
 
     Args:
-        array: input array. shape is (in_features, *spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
+        array: input array. shape is (in_features, spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, kernel).
+        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -470,9 +474,9 @@ def depthwise_convolution_nd(
     """Depthwise convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is (in_features, *spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, *kernel).
-        bias: bias. shape is (out_features, (1,)*spatial). set to ``None`` to not use a bias.
+        array: input array. shape is (in_features, spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, kernel).
+        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -1556,7 +1560,7 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
             strides=self.strides,
         )
 
-        return transposed_fft_convolution_ndim(
+        return transposed_fft_convolution_nd(
             array=x,
             weight=self.weight,
             bias=self.bias,

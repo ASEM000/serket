@@ -51,3 +51,12 @@ Convolution
 .. autoclass:: SeparableFFTConv3D
 
 
+.. autofunction:: convolution_nd
+.. autofunction:: depthwise_convolution_nd
+.. autofunction:: depthwise_fft_convolution_nd
+.. autofunction:: fft_convolution_nd
+.. autofunction:: local_convolution_nd
+.. autofunction:: separable_convolution_nd
+.. autofunction:: separable_fft_convolution_nd
+.. autofunction:: transposed_convolution_nd
+.. autofunction:: transposed_fft_convolution_nd

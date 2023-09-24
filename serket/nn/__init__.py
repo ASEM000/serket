@@ -74,6 +74,15 @@ from serket._src.nn.convolution import (
     SeparableFFTConv1D,
     SeparableFFTConv2D,
     SeparableFFTConv3D,
+    convolution_nd,
+    depthwise_convolution_nd,
+    depthwise_fft_convolution_nd,
+    fft_convolution_nd,
+    local_convolution_nd,
+    separable_convolution_nd,
+    separable_fft_convolution_nd,
+    transposed_convolution_nd,
+    transposed_fft_convolution_nd,
 )
 from serket._src.nn.dropout import (
     Dropout,
@@ -227,6 +236,16 @@ __all__ = [
     "SeparableFFTConv1D",
     "SeparableFFTConv2D",
     "SeparableFFTConv3D",
+    # functional form
+    "convolution_nd",
+    "depthwise_convolution_nd",
+    "depthwise_fft_convolution_nd",
+    "fft_convolution_nd",
+    "local_convolution_nd",
+    "separable_convolution_nd",
+    "separable_fft_convolution_nd",
+    "transposed_convolution_nd",
+    "transposed_fft_convolution_nd",
     # dropout
     "Dropout",
     "Dropout1D",
