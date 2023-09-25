@@ -9,3 +9,4 @@ Dropout
 
 .. autoclass:: RandomCutout1D
 .. autoclass:: RandomCutout2D
+.. autoclass:: RandomCutout3D

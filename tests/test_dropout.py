@@ -50,3 +50,10 @@ def test_random_cutout_2d():
     x = jnp.ones((1, 10, 10))
     y = layer(x, key=jax.random.PRNGKey(0))
     npt.assert_equal(y.shape, (1, 10, 10))
+
+
+def test_random_cutout_3d():
+    layer = sk.nn.RandomCutout3D((3, 3, 3), 1)
+    x = jnp.ones((1, 10, 10, 10))
+    y = layer(x, key=jax.random.PRNGKey(0))
+    npt.assert_equal(y.shape, (1, 10, 10, 10))

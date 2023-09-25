@@ -16,11 +16,13 @@ from __future__ import annotations
 
 import abc
 import functools as ft
+from itertools import chain
 from typing import Sequence
 
 import jax
 import jax.numpy as jnp
 import jax.random as jr
+import kernex as kex
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
@@ -37,7 +39,7 @@ def dropout_nd(
     key: jr.KeyArray,
     x: jax.Array,
     drop_rate,
-    drop_axes: Sequence[int] | None = None
+    drop_axes: Sequence[int] | None = None,
 ) -> jax.Array:
     """Drop some elements of the input array."""
     # drop_axes = None means dropout is applied to all axes
@@ -54,81 +56,40 @@ def dropout_nd(
     )
 
 
-def random_cutout_1d(
-    key: jr.KeyArray,
-    x: jax.Array,
-    shape: tuple[int] | int,
+def random_cutout_nd(
+    key: jax.Array,
+    array: jax.Array,
+    shape: tuple[int, ...],
     cutout_count: int,
-    fill_value: int,
-) -> jax.Array:
-    """Random Cutouts for spatial 1D array.
+    fill_value: int | float,
+):
+    """Random Cutouts for spatial ND array.
 
     Args:
-        x: input array
+        key: random number generator key
+        array: input array
         shape: shape of the cutout
         cutout_count: number of holes. Defaults to 1.
         fill_value: fill_value to fill. Defaults to 0.
     """
-    size = shape[0] if isinstance(shape, tuple) else shape
-    row_arange = jnp.arange(x.shape[1])
+    start_indices = [0] * len(shape)
+    slice_sizes = [di - (di % ki) for di, ki in zip(array.shape, shape)]
+    valid_array = jax.lax.dynamic_slice(array, start_indices, slice_sizes)
 
-    # split the key into subkeys, in essence, one for each cutout
-    keys = jr.split(key, cutout_count)
+    # get non-overlapping patches
+    patches = kex.kmap(kernel_size=shape, strides=shape)(lambda x: x)(array)
+    patches_shape = patches.shape
 
-    def scan_step(x, key):
-        # define the start and end of the cutout region
-        minval, maxval = 0, x.shape[1] - size
-        # sample the start of the cutout region
-        start = jnp.int32(jr.randint(key, shape=(), minval=minval, maxval=maxval))
-        # define the mask for the cutout region
-        row_mask = (row_arange >= start) & (row_arange < start + size)
-        # apply the mask
-        x = x * ~row_mask[None, :]
-        # return the updated array as carry, skip the scan output
-        return x, None
-
-    x, _ = jax.lax.scan(scan_step, x, keys)
-
-    return jnp.where(fill_value == 0, x, jnp.where(x == 0, fill_value, x))
-
-
-def random_cutout_2d(
-    key: jr.KeyArray,
-    x: jax.Array,
-    shape: tuple[int, int],
-    cutout_count: int,
-    fill_value: int,
-) -> jax.Array:
-    height, width = shape
-    row_arange = jnp.arange(x.shape[1])
-    col_arange = jnp.arange(x.shape[2])
-
-    # split the key into `cutout_count` keys, in essence, one for each cutout
-    keys = jr.split(key, cutout_count)
-
-    def scan_step(x, key):
-        # define a subkey for each dimension
-        ktop, kleft = jr.split(key, 2)
-
-        # for top define the start and end of the cutout region
-        minval, maxval = 0, x.shape[1] - shape[0]
-        # sample the start of the cutout region
-        top = jnp.int32(jr.randint(ktop, shape=(), minval=minval, maxval=maxval))
-
-        # for left define the start and end of the cutout region
-        minval, maxval = 0, x.shape[2] - shape[1]
-        left = jnp.int32(jr.randint(kleft, shape=(), minval=minval, maxval=maxval))
-
-        # define the mask for the cutout region
-        row_mask = (row_arange >= top) & (row_arange < top + height)
-        col_mask = (col_arange >= left) & (col_arange < left + width)
-
-        x = x * (~jnp.outer(row_mask, col_mask))
-        return x, None
-
-    x, _ = jax.lax.scan(scan_step, x, keys)
-
-    return jnp.where(fill_value == 0, x, jnp.where(x == 0, fill_value, x))
+    # patches_shape = (patch_0, ..., patch_n, k0, ..., kn)
+    patches = patches.reshape(-1, *shape)
+    indices = jr.choice(key, patches.shape[0], shape=(cutout_count,), replace=False)
+    patches = patches.at[indices].set(fill_value).reshape(patches_shape)
+    # patches_shape = (patch_0, k0, ..., patch_n, kn)
+    patch_axes = range(len(shape))
+    kernel_axes = range(len(shape), len(shape) * 2)
+    transpose_axes = list(chain.from_iterable(zip(patch_axes, kernel_axes)))
+    depatched = patches.transpose(transpose_axes).reshape(valid_array.shape)
+    return jax.lax.dynamic_update_slice(array, depatched, start_indices)
 
 
 @sk.autoinit
@@ -364,7 +325,39 @@ class Dropout3D(DropoutND):
         return 3
 
 
-class RandomCutout1D(sk.TreeClass):
+class RandomCutoutND(sk.TreeClass):
+    def __init__(
+        self,
+        shape: int | tuple[int],
+        cutout_count: int = 1,
+        fill_value: int | float = 0,
+    ):
+        self.shape = canonicalize(shape, ndim=self.spatial_ndim, name="shape")
+        self.cutout_count = positive_int_cb(cutout_count)
+        self.fill_value = fill_value
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray) -> jax.Array:
+        """Drop some elements of the input array.
+
+        Args:
+            x: input array
+            key: random number generator key
+        """
+        fill_value = jax.lax.stop_gradient(self.fill_value)
+
+        def cutout(x):
+            return random_cutout_nd(key, x, self.shape, self.cutout_count, fill_value)
+
+        return jax.vmap(cutout)(x)
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        ...
+
+
+class RandomCutout1D(RandomCutoutND):
     """Random Cutouts for spatial 1D array.
 
     Args:
@@ -380,41 +373,19 @@ class RandomCutout1D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> print(sk.nn.RandomCutout1D(5)(jnp.ones((1, 10)) * 100, key=jr.PRNGKey(0)))
-        [[100. 100. 100. 100.   0.   0.   0.   0.   0. 100.]]
+        [[100. 100. 100. 100. 100.   0.   0.   0.   0.   0.]]
 
     Reference:
         - https://arxiv.org/abs/1708.04552
         - https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
     """
 
-    def __init__(
-        self,
-        shape: int | tuple[int],
-        cutout_count: int = 1,
-        fill_value: int | float = 0,
-    ):
-        self.shape = canonicalize(shape, ndim=1, name="shape")
-        self.cutout_count = positive_int_cb(cutout_count)
-        self.fill_value = fill_value
-
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray) -> jax.Array:
-        """Drop some elements of the input array.
-
-        Args:
-            x: input array
-            key: random number generator key
-        """
-        fill_value = jax.lax.stop_gradient(self.fill_value)
-        out = random_cutout_1d(key, x, self.shape, self.cutout_count, fill_value)
-        return out
-
     @property
     def spatial_ndim(self) -> int:
         return 1
 
 
-class RandomCutout2D(sk.TreeClass):
+class RandomCutout2D(RandomCutoutND):
     """Random Cutouts for spatial 2D array
 
     .. image:: ../_static/randomcutout2d.png
@@ -427,34 +398,79 @@ class RandomCutout2D(sk.TreeClass):
     Note:
         Use :func:`.tree_eval` to turn off the cutout during evaluation.
 
+
+    Examples:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> x = jnp.arange(1,101).reshape(1, 10, 10)
+        >>> key = jr.PRNGKey(0)
+        >>> print(sk.nn.RandomCutout2D(shape=(3,2), cutout_count=2, fill_value=0)(x,key=key))
+        [[[  1   2   3   4   5   6   7   8   9  10]
+          [ 11  12  13  14  15  16  17  18  19  20]
+          [ 21  22  23  24  25  26  27  28  29  30]
+          [ 31  32  33  34   0   0  37  38  39  40]
+          [ 41  42  43  44   0   0  47  48  49  50]
+          [ 51  52  53  54   0   0  57  58  59  60]
+          [ 61  62   0   0  65  66  67  68  69  70]
+          [ 71  72   0   0  75  76  77  78  79  80]
+          [ 81  82   0   0  85  86  87  88  89  90]
+          [ 91  92  93  94  95  96  97  98  99 100]]]
+
     Reference:
         - https://arxiv.org/abs/1708.04552
         - https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
     """
-
-    def __init__(
-        self,
-        shape: int | tuple[int, int],
-        cutout_count: int = 1,
-        fill_value: int | float = 0,
-    ):
-        self.shape = canonicalize(shape, 2, name="shape")
-        self.cutout_count = positive_int_cb(cutout_count)
-        self.fill_value = fill_value
-
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray) -> jax.Array:
-        fill_value = jax.lax.stop_gradient(self.fill_value)
-        out = random_cutout_2d(key, x, self.shape, self.cutout_count, fill_value)
-        return out
 
     @property
     def spatial_ndim(self) -> int:
         return 2
 
 
-@tree_eval.def_eval(RandomCutout1D)
-@tree_eval.def_eval(RandomCutout2D)
+class RandomCutout3D(RandomCutoutND):
+    """Random Cutouts for spatial 2D array
+
+    .. image:: ../_static/randomcutout2d.png
+
+    Args:
+        shape: shape of the cutout. accepts int or a two element tuple.
+        cutout_count: number of holes. Defaults to 1.
+        fill_value: ``fill_value`` to fill the cutout region. Defaults to 0.
+
+    Note:
+        Use :func:`.tree_eval` to turn off the cutout during evaluation.
+
+
+    Examples:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> x = jnp.arange(1, 2 * 5 * 5 + 1).reshape(1, 2, 5, 5)
+        >>> key = jr.PRNGKey(0)
+        >>> print(sk.nn.RandomCutout3D(shape=(2, 2, 2), cutout_count=2, fill_value=0)(x, key=key))
+        [[[[ 1  2  0  0  5]
+           [ 6  7  0  0 10]
+           [ 0  0 13 14 15]
+           [ 0  0 18 19 20]
+           [21 22 23 24 25]]
+        <BLANKLINE>
+         [[26 27  0  0 30]
+          [31 32  0  0 35]
+          [ 0  0 38 39 40]
+          [ 0  0 43 44 45]
+          [46 47 48 49 50]]]]
+
+    Reference:
+        - https://arxiv.org/abs/1708.04552
+        - https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
+
+@tree_eval.def_eval(RandomCutoutND)
 @tree_eval.def_eval(DropoutND)
 @tree_eval.def_eval(Dropout)
 def _(_) -> sk.nn.Identity:

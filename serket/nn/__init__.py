@@ -75,14 +75,14 @@ from serket._src.nn.convolution import (
     SeparableFFTConv2D,
     SeparableFFTConv3D,
     conv_nd,
+    conv_nd_transpose,
     depthwise_conv_nd,
     depthwise_fft_conv_nd,
     fft_conv_nd,
+    fft_conv_nd_transpose,
     local_conv_nd,
     separable_conv_nd,
     separable_fft_conv_nd,
-    conv_nd_transpose,
-    fft_conv_nd_transpose,
 )
 from serket._src.nn.dropout import (
     Dropout,
@@ -91,6 +91,7 @@ from serket._src.nn.dropout import (
     Dropout3D,
     RandomCutout1D,
     RandomCutout2D,
+    RandomCutout3D,
 )
 from serket._src.nn.linear import (
     FNN,
@@ -253,6 +254,7 @@ __all__ = [
     "Dropout3D",
     "RandomCutout1D",
     "RandomCutout2D",
+    "RandomCutout3D",
     # linear
     "FNN",
     "MLP",
