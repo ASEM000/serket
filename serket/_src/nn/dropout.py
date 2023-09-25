@@ -430,10 +430,8 @@ class RandomCutout2D(RandomCutoutND):
 class RandomCutout3D(RandomCutoutND):
     """Random Cutouts for spatial 2D array
 
-    .. image:: ../_static/randomcutout2d.png
-
     Args:
-        shape: shape of the cutout. accepts int or a two element tuple.
+        shape: shape of the cutout. accepts int or a three element tuple.
         cutout_count: number of holes. Defaults to 1.
         fill_value: ``fill_value`` to fill the cutout region. Defaults to 0.
 
