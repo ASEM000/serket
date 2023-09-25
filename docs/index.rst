@@ -81,11 +81,10 @@ Install from github::
     :maxdepth: 1
     
     train_examples
+    interoperability
     notebooks/evaluation
     notebooks/mixed_precision
     notebooks/checkpointing
-    notebooks/convert_tensorflow
-    notebooks/convert_keras
     notebooks/regularization
     notebooks/subset_training
 
