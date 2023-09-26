@@ -154,9 +154,10 @@ def random_vertical_translate_2d(key: jr.KeyArray, image: HWArray) -> HWArray:
 def wave_transform_2d(image: HWArray, length: float, amplitude: float) -> HWArray:
     """Transform an image with a sinusoidal wave."""
     _, _ = image.shape
+    eps = jnp.finfo(image.dtype).eps
     ny, nx = jnp.indices(image.shape)
-    sinx = nx + amplitude * jnp.sin(ny / length)
-    cosy = ny + amplitude * jnp.cos(nx / length)
+    sinx = nx + amplitude * jnp.sin(ny / (length + eps))
+    cosy = ny + amplitude * jnp.cos(nx / (length + eps))
     return map_coordinates(image, [cosy, sinx], order=1)
 
 
@@ -814,10 +815,15 @@ class RandomWaveTransform2D(sk.TreeClass):
         self.length_range = length_range
         self.amplitude_range = amplitude_range
 
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, image: CHWArray, *, key: jr.KeyArray) -> CHWArray:
         in_axes = (None, 0, None, None)
         L, A = jax.lax.stop_gradient((self.length_range, self.amplitude_range))
         return jax.vmap(random_wave_transform_2d, in_axes=in_axes)(key, image, L, A)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
 
 
 @tree_eval.def_eval(RandomRotate2D)
