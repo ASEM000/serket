@@ -50,10 +50,12 @@ from serket._src.image.geometric import (
     RandomRotate2D,
     RandomVerticalShear2D,
     RandomVerticalTranslate2D,
+    RandomWaveTransform2D,
     Rotate2D,
     VerticalFlip2D,
     VerticalShear2D,
     VerticalTranslate2D,
+    WaveTransform2D,
 )
 
 __all__ = [
@@ -94,8 +96,10 @@ __all__ = [
     "RandomRotate2D",
     "RandomVerticalShear2D",
     "RandomVerticalTranslate2D",
+    "RandomWaveTransform2D",
     "Rotate2D",
     "VerticalFlip2D",
     "VerticalShear2D",
     "VerticalTranslate2D",
+    "WaveTransform2D",
 ]

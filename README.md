@@ -1,5 +1,5 @@
 <div align="center">
-<img width="250px" src="https://github.com/ASEM000/serket/assets/48389287/1733c849-c44f-4810-b74a-8a10263e8cc5"></div>
+<img width="150px" src=https://github.com/ASEM000/serket/assets/48389287/1ea9efd6-d848-48dc-9342-4198a9d9a90c></div>
 
 <h2 align="center">The ✨Magical✨ JAX ML Library.</h2>
 <h5 align = "center"> *Serket is the goddess of magic in Egyptian mythology
@@ -93,7 +93,7 @@ net = sk.tree_unmask(net)
 | Attention         | - `MultiHeadAttention`                                                                                                                                                                                                                                                                                                    |
 | Containers        | - `Sequential`, `RandomApply`, `RandomChoice`                                                                                                                                                                                                                                                                             |
 | Convolution       | - `{FFT,_}Conv{1D,2D,3D}` <br> - `{FFT,_}Conv{1D,2D,3D}Transpose` <br> - `Depthwise{FFT,_}Conv{1D,2D,3D}` <br> - `Separable{FFT,_}Conv{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local`                                                                                                                                            |
-| Dropout           | - `Dropout`<br> - `Dropout{1D,2D,3D}` <br> - `RandomCutout{1D,2D,3D}`                                                                                                                                                                                                                                                        |
+| Dropout           | - `Dropout`<br> - `Dropout{1D,2D,3D}` <br> - `RandomCutout{1D,2D,3D}`                                                                                                                                                                                                                                                     |
 | Linear            | - `Linear`, `Multilinear`, `GeneralLinear`, `Identity`                                                                                                                                                                                                                                                                    |
 | Densely connected | - `FNN` , <br> - `MLP` _compile time_ optimized                                                                                                                                                                                                                                                                           |
 | Normalization     | - `{Layer,Instance,Group,Batch}Norm`                                                                                                                                                                                                                                                                                      |
@@ -108,7 +108,7 @@ net = sk.tree_unmask(net)
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Filter    | - `{FFT,_}{Avg,Box,Gaussian,Motion}Blur2D` <br> - `{FFT,_}{UnsharpMask}2D` <br> - `{FFT,_}Laplacian2D` <br> - `MedianBlur2D`           |
 | Augment   | - `{Adjust,Random}{Brightness,Contrast}2D`, <br> - `JigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`, <br> - `Posterize2D`,`Solarize2D` |
-| Geometric | - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D`                 |
+| Geometric | - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D`  <br> - `{Random,_}WaveTransform2D`               |
 
 ### 🌈 Cluster package: `serket.cluster`
 

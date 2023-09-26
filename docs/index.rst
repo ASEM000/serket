@@ -7,7 +7,7 @@
 - ``serket`` aims to be the most intuitive and easy-to-use neural network library in ``jax``.
 - ``serket`` is fully transparent to ``jax`` transformation (e.g. ``vmap``, ``grad``, ``jit``,...).
 
-.. |logo| image:: _static/kol.svg
+.. |logo| image:: _static/logo.svg
     :height: 40px    
 
 
