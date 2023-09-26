@@ -24,7 +24,7 @@ from jax.scipy.ndimage import map_coordinates
 import serket as sk
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
-from serket._src.utils import CHWArray, HWArray, IsInstance, validate_spatial_nd
+from serket._src.utils import CHWArray, HWArray, IsInstance, Range, validate_spatial_nd
 
 
 def affine_2d(array: HWArray, matrix: HWArray) -> HWArray:
@@ -110,7 +110,7 @@ def random_perspective_2d(
     scale: float,
 ) -> HWArray:
     """Applies a random perspective transform to a channel-first image"""
-    assert image.ndim == 2
+    _, _ = image.shape
     a = e = 1.0
     b = d = 0.0
     c = f = 0.0  # no translation
@@ -121,7 +121,7 @@ def random_perspective_2d(
 
 def horizontal_translate_2d(image: HWArray, shift: int) -> HWArray:
     """Translate an image horizontally by a pixel value."""
-    assert image.ndim == 2
+    _, _ = image.shape
     if shift > 0:
         return jnp.zeros_like(image).at[:, shift:].set(image[:, :-shift])
     if shift < 0:
@@ -736,6 +736,45 @@ class HorizontalFlip2D(sk.TreeClass):
         return 2
 
 
+@sk.autoinit
+class RandomHorizontalFlip2D(sk.TreeClass):
+    """Flip channels left to right with a probability of `rate`.
+
+    .. image:: ../_static/horizontalflip2d.png
+
+    Args:
+        rate: The probability of flipping the image.
+
+    Note:
+        use :func:`tree_eval` to replace this layer with :class:`Identity` during
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> key = jax.random.PRNGKey(0)
+        >>> print(sk.image.RandomHorizontalFlip2D(rate=1.0)(x, key=key))
+        [[[ 5  4  3  2  1]
+          [10  9  8  7  6]
+          [15 14 13 12 11]
+          [20 19 18 17 16]
+          [25 24 23 22 21]]]
+    """
+
+    rate: float = sk.field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+        rate = jax.lax.stop_gradient(self.rate)
+        prop = jax.random.bernoulli(key, rate)
+        return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=1))(x), x)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
 class VerticalFlip2D(sk.TreeClass):
     """Flip channels up to down.
 
@@ -762,6 +801,45 @@ class VerticalFlip2D(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray) -> CHWArray:
         return jax.vmap(lambda x: jnp.flip(x, axis=0))(x)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+@sk.autoinit
+class RandomVerticalFlip2D(sk.TreeClass):
+    """Flip channels up to down with a probability of `rate`.
+
+    .. image:: ../_static/verticalflip2d.png
+
+    Args:
+        rate: The probability of flipping the image.
+
+    Note:
+        use :func:`tree_eval` to replace this layer with :class:`Identity` during
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> key = jax.random.PRNGKey(0)
+        >>> print(sk.image.RandomVerticalFlip2D(rate=1.0)(x, key=key))
+        [[[21 22 23 24 25]
+          [16 17 18 19 20]
+          [11 12 13 14 15]
+          [ 6  7  8  9 10]
+          [ 1  2  3  4  5]]]
+    """
+
+    rate: float = sk.field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+        rate = jax.lax.stop_gradient(self.rate)
+        prop = jax.random.bernoulli(key, rate)
+        return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=0))(x), x)
 
     @property
     def spatial_ndim(self) -> int:
@@ -827,6 +905,8 @@ class RandomWaveTransform2D(sk.TreeClass):
 
 
 @tree_eval.def_eval(RandomRotate2D)
+@tree_eval.def_eval(RandomHorizontalFlip2D)
+@tree_eval.def_eval(RandomVerticalFlip2D)
 @tree_eval.def_eval(RandomHorizontalShear2D)
 @tree_eval.def_eval(RandomVerticalShear2D)
 @tree_eval.def_eval(RandomPerspective2D)

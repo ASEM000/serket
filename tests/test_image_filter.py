@@ -376,10 +376,24 @@ def test_flip_left_right_2d():
     npt.assert_allclose(y, jnp.array([[[3, 2, 1], [6, 5, 4], [9, 8, 7]]]))
 
 
+def test_random_flip_left_right_2d():
+    flip = sk.image.RandomHorizontalFlip2D(rate=1.0)
+    x = jnp.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]])
+    y = flip(x, key=jax.random.PRNGKey(0))
+    npt.assert_allclose(y, jnp.array([[[3, 2, 1], [6, 5, 4], [9, 8, 7]]]))
+
+
 def test_flip_up_down_2d():
     flip = sk.image.VerticalFlip2D()
     x = jnp.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]])
     y = flip(x)
+    npt.assert_allclose(y, jnp.array([[[7, 8, 9], [4, 5, 6], [1, 2, 3]]]))
+
+
+def test_random_flip_up_down_2d():
+    flip = sk.image.RandomVerticalFlip2D(rate=1.0)
+    x = jnp.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]])
+    y = flip(x, key=jax.random.PRNGKey(0))
     npt.assert_allclose(y, jnp.array([[[7, 8, 9], [4, 5, 6], [1, 2, 3]]]))
 
 
