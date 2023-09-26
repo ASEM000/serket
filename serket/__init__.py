@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from pytreeclass import (
+from sepes import (
     AtIndexer,
     BaseKey,
     Partial,

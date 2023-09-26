@@ -102,7 +102,7 @@ Install from github::
     API/cluster
     API/nn
     API/image
-    API/pytreeclass
+    API/sepes
 
 Apache2.0 License.
 
