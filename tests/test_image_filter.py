@@ -508,3 +508,14 @@ def test_median_blur():
         ]
     )
     npt.assert_allclose(y, z, atol=1e-6)
+
+
+def test_wave_transform():
+    x = jnp.ones((1, 5, 5))
+    y = sk.image.WaveTransform2D(length=1, amplitude=0)(x)
+    npt.assert_allclose(x, y, atol=1e-6)
+
+    y = sk.image.RandomWaveTransform2D(length_range=[1, 1], amplitude_range=[0, 0])(
+        x, key=jax.random.PRNGKey(0)
+    )
+    npt.assert_allclose(x, y, atol=1e-6)

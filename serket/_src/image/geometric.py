@@ -151,6 +151,38 @@ def random_vertical_translate_2d(key: jr.KeyArray, image: HWArray) -> HWArray:
     return vertical_translate_2d(image, shift)
 
 
+def wave_transform_2d(image: HWArray, length: float, amplitude: float) -> HWArray:
+    """Transform an image with a sinusoidal wave."""
+    _, _ = image.shape
+    eps = jnp.finfo(image.dtype).eps
+    ny, nx = jnp.indices(image.shape)
+    sinx = nx + amplitude * jnp.sin(ny / (length + eps))
+    cosy = ny + amplitude * jnp.cos(nx / (length + eps))
+    return map_coordinates(image, [cosy, sinx], order=1)
+
+
+def random_wave_transform_2d(
+    key: jr.KeyArray,
+    image: HWArray,
+    length_range: tuple[float, float],
+    amplitude_range: tuple[float, float],
+) -> HWArray:
+    """Transform an image with a sinusoidal wave.
+
+    Args:
+        key: a random key.
+        image: a 2D image to transform.
+        length_range: a tuple of min length and max length to randdomly choose from.
+        amplitude_range: a tuple of min amplitude and max amplitude to randdomly choose from.
+    """
+    k1, k2 = jr.split(key)
+    l0, l1 = length_range
+    length = jr.uniform(k1, shape=(), minval=l0, maxval=l1)
+    a0, a1 = amplitude_range
+    amplitude = jr.uniform(k2, shape=(), minval=a0, maxval=a1)
+    return wave_transform_2d(image, length, amplitude)
+
+
 class Rotate2D(sk.TreeClass):
     """Rotate_2d a 2D image by an angle in dgrees in CCW direction
 
@@ -736,11 +768,70 @@ class VerticalFlip2D(sk.TreeClass):
         return 2
 
 
+class WaveTransform2D(sk.TreeClass):
+    """Apply a wave transform to an image.
+
+    .. image:: ../_static/wavetransform2d.png
+
+    Args:
+        length: The length of the wave.
+        amplitude: The amplitude of the wave.
+    """
+
+    def __init__(self, length: int, amplitude: float):
+        self.length = length
+        self.amplitude = amplitude
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, image: CHWArray) -> CHWArray:
+        in_axes = (0, None, None)
+        length, amplitude = jax.lax.stop_gradient((self.length, self.amplitude))
+        return jax.vmap(wave_transform_2d, in_axes=in_axes)(image, length, amplitude)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class RandomWaveTransform2D(sk.TreeClass):
+    """Apply a random wave transform to an image.
+
+    .. image:: ../_static/wavetransform2d.png
+
+    Args:
+        length_range: The range of the length of the wave.
+        amplitude_range: The range of the amplitude of the wave.
+
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+    """
+
+    def __init__(
+        self,
+        length_range: tuple[float, float],
+        amplitude_range: tuple[float, float],
+    ):
+        self.length_range = length_range
+        self.amplitude_range = amplitude_range
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, image: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+        in_axes = (None, 0, None, None)
+        L, A = jax.lax.stop_gradient((self.length_range, self.amplitude_range))
+        return jax.vmap(random_wave_transform_2d, in_axes=in_axes)(key, image, L, A)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
 @tree_eval.def_eval(RandomRotate2D)
 @tree_eval.def_eval(RandomHorizontalShear2D)
 @tree_eval.def_eval(RandomVerticalShear2D)
 @tree_eval.def_eval(RandomPerspective2D)
 @tree_eval.def_eval(RandomHorizontalTranslate2D)
 @tree_eval.def_eval(RandomVerticalTranslate2D)
+@tree_eval.def_eval(RandomWaveTransform2D)
 def _(_):
     return Identity()

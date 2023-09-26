@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 import jax
 
@@ -52,7 +52,7 @@ def tree_state(tree: T, **kwargs) -> T:
         tree: A tree of layers.
         kwargs: Keyword arguments to pass to the state initialization rule. of the
             tree layers.
-            
+
     Returns:
         A tree of state leaves if it has state, otherwise ``NoState`` placeholder.
 
@@ -60,8 +60,8 @@ def tree_state(tree: T, **kwargs) -> T:
         To define a state initialization rule for a custom layer, use the decorator
         :func:`.tree_state.def_state` on a function that accepts the layer and
         keyword arguments. Meaning that the function should have the signature
-        ``func(layer, *, user_kwargs, **rest_kwargs)``. The extra ``**rest_kwargs`` 
-        is used to allow for additional keyword arguments to be passed to the state 
+        ``func(layer, *, user_kwargs, **rest_kwargs)``. The extra ``**rest_kwargs``
+        is used to allow for additional keyword arguments to be passed to the state
         initialization rule for different layers.
 
         >>> import jax
@@ -91,7 +91,7 @@ def tree_state(tree: T, **kwargs) -> T:
 
     types = tuple(set(tree_state.state_dispatcher.registry) - {object})
 
-    def is_leaf(x: Callable[[Any], bool]) -> bool:
+    def is_leaf(x: Any) -> bool:
         return isinstance(x, types)
 
     def dispatch_func(leaf):
@@ -165,7 +165,7 @@ def tree_eval(tree):
 
     types = tuple(set(tree_eval.eval_dispatcher.registry) - {object})
 
-    def is_leaf(x: Callable[[Any], bool]) -> bool:
+    def is_leaf(x: Any) -> bool:
         return isinstance(x, types)
 
     return jax.tree_map(tree_eval.eval_dispatcher, tree, is_leaf=is_leaf)
