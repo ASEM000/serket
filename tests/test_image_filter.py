@@ -533,3 +533,35 @@ def test_wave_transform():
         x, key=jax.random.PRNGKey(0)
     )
     npt.assert_allclose(x, y, atol=1e-6)
+
+
+def test_adjust_log_2d():
+    x = jnp.arange(1, 17).reshape(1, 4, 4) / 16.0
+    y = sk.image.AdjustLog2D()(x)
+    z = jnp.array(
+        [
+            [
+                [0.08746284, 0.16992499, 0.24792752, 0.32192808],
+                [0.3923174, 0.45943162, 0.52356195, 0.5849625],
+                [0.64385617, 0.7004397, 0.75488746, 0.8073549],
+                [0.857981, 0.9068906, 0.9541963, 1.0],
+            ]
+        ],
+    )
+    npt.assert_allclose(y, z, atol=1e-6)
+
+
+def test_adjust_sigmoid_2d():
+    x = jnp.arange(1, 17).reshape(1, 4, 4) / 16.0
+    y = sk.image.AdjustSigmoid2D()(x)
+    z = jnp.array(
+        [
+            [
+                [0.01243165, 0.02297737, 0.04208773, 0.07585818],
+                [0.13296424, 0.22270013, 0.34864512, 0.5],
+                [0.6513549, 0.7772999, 0.86703575, 0.9241418],
+                [0.95791227, 0.97702265, 0.9875683, 0.9933072],
+            ]
+        ]
+    )
+    npt.assert_allclose(y, z, atol=1e-6)

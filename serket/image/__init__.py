@@ -15,6 +15,8 @@
 from serket._src.image.augment import (
     AdjustBrightness2D,
     AdjustContrast2D,
+    AdjustLog2D,
+    AdjustSigmoid2D,
     JigSaw2D,
     Pixelate2D,
     PixelShuffle2D,
@@ -64,6 +66,8 @@ __all__ = [
     # augment
     "AdjustBrightness2D",
     "AdjustContrast2D",
+    "AdjustLog2D",
+    "AdjustSigmoid2D",
     "JigSaw2D",
     "Pixelate2D",
     "PixelShuffle2D",
