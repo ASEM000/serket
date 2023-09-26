@@ -87,6 +87,7 @@ Install from github::
     notebooks/checkpointing
     notebooks/regularization
     notebooks/subset_training
+    notebooks/common_recipes
 
 
 .. currentmodule:: serket
