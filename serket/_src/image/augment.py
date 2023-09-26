@@ -160,6 +160,25 @@ def posterize_2d(image: HWArray, bits: int) -> HWArray:
     return jnp.left_shift(jnp.right_shift(image, shift), shift)
 
 
+def adjust_sigmoid_2d(
+    image: HWArray,
+    cutoff: float = 0.5,
+    gain: float = 10,
+    inv: bool = False,
+) -> HWArray:
+    """Adjust sigmoid correction on the input 2D image of range [0, 1]."""
+    return jnp.where(
+        inv,
+        1 - 1 / (1 + jnp.exp(gain * (cutoff - image))),
+        1 / (1 + jnp.exp(gain * (cutoff - image))),
+    )
+
+
+def adjust_log_2d(image: HWArray, gain: float = 1, inv: bool = False) -> HWArray:
+    """Adjust log correction on the input 2D image of range [0, 1]."""
+    return jnp.where(inv, (2**image - 1) * gain, jnp.log2(1 + image) * gain)
+
+
 class PixelShuffle2D(sk.TreeClass):
     """Rearrange elements in a tensor.
 
@@ -502,6 +521,77 @@ class JigSaw2D(sk.TreeClass):
             key: random key
         """
         return jax.vmap(jigsaw_2d, in_axes=(None, 0, None))(key, x, self.tiles)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class AdjustLog2D(sk.TreeClass):
+    """Adjust log correction on the input 2D image of range [0, 1].
+
+    Args:
+        image: channel-first image in range [0, 1].
+        gain: The gain factor. Default: 1.
+        inv:  Whether to invert the log correction. Default: False.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4) / 16.0
+        >>> print(sk.image.AdjustLog2D()(x))  # doctest: +SKIP
+        [[[0.08746284 0.16992499 0.24792752 0.32192808]
+          [0.3923174  0.45943162 0.52356195 0.5849625 ]
+          [0.64385617 0.7004397  0.75488746 0.8073549 ]
+          [0.857981   0.9068906  0.9541963  1.        ]]]
+    """
+
+    def __init__(self, gain: float = 1, inv: bool = False, clip_output: bool = True):
+        self.gain = gain
+        self.inv = inv
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray) -> CHWArray:
+        in_axes = (0, None, None)
+        gain = jax.lax.stop_gradient(self.gain)
+        return jax.vmap(adjust_log_2d, in_axes=in_axes)(x, gain, self.inv)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class AdjustSigmoid2D(sk.TreeClass):
+    """Adjust sigmoid correction on the input 2D image of range [0, 1].
+
+
+    Args:
+        image: channel-first image in range [0, 1].
+        cutoff: The cutoff of sigmoid function.
+        gain: The multiplier of sigmoid function.
+        inv: If is set to True the function will return the inverse sigmoid correction.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4) / 16.0
+        >>> print(AdjustSigmoid2D()(x))  # doctest: +SKIP
+        [[[0.01243165 0.02297737 0.04208773 0.07585818]
+          [0.13296424 0.22270013 0.34864512 0.5       ]
+          [0.6513549  0.7772999  0.86703575 0.9241418 ]
+          [0.95791227 0.97702265 0.9875683  0.9933072 ]]]
+    """
+
+    def __init__(self, cutoff: float = 0.5, gain: float = 10, inv: bool = False):
+        self.cutoff = cutoff
+        self.gain = gain
+        self.inv = inv
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray) -> CHWArray:
+        in_axes = (0, None, None, None)
+        cutoff, gain = jax.lax.stop_gradient((self.cutoff, self.gain))
+        return jax.vmap(adjust_sigmoid_2d, in_axes=in_axes)(x, cutoff, gain, self.inv)
 
     @property
     def spatial_ndim(self) -> int:
