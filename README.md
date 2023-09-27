@@ -35,7 +35,9 @@ pip install git+https://github.com/ASEM000/serket
 
 ### 🏃 Quick example<a id="QuickExample"></a>
 
-See [🧠 `serket` mental model](https://serket.readthedocs.io/en/latest/notebooks/mental_model.html) and for examples, see [Training 🚆 MNIST](https://serket.readthedocs.io/en/latest/notebooks/train_mnist.html), or [Training 🚆 Bidirectional-LSTM](https://serket.readthedocs.io/en/latest/notebooks/train_bilstm.html)
+See [🧠 `serket` mental model](https://serket.readthedocs.io/en/latest/notebooks/mental_model.html) and for examples, see [Training MNIST](https://serket.readthedocs.io/en/latest/notebooks/train_mnist.html)
+or [Training Bidirectional-LSTM](https://serket.readthedocs.io/en/latest/notebooks/train_bilstm.html)
+or [Training PINN](https://serket.readthedocs.io/en/latest/notebooks/train_pinn_burgers.html#)
 
 ```python
 import jax, jax.numpy as jnp
@@ -82,18 +84,17 @@ for j, (xb, yb) in enumerate(zip(x_train, y_train)):
 net = sk.tree_unmask(net)
 ```
 
-<details>
-
-<summary>  🧱 Layers catalog </summary>
 
 
-### Common utils
+### 🧱 Layers catalog
+
+#### 🔗 Common API
 | Group             | Layers|
 | ---------- | ---------- |
 | Containers        | - `Sequential`, `Random{Apply,Choice,Order}`|
 
 
-### 🧠 Neural network package: `serket.nn`
+#### 🧠 Neural network package: `serket.nn`
 
 | Group             | Layers                                                                                                                                                                                                                                                                                                                    |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -108,7 +109,7 @@ net = sk.tree_unmask(net)
 | Recurrent cells   | - `{SimpleRNN,LSTM,GRU,Dense}Cell` <br> - `{Conv,FFTConv}{LSTM,GRU}{1D,2D,3D}Cell`                                                                                                                                                                                                                                        |
 | Activations       | - `Adaptive{LeakyReLU,ReLU,Sigmoid,Tanh}`,<br> - `CeLU`,`ELU`,`GELU`,`GLU`<br>- `Hard{SILU,Shrink,Sigmoid,Swish,Tanh}`, <br> - `Soft{Plus,Sign,Shrink}` <br> - `LeakyReLU`,`LogSigmoid`,`LogSoftmax`,`Mish`,`PReLU`,<br> - `ReLU`,`ReLU6`,`SeLU`,`Sigmoid` <br> - `Swish`,`Tanh`,`TanhShrink`, `ThresholdedReLU`, `Snake` |
 
-### 🖼️ Image package: `serket.image`
+#### 🖼️ Image package: `serket.image`
 
 | Group     | Layers                                                                                                                                                                |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -116,10 +117,9 @@ net = sk.tree_unmask(net)
 | Augment   | - `Adjust{Sigmoid,Log}2D` <br> - `{Adjust,Random}{Brightness,Contrast}2D`, <br> - `JigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`, <br> - `Posterize2D`,`Solarize2D` |
 | Geometric | - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D` <br> - `{Random,_}WaveTransform2D`             |
 
-### 🌈 Cluster package: `serket.cluster`
+#### 🌈 Cluster package: `serket.cluster`
 
 | Group      | Layers     |
 | ---------- | ---------- |
 | Clustering | - `KMeans` |
 
-</details>
