@@ -36,6 +36,7 @@ master_doc = "index"
 
 html_static_path = ["_static"]
 html_logo = "_static/logo.svg"
+html_favicon = "_static/logo.ico"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
