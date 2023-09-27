@@ -66,7 +66,7 @@ def adjust_contrast_2d(image: HWArray, factor: float):
 
     Args:
         array: input array \in [0, 1] with shape (height, width)
-        contrast_factor: contrast factor to adust the contrast by.
+        factor: contrast factor to adust the contrast by.
     """
     _, _ = image.shape
     μ = jnp.mean(image, keepdims=True)
@@ -76,13 +76,13 @@ def adjust_contrast_2d(image: HWArray, factor: float):
 def random_contrast_2d(
     key: jr.KeyArray,
     array: HWArray,
-    factor_range: tuple[float, float],
+    range: tuple[float, float],
 ) -> HWArray:
     """Randomly adjusts the contrast of an image by scaling the pixel values by a factor."""
     _, _ = array.shape
-    minval, maxval = factor_range
-    contrast_factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
-    return adjust_contrast_2d(array, contrast_factor)
+    minval, maxval = range
+    factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
+    return adjust_contrast_2d(array, factor)
 
 
 def adjust_brightness_2d(image: HWArray, factor: float) -> HWArray:
@@ -99,11 +99,11 @@ def adjust_brightness_2d(image: HWArray, factor: float) -> HWArray:
 def random_brightness_2d(
     key: jr.KeyArray,
     image: HWArray,
-    factor_range: tuple[float, float],
+    range: tuple[float, float],
 ) -> HWArray:
     """Randomly adjusts the brightness of an image by adding a value to the pixel values."""
     _, _ = image.shape
-    minval, maxval = factor_range
+    minval, maxval = range
     assert 0 <= minval <= maxval <= 1
     factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
     return adjust_brightness_2d(image, factor)
@@ -225,19 +225,19 @@ class AdjustContrast2D(sk.TreeClass):
     .. image:: ../_static/adjustcontrast2d.png
 
     Args:
-        contrast_factor: contrast factor to adust the contrast by. Defaults to 1.0.
+        factor: contrast factor to adust the contrast by. Defaults to 1.0.
 
     Reference:
         - https://www.tensorflow.org/api_docs/python/tf/image/adjust_contrast
         - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
-    contrast_factor: float = 1.0
+    factor: float = 1.0
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray) -> CHWArray:
-        contrast_factor = jax.lax.stop_gradient(self.contrast_factor)
-        return jax.vmap(adjust_contrast_2d, in_axes=(0, None))(x, contrast_factor)
+        factor = jax.lax.stop_gradient(self.factor)
+        return jax.vmap(adjust_contrast_2d, in_axes=(0, None))(x, factor)
 
     @property
     def spatial_ndim(self) -> int:
@@ -248,7 +248,7 @@ class RandomContrast2D(sk.TreeClass):
     """Randomly adjusts the contrast of an 1D input by scaling the pixel values by a factor.
 
     Args:
-        contrast_range: contrast range to adust the contrast by. Defaults to (0.5, 1).
+        range: contrast range to adust the contrast by. Defaults to (0.5, 1).
 
     Note:
         - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
@@ -259,24 +259,20 @@ class RandomContrast2D(sk.TreeClass):
         - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
-    def __init__(self, contrast_range: tuple[float, float] = (0.5, 1)):
-        if not (
-            isinstance(contrast_range, tuple)
-            and len(contrast_range) == 2
-            and contrast_range[0] <= contrast_range[1]
-        ):
+    def __init__(self, range: tuple[float, float] = (0.5, 1)):
+        if not (isinstance(range, tuple) and len(range) == 2 and range[0] <= range[1]):
             raise ValueError(
-                "`contrast_range` must be a tuple of two floats, "
+                "`range` must be a tuple of two floats, "
                 "with the first one smaller than the second one."
             )
 
-        self.contrast_range = contrast_range
+        self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
-        contrast_range = jax.lax.stop_gradient(self.contrast_range)
+        range = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
-        return jax.vmap(random_contrast_2d, in_axes=in_axes)(key, x, contrast_range)
+        return jax.vmap(random_contrast_2d, in_axes=in_axes)(key, x, range)
 
     @property
     def spatial_ndim(self) -> int:
@@ -323,13 +319,13 @@ class RandomBrightness2D(sk.TreeClass):
         range: brightness range to adust the brightness by. Defaults to (0.5, 1).
     """
 
-    factor_range: tuple[float, float] = sk.field(on_setattr=[IsInstance(tuple)])
+    range: tuple[float, float] = sk.field(on_setattr=[IsInstance(tuple)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
-        factor_range = jax.lax.stop_gradient(self.factor_range)
+        range = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
-        return jax.vmap(random_brightness_2d, in_axes=in_axes)(key, x, factor_range)
+        return jax.vmap(random_brightness_2d, in_axes=in_axes)(key, x, range)
 
     @property
     def spatial_ndim(self) -> int:

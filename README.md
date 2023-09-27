@@ -30,14 +30,14 @@ pip install git+https://github.com/ASEM000/serket
 
 ## 📖 Description and motivation<a id="Description"></a>
 
-- `serket` aims to be the most intuitive and easy-to-use neural network library in `JAX`.
+- `serket` aims to be the most intuitive and easy-to-use machine learning library in `JAX`.
 - `serket` is fully transparent to `jax` transformation (e.g. `vmap`,`grad`,`jit`,...).
 
 ### 🏃 Quick example<a id="QuickExample"></a>
 
 See [🧠 `serket` mental model](https://serket.readthedocs.io/en/latest/notebooks/mental_model.html) and for examples, see [Training MNIST](https://serket.readthedocs.io/en/latest/notebooks/train_mnist.html)
 or [Training Bidirectional-LSTM](https://serket.readthedocs.io/en/latest/notebooks/train_bilstm.html)
-or [Training PINN](https://serket.readthedocs.io/en/latest/notebooks/train_pinn_burgers.html#)
+or [Training PINN](https://serket.readthedocs.io/en/latest/notebooks/train_pinn_burgers.html#) 
 
 ```python
 import jax, jax.numpy as jnp
@@ -84,14 +84,13 @@ for j, (xb, yb) in enumerate(zip(x_train, y_train)):
 net = sk.tree_unmask(net)
 ```
 
+<details> <summary> 📚 Layers catalog </summary>
 
-
-### 🧱 Layers catalog
 
 #### 🔗 Common API
 | Group             | Layers|
 | ---------- | ---------- |
-| Containers        | - `Sequential`, `Random{Apply,Choice,Order}`|
+| Containers        | - `Sequential`, `Random{Choice}`|
 
 
 #### 🧠 Neural network package: `serket.nn`
@@ -123,3 +122,5 @@ net = sk.tree_unmask(net)
 | ---------- | ---------- |
 | Clustering | - `KMeans` |
 
+
+</details>

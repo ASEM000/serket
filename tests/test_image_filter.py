@@ -326,7 +326,7 @@ def test_adjust_contrast_2d():
         ]
     )
 
-    npt.assert_allclose(sk.image.AdjustContrast2D(contrast_factor=0.5)(x), y, atol=1e-5)
+    npt.assert_allclose(sk.image.AdjustContrast2D(factor=0.5)(x), y, atol=1e-5)
 
 
 def test_random_contrast_2d():
@@ -361,9 +361,7 @@ def test_random_contrast_2d():
     )
 
     npt.assert_allclose(
-        sk.image.RandomContrast2D(contrast_range=(0.5, 1))(
-            x, key=jax.random.PRNGKey(0)
-        ),
+        sk.image.RandomContrast2D(range=(0.5, 1))(x, key=jax.random.PRNGKey(0)),
         y,
         atol=1e-5,
     )

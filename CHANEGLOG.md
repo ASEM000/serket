@@ -22,7 +22,7 @@
 - `FlipLeftRight2D` -> `HorizontalFlip2D`
 - `FlipUpDown2D` -> `VerticalFlip2D`
 
-- `sk.nn.{Sequential,RandomApply,RandomChoice,RandomOrder}` to `sk.{Sequential,RandomApply,RandomChoice,RandomOrder}`. as they are applicable to other modules and not specfic to `nn`
+- `sk.nn.{Sequential,RandomChoice}` to `sk.{Sequential,RandomChoice}`. as they are applicable to other modules and not specfic to `nn`
 
 ### Additions
 

@@ -30,15 +30,6 @@ def test_sequential_with_key():
     assert layer(1, key=jr.PRNGKey(0)) == 4
 
 
-def test_random_apply():
-    layer = sk.RandomApply(lambda x: x + 1, rate=1.0)
-    assert layer(1, key=jr.PRNGKey(0)) == 2
-    layer = sk.RandomApply(lambda x: x + 1, rate=0.0)
-    assert layer(1, key=jr.PRNGKey(0)) == 1
-
-    assert sk.tree_eval(layer)(1) == 2
-
-
 def test_random_choice():
     layer = sk.RandomChoice(lambda x: x + 2, lambda x: x * 2)
     key = jr.PRNGKey(0)
