@@ -18,6 +18,7 @@ import functools as ft
 from typing import Any, Callable, Sequence
 
 import jax
+import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
@@ -116,7 +117,7 @@ def random_apply(
         rate: probability of applying the layer
         key: a random number generator key.
     """
-    return layer(array) if jr.bernoulli(key, rate) else array
+    return jnp.where(jr.bernoulli(key, rate), layer(array), array)
 
 
 @sk.autoinit
@@ -203,55 +204,10 @@ class RandomChoice(sk.TreeClass):
         return random_choice(key, self.layers, x)
 
 
-def random_order(key:jr.KeyArray, layers: tuple[Callable[..., Any], ...], array: Any):
-    """Randomly applies the given layers/functions in a random order.
-
-    Args:
-        layers: variable number of layers/functions to select from.
-        array: an array to apply the layer to.
-        key: a random number generator key.
-    """
-    k1,k2 = jr.split(key)
-    indices = jr.permutation(k1, len(layers), independent=True)
-    layers = tuple(layers[i] for i in indices)
-    return sequential(k2, layers, array)
-
-
-class RandomOrder(sk.TreeClass):
-    """Randomly applies the given layers/functions in a random order.
-
-    Args:
-        layers: variable number of layers/functions to select from.
-
-    Note:
-        Using :func:`tree_eval` will convert this layer to a :Class:`.Sequential`
-        to apply the all layers sequentially in a fixed order.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.random as jr
-        >>> k1 = jr.PRNGKey(0)
-        >>> k2 = jr.PRNGKey(6)
-        >>> def f1(x):
-        ...     return x + 1
-        >>> def f2(x):
-        ...    return x ** 2
-        >>> sk.RandomOrder(f1, f2)(2, key=k1)  # f1(f2(x))
-        5
-        >>> sk.RandomOrder(f1, f2)(2, key=k2)  # f2(f1(x))
-        9
-    """ 
-    def __init__(self, *layers):
-        self.layers = layers
-    
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray):
-        return random_order(key, self.layers, x)
-
-
-@tree_eval.def_eval(RandomOrder)
 @tree_eval.def_eval(RandomChoice)
 def tree_eval_sequential(layer) -> Sequential:
     return Sequential(*layer.layers)
+
 
 @tree_eval.def_eval(RandomApply)
 def tree_eval_random_apply(layer: RandomApply):

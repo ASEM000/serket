@@ -38,13 +38,12 @@ from sepes import (
     unfreeze,
 )
 
+from serket._src.containers import RandomApply, RandomChoice, Sequential
 from serket._src.custom_transform import tree_eval, tree_state
 from serket._src.nn.activation import def_act_entry
 from serket._src.nn.initialization import def_init_entry
 
 from . import cluster, image, nn
-
-from serket._src.containers import Sequential,RandomApply,RandomChoice,RandomOrder
 
 __all__ = [
     # general utils
@@ -86,7 +85,6 @@ __all__ = [
     "Sequential",
     "RandomApply",
     "RandomChoice",
-    "RandomOrder",
 ]
 
 
