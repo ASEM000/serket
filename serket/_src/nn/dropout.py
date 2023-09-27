@@ -118,7 +118,7 @@ class Dropout(sk.TreeClass):
         >>> import jax.random as jr
         >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
         >>> dropout = sk.nn.Dropout(0.5)
-        >>> layers = sk.nn.Sequential(dropout, linear)
+        >>> layers = sk.Sequential(dropout, linear)
         >>> sk.tree_eval(layers)
         Sequential(
           layers=(
@@ -197,7 +197,7 @@ class Dropout1D(DropoutND):
         >>> import jax.random as jr
         >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
         >>> dropout = sk.nn.Dropout1D(0.5)
-        >>> layers = sk.nn.Sequential(dropout, linear)
+        >>> layers = sk.Sequential(dropout, linear)
         >>> sk.tree_eval(layers)
         Sequential(
           layers=(
@@ -248,7 +248,7 @@ class Dropout2D(DropoutND):
         >>> import jax.random as jr
         >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
         >>> dropout = sk.nn.Dropout2D(0.5)
-        >>> layers = sk.nn.Sequential(dropout, linear)
+        >>> layers = sk.Sequential(dropout, linear)
         >>> sk.tree_eval(layers)
         Sequential(
           layers=(
@@ -299,7 +299,7 @@ class Dropout3D(DropoutND):
         >>> import jax.random as jr
         >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
         >>> dropout = sk.nn.Dropout3D(0.5)
-        >>> layers = sk.nn.Sequential(dropout, linear)
+        >>> layers = sk.Sequential(dropout, linear)
         >>> sk.tree_eval(layers)
         Sequential(
           layers=(

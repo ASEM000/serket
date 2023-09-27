@@ -64,7 +64,7 @@ class Sequential(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import serket as sk
-        >>> layers = sk.nn.Sequential(lambda x: x + 1, lambda x: x * 2)
+        >>> layers = sk.Sequential(lambda x: x + 1, lambda x: x * 2)
         >>> print(layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0)))
         [4 6 8]
 
@@ -130,10 +130,10 @@ class RandomApply(sk.TreeClass):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), rate=0.0)
+        >>> layer = sk.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), rate=0.0)
         >>> layer(jnp.ones((1, 10, 10))).shape
         (1, 10, 10)
-        >>> layer = sk.nn.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), rate=1.0)
+        >>> layer = sk.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), rate=1.0)
         >>> layer(jnp.ones((1, 10, 10))).shape
         (1, 5, 5)
 
@@ -175,18 +175,18 @@ class RandomChoice(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> key = jr.PRNGKey(0)
-        >>> print(sk.nn.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key=key))
+        >>> print(sk.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key=key))
         3.0
         >>> key = jr.PRNGKey(10)
-        >>> print(sk.nn.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key=key))
+        >>> print(sk.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key=key))
         2.0
 
     Note:
-        Using :func:`tree_eval` will convert this layer to a :func:`nn.Sequential`
+        Using :func:`tree_eval` will convert this layer to a :class:`.Sequential`
         to apply the all layers sequentially.
 
         >>> import serket as sk
-        >>> layer = sk.nn.RandomChoice(lambda x: x + 2, lambda x: x * 2)
+        >>> layer = sk.RandomChoice(lambda x: x + 2, lambda x: x * 2)
         >>> # will apply all layers sequentially
         >>> print(sk.tree_eval(layer)(1.0))
         6.0
@@ -203,10 +203,55 @@ class RandomChoice(sk.TreeClass):
         return random_choice(key, self.layers, x)
 
 
-@tree_eval.def_eval(RandomChoice)
-def tree_eval_sequential(layer: RandomChoice) -> Sequential:
-    return Sequential(*layer.layers)
+def random_order(key:jr.KeyArray, layers: tuple[Callable[..., Any], ...], array: Any):
+    """Randomly applies the given layers/functions in a random order.
 
+    Args:
+        layers: variable number of layers/functions to select from.
+        array: an array to apply the layer to.
+        key: a random number generator key.
+    """
+    k1,k2 = jr.split(key)
+    indices = jr.permutation(k1, len(layers), independent=True)
+    layers = tuple(layers[i] for i in indices)
+    return sequential(k2, layers, array)
+
+
+class RandomOrder(sk.TreeClass):
+    """Randomly applies the given layers/functions in a random order.
+
+    Args:
+        layers: variable number of layers/functions to select from.
+
+    Note:
+        Using :func:`tree_eval` will convert this layer to a :Class:`.Sequential`
+        to apply the all layers sequentially in a fixed order.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.random as jr
+        >>> k1 = jr.PRNGKey(0)
+        >>> k2 = jr.PRNGKey(6)
+        >>> def f1(x):
+        ...     return x + 1
+        >>> def f2(x):
+        ...    return x ** 2
+        >>> sk.RandomOrder(f1, f2)(2, key=k1)  # f1(f2(x))
+        5
+        >>> sk.RandomOrder(f1, f2)(2, key=k2)  # f2(f1(x))
+        9
+    """ 
+    def __init__(self, *layers):
+        self.layers = layers
+    
+    def __call__(self, x: jax.Array, *, key: jr.KeyArray):
+        return random_order(key, self.layers, x)
+
+
+@tree_eval.def_eval(RandomOrder)
+@tree_eval.def_eval(RandomChoice)
+def tree_eval_sequential(layer) -> Sequential:
+    return Sequential(*layer.layers)
 
 @tree_eval.def_eval(RandomApply)
 def tree_eval_random_apply(layer: RandomApply):

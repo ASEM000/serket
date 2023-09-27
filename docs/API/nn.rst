@@ -11,7 +11,6 @@
    
    activations
    attention
-   containers
    convolution
    dropout
    linear

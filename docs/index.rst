@@ -32,7 +32,7 @@ Install from github::
     x_train, y_train = ..., ...
     k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
 
-    net = sk.nn.Sequential(
+    net = sk.Sequential(
         jnp.ravel,
         sk.nn.Linear(28 * 28, 64, key=k1),
         jax.nn.relu,

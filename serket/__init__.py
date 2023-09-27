@@ -44,6 +44,8 @@ from serket._src.nn.initialization import def_init_entry
 
 from . import cluster, image, nn
 
+from serket._src.containers import Sequential,RandomApply,RandomChoice,RandomOrder
+
 __all__ = [
     # general utils
     "TreeClass",
@@ -80,6 +82,11 @@ __all__ = [
     "tree_state",
     "def_init_entry",
     "def_act_entry",
+    # containers
+    "Sequential",
+    "RandomApply",
+    "RandomChoice",
+    "RandomOrder",
 ]
 
 
