@@ -85,7 +85,6 @@ Install from github::
     notebooks/evaluation
     notebooks/mixed_precision
     notebooks/checkpointing
-    notebooks/regularization
     notebooks/subset_training
     notebooks/mini_optax
     notebooks/common_recipes
