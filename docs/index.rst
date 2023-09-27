@@ -88,6 +88,7 @@ Install from github::
     notebooks/subset_training
     notebooks/mini_optax
     notebooks/augmentations
+    notebooks/deep_ensembles
     notebooks/common_recipes
 
 
