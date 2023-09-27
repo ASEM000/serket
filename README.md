@@ -37,7 +37,7 @@ pip install git+https://github.com/ASEM000/serket
 
 See [🧠 `serket` mental model](https://serket.readthedocs.io/en/latest/notebooks/mental_model.html) and for examples, see [Training MNIST](https://serket.readthedocs.io/en/latest/notebooks/train_mnist.html)
 or [Training Bidirectional-LSTM](https://serket.readthedocs.io/en/latest/notebooks/train_bilstm.html)
-or [Training PINN](https://serket.readthedocs.io/en/latest/notebooks/train_pinn_burgers.html#) 
+or [Training PINN](https://serket.readthedocs.io/en/latest/notebooks/train_pinn_burgers.html#) or [Image augmentation pipelines](https://serket.readthedocs.io/en/latest/notebooks/augmentations.html)
 
 ```python
 import jax, jax.numpy as jnp
