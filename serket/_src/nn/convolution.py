@@ -46,70 +46,6 @@ from serket._src.utils import (
 )
 
 
-@ft.partial(jax.jit, inline=True)
-def _ungrouped_matmul(x, y) -> jax.Array:
-    alpha = "".join(map(str, range(max(x.ndim, y.ndim))))
-    lhs = "a" + alpha[: x.ndim - 1]
-    rhs = "b" + alpha[: y.ndim - 1]
-    out = "ab" + lhs[2:]
-    return jnp.einsum(f"{lhs},{rhs}->{out}", x, y)
-
-
-@ft.partial(jax.jit, static_argnums=(2,), inline=True)
-def _grouped_matmul(x, y, groups) -> jax.Array:
-    b, c, *s = x.shape  # batch, channels, spatial
-    o, i, *k = y.shape  # out_channels, in_channels, kernel
-    x = x.reshape(groups, b, c // groups, *s)  # groups, batch, channels, spatial
-    y = y.reshape(groups, o // groups, *(i, *k))
-    z = jax.vmap(_ungrouped_matmul, in_axes=(0, 0), out_axes=1)(x, y)
-    return z.reshape(z.shape[0], z.shape[1] * z.shape[2], *z.shape[3:])
-
-
-def grouped_matmul(x, y, groups: int = 1):
-    return _ungrouped_matmul(x, y) if groups == 1 else _grouped_matmul(x, y, groups)
-
-
-@ft.partial(jax.jit, static_argnums=(1, 2), inline=True)
-def _intersperse_along_axis(x: jax.Array, dilation: int, axis: int) -> jax.Array:
-    shape = list(x.shape)
-    shape[axis] = (dilation) * shape[axis] - (dilation - 1)
-    z = jnp.zeros(shape)
-    z = z.at[(slice(None),) * axis + (slice(None, None, (dilation)),)].set(x)
-    return z
-
-
-@ft.partial(jax.jit, static_argnums=(1, 2), inline=True)
-def _general_intersperse(
-    x: jax.Array,
-    dilation: tuple[int, ...],
-    axis: tuple[int, ...],
-) -> jax.Array:
-    for di, ai in zip(dilation, axis):
-        x = _intersperse_along_axis(x, di, ai) if di > 1 else x
-    return x
-
-
-@ft.partial(jax.jit, static_argnums=(1,), inline=True)
-def _general_pad(x: jax.Array, pad_width: tuple[tuple[int, int], ...]) -> jax.Array:
-    """Pad the input with `pad_width` on each side. Negative value will lead to cropping.
-    Example:
-        >>> print(_general_pad(jnp.ones([3,3]),((0,0),(-1,1))))  # DOCTEST: +NORMALIZE_WHITESPACE
-        [[1. 1. 0.]
-         [1. 1. 0.]
-         [1. 1. 0.]]
-    """
-
-    for axis, (lhs, rhs) in enumerate(pad_width := list(pad_width)):
-        if lhs < 0 and rhs < 0:
-            x = jax.lax.dynamic_slice_in_dim(x, -lhs, x.shape[axis] + lhs + rhs, axis)
-        elif lhs < 0:
-            x = jax.lax.dynamic_slice_in_dim(x, -lhs, x.shape[axis] + lhs, axis)
-        elif rhs < 0:
-            x = jax.lax.dynamic_slice_in_dim(x, 0, x.shape[axis] + rhs, axis)
-
-    return jnp.pad(x, [(max(lhs, 0), max(rhs, 0)) for (lhs, rhs) in (pad_width)])
-
-
 @ft.partial(jax.jit, static_argnums=(2, 3, 4, 5), inline=True)
 def fft_conv_general_dilated(
     lhs: jax.Array,
@@ -119,26 +55,73 @@ def fft_conv_general_dilated(
     groups: int,
     dilation: tuple[int, ...],
 ) -> jax.Array:
+    def pad(x: jax.Array, pad_width: tuple[tuple[int, int], ...]) -> jax.Array:
+        # Pad the input with `pad_width` on each side. 
+        # negative value will lead to cropping.
+        for axis, (lhs, rhs) in enumerate(pad_width := list(pad_width)):
+            if lhs < 0 and rhs < 0:
+                start = -lhs
+                size = x.shape[axis] + lhs + rhs
+                x = jax.lax.dynamic_slice_in_dim(x, start, size, axis)
+            elif lhs < 0:
+                start = -lhs
+                size = x.shape[axis] + lhs
+                x = jax.lax.dynamic_slice_in_dim(x, start, size, axis)
+            elif rhs < 0:
+                start = 0
+                size = x.shape[axis] + rhs
+                x = jax.lax.dynamic_slice_in_dim(x, start, size, axis)
+
+        return jnp.pad(x, [(max(lhs, 0), max(rhs, 0)) for (lhs, rhs) in (pad_width)])
+
+    def intersperse(x: jax.Array, dilation: tuple[int, ...], axis: tuple[int, ...]):
+        def along_axis(x: jax.Array, dilation: int, axis: int) -> jax.Array:
+            shape = list(x.shape)
+            shape[axis] = (dilation) * shape[axis] - (dilation - 1)
+            z = jnp.zeros(shape)
+            z = z.at[(slice(None),) * axis + (slice(None, None, (dilation)),)].set(x)
+            return z
+
+        for di, ai in zip(dilation, axis):
+            x = along_axis(x, di, ai) if di > 1 else x
+        return x
+
+    def matmul(x, y, groups: int = 1):
+        def ungrouped_matmul(x, y) -> jax.Array:
+            alpha = "".join(map(str, range(max(x.ndim, y.ndim))))
+            lhs = "a" + alpha[: x.ndim - 1]
+            rhs = "b" + alpha[: y.ndim - 1]
+            out = "ab" + lhs[2:]
+            return jnp.einsum(f"{lhs},{rhs}->{out}", x, y)
+
+        def grouped_matmul(x, y, groups) -> jax.Array:
+            b, c, *s = x.shape  # batch, channels, spatial
+            o, i, *k = y.shape  # out_channels, in_channels, kernel
+            # groups, batch, channels, spatial
+            x = x.reshape(groups, b, c // groups, *s)
+            y = y.reshape(groups, o // groups, *(i, *k))
+            z = jax.vmap(ungrouped_matmul, in_axes=(0, 0), out_axes=1)(x, y)
+            return z.reshape(z.shape[0], z.shape[1] * z.shape[2], *z.shape[3:])
+
+        return ungrouped_matmul(x, y) if groups == 1 else grouped_matmul(x, y, groups)
+
+    dtype = lhs.dtype
     spatial_ndim = lhs.ndim - 2  # spatial dimensions
-    rhs = _general_intersperse(rhs, dilation=dilation, axis=range(2, 2 + spatial_ndim))
-    lhs = _general_pad(lhs, ((0, 0), (0, 0), *padding))
+    rhs = intersperse(rhs, dilation=dilation, axis=range(2, 2 + spatial_ndim))
+    lhs = pad(lhs, ((0, 0), (0, 0), *padding))
 
     x_shape, w_shape = lhs.shape, rhs.shape
 
     if lhs.shape[-1] % 2 != 0:
         lhs = jnp.pad(lhs, tuple([(0, 0)] * (lhs.ndim - 1) + [(0, 1)]))
 
-    kernel_padding = (
-        (0, lhs.shape[i] - rhs.shape[i]) for i in range(2, spatial_ndim + 2)
-    )
-    rhs = _general_pad(rhs, ((0, 0), (0, 0), *kernel_padding))
+    kernel_pad = ((0, lhs.shape[i] - rhs.shape[i]) for i in range(2, spatial_ndim + 2))
+    rhs = pad(rhs, ((0, 0), (0, 0), *kernel_pad))
 
-    # for real-valued input
-    x_fft = jnp.fft.rfftn(lhs, axes=range(2, spatial_ndim + 2))
-    w_fft = jnp.conjugate(jnp.fft.rfftn(rhs, axes=range(2, spatial_ndim + 2)))
-    z_fft = grouped_matmul(x_fft, w_fft, groups)
-
-    z = jnp.fft.irfftn(z_fft, axes=range(2, spatial_ndim + 2))
+    x_fft = jnp.fft.fftn(lhs, axes=range(2, spatial_ndim + 2))
+    w_fft = jnp.conjugate(jnp.fft.fftn(rhs, axes=range(2, spatial_ndim + 2)))
+    z_fft = matmul(x_fft, w_fft, groups)
+    z = jnp.fft.ifftn(z_fft, axes=range(2, spatial_ndim + 2)).astype(dtype)
 
     start = (0,) * (spatial_ndim + 2)
     end = [z.shape[0], z.shape[1]]
