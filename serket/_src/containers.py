@@ -103,56 +103,6 @@ class Sequential(sk.TreeClass):
         return reversed(self.layers)
 
 
-def random_apply(
-    key: jr.KeyArray,
-    layer: Sequence[Callable[..., Any]],
-    array: Any,
-    rate: float,
-):
-    """Randomly applies a layer with probability ``rate``.
-
-    Args:
-        layer: layer to apply.
-        array: an array to apply the layer to.
-        rate: probability of applying the layer
-        key: a random number generator key.
-    """
-    return jnp.where(jr.bernoulli(key, rate), layer(array), array)
-
-
-@sk.autoinit
-class RandomApply(sk.TreeClass):
-    """Randomly applies a layer with probability ``rate``.
-
-    Args:
-        layer: layer to apply.
-        rate: probability of applying the layer
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> layer = sk.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), rate=0.0)
-        >>> layer(jnp.ones((1, 10, 10))).shape
-        (1, 10, 10)
-        >>> layer = sk.RandomApply(sk.nn.MaxPool2D(kernel_size=2, strides=2), rate=1.0)
-        >>> layer(jnp.ones((1, 10, 10))).shape
-        (1, 5, 5)
-
-    Note:
-        Using :func:`tree_eval` will always apply the layer/function.
-
-    Reference:
-        - https://pytorch.org/vision/main/_modules/torchvision/transforms/transforms.html#RandomApply
-        - Use :func:`nn.Sequential` to apply multiple layers.
-    """
-
-    layer: Any
-    rate: float = sk.field(default=0.5, on_setattr=[Range(0, 1)])
-
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray = jr.PRNGKey(0)):
-        rate = jax.lax.stop_gradient(self.rate)
-        return random_apply(key, self.layer, x, rate)
-
 
 def random_choice(key: jr.KeyArray, layers: tuple[Callable[..., Any], ...], array: Any):
     """Randomly selects one of the given layers/functions.
@@ -207,8 +157,3 @@ class RandomChoice(sk.TreeClass):
 @tree_eval.def_eval(RandomChoice)
 def tree_eval_sequential(layer) -> Sequential:
     return Sequential(*layer.layers)
-
-
-@tree_eval.def_eval(RandomApply)
-def tree_eval_random_apply(layer: RandomApply):
-    return layer.layer

@@ -38,7 +38,7 @@ from sepes import (
     unfreeze,
 )
 
-from serket._src.containers import RandomApply, RandomChoice, Sequential
+from serket._src.containers import RandomChoice, Sequential
 from serket._src.custom_transform import tree_eval, tree_state
 from serket._src.nn.activation import def_act_entry
 from serket._src.nn.initialization import def_init_entry
@@ -83,7 +83,6 @@ __all__ = [
     "def_act_entry",
     # containers
     "Sequential",
-    "RandomApply",
     "RandomChoice",
 ]
 
