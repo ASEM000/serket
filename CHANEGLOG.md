@@ -22,6 +22,8 @@
 - `FlipLeftRight2D` -> `HorizontalFlip2D`
 - `FlipUpDown2D` -> `VerticalFlip2D`
 
+- `sk.nn.{Sequential,RandomApply,RandomChoice,RandomOrder}` to `sk.{Sequential,RandomApply,RandomChoice,RandomOrder}`. as they are applicable to other modules and not specfic to `nn`
+
 ### Additions
 
 - `tree_eval`: a dispatcher to define layers evaluation rule. for example `Dropout` is changed to `Identity` when `tree_eval` is applied.

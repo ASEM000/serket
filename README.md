@@ -44,7 +44,7 @@ import serket as sk
 x_train, y_train = ..., ...
 k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
 
-net = sk.nn.Sequential(
+net = sk.Sequential(
     jnp.ravel,
     sk.nn.Linear(28 * 28, 64, key=k1),
     jax.nn.relu,
@@ -86,12 +86,18 @@ net = sk.tree_unmask(net)
 
 <summary>  🧱 Layers catalog </summary>
 
+
+### Common utils
+| Group             | Layers|
+| ---------- | ---------- |
+| Containers        | - `Sequential`, `Random{Apply,Choice,Order}`|
+
+
 ### 🧠 Neural network package: `serket.nn`
 
 | Group             | Layers                                                                                                                                                                                                                                                                                                                    |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Attention         | - `MultiHeadAttention`                                                                                                                                                                                                                                                                                                    |
-| Containers        | - `Sequential`, `RandomApply`, `RandomChoice`                                                                                                                                                                                                                                                                             |
 | Convolution       | - `{FFT,_}Conv{1D,2D,3D}` <br> - `{FFT,_}Conv{1D,2D,3D}Transpose` <br> - `Depthwise{FFT,_}Conv{1D,2D,3D}` <br> - `Separable{FFT,_}Conv{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local`                                                                                                                                            |
 | Dropout           | - `Dropout`<br> - `Dropout{1D,2D,3D}` <br> - `RandomCutout{1D,2D,3D}`                                                                                                                                                                                                                                                     |
 | Linear            | - `Linear`, `Multilinear`, `GeneralLinear`, `Identity`                                                                                                                                                                                                                                                                    |

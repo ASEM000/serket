@@ -45,7 +45,7 @@ from serket._src.nn.activation import (
     ThresholdedReLU,
 )
 from serket._src.nn.attention import MultiHeadAttention
-from serket._src.nn.containers import RandomApply, RandomChoice, Sequential
+
 from serket._src.nn.convolution import (
     Conv1D,
     Conv1DLocal,
@@ -205,10 +205,6 @@ __all__ = [
     "ThresholdedReLU",
     # attention
     "MultiHeadAttention",
-    # container
-    "RandomApply",
-    "RandomChoice",
-    "Sequential",
     # convolution
     "Conv1D",
     "Conv1DLocal",
