@@ -25,6 +25,8 @@ from serket._src.image.augment import (
     Posterize2D,
     RandomBrightness2D,
     RandomContrast2D,
+    RandomHue2D,
+    RandomSaturation2D,
     Solarize2D,
 )
 from serket._src.image.color import (
@@ -84,6 +86,8 @@ __all__ = [
     "Posterize2D",
     "RandomBrightness2D",
     "RandomContrast2D",
+    "RandomHue2D",
+    "RandomSaturation2D",
     "Solarize2D",
     # filter
     "AvgBlur2D",

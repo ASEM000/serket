@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import jax
 import jax.numpy as jnp
+import jax.random as jr
 import numpy.testing as npt
 import pytest
 
@@ -625,6 +626,8 @@ def test_adjust_hue():
     )
 
     npt.assert_allclose(layer(array), target, atol=1e-6)
+    layer = sk.image.RandomHue2D((0.0, 0.0))
+    npt.assert_allclose((layer)(array, key=jr.PRNGKey(0)), array, atol=1e-6)
 
 
 def test_adjust_saturation():
@@ -651,3 +654,5 @@ def test_adjust_saturation():
     )
 
     npt.assert_allclose(layer(array), target, atol=1e-6)
+    layer = sk.image.RandomSaturation2D((1.0, 1.0))
+    npt.assert_allclose(layer(array, key=jr.PRNGKey(0)), array, atol=1e-6)
