@@ -231,21 +231,6 @@ class ScalarLike(sk.TreeClass):
         raise ValueError(f"Expected inexact type got {value=}")
 
 
-def canonicalize_cb(value, ndim, name: str | None = None):
-    # in essence this is a type check that allows for int, tuple, and jax.Array
-    # canonicalization is done by converting to a tuple of length ndim
-    if isinstance(value, int):
-        return (value,) * ndim
-    if isinstance(value, jax.Array):
-        return jnp.repeat(value, ndim)
-    if isinstance(value, tuple):
-        if len(value) != ndim:
-            raise ValueError(f"{len(value)=} != {ndim=}.")
-        return tuple(value)
-
-    raise ValueError(f"Expected int/tuple for {name=} and {value=}.")
-
-
 def positive_int_cb(value):
     """Return if value is a positive integer, otherwise raise an error."""
     if not isinstance(value, int):
@@ -270,7 +255,7 @@ def validate_spatial_nd(func: Callable[P, T], attribute_name: str) -> Callable[P
     def check_spatial_in_shape(x, spatial_ndim: int) -> None:
         if x.ndim == spatial_ndim + 1:
             return x
-        
+
         spatial = ", ".join(("rows", "cols", "depths")[:spatial_ndim])
         raise ValueError(
             f"Dimesion mismatch error.\n"

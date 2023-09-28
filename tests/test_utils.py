@@ -12,31 +12,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools as ft
+from typing import Any
+
 import jax
 import jax.random as jr
 import jax.tree_util as jtu
+import numpy.testing as npt
 import pytest
 
+import serket as sk
 from serket._src.nn.initialization import resolve_init
-from serket._src.utils import canonicalize
+from serket._src.utils import (
+    IsInstance,
+    ScalarLike,
+    canonicalize,
+    delayed_canonicalize_padding,
+    positive_int_cb,
+    resolve_string_padding,
+    validate_axis_shape,
+    validate_spatial_nd,
+)
+
+
+@pytest.mark.parametrize(
+    "init_name",
+    [
+        "he_normal",
+        "he_uniform",
+        "glorot_normal",
+        "glorot_uniform",
+        "lecun_normal",
+        "lecun_uniform",
+        "normal",
+        "uniform",
+        "ones",
+        "zeros",
+        "xavier_normal",
+        "xavier_uniform",
+    ],
+)
+def test_canonicalize_init_string(init_name):
+    k = jr.PRNGKey(0)
+    assert resolve_init(init_name)(k, (2, 2)).shape == (2, 2)
 
 
 def test_canonicalize_init_func():
-    k = jr.PRNGKey(0)
-
-    assert resolve_init("he_normal")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("he_uniform")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("glorot_normal")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("glorot_uniform")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("lecun_normal")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("lecun_uniform")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("normal")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("uniform")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("ones")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("zeros")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("xavier_normal")(k, (2, 2)).shape == (2, 2)
-    assert resolve_init("xavier_uniform")(k, (2, 2)).shape == (2, 2)
-
     assert isinstance(resolve_init(jax.nn.initializers.he_normal()), jtu.Partial)
     assert isinstance(resolve_init(None), jtu.Partial)
 
@@ -68,22 +89,67 @@ def test_canonicalize():
     assert canonicalize(3, 2) == (3, 3)
     assert canonicalize((3, 3), 2) == (3, 3)
     assert canonicalize((3, 3, 3), 3) == (3, 3, 3)
+    npt.assert_allclose(canonicalize(jax.numpy.array([1]), 2), jax.numpy.array([1, 1]))
 
 
-# def test_canonicalize_padding():
-#     assert canonicalize(1, (3, 3)) == ((1, 1), (1, 1))
-#     assert canonicalize(0, (3, 3)) == ((0, 0), (0, 0))
-#     assert canonicalize(2, (3, 3)) == ((2, 2), (2, 2))
+def test_resolve_string_padding():
+    with pytest.raises(ValueError):
+        resolve_string_padding(1, "invalid", 3, 4)
 
-#     assert canonicalize((1, 1), (3, 3)) == ((1, 1), (1, 1))
-#     assert canonicalize(((1, 1), (1, 1)), (3, 3)) == ((1, 1), (1, 1))
-#     assert canonicalize(("same", "same"), (3, 3)) == ((1, 1), (1, 1))
-#     assert canonicalize(("valid", "valid"), (3, 3)) == ((0, 0), (0, 0))
-#     with pytest.raises(ValueError):
-#         canonicalize(("invalid", "valid"), (3, 3))
 
-#     with pytest.raises(ValueError):
-#         canonicalize(("valid", "invalid"), (3, 3))
+def test_delayed_padding():
+    with pytest.raises(ValueError):
+        delayed_canonicalize_padding(1, "invalid", 3, 4)
 
-#     with pytest.raises(ValueError):
-#         canonicalize(("invalid", ()), (3, 3))
+
+def test_is_instance_error():
+    with pytest.raises(TypeError):
+        IsInstance(int)(1.0)
+
+
+def test_scalar_like_error():
+    with pytest.raises(ValueError):
+        ScalarLike()(1)
+
+
+def test_positive_int_cb_error():
+    with pytest.raises(ValueError):
+        positive_int_cb(1.0)
+
+
+def test_validate_spatial_nd_error():
+    with pytest.raises(ValueError):
+
+        class T:
+            @ft.partial(validate_spatial_nd, attribute_name="ndim")
+            def __call__(self, x) -> Any:
+                return x
+
+            @property
+            def ndim(self):
+                return 1
+
+        T()(jax.numpy.ones([5]))
+
+
+def test_validate_axis_shape_error():
+    with pytest.raises(ValueError):
+
+        class T:
+            @ft.partial(validate_axis_shape, attribute_name="in_dim")
+            def __call__(self, x) -> Any:
+                return x
+
+            @property
+            def in_dim(self):
+                return 1
+
+        T()(jax.numpy.ones([5, 5]))
+
+
+def test_lazy_call():
+    layer = sk.nn.Linear(None, 1, key=jax.random.PRNGKey(0))
+
+    with pytest.raises(RuntimeError):
+        # calling a lazy layer
+        layer(jax.numpy.ones([5, 5]))
