@@ -80,7 +80,7 @@ class RGBToGrayscale2D(sk.TreeClass):
         return 2
 
 
-def rgb_to_hsv(image):
+def rgb_to_hsv_3d(image: CHWArray) -> CHWArray:
     """Convert an RGB image to HSV."""
     # https://kornia.readthedocs.io/en/latest/_modules/kornia/color/hsv.html#rgb_to_hsv
 
@@ -108,7 +108,7 @@ def rgb_to_hsv(image):
     return jnp.concatenate((h, s, v), axis=0)
 
 
-def hsv_to_rgb(image):
+def hsv_to_rgb_3d(image: CHWArray) -> CHWArray:
     """Convert an image from HSV to RGB."""
     # https://kornia.readthedocs.io/en/latest/_modules/kornia/color/hsv.html#rgb_to_hsv
     c, _, _ = image.shape
@@ -172,7 +172,7 @@ class RGBToHSV2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, image: CHWArray) -> CHWArray:
-        return rgb_to_hsv(image)
+        return rgb_to_hsv_3d(image)
 
     @property
     def spatial_ndim(self) -> int:
@@ -197,7 +197,7 @@ class HSVToRGB2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, image: CHWArray) -> CHWArray:
-        return hsv_to_rgb(image)
+        return hsv_to_rgb_3d(image)
 
     @property
     def spatial_ndim(self) -> int:

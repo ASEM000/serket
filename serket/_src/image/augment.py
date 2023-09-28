@@ -22,6 +22,7 @@ import jax.random as jr
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
+from serket._src.image.color import hsv_to_rgb_3d, rgb_to_hsv_3d
 from serket._src.nn.linear import Identity
 from serket._src.utils import CHWArray, HWArray, IsInstance, Range, validate_spatial_nd
 
@@ -177,6 +178,21 @@ def adjust_sigmoid_2d(
 def adjust_log_2d(image: HWArray, gain: float = 1, inv: bool = False) -> HWArray:
     """Adjust log correction on the input 2D image of range [0, 1]."""
     return jnp.where(inv, (2**image - 1) * gain, jnp.log2(1 + image) * gain)
+
+
+def adjust_hue_3d(image: CHWArray, factor: float) -> CHWArray:
+    h, s, v = rgb_to_hsv_3d(image)
+    divisor = 2 * jnp.pi
+    h = jnp.fmod(h + factor, divisor)
+    out = jnp.stack([h, s, v], axis=0)
+    return hsv_to_rgb_3d(out)
+
+
+def adust_saturation_3d(image: CHWArray, factor: float) -> CHWArray:
+    h, s, v = rgb_to_hsv_3d(image)
+    s = jnp.clip(s * factor, 0.0, 1.0)
+    out = jnp.stack([h, s, v], axis=0)
+    return hsv_to_rgb_3d(out)
 
 
 class PixelShuffle2D(sk.TreeClass):
@@ -588,6 +604,52 @@ class AdjustSigmoid2D(sk.TreeClass):
         in_axes = (0, None, None, None)
         cutoff, gain = jax.lax.stop_gradient((self.cutoff, self.gain))
         return jax.vmap(adjust_sigmoid_2d, in_axes=in_axes)(x, cutoff, gain, self.inv)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class AdjustHue2D(sk.TreeClass):
+    """Adjust hue of an RGB image.
+
+    .. image:: ../_static/adjusthue2d.png
+
+    Args:
+        image: channel-first RGB image in range [0, 1].
+        factor: The hue factor.
+    """
+
+    def __init__(self, factor: float):
+        self.factor = factor
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray) -> CHWArray:
+        factor = jax.lax.stop_gradient(self.factor)
+        return adjust_hue_3d(x, factor)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class AdjustSaturation2D(sk.TreeClass):
+    """Adjust saturation of an RGB image.
+
+    .. image:: ../_static/adjustsaturation2d.png
+
+    Args:
+        image: channel-first RGB image in range [0, 1].
+        factor: The saturation factor.
+    """
+
+    def __init__(self, factor: float):
+        self.factor = factor
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray) -> CHWArray:
+        factor = jax.lax.stop_gradient(self.factor)
+        return adust_saturation_3d(x, factor)
 
     @property
     def spatial_ndim(self) -> int:
