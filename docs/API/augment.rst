@@ -17,7 +17,7 @@ Augment API
 .. autoclass:: RandomSaturation2D
 
 .. autoclass:: AdjustSigmoid2D
-.. autoclass:: JigSaw2D
+.. autoclass:: RandomJigSaw2D
 .. autoclass:: Pixelate2D
 .. autoclass:: PixelShuffle2D
 .. autoclass:: Posterize2D

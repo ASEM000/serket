@@ -122,7 +122,7 @@ def pixelate_2d(image: HWArray, scale: int = 16) -> HWArray:
 
 
 @ft.partial(jax.jit, inline=True, static_argnums=2)
-def jigsaw_2d(key: jr.KeyArray, image: HWArray, tiles: int) -> HWArray:
+def random_jigsaw_2d(key: jr.KeyArray, image: HWArray, tiles: int) -> HWArray:
     """Jigsaw an image by mixing up tiles.
 
     Args:
@@ -497,7 +497,7 @@ class Posterize2D(sk.TreeClass):
 
 
 @sk.autoinit
-class JigSaw2D(sk.TreeClass):
+class RandomJigSaw2D(sk.TreeClass):
     """Mixes up tiles of an image.
 
     .. image:: ../_static/jigsaw2d.png
@@ -515,7 +515,7 @@ class JigSaw2D(sk.TreeClass):
           [ 5  6  7  8]
           [ 9 10 11 12]
           [13 14 15 16]]]
-        >>> print(sk.image.JigSaw2D(2)(x, key=jr.PRNGKey(0)))
+        >>> print(sk.image.RandomJigSaw2D(2)(x, key=jr.PRNGKey(0)))
         [[[ 9 10  3  4]
           [13 14  7  8]
           [11 12  1  2]
@@ -528,7 +528,7 @@ class JigSaw2D(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
-        >>> layer = sk.image.JigSaw2D(2)
+        >>> layer = sk.image.RandomJigSaw2D(2)
         >>> eval_layer = sk.tree_eval(layer)
         >>> print(eval_layer(x))
         [[[ 1  2  3  4]
@@ -550,7 +550,7 @@ class JigSaw2D(sk.TreeClass):
             x: channel-first image (CHW)
             key: random key
         """
-        return jax.vmap(jigsaw_2d, in_axes=(None, 0, None))(key, x, self.tiles)
+        return jax.vmap(random_jigsaw_2d, in_axes=(None, 0, None))(key, x, self.tiles)
 
     @property
     def spatial_ndim(self) -> int:
@@ -728,6 +728,6 @@ class RandomSaturation2D(sk.TreeClass):
 @tree_eval.def_eval(RandomHue2D)
 @tree_eval.def_eval(RandomSaturation2D)
 @tree_eval.def_eval(RandomContrast2D)
-@tree_eval.def_eval(JigSaw2D)
+@tree_eval.def_eval(RandomJigSaw2D)
 def _(_):
     return Identity()

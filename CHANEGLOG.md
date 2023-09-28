@@ -54,7 +54,7 @@
 - `Pixelate2D`
 - `Solarize2D`
 - `Posterize2D`
-- `JigSaw2D`
+- `RandomJigSaw2D`
 - `FFTAvgBlur2D`
 - `FFTGaussianBlur2D`
 

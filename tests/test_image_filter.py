@@ -192,7 +192,7 @@ def test_vertical_translate():
 
 def test_jigsaw():
     x = jnp.arange(1, 17).reshape(1, 4, 4)
-    layer = sk.image.JigSaw2D(2)
+    layer = sk.image.RandomJigSaw2D(2)
     npt.assert_allclose(
         layer(x, key=jax.random.PRNGKey(0)),
         jnp.array([[[9, 10, 3, 4], [13, 14, 7, 8], [11, 12, 1, 2], [15, 16, 5, 6]]]),
