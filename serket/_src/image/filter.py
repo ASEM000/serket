@@ -33,6 +33,9 @@ from serket._src.utils import (
     validate_spatial_nd,
 )
 
+# For filters that have fft implementation, the pattern is to inherit from 
+# a base class that creates the kernel and then the child class implements the
+# specific implementation of the filter, either fft or direct convolution.
 
 def filter_2d(array: HWArray, weight: HWArray) -> HWArray:
     """Filtering wrapping ``jax.lax.conv_general_dilated``.

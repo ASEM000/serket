@@ -48,10 +48,10 @@ def random_crop_nd(
     return jax.lax.dynamic_slice(x, start, crop_size)
 
 
-def zoom_axis(
+def random_zoom_along_axis(
+    key: jr.KeyArray,
     x: jax.Array,
     factor: float,
-    key: jr.KeyArray,
     axis: int,
 ) -> jax.Array:
     if factor == 0:
@@ -89,6 +89,20 @@ def center_crop_nd(array: jax.Array, sizes: tuple[int, ...]) -> jax.Array:
     shapes = array.shape
     starts = tuple(max(shape // 2 - size // 2, 0) for shape, size in zip(shapes, sizes))
     return jax.lax.dynamic_slice(array, starts, sizes)
+
+
+def flatten(array: jax.Array, start_dim: int, end_dim: int):
+    # wrapper around jax.lax.collapse
+    # with inclusive end_dim and negative indexing support
+    start_dim = start_dim + (0 if start_dim >= 0 else array.ndim)
+    end_dim = end_dim + 1 + (0 if end_dim >= 0 else array.ndim)
+    return jax.lax.collapse(array, start_dim, end_dim)
+
+
+def unflatten(array: jax.Array, dim: int, shape: tuple[int,...]):
+    in_shape = list(array.shape)
+    out_shape = [*in_shape[:dim], *shape, *in_shape[dim + 1 :]]
+    return jnp.reshape(array, out_shape)
 
 
 class ResizeND(sk.TreeClass):
@@ -337,9 +351,7 @@ class Flatten(sk.TreeClass):
     end_dim: int = sk.field(default=-1, on_setattr=[IsInstance(int)])
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        start_dim = self.start_dim + (0 if self.start_dim >= 0 else x.ndim)
-        end_dim = self.end_dim + 1 + (0 if self.end_dim >= 0 else x.ndim)
-        return jax.lax.collapse(x, start_dim, end_dim)
+        return flatten(x, self.start_dim, self.end_dim)
 
 
 @sk.autoinit
@@ -365,10 +377,8 @@ class Unflatten(sk.TreeClass):
     dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
     shape: tuple = sk.field(default=None, on_setattr=[IsInstance(tuple)])
 
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
-        shape = list(x.shape)
-        shape = [*shape[: self.dim], *self.shape, *shape[self.dim + 1 :]]
-        return jnp.reshape(x, shape)
+    def __call__(self, x: jax.Array) -> jax.Array:
+        return unflatten(x, self.dim, self.shape)
 
 
 class Pad1D(PadND):
@@ -580,7 +590,8 @@ class RandomZoom1D(sk.TreeClass):
     def __call__(self, x: jax.Array, key: jr.KeyArray = jr.PRNGKey(0)) -> jax.Array:
         k1, k2 = jr.split(key, 2)
         low, high = jax.lax.stop_gradient(self.length_factor)
-        x = zoom_axis(x, jr.uniform(k1, minval=low, maxval=high), k2, axis=1)
+        factor = jr.uniform(k1, minval=low, maxval=high)
+        x = random_zoom_along_axis(k2, x, factor, axis=1)
         return x
 
     @property
@@ -641,8 +652,10 @@ class RandomZoom2D(sk.TreeClass):
         k1, k2, k3, k4 = jr.split(key, 4)
         factors = (self.height_factor, self.width_factor)
         ((hfl, hfh), (wfl, wfh)) = jax.lax.stop_gradient(factors)
-        x = zoom_axis(x, jr.uniform(k1, minval=hfl, maxval=hfh), k3, axis=1)
-        x = zoom_axis(x, jr.uniform(k2, minval=wfl, maxval=wfh), k4, axis=2)
+        factor = jr.uniform(k1, minval=hfl, maxval=hfh)
+        x = random_zoom_along_axis(k3, x, factor, axis=1)
+        factor = jr.uniform(k2, minval=wfl, maxval=wfh)
+        x = random_zoom_along_axis(k4, x, factor, axis=2)
         return jax.lax.stop_gradient(x)
 
     @property
@@ -687,9 +700,12 @@ class RandomZoom3D(sk.TreeClass):
         k1, k2, k3, k4, k5, k6 = jr.split(key, 6)
         factors = (self.height_factor, self.width_factor, self.depth_factor)
         ((hfl, hfh), (wfl, wfh), (dfl, dfh)) = jax.lax.stop_gradient(factors)
-        x = zoom_axis(x, jr.uniform(k1, minval=hfl, maxval=hfh), k3, axis=1)
-        x = zoom_axis(x, jr.uniform(k2, minval=wfl, maxval=wfh), k4, axis=2)
-        x = zoom_axis(x, jr.uniform(k5, minval=dfl, maxval=dfh), k6, axis=3)
+        factor = jr.uniform(k1, minval=hfl, maxval=hfh)
+        x = random_zoom_along_axis(k3, x, factor, axis=1)
+        factor = jr.uniform(k2, minval=wfl, maxval=wfh)
+        x = random_zoom_along_axis(k4, x, factor, axis=2)
+        factor = jr.uniform(k5, minval=dfl, maxval=dfh)
+        x = random_zoom_along_axis(k6, x, factor, axis=3)
         return x
 
     @property

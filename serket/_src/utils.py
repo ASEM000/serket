@@ -268,22 +268,23 @@ def validate_spatial_nd(func: Callable[P, T], attribute_name: str) -> Callable[P
     attribute_list: Sequence[str] = attribute_name.split(".")
 
     def check_spatial_in_shape(x, spatial_ndim: int) -> None:
-        if x.ndim != spatial_ndim + 1:
-            spatial = ", ".join(("rows", "cols", "depths")[:spatial_ndim])
-            raise ValueError(
-                f"Dimesion mismatch error.\n"
-                f"Input should satisfy:\n"
-                f"  - {(spatial_ndim + 1) = } dimension, but got {x.ndim = }.\n"
-                f"  - shape of (in_features, {spatial}), but got {x.shape = }.\n"
-                + (
-                    # maybe the user apply the layer on a batched input
-                    "The input should be unbatched (no batch dimension).\n"
-                    "To apply on batched input, use `jax.vmap(...)(input)`."
-                    if x.ndim == spatial_ndim + 2
-                    else ""
-                )
+        if x.ndim == spatial_ndim + 1:
+            return x
+        
+        spatial = ", ".join(("rows", "cols", "depths")[:spatial_ndim])
+        raise ValueError(
+            f"Dimesion mismatch error.\n"
+            f"Input should satisfy:\n"
+            f"  - {(spatial_ndim + 1) = } dimension, but got {x.ndim = }.\n"
+            f"  - shape of (in_features, {spatial}), but got {x.shape = }.\n"
+            + (
+                # maybe the user apply the layer on a batched input
+                "The input should be unbatched (no batch dimension).\n"
+                "To apply on batched input, use `jax.vmap(...)(input)`."
+                if x.ndim == spatial_ndim + 2
+                else ""
             )
-        return x
+        )
 
     @ft.wraps(func)
     def wrapper(self, array, *a, **k):
@@ -322,7 +323,6 @@ def get_params(func: MethodType) -> tuple[inspect.Parameter, ...]:
 
 
 # TODO: maybe expose this as a public API
-
 # Handling lazy layers
 """
 Creating a _lazy_ ``Linear`` layer example:
