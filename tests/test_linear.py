@@ -185,27 +185,17 @@ def test_mlp():
 
     npt.assert_allclose(fnn(x), mlp(x), atol=1e-4)
 
-    fnn = sk.nn.FNN([1, 2, 2, 1], act=("relu", "tanh"), key=jax.random.PRNGKey(0))
+    fnn = sk.nn.FNN([1, 2, 2, 1], act="tanh", key=jax.random.PRNGKey(0))
     mlp = sk.nn.MLP(
         in_features=1,
         out_features=1,
         hidden_size=2,
         num_hidden_layers=2,
-        act=("relu", "tanh"),
+        act="tanh",
         key=jax.random.PRNGKey(0),
     )
 
     npt.assert_allclose(fnn(x), mlp(x), atol=1e-4)
-
-    layer = sk.nn.MLP(
-        1,
-        4,
-        hidden_size=10,
-        num_hidden_layers=2,
-        act=("relu", "tanh"),
-        bias_init=None,
-        key=jax.random.PRNGKey(0),
-    )
 
     x = jax.random.normal(jax.random.PRNGKey(0), (10, 1))
     w1 = jax.random.normal(jax.random.PRNGKey(1), (1, 10))
@@ -213,51 +203,54 @@ def test_mlp():
     w3 = jax.random.normal(jax.random.PRNGKey(3), (10, 4))
 
     y = x @ w1
-    y = jax.nn.relu(y)
+    y = jax.nn.tanh(y)
     y = y @ w2
-    y = jnp.tanh(y)
+    y = jax.nn.tanh(y)
     y = y @ w3
 
-    layer = layer.at["layers"][0]["weight"].set(w1)
-    layer = layer.at["layers"][1]["weight"].set(w2[None])
-    layer = layer.at["layers"][2]["weight"].set(w3)
-
-    # breakpoint()
-    print(layer(x).shape)
+    layer = sk.nn.FNN(
+        [1, 10, 10, 4],
+        act="tanh",
+        bias_init=None,
+        key=jax.random.PRNGKey(0),
+    )
+    layer = (
+        layer.at["linear_0"]["weight"]
+        .set(w1)
+        .at["linear_1"]["weight"]
+        .set(w2)
+        .at["linear_2"]["weight"]
+        .set(w3)
+    )
 
     npt.assert_allclose(layer(x), y)
 
-
-def test_fnn():
-    layer = sk.nn.FNN([1, 2, 3, 4], act=("relu", "tanh"), key=jax.random.PRNGKey(0))
-    assert layer.act[0] is not layer.act[1]
-    assert layer.layers[0] is not layer.layers[1]
-
-    x = jax.random.normal(jax.random.PRNGKey(0), (10, 1))
-    w1 = jax.random.normal(jax.random.PRNGKey(1), (1, 5))
-    w2 = jax.random.normal(jax.random.PRNGKey(2), (5, 3))
-    w3 = jax.random.normal(jax.random.PRNGKey(3), (3, 4))
-
-    y = x @ w1
-    y = jnp.tanh(y)
-    y = y @ w2
-    y = jax.nn.relu(y)
-    y = y @ w3
-
-    l1 = sk.nn.FNN(
-        [1, 5, 3, 4], act=("tanh", "relu"), bias_init=None, key=jax.random.PRNGKey(0)
+    layer = sk.nn.MLP(
+        1,
+        4,
+        hidden_size=10,
+        num_hidden_layers=2,
+        act="tanh",
+        bias_init=None,
+        key=jax.random.PRNGKey(0),
     )
-    l1 = l1.at["layers"][0]["weight"].set(w1)
-    l1 = l1.at["layers"][1]["weight"].set(w2)
-    l1 = l1.at["layers"][2]["weight"].set(w3)
 
-    npt.assert_allclose(l1(x), y)
+    layer = layer.at["linear_i"]["weight"].set(w1)
+    layer = layer.at["linear_h"]["weight"].set(w2[None])
+    layer = layer.at["linear_o"]["weight"].set(w3)
+
+    npt.assert_allclose(layer(x), y)
 
 
 def test_fnn_mlp():
     fnn = sk.nn.FNN(layers=[2, 4, 4, 2], act="relu", key=jax.random.PRNGKey(0))
     mlp = sk.nn.MLP(
-        2, 2, hidden_size=4, num_hidden_layers=2, act="relu", key=jax.random.PRNGKey(0)
+        2,
+        2,
+        hidden_size=4,
+        num_hidden_layers=2,
+        act="relu",
+        key=jax.random.PRNGKey(0),
     )
     x = jax.random.normal(jax.random.PRNGKey(0), (10, 2))
     npt.assert_allclose(fnn(x), mlp(x))

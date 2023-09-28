@@ -401,9 +401,7 @@ class FNN(sk.TreeClass):
     Args:
         layers: Sequence of layer sizes
         key: Random number generator key.
-        act: a single Activation function to be applied between layers or
-            ``len(layers)-2`` Sequence of activation functions applied between
-            layers. Defaults to ``tanh``.
+        act: Activation function. Defaults to ``tanh``.
         weight_init: Weight initializer function. Defaults to ``glorot_uniform``.
         bias_init: Bias initializer function. Defaults to ``zeros``.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
@@ -452,86 +450,43 @@ class FNN(sk.TreeClass):
         dtype: DType = jnp.float32,
     ):
         keys = jr.split(key, len(layers) - 1)
-        num_hidden_layers = len(layers) - 2
-
-        if isinstance(act, tuple):
-            if len(act) != (num_hidden_layers):
-                raise ValueError(f"{len(act)=} != {(num_hidden_layers)=}")
-
-            self.act = tuple(resolve_activation(act) for act in act)
-        else:
-            self.act = resolve_activation(act)
-
-        self.layers = tuple(
-            Linear(
-                in_features=di,
-                out_features=do,
-                key=ki,
-                weight_init=weight_init,
-                bias_init=bias_init,
-                dtype=dtype,
-            )
-            for (ki, di, do) in (zip(keys, layers[:-1], layers[1:]))
-        )
+        dis, dos = layers[:-1], layers[1:]
+        self.act = resolve_activation(act)
+        kis = dict(weight_init=weight_init, bias_init=bias_init, dtype=dtype)
+        layers = (Linear(di, do, key=ki, **kis) for ki, di, do in zip(keys, dis, dos))
+        names = (f"linear_{i}" for i, _ in enumerate(keys))
+        vars(self).update(zip(names, layers))
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        *layers, last = self.layers
-
-        if isinstance(self.act, tuple):
-            for ai, li in zip(self.act, layers):
-                x = ai(li(x))
-        else:
-            for li in layers:
-                x = self.act(li(x))
-
+        # to give it more meaningful names in the repr
+        # and index by FNN.at['linear_1'] instead of FNN.at['layers'][0] ...
+        vs = vars(self)
+        *layers, last = [vs[k] for k in vs if k.startswith("linear_")]
+        for li in layers:
+            x = self.act(li(x))
         return last(x)
 
 
-def _scan_batched_layer_with_single_activation(
-    x: Batched[jax.Array],
-    layer: Batched[Linear],
+def _scan_linear(
+    x: jax.Array,
+    weight: Batched[jax.Array],
+    bias: Batched[jax.Array] | None,
     act: ActivationFunctionType,
 ) -> jax.Array:
-    if layer.bias is None:
+    if bias is None:
 
-        def scan_func(x: jax.Array, bias: Batched[jax.Array]):
-            return act(x + bias), None
+        def scan_func(x: jax.Array, weight: Batched[jax.Array]):
+            return act(x @ weight), None
 
-        x, _ = jax.lax.scan(scan_func, x, layer.weight)
+        x, _ = jax.lax.scan(scan_func, x, weight)
         return x
 
     def scan_func(x: jax.Array, weight_bias: Batched[jax.Array]):
         weight, bias = weight_bias[..., :-1], weight_bias[..., -1]
         return act(x @ weight + bias), None
 
-    weight_bias = jnp.concatenate([layer.weight, layer.bias[:, :, None]], axis=-1)
+    weight_bias = jnp.concatenate([weight, bias[:, :, None]], axis=-1)
     x, _ = jax.lax.scan(scan_func, x, weight_bias)
-    return x
-
-
-def _scan_batched_layer_with_multiple_activations(
-    x: Batched[jax.Array],
-    layer: Batched[Linear],
-    act: Sequence[ActivationFunctionType],
-) -> jax.Array:
-    if layer.bias is None:
-
-        def scan_func(x_index: tuple[jax.Array, int], weight: Batched[jax.Array]):
-            x, index = x_index
-            x = jax.lax.switch(index, act, x @ weight)
-            return (x, index + 1), None
-
-        (x, _), _ = jax.lax.scan(scan_func, (x, 0), layer.weight)
-        return x
-
-    def scan_func(x_index: jax.Array, weight_bias: Batched[jax.Array]):
-        x, index = x_index
-        weight, bias = weight_bias[..., :-1], weight_bias[..., -1]
-        x = jax.lax.switch(index, act, x @ weight + bias)
-        return [x, index + 1], None
-
-    weight_bias = jnp.concatenate([layer.weight, layer.bias[:, :, None]], axis=-1)
-    (x, _), _ = jax.lax.scan(scan_func, [x, 0], weight_bias)
     return x
 
 
@@ -623,36 +578,19 @@ class MLP(sk.TreeClass):
             raise ValueError(f"`{hidden_size=}` must be positive.")
 
         keys = jr.split(key, num_hidden_layers + 1)
-
-        if isinstance(act, tuple):
-            if len(act) != (num_hidden_layers):
-                raise ValueError(f"{len(act)=} != {(num_hidden_layers)=}")
-            self.act = tuple(resolve_activation(act) for act in act)
-        else:
-            self.act = resolve_activation(act)
-
+        self.act = resolve_activation(act)
         kwargs = dict(weight_init=weight_init, bias_init=bias_init, dtype=dtype)
 
         @jax.vmap
         def batched_linear(key: jr.KeyArray) -> Batched[Linear]:
             return sk.tree_mask(Linear(hidden_size, hidden_size, key=key, **kwargs))
 
-        self.layers: tuple[Linear, Batched[Linear], Linear] = (
-            Linear(in_features, hidden_size, key=keys[0], **kwargs),
-            sk.tree_unmask(batched_linear(keys[1:-1])),
-            Linear(hidden_size, out_features, key=keys[-1], **kwargs),
-        )
+        self.linear_i = Linear(in_features, hidden_size, key=keys[0], **kwargs)
+        self.linear_h = sk.tree_unmask(batched_linear(keys[1:-1]))
+        self.linear_o = Linear(hidden_size, out_features, key=keys[-1], **kwargs)
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        l0, lm, lh = self.layers
-
-        if isinstance(self.act, tuple):
-            a0, *ah = self.act
-            x = a0(l0(x))
-            x = _scan_batched_layer_with_multiple_activations(x, lm, ah)
-            return lh(x)
-
-        a0 = self.act
-        x = a0(l0(x))
-        x = _scan_batched_layer_with_single_activation(x, lm, a0)
-        return lh(x)
+        x = self.act(self.linear_i(x))
+        weight_h, bias_h = self.linear_h.weight, self.linear_h.bias
+        x = _scan_linear(x, weight_h, bias_h, self.act)
+        return self.linear_o(x)
