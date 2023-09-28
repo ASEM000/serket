@@ -15,7 +15,9 @@
 from serket._src.image.augment import (
     AdjustBrightness2D,
     AdjustContrast2D,
+    AdjustHue2D,
     AdjustLog2D,
+    AdjustSaturation2D,
     AdjustSigmoid2D,
     JigSaw2D,
     Pixelate2D,
@@ -23,7 +25,15 @@ from serket._src.image.augment import (
     Posterize2D,
     RandomBrightness2D,
     RandomContrast2D,
+    RandomHue2D,
+    RandomSaturation2D,
     Solarize2D,
+)
+from serket._src.image.color import (
+    GrayscaleToRGB2D,
+    HSVToRGB2D,
+    RGBToGrayscale2D,
+    RGBToHSV2D,
 )
 from serket._src.image.filter import (
     AvgBlur2D,
@@ -66,7 +76,9 @@ __all__ = [
     # augment
     "AdjustBrightness2D",
     "AdjustContrast2D",
+    "AdjustHue2D",
     "AdjustLog2D",
+    "AdjustSaturation2D",
     "AdjustSigmoid2D",
     "JigSaw2D",
     "Pixelate2D",
@@ -74,6 +86,8 @@ __all__ = [
     "Posterize2D",
     "RandomBrightness2D",
     "RandomContrast2D",
+    "RandomHue2D",
+    "RandomSaturation2D",
     "Solarize2D",
     # filter
     "AvgBlur2D",
@@ -110,4 +124,9 @@ __all__ = [
     "VerticalShear2D",
     "VerticalTranslate2D",
     "WaveTransform2D",
+    # color
+    "GrayscaleToRGB2D",
+    "HSVToRGB2D",
+    "RGBToGrayscale2D",
+    "RGBToHSV2D",
 ]

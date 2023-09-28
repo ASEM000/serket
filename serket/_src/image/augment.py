@@ -22,6 +22,7 @@ import jax.random as jr
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
+from serket._src.image.color import hsv_to_rgb_3d, rgb_to_hsv_3d
 from serket._src.nn.linear import Identity
 from serket._src.utils import CHWArray, HWArray, IsInstance, Range, validate_spatial_nd
 
@@ -179,6 +180,35 @@ def adjust_log_2d(image: HWArray, gain: float = 1, inv: bool = False) -> HWArray
     return jnp.where(inv, (2**image - 1) * gain, jnp.log2(1 + image) * gain)
 
 
+def adjust_hue_3d(image: CHWArray, factor: float) -> CHWArray:
+    h, s, v = rgb_to_hsv_3d(image)
+    divisor = 2 * jnp.pi
+    h = jnp.fmod(h + factor, divisor)
+    out = jnp.stack([h, s, v], axis=0)
+    return hsv_to_rgb_3d(out)
+
+
+def adust_saturation_3d(image: CHWArray, factor: float) -> CHWArray:
+    h, s, v = rgb_to_hsv_3d(image)
+    s = jnp.clip(s * factor, 0.0, 1.0)
+    out = jnp.stack([h, s, v], axis=0)
+    return hsv_to_rgb_3d(out)
+
+
+def random_hue_3d(
+    key: jr.KeyArray, image: CHWArray, range: tuple[float, float]
+) -> CHWArray:
+    minval, maxval = range
+    factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
+    return adjust_hue_3d(image, factor)
+
+
+def random_saturation_3d(key: jr.KeyArray, image: CHWArray, range: tuple[float, float]):
+    minval, maxval = range
+    factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
+    return adust_saturation_3d(image, factor)
+
+
 class PixelShuffle2D(sk.TreeClass):
     """Rearrange elements in a tensor.
 
@@ -317,6 +347,10 @@ class RandomBrightness2D(sk.TreeClass):
 
     Args:
         range: brightness range to adust the brightness by. Defaults to (0.5, 1).
+
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
     """
 
     range: tuple[float, float] = sk.field(on_setattr=[IsInstance(tuple)])
@@ -542,7 +576,7 @@ class AdjustLog2D(sk.TreeClass):
           [0.857981   0.9068906  0.9541963  1.        ]]]
     """
 
-    def __init__(self, gain: float = 1, inv: bool = False, clip_output: bool = True):
+    def __init__(self, gain: float = 1, inv: bool = False):
         self.gain = gain
         self.inv = inv
 
@@ -594,6 +628,105 @@ class AdjustSigmoid2D(sk.TreeClass):
         return 2
 
 
+class AdjustHue2D(sk.TreeClass):
+    """Adjust hue of an RGB image.
+
+    .. image:: ../_static/adjusthue2d.png
+
+    Args:
+        image: channel-first RGB image in range [0, 1].
+        factor: The hue factor.
+    """
+
+    def __init__(self, factor: float):
+        self.factor = factor
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray) -> CHWArray:
+        factor = jax.lax.stop_gradient(self.factor)
+        return adjust_hue_3d(x, factor)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class RandomHue2D(sk.TreeClass):
+    """Randomly adjust hue of an RGB image.
+
+    Args:
+        image: channel-first RGB image in range [0, 1].
+        range: The hue range.
+
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+    """
+
+    def __init__(self, range: tuple[float, float]):
+        self.range = range
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+        range = jax.lax.stop_gradient(self.range)
+        return random_hue_3d(key, x, range)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class AdjustSaturation2D(sk.TreeClass):
+    """Adjust saturation of an RGB image.
+
+    .. image:: ../_static/adjustsaturation2d.png
+
+    Args:
+        image: channel-first RGB image in range [0, 1].
+        factor: The saturation factor.
+    """
+
+    def __init__(self, factor: float):
+        self.factor = factor
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray) -> CHWArray:
+        factor = jax.lax.stop_gradient(self.factor)
+        return adust_saturation_3d(x, factor)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class RandomSaturation2D(sk.TreeClass):
+    """Randomly adjust saturation of an RGB image.
+
+    Args:
+        image: channel-first RGB image in range [0, 1].
+        range: The saturation range.
+
+    Note:
+        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
+          evaluation.
+    """
+
+    def __init__(self, range: tuple[float, float]):
+        self.range = range
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+        range = jax.lax.stop_gradient(self.range)
+        return random_saturation_3d(key, x, range)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+@tree_eval.def_eval(RandomBrightness2D)
+@tree_eval.def_eval(RandomHue2D)
+@tree_eval.def_eval(RandomSaturation2D)
 @tree_eval.def_eval(RandomContrast2D)
 @tree_eval.def_eval(JigSaw2D)
 def _(_):

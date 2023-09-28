@@ -11,3 +11,4 @@
    geometric
    augment
    filter
+   color
