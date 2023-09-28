@@ -567,6 +567,35 @@ def test_adjust_sigmoid_2d():
 
 def test_rgb_to_grayscale():
     gray = jnp.ones((1, 5, 5))
-    assert sk.image.GrayscaleToRGB()(gray).shape == (3, 5, 5)
+    assert sk.image.GrayscaleToRGB2D()(gray).shape == (3, 5, 5)
     rgb = jnp.ones((3, 5, 5))
-    assert sk.image.RGBToGrayscale()(rgb).shape == (1, 5, 5)
+    assert sk.image.RGBToGrayscale2D()(rgb).shape == (1, 5, 5)
+
+
+def test_rgb_to_hsv_to_rgb():
+    array = jnp.arange(1, 28).reshape(3, 3, 3) / 27.0
+    hsv = sk.image.RGBToHSV2D()(array)
+    target = jnp.array(
+        [
+            [
+                [3.665191888809204, 3.665191411972046, 3.665191888809204],
+                [3.665191411972046, 3.665191888809204, 3.665191888809204],
+                [3.665191411972046, 3.665191888809204, 3.665191411972046],
+            ],
+            [
+                [0.947368443012238, 0.899999976158142, 0.857142865657806],
+                [0.818181753158569, 0.782608687877655, 0.750000000000000],
+                [0.719999969005585, 0.692307710647583, 0.666666626930237],
+            ],
+            [
+                [0.703703701496124, 0.740740716457367, 0.777777791023254],
+                [0.814814805984497, 0.851851880550385, 0.888888895511627],
+                [0.925925910472870, 0.962962985038757, 1.000000000000000],
+            ],
+        ]
+    )
+    # with kornia
+    npt.assert_allclose(target, hsv, atol=1e-6)
+
+    # identity
+    npt.assert_allclose(sk.image.HSVToRGB2D()(hsv), array, atol=1e-6)
