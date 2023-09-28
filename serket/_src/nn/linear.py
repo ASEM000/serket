@@ -435,7 +435,7 @@ class FNN(sk.TreeClass):
         >>> import jax.random as jr
         >>> lazy_fnn = sk.nn.FNN([None, 10, 2, 1], key=jr.PRNGKey(0))
         >>> _, materialized_fnn = lazy_fnn.at['__call__'](jnp.ones([1, 10]))
-        >>> materialized_fnn.layers[0].in_features
+        >>> materialized_fnn.linear_0.in_features
         (10,)
     """
 
@@ -557,7 +557,7 @@ class MLP(sk.TreeClass):
         >>> import jax.random as jr
         >>> lazy_mlp = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_size=10, key=jr.PRNGKey(0))
         >>> _, materialized_mlp = lazy_mlp.at['__call__'](jnp.ones([1, 10]))
-        >>> materialized_mlp.layers[0].in_features
+        >>> materialized_mlp.linear_i.in_features
         (10,)
     """
 
