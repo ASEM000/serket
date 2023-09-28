@@ -25,6 +25,7 @@ from serket._src.image.augment import (
     RandomContrast2D,
     Solarize2D,
 )
+from serket._src.image.color import GrayscaleToRGB2D, RGBToGrayscale2D
 from serket._src.image.filter import (
     AvgBlur2D,
     BoxBlur2D,
@@ -110,4 +111,7 @@ __all__ = [
     "VerticalShear2D",
     "VerticalTranslate2D",
     "WaveTransform2D",
+    # color
+    "RGBToGrayscale2D",
+    "GrayscaleToRGB2D",
 ]

@@ -563,3 +563,10 @@ def test_adjust_sigmoid_2d():
         ]
     )
     npt.assert_allclose(y, z, atol=1e-6)
+
+
+def test_rgb_to_grayscale():
+    gray = jnp.ones((1, 5, 5))
+    assert sk.image.GrayscaleToRGB()(gray).shape == (3, 5, 5)
+    rgb = jnp.ones((3, 5, 5))
+    assert sk.image.RGBToGrayscale()(rgb).shape == (1, 5, 5)
