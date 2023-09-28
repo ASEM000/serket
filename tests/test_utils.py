@@ -99,7 +99,7 @@ def test_resolve_string_padding():
 
 def test_delayed_padding():
     with pytest.raises(ValueError):
-        delayed_canonicalize_padding(1, "invalid", 3, 4)
+        delayed_canonicalize_padding(1, [0], 3, 4)
 
 
 def test_is_instance_error():
@@ -110,6 +110,8 @@ def test_is_instance_error():
 def test_scalar_like_error():
     with pytest.raises(ValueError):
         ScalarLike()(1)
+
+    npt.assert_allclose(ScalarLike()(jax.numpy.array(1.0)), jax.numpy.array(1.0))
 
 
 def test_positive_int_cb_error():
