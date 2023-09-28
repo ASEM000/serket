@@ -121,7 +121,13 @@ def kmeans(
 
 
 @sk.autoinit
-class KMeans(sk.TreeClass):
+class KmeansBase(sk.TreeClass):
+    clusters: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
+    tol: float = sk.field(on_setattr=[IsInstance(float), Range(0, min_inclusive=False)])
+
+
+@sk.autoinit
+class KMeans(KmeansBase):
     """Vanilla K-means clustering algorithm.
 
     Args:
@@ -208,9 +214,6 @@ class KMeans(sk.TreeClass):
 
     """
 
-    clusters: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
-    tol: float = sk.field(on_setattr=[IsInstance(float), Range(0, min_inclusive=False)])
-
     def __call__(
         self,
         x: jax.Array,
@@ -245,7 +248,8 @@ class KMeans(sk.TreeClass):
         return labels, state
 
 
-class EvalKMeans(sk.TreeClass):
+@sk.autoinit
+class EvalKMeans(KmeansBase):
     """K-means clustering algorithm evaluation.
 
     Evaluates the K-means clustering algorithm on the input data and returns the
@@ -263,23 +267,12 @@ class EvalKMeans(sk.TreeClass):
 
 
 @tree_state.def_state(KMeans)
-def _(
-    layer: KMeans,
-    *,
-    array: jax.Array,
-    key: jr.KeyArray,
-    **_,
-) -> KMeansState:
-    centers = jr.uniform(
-        key=key,
-        minval=array.min(),
-        maxval=array.max(),
-        shape=(layer.clusters, array.shape[1]),
-    )
-
+def _(layer: KMeans, *, array: jax.Array, key: jr.KeyArray, **_) -> KMeansState:
+    minval, maxval = array.min(), array.max()
+    centers = jr.uniform(key, minval, maxval, (layer.clusters, array.shape[1]))
     return KMeansState(centers=centers, error=centers + jnp.inf, iters=0)
 
 
 @tree_eval.def_eval(KMeans)
-def _(_: KMeans) -> EvalKMeans:
-    return EvalKMeans()
+def _(layer: KMeans) -> EvalKMeans:
+    return EvalKMeans(clusters=layer.clusters, tol=layer.tol)
