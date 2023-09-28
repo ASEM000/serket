@@ -45,10 +45,10 @@ def horizontal_shear_2d(image: HWArray, angle: float) -> HWArray:
 def random_horizontal_shear_2d(
     key: jr.KeyArray,
     image: jax.Array,
-    angle_range: tuple[float, float],
+    range: tuple[float, float],
 ) -> jax.Array:
     """shear rows by an angle in degrees"""
-    minval, maxval = angle_range
+    minval, maxval = range
     angle = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
     return horizontal_shear_2d(image, angle)
 
@@ -66,10 +66,10 @@ def vertical_shear_2d(
 def random_vertical_shear_2d(
     key: jr.KeyArray,
     image: HWArray,
-    angle_range: tuple[float, float],
+    range: tuple[float, float],
 ) -> HWArray:
     """shear cols by an angle in degrees"""
-    minval, maxval = angle_range
+    minval, maxval = range
     angle = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
     return vertical_shear_2d(image, angle)
 
@@ -84,9 +84,9 @@ def rotate_2d(image: HWArray, angle: float) -> HWArray:
 def random_rotate_2d(
     key: jr.KeyArray,
     image: HWArray,
-    angle_range: tuple[float, float],
+    range: tuple[float, float],
 ) -> HWArray:
-    minval, maxval = angle_range
+    minval, maxval = range
     angle = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
     return rotate_2d(image, angle)
 
@@ -220,7 +220,7 @@ class RandomRotate2D(sk.TreeClass):
     """Rotate_2d a 2D image by an angle in dgrees in CCW direction
 
     Args:
-        angle_range: a tuple of min angle and max angle to randdomly choose from.
+        range: a tuple of min angle and max angle to randdomly choose from.
 
     Note:
         - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
@@ -250,21 +250,21 @@ class RandomRotate2D(sk.TreeClass):
           [ 8 19 22 18 11]]]
     """
 
-    def __init__(self, angle_range: tuple[float, float] = (0.0, 360.0)):
+    def __init__(self, range: tuple[float, float] = (0.0, 360.0)):
         if not (
-            isinstance(angle_range, tuple)
-            and len(angle_range) == 2
-            and isinstance(angle_range[0], (int, float))
-            and isinstance(angle_range[1], (int, float))
+            isinstance(range, tuple)
+            and len(range) == 2
+            and isinstance(range[0], (int, float))
+            and isinstance(range[1], (int, float))
         ):
-            raise ValueError(f"`{angle_range=}` must be a tuple of 2 floats/ints ")
+            raise ValueError(f"`{range=}` must be a tuple of 2 floats/ints ")
 
-        self.angle_range = angle_range
+        self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
-        angle_range = jax.lax.stop_gradient(self.angle_range)
-        return jax.vmap(random_rotate_2d, in_axes=(None, 0, None))(key, x, angle_range)
+        range = jax.lax.stop_gradient(self.range)
+        return jax.vmap(random_rotate_2d, in_axes=(None, 0, None))(key, x, range)
 
     @property
     def spatial_ndim(self) -> int:
@@ -308,7 +308,7 @@ class RandomHorizontalShear2D(sk.TreeClass):
     """Shear an image horizontally with random angle choice.
 
     Args:
-        angle_range: a tuple of min angle and max angle to randdomly choose from.
+        range: a tuple of min angle and max angle to randdomly choose from.
 
     Note:
         - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
@@ -339,19 +339,19 @@ class RandomHorizontalShear2D(sk.TreeClass):
           [23 24 25  0  0]]]
     """
 
-    def __init__(self, angle_range: tuple[float, float] = (0.0, 90.0)):
+    def __init__(self, range: tuple[float, float] = (0.0, 90.0)):
         if not (
-            isinstance(angle_range, tuple)
-            and len(angle_range) == 2
-            and isinstance(angle_range[0], (int, float))
-            and isinstance(angle_range[1], (int, float))
+            isinstance(range, tuple)
+            and len(range) == 2
+            and isinstance(range[0], (int, float))
+            and isinstance(range[1], (int, float))
         ):
-            raise ValueError(f"`{angle_range=}` must be a tuple of 2 floats")
-        self.angle_range = angle_range
+            raise ValueError(f"`{range=}` must be a tuple of 2 floats")
+        self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
-        angle = jax.lax.stop_gradient(self.angle_range)
+        angle = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
         return jax.vmap(random_horizontal_shear_2d, in_axes=in_axes)(key, x, angle)
 
@@ -397,7 +397,7 @@ class RandomVerticalShear2D(sk.TreeClass):
     """Shear an image vertically with random angle choice.
 
     Args:
-        angle_range: a tuple of min angle and max angle to randdomly choose from.
+        range: a tuple of min angle and max angle to randdomly choose from.
 
     Note:
         - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
@@ -428,19 +428,19 @@ class RandomVerticalShear2D(sk.TreeClass):
           [11 17 23  0  0]]]
     """
 
-    def __init__(self, angle_range: tuple[float, float] = (0.0, 90.0)):
+    def __init__(self, range: tuple[float, float] = (0.0, 90.0)):
         if not (
-            isinstance(angle_range, tuple)
-            and len(angle_range) == 2
-            and isinstance(angle_range[0], (int, float))
-            and isinstance(angle_range[1], (int, float))
+            isinstance(range, tuple)
+            and len(range) == 2
+            and isinstance(range[0], (int, float))
+            and isinstance(range[1], (int, float))
         ):
-            raise ValueError(f"`{angle_range=}` must be a tuple of 2 floats")
-        self.angle_range = angle_range
+            raise ValueError(f"`{range=}` must be a tuple of 2 floats")
+        self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
-        angle = jax.lax.stop_gradient(self.angle_range)
+        angle = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
         return jax.vmap(random_vertical_shear_2d, in_axes=in_axes)(key, x, angle)
 
