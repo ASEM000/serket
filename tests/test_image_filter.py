@@ -656,3 +656,22 @@ def test_adjust_saturation():
     npt.assert_allclose(layer(array), target, atol=1e-6)
     layer = sk.image.RandomSaturation2D((1.0, 1.0))
     npt.assert_allclose(layer(array, key=jr.PRNGKey(0)), array, atol=1e-6)
+
+
+def test_random_horizontal_translate_2d():
+    layer = sk.image.RandomHorizontalTranslate2D()
+    assert layer(jnp.ones([3, 10, 10]), key=jr.PRNGKey(0)).shape == (3, 10, 10)
+
+
+def test_random_vertical_translate_2d():
+    layer = sk.image.RandomVerticalTranslate2D()
+    assert layer(jnp.ones([3, 10, 10])).shape == (3, 10, 10)
+
+
+def test_random_perspective_2d():
+    layer = sk.image.RandomPerspective2D(scale=0)
+    npt.assert_allclose(
+        layer(jnp.ones([3, 10, 10]), key=jr.PRNGKey(0)),
+        jnp.ones([3, 10, 10]),
+        atol=1e-6,
+    )
