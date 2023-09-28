@@ -269,7 +269,8 @@ class EvalKMeans(KmeansBase):
 @tree_state.def_state(KMeans)
 def _(layer: KMeans, *, array: jax.Array, key: jr.KeyArray, **_) -> KMeansState:
     minval, maxval = array.min(), array.max()
-    centers = jr.uniform(key, minval, maxval, (layer.clusters, array.shape[1]))
+    shape = (layer.clusters, array.shape[1])
+    centers = jr.uniform(key, minval=minval, maxval=maxval, shape=shape)
     return KMeansState(centers=centers, error=centers + jnp.inf, iters=0)
 
 
