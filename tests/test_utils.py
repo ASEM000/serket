@@ -30,6 +30,7 @@ from serket._src.utils import (
     delayed_canonicalize_padding,
     positive_int_cb,
     resolve_string_padding,
+    resolve_tuple_padding,
     validate_axis_shape,
     validate_spatial_nd,
 )
@@ -97,9 +98,24 @@ def test_resolve_string_padding():
         resolve_string_padding(1, "invalid", 3, 4)
 
 
+def test_resolve_tuple_padding():
+    with pytest.raises(ValueError):
+        resolve_tuple_padding((1,), (0, 0), (3,), (4,))
+
+    assert resolve_tuple_padding(
+        in_dim=(3,),
+        padding=((0, 0),),
+        kernel_size=(3,),
+        strides=(1,),
+    ) == ((0, 0),)
+
+    with pytest.raises(ValueError):
+        resolve_tuple_padding((1,), ((0, 0, 0),), (3,), (4,))
+
+
 def test_delayed_padding():
     with pytest.raises(ValueError):
-        delayed_canonicalize_padding(1, [0], 3, 4)
+        delayed_canonicalize_padding(1, frozenset(), 3, 4)
 
 
 def test_is_instance_error():
