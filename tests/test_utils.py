@@ -92,6 +92,9 @@ def test_canonicalize():
     assert canonicalize((3, 3, 3), 3) == (3, 3, 3)
     npt.assert_allclose(canonicalize(jax.numpy.array([1]), 2), jax.numpy.array([1, 1]))
 
+    with pytest.raises(ValueError):
+        canonicalize("", 3)
+
 
 def test_resolve_string_padding():
     with pytest.raises(ValueError):
