@@ -675,3 +675,24 @@ def test_random_perspective_2d():
         jnp.ones([3, 10, 10]),
         atol=1e-6,
     )
+
+
+def test_sobel_2d():
+    x = jnp.arange(1, 26).reshape(1, 5, 5).astype(jnp.float32)
+    layer = sk.image.Sobel2D()
+    target = jnp.array(
+        [
+            [
+                [21.954498, 28.635643, 32.55764, 36.496574, 33.61547],
+                [41.036568, 40.792156, 40.792156, 40.792156, 46.8615],
+                [56.603886, 40.792156, 40.792156, 40.792156, 63.529522],
+                [74.323616, 40.792156, 40.792156, 40.792156, 81.706795],
+                [78.24321, 68.26419, 72.249565, 76.23647, 89.27486],
+            ]
+        ]
+    )
+
+    npt.assert_allclose(layer(x), target, atol=1e-6)
+
+    layer = sk.image.FFTSobel2D()
+    npt.assert_allclose(layer(x), target, atol=1e-5)

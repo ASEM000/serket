@@ -15,5 +15,7 @@ Filter API
 .. autoclass:: UnsharpMask2D
 .. autoclass:: FFTUnsharpMask2D
 .. autoclass:: MedianBlur2D
+.. autoclass:: Sobel2D
+.. autoclass:: FFTSobel2D
 .. autoclass:: Filter2D
 .. autoclass:: FFTFilter2D

@@ -33,9 +33,10 @@ from serket._src.utils import (
     validate_spatial_nd,
 )
 
-# For filters that have fft implementation, the pattern is to inherit from 
+# For filters that have fft implementation, the pattern is to inherit from
 # a base class that creates the kernel and then the child class implements the
 # specific implementation of the filter, either fft or direct convolution.
+
 
 def filter_2d(array: HWArray, weight: HWArray) -> HWArray:
     """Filtering wrapping ``jax.lax.conv_general_dilated``.
@@ -192,6 +193,16 @@ def calculate_motion_kernel(
     kernel = rotate_2d(kernel, angle)
     kernel = kernel / jnp.sum(kernel)
     return kernel.astype(dtype)
+
+
+def calculate_sobel_kernel(dtype: DType = jnp.float32):
+    """Calculate sobel kernel."""
+    # used in separable manner
+    x0 = jnp.array([1, 2, 1])
+    x1 = jnp.array([1, 0, -1])
+    y0 = jnp.array([1, 0, -1])
+    y1 = jnp.array([1, 2, 1])
+    return jnp.stack([x0, x1, y0, y1], axis=0).astype(dtype)
 
 
 @ft.partial(jax.jit, inline=True, static_argnums=1)
@@ -688,6 +699,73 @@ class MedianBlur2D(sk.TreeClass):
     @property
     def spatial_ndim(self) -> int:
         return 2
+
+
+class Sobel2DBase(sk.TreeClass):
+    def __init__(self, *, dtype: DType = jnp.float32):
+        self.kernel = calculate_sobel_kernel(dtype)
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class Sobel2D(Sobel2DBase):
+    """Apply Sobel filter to a channel-first image.
+
+    .. image:: ../_static/sobel2d.png
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1,26).reshape(1, 5,5).astype(jnp.float32)
+        >>> layer = sk.image.Sobel2D()
+        >>> layer(x)  # doctest: +SKIP
+        [[[21.954498, 28.635643, 32.55764 , 36.496574, 33.61547 ],
+          [41.036568, 40.792156, 40.792156, 40.792156, 46.8615  ],
+          [56.603886, 40.792156, 40.792156, 40.792156, 63.529522],
+          [74.323616, 40.792156, 40.792156, 40.792156, 81.706795],
+          [78.24321 , 68.26419 , 72.249565, 76.23647 , 89.27486 ]]]
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray) -> tuple[CHWArray, CHWArray]:
+        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
+        gx0, gx1, gy0, gy1 = jnp.split(kernel, 4)
+        gx = jax.vmap(filter_2d, in_axes=(0, None))(x, gx0)
+        gx = jax.vmap(filter_2d, in_axes=(0, None))(gx, gx1.T)
+        gy = jax.vmap(filter_2d, in_axes=(0, None))(x, gy0)
+        gy = jax.vmap(filter_2d, in_axes=(0, None))(gy, gy1.T)
+        return jnp.sqrt(gx**2 + gy**2)
+
+
+class FFTSobel2D(Sobel2DBase):
+    """Apply Sobel filter to a channel-first image using FFT.
+
+    .. image:: ../_static/sobel2d.png
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1,26).reshape(1, 5,5).astype(jnp.float32)
+        >>> layer = sk.image.FFTSobel2D()
+        >>> layer(x)  # doctest: +SKIP
+        [[[21.954498, 28.635643, 32.55764 , 36.496574, 33.61547 ],
+          [41.036568, 40.792156, 40.792156, 40.792156, 46.8615  ],
+          [56.603886, 40.792156, 40.792156, 40.792156, 63.529522],
+          [74.323616, 40.792156, 40.792156, 40.792156, 81.706795],
+          [78.24321 , 68.26419 , 72.249565, 76.23647 , 89.27486 ]]]
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: CHWArray) -> tuple[CHWArray, CHWArray]:
+        kernel = jax.lax.stop_gradient_p.bind(self.kernel)
+        gx0, gx1, gy0, gy1 = jnp.split(kernel, 4)
+        gx = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, gx0)
+        gx = jax.vmap(fft_filter_2d, in_axes=(0, None))(gx, gx1.T)
+        gy = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, gy0)
+        gy = jax.vmap(fft_filter_2d, in_axes=(0, None))(gy, gy1.T)
+        return jnp.sqrt(gx**2 + gy**2)
 
 
 class Filter2D(sk.TreeClass):
