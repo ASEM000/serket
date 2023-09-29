@@ -45,7 +45,7 @@ InitFuncType = Callable[[jr.KeyArray, Shape, DType], jax.Array]
 InitType = Union[InitLiteral, InitFuncType]
 
 
-inits = [
+inits: list[InitFuncType] = [
     ji.he_normal(),
     ji.he_uniform(),
     ji.glorot_normal(),

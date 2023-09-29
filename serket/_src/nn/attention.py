@@ -44,22 +44,10 @@ def is_lazy_init(_, num_heads, q_features, *__, **___) -> bool:
     return q_features is None
 
 
-def infer_q_features(_, q_array, *__, **___) -> int:
-    return q_array.shape[-1]
-
-
-def infer_k_features(_, __, k_array, *___, **____) -> int:
-    return k_array.shape[-1]
-
-
-def infer_v_features(_, __, ___, v_array, *____, **_____) -> int:
-    return v_array.shape[-1]
-
-
 attention_updates = dict(
-    q_features=infer_q_features,
-    k_features=infer_k_features,
-    v_features=infer_v_features,
+    q_features=lambda _, q_array, *__, **___: q_array.shape[-1],
+    k_features=lambda _, __, k_array, *___, **____: k_array.shape[-1],
+    v_features=lambda _, __, ___, v_array, *____, **_____: v_array.shape[-1],
 )
 
 
