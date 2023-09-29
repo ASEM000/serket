@@ -729,7 +729,7 @@ class Sobel2D(Sobel2DBase):
     """
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> tuple[CHWArray, CHWArray]:
+    def __call__(self, x: CHWArray) -> CHWArray:
         kernel = jax.lax.stop_gradient_p.bind(self.kernel)
         gx0, gx1, gy0, gy1 = jnp.split(kernel, 4)
         gx = jax.vmap(filter_2d, in_axes=(0, None))(x, gx0)
@@ -758,7 +758,7 @@ class FFTSobel2D(Sobel2DBase):
     """
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> tuple[CHWArray, CHWArray]:
+    def __call__(self, x: CHWArray) -> CHWArray:
         kernel = jax.lax.stop_gradient_p.bind(self.kernel)
         gx0, gx1, gy0, gy1 = jnp.split(kernel, 4)
         gx = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, gx0)
