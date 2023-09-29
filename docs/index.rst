@@ -89,6 +89,7 @@ Install from github::
     notebooks/mini_optax
     notebooks/augmentations
     notebooks/deep_ensembles
+    notebooks/hyperparam
     notebooks/common_recipes
 
 
