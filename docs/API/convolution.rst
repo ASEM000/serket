@@ -50,6 +50,9 @@ Convolution
 .. autoclass:: SeparableFFTConv2D
 .. autoclass:: SeparableFFTConv3D
 
+.. autoclass:: SpectralConv1D
+.. autoclass:: SpectralConv2D
+.. autoclass:: SpectralConv3D
 
 .. autofunction:: conv_nd
 .. autofunction:: depthwise_conv_nd
