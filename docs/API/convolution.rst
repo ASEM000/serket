@@ -63,3 +63,4 @@ Convolution
 .. autofunction:: separable_fft_conv_nd
 .. autofunction:: conv_nd_transpose
 .. autofunction:: fft_conv_nd_transpose
+.. autofunction:: spectral_conv_nd

@@ -85,6 +85,7 @@ from serket._src.nn.convolution import (
     local_conv_nd,
     separable_conv_nd,
     separable_fft_conv_nd,
+    spectral_conv_nd,
 )
 from serket._src.nn.dropout import (
     Dropout,
@@ -248,6 +249,7 @@ __all__ = [
     "separable_fft_conv_nd",
     "conv_nd_transpose",
     "fft_conv_nd_transpose",
+    "spectral_conv_nd",
     # dropout
     "Dropout",
     "Dropout1D",
