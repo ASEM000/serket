@@ -3135,7 +3135,7 @@ class SpectralConvND(sk.TreeClass):
         return spectral_conv_nd(x, self.weight_r, self.weight_i, self.modes)
 
     @property
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def spatial_ndim(self) -> int:
         return ...
 
