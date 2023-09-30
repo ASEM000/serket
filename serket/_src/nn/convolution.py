@@ -3216,7 +3216,7 @@ class SpectralConv2D(SpectralConvND):
 
 
 class SpectralConv3D(SpectralConvND):
-    """2D Spectral convolutional layer.
+    """3D Spectral convolutional layer.
 
     Args:
         in_features: Number of input feature maps, for 1D convolution this is the
