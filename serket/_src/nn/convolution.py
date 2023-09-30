@@ -499,7 +499,7 @@ def spectral_conv_nd(
         modes: number of modes included in the fft representation of the input.
     """
 
-    def generate_modes_slices(*modes: int):
+    def generate_modes_slices(modes: tuple[int, ...]):
         *ms, ml = modes
         slices_ = [[slice(None, ml)]]
         slices_ += [[slice(None, mode), slice(-mode, None)] for mode in reversed(ms)]
@@ -510,7 +510,7 @@ def spectral_conv_nd(
     _, o, *_ = weight.shape
     x_fft = jnp.fft.rfftn(array, s=(*si, sl))
     out = jnp.zeros([o, *si, sl // 2 + 1], dtype=array.dtype) + 0j
-    for i, slice_i in enumerate(generate_modes_slices(*modes)):
+    for i, slice_i in enumerate(generate_modes_slices(modes)):
         matmul_out = jnp.einsum("i...,oi...->o...", x_fft[tuple(slice_i)], weight[i])
         out = out.at[tuple(slice_i)].set(matmul_out)
     return jnp.fft.irfftn(out, s=(*si, sl))
