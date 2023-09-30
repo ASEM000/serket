@@ -19,6 +19,7 @@ from __future__ import annotations
 import abc
 import functools as ft
 import operator as op
+from itertools import product
 from typing import Sequence
 
 import jax
@@ -120,7 +121,6 @@ def fft_conv_general_dilated(
     kernel_pad = ((0, lhs.shape[i] - rhs.shape[i]) for i in range(2, spatial_ndim + 2))
     rhs = pad(rhs, ((0, 0), (0, 0), *kernel_pad))
 
-    # real-valued input
     x_fft = jnp.fft.rfftn(lhs, axes=range(2, spatial_ndim + 2))
     w_fft = jnp.conjugate(jnp.fft.rfftn(rhs, axes=range(2, spatial_ndim + 2)))
     z_fft = matmul(x_fft, w_fft, groups)
@@ -482,88 +482,38 @@ def depthwise_conv_nd(
     return jnp.squeeze(x, 0) if bias is None else jnp.squeeze(x + bias, 0)
 
 
-def spectral_conv_1d(
-    array: Annotated[jax.Array, "IR"],
-    weight_r: Annotated[jax.Array, "OIR"],
-    weight_i: Annotated[jax.Array, "OIR"],
-    modes: int,
-) -> Annotated[jax.Array, "OR"]:
-    """1D spectral convolution.
+def spectral_conv_nd(
+    array: Annotated[jax.Array, "I..."],
+    weight_r: Annotated[jax.Array, "NOI..."],
+    weight_i: Annotated[jax.Array, "NOI..."],
+    modes: tuple[int, ...],
+) -> Annotated[jax.Array, "O..."]:
+    """fourier neural operator convolution function.
 
     Args:
-        array: input array. shape is (in_features, spatial).
-        weight_r: convolutional kernel. shape is (out_features, in_features, kernel).
-        weight_i: convolutional kernel. shape is (out_features, in_features, kernel).
-        modes: number of modes to use for the convolution.
+        array: input array. shape is (in_features, spatial size).
+        weight_r: convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size).
+            where dim is the number of spatial dimensions.
+        weight_i: convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size).
+            where dim is the number of spatial dimensions.
+        modes: number of modes included in the fft representation of the input.
     """
-    x_ft = jnp.fft.rfft(array)
+
+    def generate_modes_slices(*modes: int):
+        *ms, ml = modes
+        slices_ = [[slice(None, ml)]]
+        slices_ += [[slice(None, mode), slice(-mode, None)] for mode in reversed(ms)]
+        return [[slice(None)] + list(reversed(i)) for i in product(*slices_)]
+
+    _, *si, sl = array.shape
     weight = weight_r + 1j * weight_i
-    _, r = array.shape
-    o, _, _ = weight.shape
-    setval = jnp.einsum("ix,oix->ox", x_ft[:, :modes], weight[:, :, :modes])
-    out_ft = jnp.zeros([o, r // 2 + 1], dtype=array.dtype) + 0j
-    out_ft = out_ft.at[..., :modes].set(setval)
-    x = jnp.fft.irfft(out_ft, n=r)
-    return x
-
-
-def spectral_conv_2d(
-    x: Annotated[jax.Array, "IRC"],
-    weight_r: Annotated[jax.Array, "2OIRC"],
-    weight_i: Annotated[jax.Array, "2OIRC"],
-    modes: tuple[int, int],
-) -> Annotated[jax.Array, "ORC"]:
-    """2D spectral convolution.
-
-    Args:
-        array: input array. shape is (in_features, spatial).
-        weight_r: convolutional kernel. shape is (out_features, in_features, kernel).
-        weight_i: convolutional kernel. shape is (out_features, in_features, kernel).
-        modes: number of modes to use for the convolution.
-    """
-    x_ft = jnp.fft.rfft2(x)
-    weight = weight_r + 1j * weight_i
-    _, r, c = x.shape
-    _, o, _, _, _ = weight.shape
-    m1, m2 = modes
-    out_ft = jnp.zeros([o, r, c // 2 + 1], dtype=x.dtype) + 0j
-    setval1 = jnp.einsum("ixy,oixy->oxy", x_ft[:, :m1, :m2], weight[0])
-    setval2 = jnp.einsum("ixy,oixy->oxy", x_ft[:, -m1:, :m2], weight[1])
-    out_ft = out_ft.at[:, :m1, :m2].set(setval1).at[:, -m1:, :m2].set(setval2)
-    x = jnp.fft.irfft2(out_ft, s=(r, c))
-    return x
-
-
-def spectral_conv_3d(
-    x: Annotated[jax.Array, "IRCD"],
-    weight_r: Annotated[jax.Array, "4OIRCD"],
-    weight_i: Annotated[jax.Array, "4OIRCD"],
-    modes: tuple[int, int, int],
-) -> Annotated[jax.Array, "ORCD"]:
-    """3D spectral convolution.
-
-    Args:
-        array: input array. shape is (in_features, spatial).
-        weight_r: convolutional kernel. shape is (out_features, in_features, kernel).
-        weight_i: convolutional kernel. shape is (out_features, in_features, kernel).
-        modes: number of modes to use for the convolution.
-    """
-    _, r, c, d = x.shape
-    x_ft = jnp.fft.rfftn(x, s=(r, c, d))
-    weight = weight_r + 1j * weight_i
-    _, o, _, _, _, _ = weight.shape
-    m1, m2, m3 = modes
-    out_ft = jnp.zeros([o, r, c, d // 2 + 1], dtype=x.dtype) + 0j
-    setval1 = jnp.einsum("ixyz,oixyz->oxyz", x_ft[:, :m1, :m2, :m3], weight[0])
-    setval2 = jnp.einsum("ixyz,oixyz->oxyz", x_ft[:, -m1:, :m2, :m3], weight[1])
-    setval3 = jnp.einsum("ixyz,oixyz->oxyz", x_ft[:, :m1, -m2:, :m3], weight[2])
-    setval4 = jnp.einsum("ixyz,oixyz->oxyz", x_ft[:, -m1:, -m2:, :m3], weight[3])
-    out_ft = out_ft.at[:, :m1, :m2, :m3].set(setval1)
-    out_ft = out_ft.at[:, -m1:, :m2, :m3].set(setval2)
-    out_ft = out_ft.at[:, :m1, -m2:, :m3].set(setval3)
-    out_ft = out_ft.at[:, -m1:, -m2:, :m3].set(setval4)
-    x = jnp.fft.irfftn(out_ft, s=(r, c, d))
-    return x
+    _, o, *_ = weight.shape
+    x_fft = jnp.fft.rfftn(array, s=(*si, sl))
+    out = jnp.zeros([o, *si, sl // 2 + 1], dtype=array.dtype) + 0j
+    for i, slice_i in enumerate(generate_modes_slices(*modes)):
+        matmul_out = jnp.einsum("i...,oi...->o...", x_fft[tuple(slice_i)], weight[i])
+        out = out.at[tuple(slice_i)].set(matmul_out)
+    return jnp.fft.irfftn(out, s=(*si, sl))
 
 
 def is_lazy_call(instance, *_, **__) -> bool:
@@ -3158,7 +3108,39 @@ class SeparableFFTConv3D(SeparableConvND):
         return 3
 
 
-class SpectralConv1D(sk.TreeClass):
+class SpectralConvND(sk.TreeClass):
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        *,
+        modes: int | tuple[int, ...],
+        key: jr.KeyArray,
+        dtype: DType = jnp.float32,
+    ):
+        self.in_features = positive_int_cb(in_features)
+        self.out_features = positive_int_cb(out_features)
+        self.modes: tuple[int, ...] = canonicalize(modes, self.spatial_ndim, "modes")
+        weight_shape = (1, out_features, in_features, *self.modes)
+        scale = 1 / (in_features * out_features)
+        k1, k2 = jr.split(key)
+        self.weight_r = scale * jr.normal(k1, weight_shape).astype(dtype)
+        self.weight_i = scale * jr.normal(k2, weight_shape).astype(dtype)
+
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    def __call__(self, x: jax.Array) -> jax.Array:
+        return spectral_conv_nd(x, self.weight_r, self.weight_i, self.modes)
+
+    @property
+    @abc.abstractclassmethod
+    def spatial_ndim(self) -> int:
+        return ...
+
+
+class SpectralConv1D(SpectralConvND):
     """1D Spectral convolutional layer.
 
     Args:
@@ -3171,7 +3153,9 @@ class SpectralConv1D(sk.TreeClass):
             output channels, for 3D convolution this is the number of output
             channels.
 
-        modes: Number of modes to use in the spectral convolution.
+        modes: Number of modes to use in the spectral convolution. either a single
+            integer for the same number of modes of a tuple of single integers.
+
         key: key to use for initializing the weights.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
@@ -3183,39 +3167,18 @@ class SpectralConv1D(sk.TreeClass):
         >>> l1 = sk.nn.SpectralConv1D(3, 3, modes=1, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
+
+    Reference:
+        - https://zongyi-li.github.io/blog/2020/fourier-pde/
+        - https://arxiv.org/abs/2010.08895
     """
-
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        *,
-        modes: int,
-        key: jr.KeyArray,
-        dtype: DType = jnp.float32,
-    ):
-        self.in_features = positive_int_cb(in_features)
-        self.out_features = positive_int_cb(out_features)
-        self.modes = positive_int_cb(modes)
-        weight_shape = (out_features, in_features, self.modes)
-        scale = 1 / (in_features * out_features)
-        k1, k2 = jr.split(key)
-        self.weight_r = scale * jr.normal(k1, weight_shape).astype(dtype)
-        self.weight_i = scale * jr.normal(k2, weight_shape).astype(dtype)
-
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return spectral_conv_1d(x, self.weight_r, self.weight_i, self.modes)
 
     @property
     def spatial_ndim(self) -> int:
         return 1
 
 
-class SpectralConv2D(sk.TreeClass):
+class SpectralConv2D(SpectralConvND):
     """2D Spectral convolutional layer.
 
     Args:
@@ -3228,8 +3191,8 @@ class SpectralConv2D(sk.TreeClass):
             output channels, for 3D convolution this is the number of output
             channels.
 
-        modes: Number of modes to use in the spectral convolution. accepts a tuple
-            of two integers for different modes in each dimension.
+        modes: Number of modes to use in the spectral convolution. accepts two
+            integer tuple for different modes in each dimension.
 
         key: key to use for initializing the weights.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
@@ -3241,40 +3204,18 @@ class SpectralConv2D(sk.TreeClass):
         >>> l1 = sk.nn.SpectralConv2D(3, 3, modes=(1, 2), key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32 ,32))).shape
         (3, 32, 32)
+
+    Reference:
+        - https://zongyi-li.github.io/blog/2020/fourier-pde/
+        - https://arxiv.org/abs/2010.08895
     """
-
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        *,
-        modes: tuple[int, int],
-        key: jr.KeyArray,
-        dtype: DType = jnp.float32,
-    ):
-        self.in_features = positive_int_cb(in_features)
-        self.out_features = positive_int_cb(out_features)
-        m1, m2 = modes
-        self.modes = (positive_int_cb(m1), positive_int_cb(m2))
-        weight_shape = (2, out_features, in_features, *self.modes)
-        scale = 1 / (in_features * out_features)
-        k1, k2 = jr.split(key)
-        self.weight_r = scale * jr.normal(k1, weight_shape).astype(dtype)
-        self.weight_i = scale * jr.normal(k2, weight_shape).astype(dtype)
-
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return spectral_conv_2d(x, self.weight_r, self.weight_i, self.modes)
 
     @property
     def spatial_ndim(self) -> int:
         return 2
 
 
-class SpectralConv3D(sk.TreeClass):
+class SpectralConv3D(SpectralConvND):
     """2D Spectral convolutional layer.
 
     Args:
@@ -3287,8 +3228,8 @@ class SpectralConv3D(sk.TreeClass):
             output channels, for 3D convolution this is the number of output
             channels.
 
-        modes: Number of modes to use in the spectral convolution. accepts a tuple
-            of three integers for different modes in each dimension.
+        modes: Number of modes to use in the spectral convolution. accepts three
+            integer tuple for different modes in each dimension.
 
         key: key to use for initializing the weights.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
@@ -3300,32 +3241,11 @@ class SpectralConv3D(sk.TreeClass):
         >>> l1 = sk.nn.SpectralConv3D(3, 3, modes=(1, 2, 2), key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
+
+    Reference:
+        - https://zongyi-li.github.io/blog/2020/fourier-pde/
+        - https://arxiv.org/abs/2010.08895
     """
-
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        *,
-        modes: tuple[int, int, int],
-        key: jr.KeyArray,
-        dtype: DType = jnp.float32,
-    ):
-        self.in_features = positive_int_cb(in_features)
-        self.out_features = positive_int_cb(out_features)
-        self.modes = tuple(positive_int_cb(m) for m in modes)
-        weight_shape = (4, out_features, in_features, *self.modes)
-        scale = 1 / (in_features * out_features)
-        k1, k2 = jr.split(key)
-        self.weight_r = scale * jr.normal(k1, weight_shape).astype(dtype)
-        self.weight_i = scale * jr.normal(k2, weight_shape).astype(dtype)
-
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return spectral_conv_3d(x, self.weight_r, self.weight_i, self.modes)
 
     @property
     def spatial_ndim(self) -> int:
