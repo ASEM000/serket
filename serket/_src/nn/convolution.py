@@ -492,13 +492,12 @@ def spectral_conv_nd(
 
     Args:
         array: input array. shape is (in_features, spatial size).
-        weight_r: convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size).
+        weight_r: real convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size). 
             where dim is the number of spatial dimensions.
-        weight_i: convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size).
+        weight_i: convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size). 
             where dim is the number of spatial dimensions.
         modes: number of modes included in the fft representation of the input.
     """
-
     def generate_modes_slices(modes: tuple[int, ...]):
         *ms, ml = modes
         slices_ = [[slice(None, ml)]]
