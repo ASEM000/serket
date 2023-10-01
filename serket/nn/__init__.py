@@ -45,7 +45,6 @@ from serket._src.nn.activation import (
     ThresholdedReLU,
 )
 from serket._src.nn.attention import MultiHeadAttention
-
 from serket._src.nn.convolution import (
     Conv1D,
     Conv1DLocal,
@@ -74,6 +73,9 @@ from serket._src.nn.convolution import (
     SeparableFFTConv1D,
     SeparableFFTConv2D,
     SeparableFFTConv3D,
+    SpectralConv1D,
+    SpectralConv2D,
+    SpectralConv3D,
     conv_nd,
     conv_nd_transpose,
     depthwise_conv_nd,
@@ -83,6 +85,7 @@ from serket._src.nn.convolution import (
     local_conv_nd,
     separable_conv_nd,
     separable_fft_conv_nd,
+    spectral_conv_nd,
 )
 from serket._src.nn.dropout import (
     Dropout,
@@ -233,6 +236,9 @@ __all__ = [
     "SeparableFFTConv1D",
     "SeparableFFTConv2D",
     "SeparableFFTConv3D",
+    "SpectralConv1D",
+    "SpectralConv2D",
+    "SpectralConv3D",
     # functional form
     "conv_nd",
     "depthwise_conv_nd",
@@ -243,6 +249,7 @@ __all__ = [
     "separable_fft_conv_nd",
     "conv_nd_transpose",
     "fft_conv_nd_transpose",
+    "spectral_conv_nd",
     # dropout
     "Dropout",
     "Dropout1D",
