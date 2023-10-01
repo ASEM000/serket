@@ -180,7 +180,7 @@ class MaxPool1D(MaxPoolND):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> layer = sk.nn.MaxPool1D(kernel_size=2, padding="same", strides=1)
+        >>> layer = sk.nn.MaxPool1D(kernel_size=2, strides=2)
         >>> x = jnp.arange(1, 11).reshape(1, 10).astype(jnp.float32)
         >>> print(layer(x))
         [[ 2.  4.  6.  8. 10.]]
@@ -198,6 +198,16 @@ class MaxPool2D(MaxPoolND):
         kernel_size: size of the kernel
         strides: strides of the kernel
         padding: padding of the kernel (valid, same) or tuple of ints
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> layer = sk.nn.MaxPool2D(kernel_size=2, strides=2)
+        >>> x = jnp.arange(1, 17).reshape(1, 4, 4).astype(jnp.float32)
+        >>> print(layer(x))
+        [[[ 6.  8.]
+          [14. 16.]]]
     """
 
     @property
