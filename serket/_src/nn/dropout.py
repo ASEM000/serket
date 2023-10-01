@@ -22,7 +22,6 @@ from typing import Sequence
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-import kernex as kex
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
@@ -30,6 +29,7 @@ from serket._src.utils import (
     IsInstance,
     Range,
     canonicalize,
+    kernel_map,
     positive_int_cb,
     validate_spatial_nd,
 )
@@ -76,8 +76,18 @@ def random_cutout_nd(
     slice_sizes = [di - (di % ki) for di, ki in zip(array.shape, shape)]
     valid_array = jax.lax.dynamic_slice(array, start_indices, slice_sizes)
 
+    @ft.partial(
+        kernel_map,
+        shape=array.shape,
+        kernel_size=shape,
+        strides=shape,
+        padding=((0, 0),) * len(shape),
+    )
+    def generate_patches(array):
+        return array
+
     # get non-overlapping patches
-    patches = kex.kmap(kernel_size=shape, strides=shape)(lambda x: x)(array)
+    patches = generate_patches(array)
     patches_shape = patches.shape
 
     # patches_shape = (patch_0, ..., patch_n, k0, ..., kn)

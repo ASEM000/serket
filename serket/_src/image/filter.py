@@ -18,7 +18,6 @@ import functools as ft
 
 import jax
 import jax.numpy as jnp
-import kernex as kex
 
 import serket as sk
 from serket._src.image.geometric import rotate_2d
@@ -29,6 +28,7 @@ from serket._src.utils import (
     HWArray,
     canonicalize,
     generate_conv_dim_numbers,
+    kernel_map,
     resolve_string_padding,
     validate_spatial_nd,
 )
@@ -209,8 +209,21 @@ def calculate_sobel_kernel(dtype: DType = jnp.float32):
 def median_blur_2d(array: HWArray, kernel_size: tuple[int, int]) -> HWArray:
     """Median blur"""
     assert array.ndim == 2
+    # def resolve_string_padding(in_dim, padding, kernel_size, strides):
+    padding = resolve_string_padding(
+        in_dim=array.shape,
+        padding="same",
+        kernel_size=kernel_size,
+        strides=(1, 1),
+    )
 
-    @kex.kmap(kernel_size=kernel_size, padding="same")
+    @ft.partial(
+        kernel_map,
+        shape=array.shape,
+        kernel_size=kernel_size,
+        strides=(1, 1),
+        padding=padding,
+    )
     def median_kernel(array: jax.Array) -> jax.Array:
         return jnp.median(array)
 
