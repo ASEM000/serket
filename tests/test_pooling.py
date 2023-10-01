@@ -155,7 +155,7 @@ def test_GlobalAvgPool3D():
 
 
 def test_llpool1d():
-    layer = LPPool1D(6.0, (2,))
+    layer = LPPool1D(6.0, (2,), strides=(2,))
     x = jnp.array(
         [
             [1.2993, 0.4735, -1.1191, 0.4357],
@@ -172,7 +172,7 @@ def test_llpool1d():
 
 
 def test_llpool2d():
-    layer = LPPool2D(6.0, (2, 2))
+    layer = LPPool2D(6.0, (2, 2), strides=(2, 2))
     x = jnp.array(
         (
             [

@@ -19,4 +19,3 @@ typing-extensions>=4.5.0
 sphinx-copybutton>=0.5.1
 graphviz>=0.20.1
 sepes>=0.10.0
-kernex>=0.2.0
