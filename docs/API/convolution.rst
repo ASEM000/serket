@@ -23,17 +23,6 @@ Convolution
 .. autoclass:: Conv2DLocal
 .. autoclass:: Conv3DLocal
 
-.. note::
-    The ``fft`` convolution variant is useful in myriad of cases, specifically the ``fft`` variant could be faster for larger kernel sizes. the following figure compares the speed of both implementation for different kernel size on mac ``m1`` cpu setup.
-    
-    .. image:: ../_static/fft_bench.svg
-        :width: 600
-        :align: center
-    
-
-    The benchmark use ``FFTConv2D`` against ``Conv2D`` with ``in_features=3``, ``out_features=64``, and ``input_size=(10, 3, 128, 128)``
-
-
 .. autoclass:: FFTConv1D
 .. autoclass:: FFTConv2D
 .. autoclass:: FFTConv3D
