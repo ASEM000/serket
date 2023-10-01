@@ -27,7 +27,7 @@ from serket._src.utils import Range
 
 
 @ft.singledispatch
-def sequential(key: jr.KeyArray, _, __):
+def sequential(key: jax.Array, _, __):
     raise TypeError(f"Invalid {type(key)=}")
 
 
@@ -38,7 +38,7 @@ def _(key: None, layers: Sequence[Callable[..., Any]], array: Any):
 
 
 @sequential.register(jax.Array)
-def _(key: jr.KeyArray, layers: Sequence[Callable[..., Any]], array: Any):
+def _(key: jax.Array, layers: Sequence[Callable[..., Any]], array: Any):
     """Applies a sequence of layers to an array.
 
     Args:
@@ -77,7 +77,7 @@ class Sequential(sk.TreeClass):
     def __init__(self, *layers):
         self.layers = layers
 
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray | None = None) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jax.Array | None = None) -> jax.Array:
         return sequential(key, self.layers, x)
 
     @ft.singledispatchmethod
@@ -103,8 +103,7 @@ class Sequential(sk.TreeClass):
         return reversed(self.layers)
 
 
-
-def random_choice(key: jr.KeyArray, layers: tuple[Callable[..., Any], ...], array: Any):
+def random_choice(key: jax.Array, layers: tuple[Callable[..., Any], ...], array: Any):
     """Randomly selects one of the given layers/functions.
 
     Args:
@@ -150,7 +149,7 @@ class RandomChoice(sk.TreeClass):
     def __init__(self, *layers):
         self.layers = layers
 
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray):
+    def __call__(self, x: jax.Array, *, key: jax.Array):
         return random_choice(key, self.layers, x)
 
 

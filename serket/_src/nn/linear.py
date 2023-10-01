@@ -161,7 +161,7 @@ class Multilinear(sk.TreeClass):
         self,
         in_features: tuple[int, ...] | None,
         out_features: int,
-        key: jr.KeyArray,
+        key: jax.Array,
         *,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
@@ -238,7 +238,7 @@ class Linear(Multilinear):
         in_features: int | None,
         out_features: int,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
@@ -313,7 +313,7 @@ class GeneralLinear(sk.TreeClass):
         in_features: tuple[int, ...] | None,
         out_features: int,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         in_axes: tuple[int, ...],
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
@@ -374,7 +374,7 @@ class Embedding(sk.TreeClass):
         Array([[0.43810904, 0.35078037, 0.13254273]], dtype=float32)
     """
 
-    def __init__(self, in_features: int, out_features: int, key: jr.KeyArray):
+    def __init__(self, in_features: int, out_features: int, key: jax.Array):
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
         self.weight = jr.uniform(key, (self.in_features, self.out_features))
@@ -443,7 +443,7 @@ class FNN(sk.TreeClass):
         self,
         layers: Sequence[int],
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         act: ActivationType = "tanh",
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
@@ -566,7 +566,7 @@ class MLP(sk.TreeClass):
         in_features: int,
         out_features: int,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         hidden_size: int,
         num_hidden_layers: int,
         act: ActivationType = "tanh",
@@ -582,7 +582,7 @@ class MLP(sk.TreeClass):
         kwargs = dict(weight_init=weight_init, bias_init=bias_init, dtype=dtype)
 
         @jax.vmap
-        def batched_linear(key: jr.KeyArray) -> Batched[Linear]:
+        def batched_linear(key: jax.Array) -> Batched[Linear]:
             return sk.tree_mask(Linear(hidden_size, hidden_size, key=key, **kwargs))
 
         self.linear_i = Linear(in_features, hidden_size, key=keys[0], **kwargs)

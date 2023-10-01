@@ -75,7 +75,7 @@ def adjust_contrast_2d(image: HWArray, factor: float):
 
 
 def random_contrast_2d(
-    key: jr.KeyArray,
+    key: jax.Array,
     array: HWArray,
     range: tuple[float, float],
 ) -> HWArray:
@@ -98,7 +98,7 @@ def adjust_brightness_2d(image: HWArray, factor: float) -> HWArray:
 
 
 def random_brightness_2d(
-    key: jr.KeyArray,
+    key: jax.Array,
     image: HWArray,
     range: tuple[float, float],
 ) -> HWArray:
@@ -122,7 +122,7 @@ def pixelate_2d(image: HWArray, scale: int = 16) -> HWArray:
 
 
 @ft.partial(jax.jit, inline=True, static_argnums=2)
-def random_jigsaw_2d(key: jr.KeyArray, image: HWArray, tiles: int) -> HWArray:
+def random_jigsaw_2d(key: jax.Array, image: HWArray, tiles: int) -> HWArray:
     """Jigsaw an image by mixing up tiles.
 
     Args:
@@ -196,14 +196,14 @@ def adust_saturation_3d(image: CHWArray, factor: float) -> CHWArray:
 
 
 def random_hue_3d(
-    key: jr.KeyArray, image: CHWArray, range: tuple[float, float]
+    key: jax.Array, image: CHWArray, range: tuple[float, float]
 ) -> CHWArray:
     minval, maxval = range
     factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
     return adjust_hue_3d(image, factor)
 
 
-def random_saturation_3d(key: jr.KeyArray, image: CHWArray, range: tuple[float, float]):
+def random_saturation_3d(key: jax.Array, image: CHWArray, range: tuple[float, float]):
     minval, maxval = range
     factor = jr.uniform(key=key, shape=(), minval=minval, maxval=maxval)
     return adust_saturation_3d(image, factor)
@@ -299,7 +299,7 @@ class RandomContrast2D(sk.TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
         return jax.vmap(random_contrast_2d, in_axes=in_axes)(key, x, range)
@@ -356,7 +356,7 @@ class RandomBrightness2D(sk.TreeClass):
     range: tuple[float, float] = sk.field(on_setattr=[IsInstance(tuple)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
         return jax.vmap(random_brightness_2d, in_axes=in_axes)(key, x, range)
@@ -543,7 +543,7 @@ class RandomJigSaw2D(sk.TreeClass):
     tiles: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
         """Mixes up tiles of an image.
 
         Args:
@@ -667,7 +667,7 @@ class RandomHue2D(sk.TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         return random_hue_3d(key, x, range)
 
@@ -715,7 +715,7 @@ class RandomSaturation2D(sk.TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jr.KeyArray) -> CHWArray:
+    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         return random_saturation_3d(key, x, range)
 

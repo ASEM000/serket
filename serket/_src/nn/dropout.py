@@ -36,7 +36,7 @@ from serket._src.utils import (
 
 
 def dropout_nd(
-    key: jr.KeyArray,
+    key: jax.Array,
     x: jax.Array,
     drop_rate,
     drop_axes: Sequence[int] | None = None,
@@ -142,7 +142,7 @@ class Dropout(sk.TreeClass):
     )
     drop_axes: tuple[int, ...] | None = None
 
-    def __call__(self, x, *, key: jr.KeyArray):
+    def __call__(self, x, *, key: jax.Array):
         """Drop some elements of the input array.
 
         Args:
@@ -337,7 +337,7 @@ class RandomCutoutND(sk.TreeClass):
         self.fill_value = fill_value
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jr.KeyArray) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
         """Drop some elements of the input array.
 
         Args:

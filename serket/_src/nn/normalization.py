@@ -18,7 +18,6 @@ import functools as ft
 
 import jax
 import jax.numpy as jnp
-import jax.random as jr
 from jax.custom_batching import custom_vmap
 
 import serket as sk
@@ -141,7 +140,7 @@ class LayerNorm(sk.TreeClass):
         self,
         normalized_shape: int | tuple[int, ...] | None,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
@@ -240,7 +239,7 @@ class GroupNorm(sk.TreeClass):
         self,
         in_features,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         groups: int,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
@@ -321,7 +320,7 @@ class InstanceNorm(GroupNorm):
         self,
         in_features: int,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
@@ -496,7 +495,7 @@ class BatchNorm(sk.TreeClass):
         self,
         in_features: int,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         momentum: float = 0.99,
         eps: float = 1e-5,
         weight_init: InitType = "ones",
@@ -599,7 +598,7 @@ class EvalNorm(sk.TreeClass):
         self,
         in_features: int,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         momentum: float = 0.99,
         eps: float = 1e-5,
         weight_init: InitType = "ones",

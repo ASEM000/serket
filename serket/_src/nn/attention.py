@@ -58,7 +58,7 @@ def calculate_attention(
     mask: jax.Array,
     num_heads: int,
     drop_layer: sk.nn.Dropout,
-    key: jr.KeyArray,
+    key: jax.Array,
 ) -> jax.Array:
     """Applies multi-head attention to the given inputs.
 
@@ -203,7 +203,7 @@ class MultiHeadAttention(sk.TreeClass):
         v_features: int | None = None,
         out_features: int | None = None,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         q_weight_init: InitType = "glorot_uniform",
         q_bias_init: InitType = "zeros",
         k_weight_init: InitType = "glorot_uniform",
@@ -278,7 +278,7 @@ class MultiHeadAttention(sk.TreeClass):
         v_array: Annotated[jax.Array, "..., kv_length, v_features"],
         mask: Annotated[jax.Array, "..., num_heads, q_length, kv_length"] | None = None,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
     ) -> Annotated[jax.Array, "..., q_length, out_features"]:
         """Applies multi-head attention to the given inputs.
 

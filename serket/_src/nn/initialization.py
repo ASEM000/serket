@@ -19,7 +19,6 @@ from typing import Any, Callable, Literal, Tuple, Union, get_args
 
 import jax
 import jax.nn.initializers as ji
-import jax.random as jr
 import jax.tree_util as jtu
 import numpy as np
 
@@ -41,7 +40,7 @@ InitLiteral = Literal[
 
 Shape = Tuple[int, ...]
 DType = Union[np.dtype, str, Any]
-InitFuncType = Callable[[jr.KeyArray, Shape, DType], jax.Array]
+InitFuncType = Callable[[jax.Array, Shape, DType], jax.Array]
 InitType = Union[InitLiteral, InitFuncType]
 
 

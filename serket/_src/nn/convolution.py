@@ -492,12 +492,13 @@ def spectral_conv_nd(
 
     Args:
         array: input array. shape is (in_features, spatial size).
-        weight_r: real convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size). 
+        weight_r: real convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size).
             where dim is the number of spatial dimensions.
-        weight_i: convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size). 
+        weight_i: convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size).
             where dim is the number of spatial dimensions.
         modes: number of modes included in the fft representation of the input.
     """
+
     def generate_modes_slices(modes: tuple[int, ...]):
         *ms, ml = modes
         slices_ = [[slice(None, ml)]]
@@ -538,7 +539,7 @@ class BaseConvND(sk.TreeClass):
         out_features: int,
         kernel_size: KernelSizeType,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         strides: StridesType = 1,
         padding: PaddingType = "same",
         dilation: DilationType = 1,
@@ -1203,7 +1204,7 @@ class BaseConvNDTranspose(sk.TreeClass):
         out_features: int,
         kernel_size: KernelSizeType,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         strides: StridesType = 1,
         padding: PaddingType = "same",
         out_padding: int = 0,
@@ -1897,7 +1898,7 @@ class BaseDepthwiseConvND(sk.TreeClass):
         in_features: int | None,
         kernel_size: KernelSizeType,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         depth_multiplier: int = 1,
         strides: int = 1,
         padding: PaddingType = "same",
@@ -2473,7 +2474,7 @@ class SeparableConvNDBase(sk.TreeClass):
         out_features: int,
         kernel_size: KernelSizeType,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         depth_multiplier: int = 1,
         strides: StridesType = 1,
         padding: PaddingType = "same",
@@ -3115,7 +3116,7 @@ class SpectralConvND(sk.TreeClass):
         out_features: int,
         *,
         modes: int | tuple[int, ...],
-        key: jr.KeyArray,
+        key: jax.Array,
         dtype: DType = jnp.float32,
     ):
         self.in_features = positive_int_cb(in_features)
@@ -3336,7 +3337,7 @@ class ConvNDLocal(sk.TreeClass):
         out_features: int,
         kernel_size: KernelSizeType,
         *,
-        key: jr.KeyArray,
+        key: jax.Array,
         in_size: Sequence[int],
         strides: StridesType = 1,
         padding: PaddingType = "same",
