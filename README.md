@@ -44,29 +44,18 @@ import jax, jax.numpy as jnp
 import serket as sk
 
 x_train, y_train = ..., ...
-k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
+k1, k2 = jax.random.split(jax.random.PRNGKey(0))
 
-net = sk.Sequential(
+net = sk.tree_mask(sk.Sequential(
     jnp.ravel,
     sk.nn.Linear(28 * 28, 64, key=k1),
     jax.nn.relu,
-    sk.nn.Linear(64, 64, key=k2),
-    jax.nn.relu,
-    sk.nn.Linear(64, 10, key=k3),
-)
-
-net = sk.tree_mask(net)
-
-def softmax_cross_entropy(logits, onehot):
-    return -jnp.sum(labels * jax.nn.log_softmax(logits, axis=-1), axis=-1)
-
-def update(param, grad):
-    return param - grad * 1e-3
+    sk.nn.Linear(64, 10, key=k2),
+))
 
 @ft.partial(jax.grad, has_aux=True)
 def loss_func(net, x, y):
-    net = sk.tree_unmask(net)
-    logits = jax.vmap(net)(x)
+    logits = jax.vmap(sk.tree_unmask(net))(x)
     onehot = jax.nn.one_hot(y, 10)
     loss = jnp.mean(softmax_cross_entropy(logits, onehot))
     return loss, (loss, logits)
@@ -74,7 +63,7 @@ def loss_func(net, x, y):
 @jax.jit
 def train_step(net, x, y):
     grads, (loss, logits) = loss_func(net, x, y)
-    net = jax.tree_map(update, net, grads)
+    net = jax.tree_map(lambda p, g: p - g * 1e-3, net, grads)
     return net, (loss, logits)
 
 for j, (xb, yb) in enumerate(zip(x_train, y_train)):
