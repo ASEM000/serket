@@ -3152,8 +3152,7 @@ class SpectralConv1D(SpectralConvND):
             output channels, for 3D convolution this is the number of output
             channels.
 
-        modes: Number of modes to use in the spectral convolution. either a single
-            integer for the same number of modes of a tuple of single integers.
+        modes: Number of modes to use in the spectral convolution.
 
         key: key to use for initializing the weights.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
@@ -3166,6 +3165,29 @@ class SpectralConv1D(SpectralConvND):
         >>> l1 = sk.nn.SpectralConv1D(3, 3, modes=1, key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
+
+    Note:
+        :class:`.SpectralConv1D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["__call__"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> @sk.autoinit
+        ... class Net(sk.TreeClass):
+        ...    l1: sk.nn.SpectralConv1D = sk.nn.SpectralConv1D(None, 3, modes=3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.SpectralConv1D = sk.nn.SpectralConv1D(3, 1, modes=3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jnp.sin(self.l1(x)))
+        >>> lazy_net = Net()
+        >>> _, materialized_net = lazy_net.at["__call__"](jnp.ones((5, 10)))
+        >>> materialized_net.l1.in_features
+        5
 
     Reference:
         - https://zongyi-li.github.io/blog/2020/fourier-pde/
@@ -3191,10 +3213,34 @@ class SpectralConv2D(SpectralConvND):
             channels.
 
         modes: Number of modes to use in the spectral convolution. accepts two
-            integer tuple for different modes in each dimension.
+            integer tuple for different modes in each dimension. or a single
+            integer for the same number of modes in each dimension.
 
         key: key to use for initializing the weights.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+
+    Note:
+        :class:`.SpectralConv2D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["__call__"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> @sk.autoinit
+        ... class Net(sk.TreeClass):
+        ...    l1: sk.nn.SpectralConv2D = sk.nn.SpectralConv2D(None, 3, modes=3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.SpectralConv2D = sk.nn.SpectralConv2D(3, 1, modes=3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jnp.sin(self.l1(x)))
+        >>> lazy_net = Net()
+        >>> _, materialized_net = lazy_net.at["__call__"](jnp.ones((5, 10, 10)))
+        >>> materialized_net.l1.in_features
+        5
 
     Example:
         >>> import jax.numpy as jnp
@@ -3228,7 +3274,8 @@ class SpectralConv3D(SpectralConvND):
             channels.
 
         modes: Number of modes to use in the spectral convolution. accepts three
-            integer tuple for different modes in each dimension.
+            integer tuple for different modes in each dimension. or a single
+            integer for the same number of modes in each dimension.
 
         key: key to use for initializing the weights.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
@@ -3240,6 +3287,29 @@ class SpectralConv3D(SpectralConvND):
         >>> l1 = sk.nn.SpectralConv3D(3, 3, modes=(1, 2, 2), key=jr.PRNGKey(0))
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
+
+    Note:
+        :class:`.SpectralConv3D` supports lazy initialization, meaning that the weights and
+        biases are not initialized until the first call to the layer. This is
+        useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["__call__"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> @sk.autoinit
+        ... class Net(sk.TreeClass):
+        ...    l1: sk.nn.SpectralConv3D = sk.nn.SpectralConv3D(None, 3, modes=3, key=jr.PRNGKey(1))
+        ...    l2: sk.nn.SpectralConv3D = sk.nn.SpectralConv3D(3, 1, modes=3, key=jr.PRNGKey(2))
+        ...    def __call__(self, x: jax.Array) -> jax.Array:
+        ...        return self.l2(jnp.sin(self.l1(x)))
+        >>> lazy_net = Net()
+        >>> _, materialized_net = lazy_net.at["__call__"](jnp.ones((5, 10, 10, 10)))
+        >>> materialized_net.l1.in_features
+        5
 
     Reference:
         - https://zongyi-li.github.io/blog/2020/fourier-pde/
