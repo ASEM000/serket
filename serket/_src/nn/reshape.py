@@ -36,10 +36,10 @@ MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 
 
 def random_crop_nd(
+    key: jax.Array,
     x: jax.Array,
     *,
     crop_size: tuple[int, ...],
-    key: jax.Array,
 ) -> jax.Array:
     start: tuple[int, ...] = tuple(
         jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)
@@ -66,7 +66,7 @@ def random_zoom_along_axis(
         resized_shape = list(shape)
         resized_shape[axis] = resized_axis_size
         x = jax.image.resize(x, shape=resized_shape, method="linear")
-        x = random_crop_nd(x, crop_size=shape, key=key)
+        x = random_crop_nd(key, x, crop_size=shape)
         return x.astype(dtype)
 
     def zoom_out(x):
@@ -507,7 +507,7 @@ class RandomCropND(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: jax.Array, *, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
         crop_size = [x.shape[0], *self.size]
-        return random_crop_nd(x, crop_size=crop_size, key=key)
+        return random_crop_nd(key, x, crop_size=crop_size)
 
     @property
     @abc.abstractmethod

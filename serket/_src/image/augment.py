@@ -729,5 +729,5 @@ class RandomSaturation2D(sk.TreeClass):
 @tree_eval.def_eval(RandomSaturation2D)
 @tree_eval.def_eval(RandomContrast2D)
 @tree_eval.def_eval(RandomJigSaw2D)
-def _(_):
+def _(_) -> Identity:
     return Identity()
