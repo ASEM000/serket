@@ -215,29 +215,17 @@ class PixelShuffle2D(sk.TreeClass):
     .. image:: ../_static/pixelshuffle2d.png
 
     Args:
-        upscale_factor: factor to increase spatial resolution by.
+        upscale_factor: factor to increase spatial resolution by. accepts an integer.
 
     Reference:
         - https://arxiv.org/abs/1609.05158
     """
 
-    def __init__(self, upscale_factor: int | tuple[int, int] = 1):
-        if isinstance(upscale_factor, int):
-            if upscale_factor < 1:
-                raise ValueError("upscale_factor must be >= 1")
+    def __init__(self, upscale_factor: int = 1):
+        if not isinstance(upscale_factor, int):
+            raise TypeError("`upscale_factor` must be an integer.")
 
-            self.upscale_factor = (upscale_factor, upscale_factor)
-            return
-
-        if isinstance(upscale_factor, tuple):
-            if len(upscale_factor) != 2:
-                raise ValueError("upscale_factor must be a tuple of length 2")
-            if upscale_factor[0] < 1 or upscale_factor[1] < 1:
-                raise ValueError("upscale_factor must be >= 1")
-            self.upscale_factor = upscale_factor
-            return
-
-        raise ValueError("`upscale_factor` must be an integer or tuple of length 2")
+        self.upscale_factor = (upscale_factor, upscale_factor)
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, x: CHWArray) -> CHWArray:
