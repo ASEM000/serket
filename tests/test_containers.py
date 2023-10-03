@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import jax
 import jax.random as jr
+import pytest
 
 import serket as sk
 
@@ -28,6 +29,17 @@ def test_sequential_without_key():
 def test_sequential_with_key():
     layer = sk.Sequential(lambda x: x + 1, lambda x: x * 2)
     assert layer(1, key=jr.PRNGKey(0)) == 4
+
+
+def test_sequential_with_invalid_key():
+    layer = sk.Sequential(lambda x: x + 1, lambda x: x * 2)
+    with pytest.raises(TypeError):
+        layer(1, key="")
+
+
+def test_sequence_with_invalid_index():
+    with pytest.raises(TypeError):
+        sk.Sequential(lambda x: x + 1, lambda x: x * 2, key=jax.random.PRNGKey(0))[""]
 
 
 def test_random_choice():
