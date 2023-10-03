@@ -226,6 +226,9 @@ def test_rotate():
     npt.assert_allclose(layer(x, key=jax.random.PRNGKey(0)), rot)
     npt.assert_allclose(sk.tree_eval(layer)(x), x)
 
+    with pytest.raises(ValueError):
+        sk.image.RandomRotate2D((90, 0, 9))(x, key=jax.random.PRNGKey(0))
+
 
 def test_horizontal_shear():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
@@ -249,6 +252,9 @@ def test_horizontal_shear():
 
     npt.assert_allclose(sk.tree_eval(layer)(x), x)
 
+    with pytest.raises(ValueError):
+        sk.image.RandomHorizontalShear2D((45, 0, 9))(x, key=jax.random.PRNGKey(0))
+
 
 def test_vertical_shear():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
@@ -271,6 +277,9 @@ def test_vertical_shear():
     npt.assert_allclose(layer(x, key=jax.random.PRNGKey(0)), shear)
 
     npt.assert_allclose(sk.tree_eval(layer)(x), x)
+
+    with pytest.raises(ValueError):
+        sk.image.RandomVerticalShear2D((45, 0, 9))(x, key=jax.random.PRNGKey(0))
 
 
 def test_posterize():
@@ -503,7 +512,9 @@ def test_motion_blur():
             ]
         ]
     )
-    npt.assert_allclose(y, ytrue)
+    npt.assert_allclose(y, ytrue, atol=1e-6)
+    y = sk.image.FFTMotionBlur2D(3, angle=30, direction=0.5)(x)
+    npt.assert_allclose(y, ytrue, atol=1e-6)
 
     layer = sk.tree_mask(sk.image.MotionBlur2D(3))
     grads = jax.grad(lambda node: jnp.sum(node(x)))(layer)
