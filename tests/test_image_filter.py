@@ -367,6 +367,11 @@ def test_random_contrast_2d():
         atol=1e-5,
     )
 
+    with pytest.raises(ValueError):
+        sk.image.RandomContrast2D(range=(1, 0))(x, key=jax.random.PRNGKey(0))
+    with pytest.raises(ValueError):
+        sk.image.RandomContrast2D(range=(0, 0, 0))(x, key=jax.random.PRNGKey(0))
+
 
 def test_flip_left_right_2d():
     flip = sk.image.HorizontalFlip2D()
@@ -414,7 +419,7 @@ def test_pixel_shuffle():
     with pytest.raises(ValueError):
         sk.image.PixelShuffle2D(3)(jnp.ones([6, 4, 4]))
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         sk.image.PixelShuffle2D(-3)(jnp.ones([9, 6, 4]))
 
 
@@ -696,3 +701,21 @@ def test_sobel_2d():
 
     layer = sk.image.FFTSobel2D()
     npt.assert_allclose(layer(x), target, atol=1e-5)
+
+
+def test_adjust_brightness():
+    x = jnp.arange(1, 10).reshape(1, 3, 3) / 10
+    npt.assert_allclose(
+        sk.image.AdjustBrightness2D(0.5)(x),
+        jnp.array([[[0.6, 0.7, 0.8], [0.9, 1.0, 1.0], [1.0, 1.0, 1.0]]]),
+        atol=1e-6,
+    )
+
+
+def test_random_brightness():
+    x = jnp.arange(1, 10).reshape(1, 3, 3) / 10
+    npt.assert_allclose(
+        sk.image.RandomBrightness2D((0.5, 0.5))(x, key=jr.PRNGKey(0)),
+        jnp.array([[[0.6, 0.7, 0.8], [0.9, 1.0, 1.0], [1.0, 1.0, 1.0]]]),
+        atol=1e-6,
+    )
