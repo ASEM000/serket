@@ -46,6 +46,8 @@ from serket._src.utils import (
     validate_spatial_nd,
 )
 
+Weight = Annotated[jax.Array, "OI..."]
+
 
 def pad(x: jax.Array, pad_width: tuple[tuple[int, int], ...]) -> jax.Array:
     # Pad the input with `pad_width` on each side.
@@ -139,12 +141,13 @@ def fft_conv_general_dilated(
 
 def fft_conv_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIH..."],
+    weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
     dilation: tuple[int, ...],
     groups: int,
+    mask: Weight | None = None,
 ) -> jax.Array:
     """Convolution function using fft.
 
@@ -162,10 +165,12 @@ def fft_conv_nd(
         dilation: dilation of the convolutional kernel accepts tuple of integers
             for different dilation in each dimension.
         groups: number of groups to use for grouped convolution.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set to ``None`` to not use a mask.
     """
     x = fft_conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
-        rhs=weight,
+        rhs=weight if mask is None else weight * mask,
         strides=strides,
         padding=padding,
         dilation=dilation,
@@ -177,12 +182,13 @@ def fft_conv_nd(
 
 def fft_conv_nd_transpose(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIH..."],
+    weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
     dilation: tuple[int, ...],
     out_padding: int,
+    mask: Weight | None = None,
 ) -> jax.Array:
     """Transposed convolution function using fft.
 
@@ -197,6 +203,8 @@ def fft_conv_nd_transpose(
         dilation: dilation of the convolutional kernel accepts tuple of integers
             for different dilation in each dimension.
         out_padding: padding of the output after convolution.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set to ``None`` to not use a mask.
     """
     transposed_padding = calculate_transpose_padding(
         padding=padding,
@@ -206,7 +214,7 @@ def fft_conv_nd_transpose(
     )
     x = fft_conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
-        rhs=weight,
+        rhs=weight if mask is None else weight * mask,
         strides=strides,
         padding=transposed_padding,
         dilation=dilation,
@@ -218,10 +226,11 @@ def fft_conv_nd_transpose(
 
 def depthwise_fft_conv_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIH..."],
+    weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
+    mask: Weight | None = None,
 ) -> jax.Array:
     """Depthwise convolution function using fft.
 
@@ -233,11 +242,13 @@ def depthwise_fft_conv_nd(
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
          for different padding in each dimension.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set to ``None`` to not use a mask.
     """
 
     x = fft_conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
-        rhs=weight,
+        rhs=weight if mask is None else weight * mask,
         strides=strides,
         padding=padding,
         dilation=(1,) * (array.ndim - 1),
@@ -249,12 +260,13 @@ def depthwise_fft_conv_nd(
 
 def separable_fft_conv_nd(
     array: jax.Array,
-    depthwise_weight: Annotated[jax.Array, "OIH..."],
-    pointwise_weight: Annotated[jax.Array, "OIH..."],
+    depthwise_weight: Weight,
+    pointwise_weight: Weight,
     pointwise_bias: jax.Array | None,
     strides: tuple[int, ...],
     depthwise_padding: tuple[tuple[int, int], ...],
     pointwise_padding: tuple[tuple[int, int], ...],
+    mask: Weight | None = None,
 ) -> jax.Array:
     """Separable convolution function using fft.
 
@@ -269,6 +281,8 @@ def separable_fft_conv_nd(
             tuple of integers for different padding in each dimension.
         pointwise_padding: padding of the input before pointwise convolution accepts
             tuple of integers for different padding in each dimension.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set to ``None`` to not use a mask.
     """
 
     array = depthwise_fft_conv_nd(
@@ -281,8 +295,8 @@ def separable_fft_conv_nd(
 
     return fft_conv_nd(
         array=array,
-        weight=pointwise_weight,
-        bias=pointwise_bias,
+        weight=pointwise_weight if mask is None else pointwise_weight * mask,
+        bias=pointwise_bias if mask is None else pointwise_bias * mask,
         strides=strides,
         padding=pointwise_padding,
         dilation=(1,) * (array.ndim - 1),
@@ -292,17 +306,15 @@ def separable_fft_conv_nd(
 
 def conv_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIH..."],
+    weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
     dilation: tuple[int, ...],
     groups: int,
+    mask: Weight | None = None,
 ) -> jax.Array:
     """Convolution function wrapping ``jax.lax.conv_general_dilated``.
-
-    Note:
-        Use ``jax.vmap`` to apply the convolution to a batch of inputs.
 
     Args:
         array: input array. shape is (in_features, spatial).
@@ -315,10 +327,12 @@ def conv_nd(
         dilation: dilation of the convolutional kernel accepts tuple of integers
             for different dilation in each dimension.
         groups: number of groups to use for grouped convolution.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set
     """
     x = jax.lax.conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
-        rhs=weight,
+        rhs=weight if mask is None else weight * mask,
         window_strides=strides,
         padding=padding,
         rhs_dilation=dilation,
@@ -331,12 +345,13 @@ def conv_nd(
 
 def conv_nd_transpose(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIH..."],
+    weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
     dilation: tuple[int, ...],
     out_padding: int,
+    mask: Weight | None = None,
 ) -> jax.Array:
     """Transposed convolution function wrapping ``jax.lax.conv_general_dilated``.
 
@@ -351,6 +366,8 @@ def conv_nd_transpose(
         dilation: dilation of the convolutional kernel accepts tuple of integers
             for different dilation in each dimension.
         out_padding: padding of the output after convolution.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set to ``None`` to not use a mask.
     """
     transposed_padding = calculate_transpose_padding(
         padding=padding,
@@ -360,7 +377,7 @@ def conv_nd_transpose(
     )
     x = jax.lax.conv_transpose(
         lhs=jnp.expand_dims(array, 0),
-        rhs=weight,
+        rhs=weight if mask is None else weight * mask,
         strides=strides,
         padding=transposed_padding,
         rhs_dilation=dilation,
@@ -372,12 +389,13 @@ def conv_nd_transpose(
 
 def separable_conv_nd(
     array: jax.Array,
-    depthwise_weight: Annotated[jax.Array, "OIH..."],
-    pointwise_weight: Annotated[jax.Array, "OIH..."],
+    depthwise_weight: Weight,
+    pointwise_weight: Weight,
     pointwise_bias: jax.Array | None,
     strides: tuple[int, ...],
     depthwise_padding: tuple[tuple[int, int], ...],
     pointwise_padding: tuple[tuple[int, int], ...],
+    mask: Weight | None = None,
 ) -> jax.Array:
     """Seprable convolution function wrapping ``jax.lax.conv_general_dilated``.
 
@@ -392,6 +410,8 @@ def separable_conv_nd(
             tuple of integers for different padding in each dimension.
         pointwise_padding: padding of the input before pointwise convolution accepts
             tuple of integers for different padding in each dimension.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set to ``None`` to not use a mask.
     """
     array = depthwise_conv_nd(
         array=array,
@@ -403,8 +423,8 @@ def separable_conv_nd(
 
     return conv_nd(
         array=array,
-        weight=pointwise_weight,
-        bias=pointwise_bias,
+        weight=pointwise_weight if mask is None else pointwise_weight * mask,
+        bias=pointwise_bias if mask is None else pointwise_bias * mask,
         strides=strides,
         padding=pointwise_padding,
         dilation=(1,) * (array.ndim - 1),
@@ -414,12 +434,13 @@ def separable_conv_nd(
 
 def local_conv_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIH..."],
+    weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
     dilation: tuple[int, ...],
     kernel_size: tuple[int, ...],
+    mask: Weight | None = None,
 ) -> jax.Array:
     """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
 
@@ -435,11 +456,13 @@ def local_conv_nd(
             dilation in each dimension.
         kernel_size: size of the convolutional kernel accepts tuple of integers for
             different kernel sizes in each dimension.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set to ``None`` to not use a mask.
     """
 
     x = jax.lax.conv_general_dilated_local(
         lhs=jnp.expand_dims(array, 0),
-        rhs=weight,
+        rhs=weight if mask is None else weight * mask,
         window_strides=strides,
         padding=padding,
         filter_shape=kernel_size,
@@ -452,10 +475,11 @@ def local_conv_nd(
 
 def depthwise_conv_nd(
     array: jax.Array,
-    weight: Annotated[jax.Array, "OIH..."],
+    weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
+    mask: Weight | None = None,
 ) -> jax.Array:
     """Depthwise convolution function wrapping ``jax.lax.conv_general_dilated``.
 
@@ -467,11 +491,12 @@ def depthwise_conv_nd(
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
          for different padding in each dimension.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set to ``None`` to not use a mask.
     """
-
     x = jax.lax.conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
-        rhs=weight,
+        rhs=weight if mask is None else weight * mask,
         window_strides=strides,
         padding=padding,
         rhs_dilation=(1,) * (array.ndim - 1),
@@ -578,7 +603,7 @@ class ConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, mask: Weight | None = None) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -594,6 +619,7 @@ class ConvND(BaseConvND):
             padding=padding,
             dilation=self.dilation,
             groups=self.groups,
+            mask=mask,
         )
 
 
@@ -889,7 +915,7 @@ class FFTConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, mask: Weight | None = None) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -905,6 +931,7 @@ class FFTConvND(BaseConvND):
             padding=padding,
             dilation=self.dilation,
             groups=self.groups,
+            mask=mask,
         )
 
 
@@ -1250,7 +1277,7 @@ class ConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, mask: Weight | None = None) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -1266,6 +1293,7 @@ class ConvNDTranspose(BaseConvNDTranspose):
             padding=padding,
             dilation=self.dilation,
             out_padding=self.out_padding,
+            mask=mask,
         )
 
 
@@ -1572,7 +1600,7 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, mask: Weight | None = None) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -1588,6 +1616,7 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
             padding=padding,
             dilation=self.dilation,
             out_padding=self.out_padding,
+            mask=mask,
         )
 
 
@@ -1931,7 +1960,7 @@ class DepthwiseConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, mask: Weight | None = None) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -1945,6 +1974,7 @@ class DepthwiseConvND(BaseDepthwiseConvND):
             bias=self.bias,
             strides=self.strides,
             padding=padding,
+            mask=mask,
         )
 
 
@@ -2201,7 +2231,7 @@ class DepthwiseFFTConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, mask: Weight | None = None) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -2215,6 +2245,7 @@ class DepthwiseFFTConvND(BaseDepthwiseConvND):
             bias=self.bias,
             strides=self.strides,
             padding=padding,
+            mask=mask,
         )
 
 
@@ -2515,7 +2546,7 @@ class SeparableConvND(SeparableConvNDBase):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, mask: Weight | None = None) -> jax.Array:
         depthwise_padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -2537,6 +2568,7 @@ class SeparableConvND(SeparableConvNDBase):
             strides=self.strides,
             depthwise_padding=depthwise_padding,
             pointwise_padding=pointwise_padding,
+            mask=mask,
         )
 
 
@@ -2812,7 +2844,7 @@ class SeparableConv3D(SeparableConvND):
 
 class SeparableFFTConvND(SeparableConvNDBase):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, mask: Weight | None = None) -> jax.Array:
         depthwise_padding = delayed_canonicalize_padding(
             in_dim=x.shape[1:],
             padding=self.padding,
@@ -2835,6 +2867,7 @@ class SeparableFFTConvND(SeparableConvNDBase):
             strides=self.strides,
             depthwise_padding=depthwise_padding,
             pointwise_padding=pointwise_padding,
+            mask=mask,
         )
 
 
@@ -3385,7 +3418,7 @@ class ConvNDLocal(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, x: jax.Array, mask: Weight | None = None) -> jax.Array:
         return local_conv_nd(
             array=x,
             weight=self.weight,
@@ -3394,6 +3427,7 @@ class ConvNDLocal(sk.TreeClass):
             padding=self.padding,
             dilation=self.dilation,
             kernel_size=self.kernel_size,
+            mask=mask,
         )
 
     @property
