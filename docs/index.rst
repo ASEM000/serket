@@ -79,6 +79,7 @@ Install from github::
     notebooks/augmentations
     notebooks/deep_ensembles
     notebooks/hyperparam
+    notebooks/model_surgery
     notebooks/common_recipes
 
 
