@@ -142,7 +142,7 @@ class UpsampleND(sk.TreeClass):
         self.method = method
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         resized_shape = tuple(s * x.shape[i + 1] for i, s in enumerate(self.scale))
         in_axes = (0, None, None)
         args = (x, resized_shape, self.method)
@@ -155,14 +155,108 @@ class UpsampleND(sk.TreeClass):
         ...
 
 
-class CropND(sk.TreeClass):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
+class Upsample1D(UpsampleND):
+    """Upsample a 1D input to a given size using a given interpolation method.
 
     Args:
-        size: size of the slice, accepted values are integers or tuples of integers.
-        start: start of the slice, accepted values are integers or tuples of integers.
+        scale: the scale of the output.
+        method: Interpolation method defaults to ``nearest``. choices are:
+
+            - ``nearest``: Nearest neighbor interpolation. The values of antialias
+              and precision are ignored.
+            - ``linear``, ``bilinear``, ``trilinear``, ``triangle``: Linear interpolation.
+              If ``antialias`` is True, uses a triangular filter when downsampling.
+            - ``cubic``, ``bicubic``, ``tricubic``: Cubic interpolation, using
+              the keys cubic kernel.
+            - ``lanczos3``: Lanczos resampling, using a kernel of radius 3.
+            - ``lanczos5``: Lanczos resampling, using a kernel of radius 5.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 6).reshape(1, 5)
+        >>> print(sk.nn.Upsample1D(scale=2)(x))
+        [[1 1 2 2 3 3 4 4 5 5]]
     """
 
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+
+class Upsample2D(UpsampleND):
+    """Upsample a 2D input to a given size using a given interpolation method.
+
+    Args:
+        scale: the scale of the output. accetps a single int or a tuple of two
+            int denoting the scale multiplier along each axis.
+        method: Interpolation method defaults to ``nearest``. choices are:
+
+            - ``nearest``: Nearest neighbor interpolation. The values of antialias
+              and precision are ignored.
+            - ``linear``, ``bilinear``, ``trilinear``, ``triangle``: Linear interpolation.
+              If ``antialias`` is True, uses a triangular filter when downsampling.
+            - ``cubic``, ``bicubic``, ``tricubic``: Cubic interpolation, using
+              the keys cubic kernel.
+            - ``lanczos3``: Lanczos resampling, using a kernel of radius 3.
+            - ``lanczos5``: Lanczos resampling, using a kernel of radius 5.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> print(sk.nn.Upsample2D(scale=(1, 2))(x))
+        [[[ 1  1  2  2  3  3  4  4  5  5]
+          [ 6  6  7  7  8  8  9  9 10 10]
+          [11 11 12 12 13 13 14 14 15 15]
+          [16 16 17 17 18 18 19 19 20 20]
+          [21 21 22 22 23 23 24 24 25 25]]]
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class Upsample3D(UpsampleND):
+    """Upsample a 1D input to a given size using a given interpolation method.
+
+    Args:
+        scale: the scale of the output. accetps a single int or a tuple of three
+            int denoting the scale multiplier along each axis.
+        method: Interpolation method defaults to ``nearest``. choices are:
+
+            - ``nearest``: Nearest neighbor interpolation. The values of antialias
+              and precision are ignored.
+            - ``linear``, ``bilinear``, ``trilinear``, ``triangle``: Linear interpolation.
+              If ``antialias`` is True, uses a triangular filter when downsampling.
+            - ``cubic``, ``bicubic``, ``tricubic``: Cubic interpolation, using
+              the keys cubic kernel.
+            - ``lanczos3``: Lanczos resampling, using a kernel of radius 3.
+            - ``lanczos5``: Lanczos resampling, using a kernel of radius 5.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 9).reshape(1, 2, 2, 2)
+        >>> print(sk.nn.Upsample3D(scale=(1, 2, 1))(x))
+        [[[[1 2]
+          [1 2]
+          [3 4]
+          [3 4]]
+        <BLANKLINE>
+         [[5 6]
+          [5 6]
+          [7 8]
+          [7 8]]]]
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
+
+class CropND(sk.TreeClass):
     def __init__(self, size: int | tuple[int, ...], start: int | tuple[int, ...]):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
         self.start = canonicalize(start, self.spatial_ndim, name="start")
@@ -179,18 +273,82 @@ class CropND(sk.TreeClass):
         ...
 
 
+class Crop1D(CropND):
+    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
+
+    Args:
+        size: size of the slice, either a single int or a tuple of int.
+        start: start of the slice, either a single int or a tuple of int.
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> x = jnp.arange(1, 6).reshape(1, 5)
+        >>> print(sk.nn.Crop1D(size=3, start=1)(x))
+        [[2 3 4]]
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+
+class Crop2D(CropND):
+    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
+
+    Args:
+        size: size of the slice, either a single int or a tuple of two ints
+            for size along each axis.
+        start: start of the slice, either a single int or a tuple of two ints
+            for start along each axis.
+
+    Example:
+        >>> # start = (2, 0) and size = (3, 3)
+        >>> # i.e. start at index 2 along the first axis and index 0 along the second axis
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> x = jnp.arange(1, 26).reshape((1, 5, 5))
+        >>> print(x)
+        [[[ 1  2  3  4  5]
+          [ 6  7  8  9 10]
+          [11 12 13 14 15]
+          [16 17 18 19 20]
+          [21 22 23 24 25]]]
+        >>> print(sk.nn.Crop2D(size=3, start=(2, 0))(x))
+        [[[11 12 13]
+          [16 17 18]
+          [21 22 23]]]
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class Crop3D(CropND):
+    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
+
+    Args:
+        size: size of the slice, either a single int or a tuple of three ints
+            for size along each axis.
+        start: start of the slice, either a single int or a tuple of three
+            ints for start along each axis.
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
+
 class PadND(sk.TreeClass):
     def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
-        self.padding = delayed_canonicalize_padding(
-            in_dim=None,
-            padding=padding,
-            kernel_size=((1,),) * self.spatial_ndim,
-            strides=None,
-        )
+        kernel_size = ((1,),) * self.spatial_ndim
+        self.padding = delayed_canonicalize_padding(None, padding, kernel_size, None)
         self.value = value
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         value = jax.lax.stop_gradient(self.value)
         pad = ft.partial(jnp.pad, pad_width=self.padding, constant_values=value)
         return jax.vmap(pad)(x)
@@ -200,6 +358,97 @@ class PadND(sk.TreeClass):
     def spatial_ndim(self) -> int:
         """Number of spatial dimensions of the image."""
         ...
+
+
+class Pad1D(PadND):
+    """Pad a 1D tensor.
+
+    Args:
+        padding: padding to apply to each side of the input. accepts a single int
+            or a tuple of tuple of two ints for padding along each axis. e.g.
+            ``((1, 2),)`` for padding of 1 on the left and 2 on the right.
+        value: value to pad with. Defaults to 0.0.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 6).reshape(1, 5)
+        >>> print(sk.nn.Pad1D(((1, 2),))(x))
+        [[0 1 2 3 4 5 0 0]]
+
+    Reference:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+
+class Pad2D(PadND):
+    """Pad a 2D tensor.
+
+    Args:
+        padding: padding to apply to each side of the input. accepts a single int
+            or a tuple of two tuples of two ints for padding along each axis. e.g.
+            ``((1, 2), (3, 4))`` for padding of 1 on the left and 2 on the right
+            along the and 3 on the top and 4 on the bottom.
+        value: value to pad with. Defaults to 0.0.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 10).reshape(1, 3, 3)
+        >>> print(sk.nn.Pad2D(((1, 2), (3, 4)))(x))
+        [[[0 0 0 0 0 0 0 0 0 0]
+          [0 0 0 1 2 3 0 0 0 0]
+          [0 0 0 4 5 6 0 0 0 0]
+          [0 0 0 7 8 9 0 0 0 0]
+          [0 0 0 0 0 0 0 0 0 0]
+          [0 0 0 0 0 0 0 0 0 0]]]
+
+    Reference:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class Pad3D(PadND):
+    """Pad a 3D tensor.
+
+    Args:
+        padding: padding to apply to each side of the input. accepts a single int
+            or a tuple of three tuples of two ints for padding along each axis.
+        value: value to pad with. Defaults to 0.0.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 9).reshape(1, 2, 2, 2)
+        >>> print(sk.nn.Pad3D(((0, 0), (2, 0), (2, 0)))(x))
+        [[[[0 0 0 0]
+          [0 0 0 0]
+          [0 0 1 2]
+          [0 0 3 4]]
+        <BLANKLINE>
+         [[0 0 0 0]
+         [0 0 0 0]
+         [0 0 5 6]
+         [0 0 7 8]]]]
+
+    Reference:
+        - https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
 
 
 class Resize1D(ResizeND):
@@ -277,45 +526,6 @@ class Resize3D(ResizeND):
         return 3
 
 
-class Upsample1D(UpsampleND):
-    """Upsample a 1D input to a given size using a given interpolation method.
-
-    Args:
-        scale: the scale of the output.
-        method: the method of interpolation. Defaults to "nearest".
-    """
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
-
-
-class Upsample2D(UpsampleND):
-    """Upsample a 2D input to a given size using a given interpolation method.
-
-    Args:
-        scale: the scale of the output.
-        method: the method of interpolation. Defaults to "nearest".
-    """
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class Upsample3D(UpsampleND):
-    """Upsample a 1D input to a given size using a given interpolation method.
-
-    Args:
-        scale: the scale of the output.
-        method: the method of interpolation. Defaults to "nearest".
-    """
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
-
-
 @sk.autoinit
 class Flatten(sk.TreeClass):
     """Flatten an array from dim ``start_dim`` to ``end_dim`` (inclusive).
@@ -342,9 +552,6 @@ class Flatten(sk.TreeClass):
         (1, 2, 3, 20)
         >>> sk.nn.Flatten(-3,-1)(jnp.ones([1,2,3,4,5])).shape
         (1, 2, 60)
-
-    Reference:
-        https://pytorch.org/docs/stable/generated/torch.nn.Flatten.html?highlight=flatten#torch.nn.Flatten
     """
 
     start_dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
@@ -369,9 +576,6 @@ class Unflatten(sk.TreeClass):
         (1, 2, 3, 4, 5)
         >>> sk.nn.Unflatten(2,(2,3))(jnp.ones([1,2,6])).shape
         (1, 2, 2, 3)
-
-    Reference:
-        - https://pytorch.org/docs/stable/generated/torch.nn.Unflatten.html?highlight=unflatten
     """
 
     dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
@@ -379,125 +583,6 @@ class Unflatten(sk.TreeClass):
 
     def __call__(self, x: jax.Array) -> jax.Array:
         return unflatten(x, self.dim, self.shape)
-
-
-class Pad1D(PadND):
-    """Pad a 1D tensor.
-
-    Args:
-        padding: padding to apply to each side of the input.
-        value: value to pad with. Defaults to 0.0.
-
-    Reference:
-        - https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
-    """
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
-
-
-class Pad2D(PadND):
-    """Pad a 2D tensor.
-
-    Args:
-        padding: padding to apply to each side of the input.
-        value: value to pad with. Defaults to 0.0.
-
-    Reference:
-        - https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
-    """
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class Pad3D(PadND):
-    """Pad a 3D tensor.
-
-    Args:
-        padding: padding to apply to each side of the input.
-        value: value to pad with. Defaults to 0.0.
-
-    Reference:
-        - https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
-    """
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
-
-
-class Crop1D(CropND):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
-
-    Args:
-        size: size of the slice, either a single int or a tuple of int.
-        start: start of the slice, either a single int or a tuple of int.
-
-    Example:
-        >>> import jax
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> x = jnp.arange(1, 6).reshape(1, 5)
-        >>> print(sk.nn.Crop1D(size=3, start=1)(x))
-        [[2 3 4]]
-    """
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
-
-
-class Crop2D(CropND):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
-
-    Args:
-        size: size of the slice, either a single int or a tuple of two ints
-            for size along each axis.
-        start: start of the slice, either a single int or a tuple of two ints
-            for start along each axis.
-
-    Example:
-        >>> # start = (2, 0) and size = (3, 3)
-        >>> # i.e. start at index 2 along the first axis and index 0 along the second axis
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> x = jnp.arange(1, 26).reshape((1, 5, 5))
-        >>> print(x)
-        [[[ 1  2  3  4  5]
-          [ 6  7  8  9 10]
-          [11 12 13 14 15]
-          [16 17 18 19 20]
-          [21 22 23 24 25]]]
-        >>> print(sk.nn.Crop2D(size=3, start=(2, 0))(x))
-        [[[11 12 13]
-          [16 17 18]
-          [21 22 23]]]
-    """
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-
-class Crop3D(CropND):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
-
-    Args:
-        size: size of the slice, either a single int or a tuple of three ints
-            for size along each axis.
-        start: start of the slice, either a single int or a tuple of three
-            ints for start along each axis.
-    """
-
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
 
 
 class RandomCropND(sk.TreeClass):
