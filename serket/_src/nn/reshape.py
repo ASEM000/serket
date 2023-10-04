@@ -48,47 +48,81 @@ def random_crop_nd(
     return jax.lax.dynamic_slice(x, start, crop_size)
 
 
-def random_zoom_along_axis(
-    key: jax.Array,
-    x: jax.Array,
-    factor: float,
-    axis: int,
-) -> jax.Array:
-    if factor == 0:
-        return x
-
-    axis_size = x.shape[axis]
-    dtype = x.dtype
-    resized_axis_size = int(axis_size * (1 + factor))
-
-    def zoom_in(x):
-        shape = list(x.shape)
-        resized_shape = list(shape)
-        resized_shape[axis] = resized_axis_size
-        x = jax.image.resize(x, shape=resized_shape, method="linear")
-        x = random_crop_nd(key, x, crop_size=shape)
-        return x.astype(dtype)
-
-    def zoom_out(x):
-        shape = list(x.shape)
-        resized_shape = list(shape)
-        resized_shape[axis] = resized_axis_size
-        x = jax.image.resize(x, shape=resized_shape, method="linear")
-        pad_width = [(0, 0)] * len(x.shape)
-        left = (axis_size - resized_axis_size) // 2
-        right = axis_size - resized_axis_size - left
-        pad_width[axis] = (left, right)
-        x = jnp.pad(x, pad_width=pad_width)
-        return x.astype(dtype)
-
-    return zoom_out(x) if factor < 0 else zoom_in(x)
-
-
 def center_crop_nd(array: jax.Array, sizes: tuple[int, ...]) -> jax.Array:
     """Crops an array to the given size at the center."""
     shapes = array.shape
     starts = tuple(max(shape // 2 - size // 2, 0) for shape, size in zip(shapes, sizes))
     return jax.lax.dynamic_slice(array, starts, sizes)
+
+
+def zoom_in_along_axis(
+    array: jax.Array,
+    factor: float,
+    axis: int,
+    method: MethodKind = "linear",
+) -> jax.Array:
+    assert factor > 0
+    shape = array.shape
+    shape = list(shape)
+    shape[axis] = int(shape[axis] * (1 + factor))
+    return jax.image.resize(array, shape=shape, method=method)
+
+
+def zoom_out_along_axis(
+    array: jax.Array,
+    factor: float,
+    axis: int,
+    method: MethodKind = "linear",
+) -> jax.Array:
+    assert factor < 0
+    shape = array.shape
+    shape = list(shape)
+    shape[axis] = int(shape[axis] / (1 - factor))
+    return jax.image.resize(array, shape=shape, method=method)
+
+
+def zoom_nd(
+    array: jax.Array,
+    factor: tuple[int, ...],
+    method: MethodKind = "linear",
+) -> jax.Array:
+    for axis, fi in enumerate(factor):
+        if fi < 0:
+            shape = array.shape
+            array = zoom_out_along_axis(array, fi, axis, method=method)
+            pad_width = [(0, 0)] * len(array.shape)
+            left = (shape[axis] - array.shape[axis]) // 2
+            right = shape[axis] - array.shape[axis] - left
+            pad_width[axis] = (left, right)
+            array = jnp.pad(array, pad_width=pad_width)
+        elif fi > 0:
+            shape = array.shape
+            array = zoom_in_along_axis(array, fi, axis, method=method)
+            array = center_crop_nd(array, shape)
+    return array
+
+
+def random_zoom_nd(
+    key: jax.Array,
+    array: jax.Array,
+    factor: tuple[int, ...],
+    method: MethodKind = "linear",
+) -> jax.Array:
+    for axis, (fi, ki) in enumerate(zip(factor, jr.split(key, len(factor)))):
+        if fi < 0:
+            shape = array.shape
+            array = zoom_out_along_axis(array, fi, axis, method=method)
+            pad_width = [(0, 0)] * len(array.shape)
+            max_pad = shape[axis] - array.shape[axis]
+            left = jr.randint(ki, shape=(), minval=0, maxval=max_pad)
+            right = max_pad - left
+            pad_width[axis] = (left, right)
+            array = jnp.pad(array, pad_width=pad_width)
+        elif fi > 0:
+            shape = array.shape
+            array = zoom_in_along_axis(array, fi, axis, method=method)
+            array = random_crop_nd(ki, array, crop_size=shape)
+    return array
 
 
 def flatten(array: jax.Array, start_dim: int, end_dim: int):
@@ -590,7 +624,7 @@ class RandomCropND(sk.TreeClass):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
         crop_size = [x.shape[0], *self.size]
         return random_crop_nd(key, x, crop_size=crop_size)
 
@@ -640,44 +674,110 @@ class RandomCrop3D(RandomCropND):
         return 3
 
 
-class RandomZoom1D(sk.TreeClass):
-    def __init__(self, length_factor: tuple[int, int] = (0.0, 1.0)):
-        """Randomly zooms a 1D spatial tensor.
-
-        Positive values are zoom in, negative values are zoom out, and 0 is no zoom.
-
-        Args:
-            length_factor: (min, max)
-
-        Example:
-            >>> import serket as sk
-            >>> import jax.numpy as jnp
-            >>> import jax
-            >>> x = jnp.arange(1, 10).reshape(1, -1)
-            >>> # 0% zoom (unchanged)
-            >>> print(sk.nn.RandomZoom1D((0.0, 0.0))(x, key=jax.random.PRNGKey(1)))
-            [[1 2 3 4 5 6 7 8 9]]
-            >>> # 50%-100% probability of zoom
-            >>> length_factor = (0.5, 1.0)
-            >>> key = jax.random.PRNGKey(0)
-            >>> print(sk.nn.RandomZoom1D(length_factor=length_factor)(x, key=key))
-            [[4 4 5 5 6 6 7 8 8]]
-
-        Reference:
-            - https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
-        """
-        if not (isinstance(length_factor, tuple) and len(length_factor) == 2):
-            raise ValueError("`length_factor` must be a tuple of length 2")
-
-        self.length_factor = length_factor
+class ZoomND(sk.TreeClass):
+    def __init__(self, factor: float | tuple[float, ...]):
+        self.factor = canonicalize(factor, self.spatial_ndim, name="factor")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
+        factor = jax.lax.stop_gradient(self.factor)
+        return jax.vmap(zoom_nd, in_axes=(0, None))(x, factor)
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        ...
+
+
+class Zoom1D(ZoomND):
+    """Zoom a 1D spatial tensor.
+
+    Zooming in is equivalent to resizing the tensor to a larger size followed
+    by center cropping. Zooming out is equivalent to resizing the tensor to a
+    smaller size followed by equal padding on both sides. Zooming in is defined
+    by positive values of ``factor`` and zooming out is defined by negative
+    values of ``factor``.
+
+    Args:
+        factor: zoom factor. accepts a single float or a tuple of float denoting
+            the zoom factor along each axis. if positive, zoom in, if negative,
+            zoom out, if 0, no zoom.
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 1
+
+
+class Zoom2D(ZoomND):
+    """Zoom a 2D spatial tensor.
+
+    .. image:: ../_static/zoom2d.png
+
+    Zooming in is equivalent to resizing the tensor to a larger size followed
+    by center cropping. Zooming out is equivalent to resizing the tensor to a
+    smaller size followed by equal padding on both sides. Zooming in is defined
+    by positive values of ``factor`` and zooming out is defined by negative
+    values of ``factor``.
+
+
+    Args:
+        factor: zoom factor. accepts a single float or a tuple of float denoting
+            the zoom factor along each axis. if positive, zoom in, if negative,
+            zoom out, if 0, no zoom.
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 2
+
+
+class Zoom3D(ZoomND):
+    """Zoom a 3D spatial tensor.
+
+    Zooming in is equivalent to resizing the tensor to a larger size followed
+    by center cropping. Zooming out is equivalent to resizing the tensor to a
+    smaller size followed by equal padding on both sides. Zooming in is defined
+    by positive values of ``factor`` and zooming out is defined by negative
+    values of ``factor``.
+
+
+    Args:
+        factor: zoom factor. accepts a single float or a tuple of float denoting
+            the zoom factor along each axis. if positive, zoom in, if negative,
+            zoom out, if 0, no zoom.
+    """
+
+    @property
+    def spatial_ndim(self) -> int:
+        return 3
+
+
+class RandomZoom1D(sk.TreeClass):
+    """Randomly zoom a 1D spatial tensor.
+
+    Random zooming in is equivalent to resizing the tensor to a larger size
+    followed by random cropping. Zooming out is equivalent to resizing the tensor
+    to a smaller size followed by random padding. Zooming in is defined
+    by positive values of ``factor`` and zooming out is defined by negative
+    values of ``factor``.
+
+    Args:
+        length_range: a tuple of two floats denoting the range of the zoom factor.
+    """
+
+    def __init__(self, length_range: tuple[int, int] = (0.0, 1.0)):
+        if not (isinstance(length_range, tuple) and len(length_range) == 2):
+            raise ValueError("`length_range` must be a tuple of length 2")
+
+        self.length_range = length_range
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2 = jr.split(key, 2)
-        low, high = jax.lax.stop_gradient(self.length_factor)
-        factor = jr.uniform(k1, minval=low, maxval=high)
-        x = random_zoom_along_axis(k2, x, factor, axis=1)
-        return x
+        low, high = jax.lax.stop_gradient(self.length_range)
+        factor = (jr.uniform(k1, minval=low, maxval=high),)
+        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k2, x, factor)
 
     @property
     def spatial_ndim(self) -> int:
@@ -685,63 +785,44 @@ class RandomZoom1D(sk.TreeClass):
 
 
 class RandomZoom2D(sk.TreeClass):
+    """Randomly zoom a 2D spatial tensor.
+
+    .. image:: ../_static/zoom2d.png
+
+    Random zooming in is equivalent to resizing the tensor to a larger size
+    followed by random cropping. Zooming out is equivalent to resizing the tensor
+    to a smaller size followed by random padding. Zooming in is defined
+    by positive values of ``factor`` and zooming out is defined by negative
+    values of ``factor``.
+
+    Args:
+        height_range: a tuple of two floats denoting the range of the zoom factor.
+        width_range: a tuple of two floats denoting the range of the zoom factor.
+    """
+
     def __init__(
         self,
-        height_factor: tuple[float, float] = (0.0, 1.0),
-        width_factor: tuple[float, float] = (0.0, 1.0),
+        height_range: tuple[float, float] = (0.0, 1.0),
+        width_range: tuple[float, float] = (0.0, 1.0),
     ):
-        """Randomly zooms a features-first 2D spatial tensor.
+        if not (isinstance(height_range, tuple) and len(height_range) == 2):
+            raise ValueError("`height_range` must be a tuple of length 2")
 
-        Positive values are zoom in, negative values are zoom out, and 0 is no zoom.
+        if not (isinstance(width_range, tuple) and len(width_range) == 2):
+            raise ValueError("`width_range` must be a tuple of length 2")
 
-        Args:
-            height_factor: (min, max)
-            width_factor: (min, max)
-
-        Example:
-            >>> import serket as sk
-            >>> import jax.numpy as jnp
-            >>> import jax
-            >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-            >>> # 0% zoom (unchanged)
-            >>> height_factor = (0.0, 0.0)
-            >>> width_factor = (0.0, 0.0)
-            >>> key = jax.random.PRNGKey(1)
-            >>> print(sk.nn.RandomZoom2D(height_factor=height_factor, width_factor=width_factor)(x, key=key))
-            [[1 2 3 4 5 6 7 8 9]]
-            >>> # 50%-100% probability of zoom
-            >>> height_factor = (0.5, 1.0)
-            >>> width_factor = (0.5, 1.0)
-            >>> key = jax.random.PRNGKey(0)
-            >>> print(sk.nn.RandomZoom2D(height_factor=height_factor, width_factor=width_factor)(x, key=key))
-            [[[ 1  2  3  3  4]
-            [ 2  3  4  4  5]
-            [ 5  6  7  7  8]
-            [ 8  9 10 10 11]
-            [11 12 13 13 14]]]
-
-        Reference:
-            - https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
-        """
-        if not (isinstance(height_factor, tuple) and len(height_factor) == 2):
-            raise ValueError("`height_factor` must be a tuple of length 2")
-
-        if not (isinstance(width_factor, tuple) and len(width_factor) == 2):
-            raise ValueError("`width_factor` must be a tuple of length 2")
-
-        self.height_factor = height_factor
-        self.width_factor = width_factor
+        self.height_range = height_range
+        self.width_range = width_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
-        k1, k2, k3, k4 = jr.split(key, 4)
-        factors = (self.height_factor, self.width_factor)
+    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
+        k1, k2, k3 = jr.split(key, 3)
+        factors = (self.height_range, self.width_range)
         ((hfl, hfh), (wfl, wfh)) = jax.lax.stop_gradient(factors)
-        factor = jr.uniform(k1, minval=hfl, maxval=hfh)
-        x = random_zoom_along_axis(k3, x, factor, axis=1)
-        factor = jr.uniform(k2, minval=wfl, maxval=wfh)
-        x = random_zoom_along_axis(k4, x, factor, axis=2)
-        return jax.lax.stop_gradient(x)
+        factor_r = jr.uniform(k1, minval=hfl, maxval=hfh)
+        factor_c = jr.uniform(k2, minval=wfl, maxval=wfh)
+        factor = (factor_r, factor_c)
+        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k3, x, factor)
 
     @property
     def spatial_ndim(self) -> int:
@@ -749,49 +830,49 @@ class RandomZoom2D(sk.TreeClass):
 
 
 class RandomZoom3D(sk.TreeClass):
+    """Randomly zoom a 3D spatial tensor.
+
+    Random zooming in is equivalent to resizing the tensor to a larger size
+    followed by random cropping. Zooming out is equivalent to resizing the tensor
+    to a smaller size followed by random padding. Zooming in is defined
+    by positive values of ``factor`` and zooming out is defined by negative
+    values of ``factor``.
+
+    Args:
+        height_range: a tuple of two floats denoting the range of the zoom factor.
+        width_range: a tuple of two floats denoting the range of the zoom factor.
+        depth_range: a tuple of two floats denoting the range of the zoom factor.
+    """
+
     def __init__(
         self,
-        height_factor: tuple[float, float] = (0.0, 1.0),
-        width_factor: tuple[float, float] = (0.0, 1.0),
-        depth_factor: tuple[float, float] = (0.0, 1.0),
+        height_range: tuple[float, float] = (0.0, 1.0),
+        width_range: tuple[float, float] = (0.0, 1.0),
+        depth_range: tuple[float, float] = (0.0, 1.0),
     ):
-        """Randomly zooms a features-first 3D spatial tensor.
+        if not (isinstance(height_range, tuple) and len(height_range) == 2):
+            raise ValueError("`height_range` must be a tuple of length 2")
 
-        Positive values are zoom in, negative values are zoom out, and 0 is no zoom.
+        if not (isinstance(width_range, tuple) and len(width_range) == 2):
+            raise ValueError("`width_range` must be a tuple of length 2")
 
-        Args:
-            height_factor: (min, max) for height
-            width_factor: (min, max) for width
-            depth_factor: (min, max)  for depth
+        if not (isinstance(depth_range, tuple) and len(depth_range) == 2):
+            raise ValueError("`depth_range` must be a tuple of length 2")
 
-        Reference:
-            - https://www.tensorflow.org/api_docs/python/tf/keras/layers/RandomZoom
-        """
-        if not (isinstance(height_factor, tuple) and len(height_factor) == 2):
-            raise ValueError("`height_factor` must be a tuple of length 2")
-
-        if not (isinstance(width_factor, tuple) and len(width_factor) == 2):
-            raise ValueError("`width_factor` must be a tuple of length 2")
-
-        if not (isinstance(depth_factor, tuple) and len(depth_factor) == 2):
-            raise ValueError("`depth_factor` must be a tuple of length 2")
-
-        self.height_factor = height_factor
-        self.width_factor = width_factor
-        self.depth_factor = depth_factor
+        self.height_range = height_range
+        self.width_range = width_range
+        self.depth_range = depth_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
-        k1, k2, k3, k4, k5, k6 = jr.split(key, 6)
-        factors = (self.height_factor, self.width_factor, self.depth_factor)
+    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
+        k1, k2, k3, k4 = jr.split(key, 4)
+        factors = (self.height_range, self.width_range, self.depth_range)
         ((hfl, hfh), (wfl, wfh), (dfl, dfh)) = jax.lax.stop_gradient(factors)
-        factor = jr.uniform(k1, minval=hfl, maxval=hfh)
-        x = random_zoom_along_axis(k3, x, factor, axis=1)
-        factor = jr.uniform(k2, minval=wfl, maxval=wfh)
-        x = random_zoom_along_axis(k4, x, factor, axis=2)
-        factor = jr.uniform(k5, minval=dfl, maxval=dfh)
-        x = random_zoom_along_axis(k6, x, factor, axis=3)
-        return x
+        factor_r = jr.uniform(k1, minval=hfl, maxval=hfh)
+        factor_c = jr.uniform(k2, minval=wfl, maxval=wfh)
+        factor_d = jr.uniform(k3, minval=dfl, maxval=dfh)
+        factor = (factor_r, factor_c, factor_d)
+        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k4, x, factor)
 
     @property
     def spatial_ndim(self) -> int:
@@ -803,7 +884,7 @@ class CenterCropND(sk.TreeClass):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.vmap(ft.partial(center_crop_nd, sizes=self.size))(x)
 
     @property

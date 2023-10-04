@@ -172,6 +172,9 @@ from serket._src.nn.reshape import (
     Upsample1D,
     Upsample2D,
     Upsample3D,
+    Zoom1D,
+    Zoom2D,
+    Zoom3D,
 )
 
 __all__ = [
@@ -335,4 +338,7 @@ __all__ = [
     "Upsample1D",
     "Upsample2D",
     "Upsample3D",
+    "Zoom1D",
+    "Zoom2D",
+    "Zoom3D",
 ]
