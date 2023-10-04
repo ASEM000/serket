@@ -624,7 +624,7 @@ class RandomCropND(sk.TreeClass):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
         crop_size = [x.shape[0], *self.size]
         return random_crop_nd(key, x, crop_size=crop_size)
 
@@ -679,7 +679,7 @@ class ZoomND(sk.TreeClass):
         self.factor = canonicalize(factor, self.spatial_ndim, name="factor")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         factor = jax.lax.stop_gradient(self.factor)
         return jax.vmap(zoom_nd, in_axes=(0, None))(x, factor)
 
@@ -773,7 +773,7 @@ class RandomZoom1D(sk.TreeClass):
         self.length_range = length_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2 = jr.split(key, 2)
         low, high = jax.lax.stop_gradient(self.length_range)
         factor = (jr.uniform(k1, minval=low, maxval=high),)
@@ -815,7 +815,7 @@ class RandomZoom2D(sk.TreeClass):
         self.width_range = width_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2, k3 = jr.split(key, 3)
         factors = (self.height_range, self.width_range)
         ((hfl, hfh), (wfl, wfh)) = jax.lax.stop_gradient(factors)
@@ -864,7 +864,7 @@ class RandomZoom3D(sk.TreeClass):
         self.depth_range = depth_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2, k3, k4 = jr.split(key, 4)
         factors = (self.height_range, self.width_range, self.depth_range)
         ((hfl, hfh), (wfl, wfh), (dfl, dfh)) = jax.lax.stop_gradient(factors)
@@ -884,7 +884,7 @@ class CenterCropND(sk.TreeClass):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array = jr.PRNGKey(0)) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         return jax.vmap(ft.partial(center_crop_nd, sizes=self.size))(x)
 
     @property

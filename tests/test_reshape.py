@@ -82,17 +82,26 @@ def test_crop_3d():
 
 def test_random_crop_1d():
     x = jnp.arange(10)[None, :]
-    assert sk.nn.RandomCrop1D(size=5)(x).shape == (1, 5)
+    assert sk.nn.RandomCrop1D(size=5)(x, key=jax.random.PRNGKey(0)).shape == (1, 5)
 
 
 def test_random_crop_2d():
     x = jnp.arange(25).reshape(1, 5, 5)
-    assert sk.nn.RandomCrop2D(size=(3, 3))(x).shape == (1, 3, 3)
+    assert sk.nn.RandomCrop2D(size=(3, 3))(x, key=jax.random.PRNGKey(0)).shape == (
+        1,
+        3,
+        3,
+    )
 
 
 def test_random_crop_3d():
     x = jnp.arange(125).reshape(1, 5, 5, 5)
-    assert sk.nn.RandomCrop3D(size=(3, 3, 3))(x).shape == (1, 3, 3, 3)
+    assert sk.nn.RandomCrop3D(size=(3, 3, 3))(x, key=jax.random.PRNGKey(0)).shape == (
+        1,
+        3,
+        3,
+        3,
+    )
 
 
 def test_resize1d():
@@ -151,7 +160,9 @@ def test_padding3d():
     ],
 )
 def test_random_zoom(layer, shape):
-    npt.assert_allclose(layer((0, 0))(jnp.ones(shape)).shape, shape)
+    npt.assert_allclose(
+        layer((0, 0))(jnp.ones(shape), key=jax.random.PRNGKey(0)).shape, shape
+    )
 
 
 @pytest.mark.parametrize(
