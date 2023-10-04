@@ -164,6 +164,8 @@ def test_random_zoom(layer, shape):
 )
 def test_zoom(layer, shape):
     npt.assert_allclose(layer(0)(jnp.ones(shape)).shape, shape)
+    npt.assert_allclose(layer(-1)(jnp.ones(shape)).shape, shape)
+    npt.assert_allclose(layer(1)(jnp.ones(shape)).shape, shape)
 
 
 @pytest.mark.parametrize(
