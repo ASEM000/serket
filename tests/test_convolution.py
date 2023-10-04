@@ -1185,6 +1185,20 @@ def test_lazy_conv(layer, array, expected_shape):
     assert materialized_layer.in_features == 10
 
 
+def test_lazy_conv_local():
+    layer = sk.nn.Conv1DLocal(None, 1, 3, in_size=(3,), key=jax.random.PRNGKey(0))
+    _, layer = layer.at["__call__"](jnp.ones([10, 3]))
+    assert layer.in_features == 10
+    layer = sk.nn.Conv1DLocal(2, 1, 2, in_size=None, key=jax.random.PRNGKey(0))
+
+    with pytest.raises(ValueError):
+        # should raise error because in_features is specified = 2 and
+        # input in_features is 10
+        _, layer = layer.at["__call__"](jnp.ones([10, 3]))
+    _, layer = layer.at["__call__"](jnp.ones([2, 3]))
+    assert layer.in_features == 2
+
+
 @pytest.mark.parametrize(
     "sk_layer,keras_layer,kernel_size,strides,padding,dilation,ndim",
     [
