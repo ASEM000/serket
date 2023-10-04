@@ -27,6 +27,9 @@ Reshaping
 .. autoclass:: Flatten
 .. autoclass:: Unflatten
 
+.. autoclass:: Zoom1D
+.. autoclass:: Zoom2D
+.. autoclass:: Zoom3D
 .. autoclass:: RandomZoom1D
 .. autoclass:: RandomZoom2D
 .. autoclass:: RandomZoom3D
