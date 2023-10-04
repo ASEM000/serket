@@ -712,6 +712,8 @@ class Zoom1D(ZoomND):
 class Zoom2D(ZoomND):
     """Zoom a 2D spatial tensor.
 
+    .. image:: ../_static/zoom2d.png
+
     Zooming in is equivalent to resizing the tensor to a larger size followed
     by center cropping. Zooming out is equivalent to resizing the tensor to a
     smaller size followed by equal padding on both sides. Zooming in is defined
@@ -784,6 +786,8 @@ class RandomZoom1D(sk.TreeClass):
 
 class RandomZoom2D(sk.TreeClass):
     """Randomly zoom a 2D spatial tensor.
+
+    .. image:: ../_static/zoom2d.png
 
     Random zooming in is equivalent to resizing the tensor to a larger size
     followed by random cropping. Zooming out is equivalent to resizing the tensor
