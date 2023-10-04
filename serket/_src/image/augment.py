@@ -231,9 +231,7 @@ class PixelShuffle2D(sk.TreeClass):
     def __call__(self, x: CHWArray) -> CHWArray:
         return pixel_shuffle_3d(x, self.upscale_factor)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -257,9 +255,7 @@ class AdjustContrast2D(sk.TreeClass):
         factor = jax.lax.stop_gradient(self.factor)
         return jax.vmap(adjust_contrast_2d, in_axes=(0, None))(x, factor)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomContrast2D(sk.TreeClass):
@@ -292,9 +288,7 @@ class RandomContrast2D(sk.TreeClass):
         in_axes = (None, 0, None)
         return jax.vmap(random_contrast_2d, in_axes=in_axes)(key, x, range)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -324,9 +318,7 @@ class AdjustBrightness2D(sk.TreeClass):
         factor = jax.lax.stop_gradient(self.factor)
         return jax.vmap(adjust_brightness_2d, in_axes=(0, None))(x, factor)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -349,9 +341,7 @@ class RandomBrightness2D(sk.TreeClass):
         in_axes = (None, 0, None)
         return jax.vmap(random_brightness_2d, in_axes=in_axes)(key, x, range)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Pixelate2D(sk.TreeClass):
@@ -386,9 +376,7 @@ class Pixelate2D(sk.TreeClass):
     def __call__(self, x: CHWArray) -> CHWArray:
         return jax.vmap(pixelate_2d, in_axes=(0, None))(x, self.scale)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -426,9 +414,7 @@ class Solarize2D(sk.TreeClass):
         threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
         return jax.vmap(solarize_2d, in_axes=(0, None, None))(x, threshold, max_val)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -479,9 +465,7 @@ class Posterize2D(sk.TreeClass):
     def __call__(self, x: CHWArray) -> CHWArray:
         return jax.vmap(posterize_2d, in_axes=(0, None))(x, self.bits)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -540,9 +524,7 @@ class RandomJigSaw2D(sk.TreeClass):
         """
         return jax.vmap(random_jigsaw_2d, in_axes=(None, 0, None))(key, x, self.tiles)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class AdjustLog2D(sk.TreeClass):
@@ -574,9 +556,7 @@ class AdjustLog2D(sk.TreeClass):
         gain = jax.lax.stop_gradient(self.gain)
         return jax.vmap(adjust_log_2d, in_axes=in_axes)(x, gain, self.inv)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class AdjustSigmoid2D(sk.TreeClass):
@@ -611,9 +591,7 @@ class AdjustSigmoid2D(sk.TreeClass):
         cutoff, gain = jax.lax.stop_gradient((self.cutoff, self.gain))
         return jax.vmap(adjust_sigmoid_2d, in_axes=in_axes)(x, cutoff, gain, self.inv)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class AdjustHue2D(sk.TreeClass):
@@ -634,9 +612,7 @@ class AdjustHue2D(sk.TreeClass):
         factor = jax.lax.stop_gradient(self.factor)
         return adjust_hue_3d(x, factor)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomHue2D(sk.TreeClass):
@@ -659,9 +635,7 @@ class RandomHue2D(sk.TreeClass):
         range = jax.lax.stop_gradient(self.range)
         return random_hue_3d(key, x, range)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class AdjustSaturation2D(sk.TreeClass):
@@ -682,9 +656,7 @@ class AdjustSaturation2D(sk.TreeClass):
         factor = jax.lax.stop_gradient(self.factor)
         return adust_saturation_3d(x, factor)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomSaturation2D(sk.TreeClass):
@@ -707,9 +679,7 @@ class RandomSaturation2D(sk.TreeClass):
         range = jax.lax.stop_gradient(self.range)
         return random_saturation_3d(key, x, range)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @tree_eval.def_eval(RandomBrightness2D)

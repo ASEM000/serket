@@ -213,9 +213,7 @@ class Upsample1D(UpsampleND):
         [[1 1 2 2 3 3 4 4 5 5]]
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class Upsample2D(UpsampleND):
@@ -247,9 +245,7 @@ class Upsample2D(UpsampleND):
           [21 21 22 22 23 23 24 24 25 25]]]
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Upsample3D(UpsampleND):
@@ -285,9 +281,7 @@ class Upsample3D(UpsampleND):
           [7 8]]]]
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class CropND(sk.TreeClass):
@@ -323,9 +317,7 @@ class Crop1D(CropND):
         [[2 3 4]]
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class Crop2D(CropND):
@@ -355,9 +347,7 @@ class Crop2D(CropND):
           [21 22 23]]]
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Crop3D(CropND):
@@ -370,9 +360,7 @@ class Crop3D(CropND):
             ints for start along each axis.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class PadND(sk.TreeClass):
@@ -415,9 +403,7 @@ class Pad1D(PadND):
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class Pad2D(PadND):
@@ -447,9 +433,7 @@ class Pad2D(PadND):
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Pad3D(PadND):
@@ -480,9 +464,7 @@ class Pad3D(PadND):
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class Resize1D(ResizeND):
@@ -505,9 +487,7 @@ class Resize1D(ResizeND):
         antialias: whether to use antialiasing. Defaults to True.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class Resize2D(ResizeND):
@@ -530,9 +510,7 @@ class Resize2D(ResizeND):
         antialias: whether to use antialiasing. Defaults to True.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Resize3D(ResizeND):
@@ -555,9 +533,7 @@ class Resize3D(ResizeND):
         antialias: whether to use antialiasing. Defaults to True.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 @sk.autoinit
@@ -643,9 +619,7 @@ class RandomCrop1D(RandomCropND):
             values are either a single int or a tuple of int denoting the size.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class RandomCrop2D(RandomCropND):
@@ -656,9 +630,7 @@ class RandomCrop2D(RandomCropND):
             or a tuple of two ints denoting the size along each axis.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomCrop3D(RandomCropND):
@@ -669,9 +641,7 @@ class RandomCrop3D(RandomCropND):
             or a tuple of three ints denoting the size along each axis.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class ZoomND(sk.TreeClass):
@@ -704,9 +674,7 @@ class Zoom1D(ZoomND):
             zoom out, if 0, no zoom.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class Zoom2D(ZoomND):
@@ -727,9 +695,7 @@ class Zoom2D(ZoomND):
             zoom out, if 0, no zoom.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Zoom3D(ZoomND):
@@ -748,9 +714,7 @@ class Zoom3D(ZoomND):
             zoom out, if 0, no zoom.
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class RandomZoom1D(sk.TreeClass):
@@ -779,9 +743,7 @@ class RandomZoom1D(sk.TreeClass):
         factor = (jr.uniform(k1, minval=low, maxval=high),)
         return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k2, x, factor)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class RandomZoom2D(sk.TreeClass):
@@ -824,9 +786,7 @@ class RandomZoom2D(sk.TreeClass):
         factor = (factor_r, factor_c)
         return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k3, x, factor)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomZoom3D(sk.TreeClass):
@@ -874,9 +834,7 @@ class RandomZoom3D(sk.TreeClass):
         factor = (factor_r, factor_c, factor_d)
         return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k4, x, factor)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class CenterCropND(sk.TreeClass):
@@ -910,9 +868,7 @@ class CenterCrop1D(CenterCropND):
         [[5 6 7 8]]
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class CenterCrop2D(CenterCropND):
@@ -947,17 +903,13 @@ class CenterCrop2D(CenterCropND):
           [89 90 91 92]]]
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class CenterCrop3D(CenterCropND):
     """Crops a 3D array to the given size at the center."""
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 @tree_eval.def_eval(RandomCrop1D)

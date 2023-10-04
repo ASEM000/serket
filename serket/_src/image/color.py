@@ -75,9 +75,7 @@ class RGBToGrayscale2D(sk.TreeClass):
     def __call__(self, image: CHWArray) -> CHWArray:
         return rgb_to_grayscale(image, self.weights)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 def rgb_to_hsv_3d(image: CHWArray) -> CHWArray:
@@ -147,9 +145,7 @@ class GrayscaleToRGB2D(sk.TreeClass):
     def __call__(self, image: CHWArray) -> CHWArray:
         return grayscale_to_rgb(image)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RGBToHSV2D(sk.TreeClass):
@@ -174,9 +170,7 @@ class RGBToHSV2D(sk.TreeClass):
     def __call__(self, image: CHWArray) -> CHWArray:
         return rgb_to_hsv_3d(image)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class HSVToRGB2D(sk.TreeClass):
@@ -199,6 +193,4 @@ class HSVToRGB2D(sk.TreeClass):
     def __call__(self, image: CHWArray) -> CHWArray:
         return hsv_to_rgb_3d(image)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2

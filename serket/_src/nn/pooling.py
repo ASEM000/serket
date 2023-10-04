@@ -186,9 +186,7 @@ class MaxPool1D(MaxPoolND):
         [[ 2.  4.  6.  8. 10.]]
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class MaxPool2D(MaxPoolND):
@@ -210,9 +208,7 @@ class MaxPool2D(MaxPoolND):
           [14. 16.]]]
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class MaxPool3D(MaxPoolND):
@@ -224,9 +220,7 @@ class MaxPool3D(MaxPoolND):
         padding: padding of the kernel (valid, same) or tuple of ints
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class AvgPoolND(sk.TreeClass):
@@ -271,9 +265,7 @@ class AvgPool1D(AvgPoolND):
         padding: padding of the kernel (valid, same) or tuple of ints
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class AvgPool2D(AvgPoolND):
@@ -285,9 +277,7 @@ class AvgPool2D(AvgPoolND):
         padding: padding of the kernel (valid, same) or tuple of ints
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class AvgPool3D(AvgPoolND):
@@ -299,9 +289,7 @@ class AvgPool3D(AvgPoolND):
         padding: padding of the kernel (valid, same) or tuple of ints
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class LPPoolND(sk.TreeClass):
@@ -350,9 +338,7 @@ class LPPool1D(LPPoolND):
         padding: padding of the kernel
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class LPPool2D(LPPoolND):
@@ -365,9 +351,7 @@ class LPPool2D(LPPoolND):
         padding: padding of the kernel
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class LPPool3D(LPPoolND):
@@ -380,9 +364,7 @@ class LPPool3D(LPPoolND):
         padding: padding of the kernel
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class GlobalAvgPoolND(sk.TreeClass):
@@ -407,9 +389,7 @@ class GlobalAvgPool1D(GlobalAvgPoolND):
         keepdims: whether to keep the dimensions or not
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class GlobalAvgPool2D(GlobalAvgPoolND):
@@ -419,9 +399,7 @@ class GlobalAvgPool2D(GlobalAvgPoolND):
         keepdims: whether to keep the dimensions or not
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class GlobalAvgPool3D(GlobalAvgPoolND):
@@ -431,9 +409,7 @@ class GlobalAvgPool3D(GlobalAvgPoolND):
         keepdims: whether to keep the dimensions or not
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class GlobalMaxPoolND(sk.TreeClass):
@@ -458,9 +434,7 @@ class GlobalMaxPool1D(GlobalMaxPoolND):
         keepdims: whether to keep the dimensions or not
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class GlobalMaxPool2D(GlobalMaxPoolND):
@@ -470,9 +444,7 @@ class GlobalMaxPool2D(GlobalMaxPoolND):
         keepdims: whether to keep the dimensions or not
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class GlobalMaxPool3D(GlobalMaxPoolND):
@@ -482,9 +454,7 @@ class GlobalMaxPool3D(GlobalMaxPoolND):
         keepdims: whether to keep the dimensions or not
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class AdaptiveAvgPoolND(sk.TreeClass):
@@ -512,9 +482,7 @@ class AdaptiveAvgPool1D(AdaptiveAvgPoolND):
         output_size: size of the output
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class AdaptiveAvgPool2D(AdaptiveAvgPoolND):
@@ -524,9 +492,7 @@ class AdaptiveAvgPool2D(AdaptiveAvgPoolND):
         output_size: size of the output
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class AdaptiveAvgPool3D(AdaptiveAvgPoolND):
@@ -536,9 +502,7 @@ class AdaptiveAvgPool3D(AdaptiveAvgPoolND):
         output_size: size of the output
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class AdaptiveMaxPoolND(sk.TreeClass):
@@ -566,9 +530,7 @@ class AdaptiveMaxPool1D(AdaptiveMaxPoolND):
         output_size: size of the output
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class AdaptiveMaxPool2D(AdaptiveMaxPoolND):
@@ -578,9 +540,7 @@ class AdaptiveMaxPool2D(AdaptiveMaxPoolND):
         output_size: size of the output
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class AdaptiveMaxPool3D(AdaptiveMaxPoolND):
@@ -590,6 +550,4 @@ class AdaptiveMaxPool3D(AdaptiveMaxPoolND):
         output_size: size of the output
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3

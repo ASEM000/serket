@@ -211,9 +211,7 @@ class Rotate2D(sk.TreeClass):
         angle = jax.lax.stop_gradient(self.angle)
         return jax.vmap(rotate_2d, in_axes=(0, None))(x, angle)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomRotate2D(sk.TreeClass):
@@ -266,9 +264,7 @@ class RandomRotate2D(sk.TreeClass):
         range = jax.lax.stop_gradient(self.range)
         return jax.vmap(random_rotate_2d, in_axes=(None, 0, None))(key, x, range)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class HorizontalShear2D(sk.TreeClass):
@@ -299,9 +295,7 @@ class HorizontalShear2D(sk.TreeClass):
         angle = jax.lax.stop_gradient(self.angle)
         return jax.vmap(horizontal_shear_2d, in_axes=(0, None))(x, angle)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomHorizontalShear2D(sk.TreeClass):
@@ -355,9 +349,7 @@ class RandomHorizontalShear2D(sk.TreeClass):
         in_axes = (None, 0, None)
         return jax.vmap(random_horizontal_shear_2d, in_axes=in_axes)(key, x, angle)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class VerticalShear2D(sk.TreeClass):
@@ -388,9 +380,7 @@ class VerticalShear2D(sk.TreeClass):
         angle = jax.lax.stop_gradient(self.angle)
         return jax.vmap(vertical_shear_2d, in_axes=(0, None))(x, angle)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomVerticalShear2D(sk.TreeClass):
@@ -444,9 +434,7 @@ class RandomVerticalShear2D(sk.TreeClass):
         in_axes = (None, 0, None)
         return jax.vmap(random_vertical_shear_2d, in_axes=in_axes)(key, x, angle)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomPerspective2D(sk.TreeClass):
@@ -556,9 +544,7 @@ class RandomPerspective2D(sk.TreeClass):
         scale = jax.lax.stop_gradient(self.scale)
         return jax.vmap(random_perspective_2d, in_axes=(None, 0, None))(key, x, scale)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -588,9 +574,7 @@ class HorizontalTranslate2D(sk.TreeClass):
     def __call__(self, x: CHWArray) -> CHWArray:
         return jax.vmap(horizontal_translate_2d, in_axes=(0, None))(x, self.shift)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -620,9 +604,7 @@ class VerticalTranslate2D(sk.TreeClass):
     def __call__(self, x: jax.Array) -> jax.Array:
         return jax.vmap(vertical_translate_2d, in_axes=(0, None))(x, self.shift)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -660,9 +642,7 @@ class RandomHorizontalTranslate2D(sk.TreeClass):
     def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
         return jax.vmap(random_horizontal_translate_2d, in_axes=(None, 0))(key, x)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomVerticalTranslate2D(sk.TreeClass):
@@ -699,9 +679,7 @@ class RandomVerticalTranslate2D(sk.TreeClass):
     def __call__(self, x: CHWArray, *, key: jax.Array = jr.PRNGKey(0)) -> CHWArray:
         return jax.vmap(random_vertical_translate_2d, in_axes=(None, 0))(key, x)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class HorizontalFlip2D(sk.TreeClass):
@@ -731,9 +709,7 @@ class HorizontalFlip2D(sk.TreeClass):
     def __call__(self, x: CHWArray) -> CHWArray:
         return jax.vmap(lambda x: jnp.flip(x, axis=1))(x)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -770,9 +746,7 @@ class RandomHorizontalFlip2D(sk.TreeClass):
         prop = jax.random.bernoulli(key, rate)
         return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=1))(x), x)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class VerticalFlip2D(sk.TreeClass):
@@ -802,9 +776,7 @@ class VerticalFlip2D(sk.TreeClass):
     def __call__(self, x: CHWArray) -> CHWArray:
         return jax.vmap(lambda x: jnp.flip(x, axis=0))(x)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @sk.autoinit
@@ -841,9 +813,7 @@ class RandomVerticalFlip2D(sk.TreeClass):
         prop = jax.random.bernoulli(key, rate)
         return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=0))(x), x)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class WaveTransform2D(sk.TreeClass):
@@ -866,9 +836,7 @@ class WaveTransform2D(sk.TreeClass):
         length, amplitude = jax.lax.stop_gradient((self.length, self.amplitude))
         return jax.vmap(wave_transform_2d, in_axes=in_axes)(image, length, amplitude)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomWaveTransform2D(sk.TreeClass):
@@ -899,9 +867,7 @@ class RandomWaveTransform2D(sk.TreeClass):
         L, A = jax.lax.stop_gradient((self.length_range, self.amplitude_range))
         return jax.vmap(random_wave_transform_2d, in_axes=in_axes)(key, image, L, A)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 @tree_eval.def_eval(RandomRotate2D)

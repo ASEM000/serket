@@ -26,6 +26,14 @@ import jax.tree_util as jtu
 import serket as sk
 from serket._src.custom_transform import tree_state
 from serket._src.nn.activation import ActivationType, resolve_activation
+from serket._src.nn.convolution import (
+    Conv1D,
+    Conv2D,
+    Conv3D,
+    FFTConv1D,
+    FFTConv2D,
+    FFTConv3D,
+)
 from serket._src.nn.initialization import DType, InitType
 from serket._src.utils import (
     DilationType,
@@ -89,6 +97,54 @@ class SimpleRNNState(RNNState):
 
 
 class SimpleRNNCell(RNNCell):
+    """Vanilla RNN cell that defines the update rule for the hidden state
+
+    Args:
+        in_features: the number of input features
+        hidden_features: the number of hidden features
+        key: the key to use to initialize the weights
+        weight_init: the function to use to initialize the weights
+        bias_init: the function to use to initialize the bias
+        recurrent_weight_init: the function to use to initialize the recurrent weights
+        act: the activation function to use for the hidden state update
+        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> # 10-dimensional input, 20-dimensional hidden state
+        >>> cell = sk.nn.SimpleRNNCell(10, 20, key=jr.PRNGKey(0))
+        >>> # 20-dimensional hidden state
+        >>> rnn_state = sk.tree_state(cell)
+        >>> x = jnp.ones((10,)) # 10 features
+        >>> result = cell(x, rnn_state)
+        >>> result.hidden_state.shape  # 20 features
+        (20,)
+
+    Note:
+        :class:`.SimpleRNNCell` supports lazy initialization, meaning that the
+        weights and biases are not initialized until the first call to the layer.
+        This is useful when the input shape is not known at initialization time.
+
+        To use lazy initialization, pass ``None`` as the ``in_features`` argument
+        and use the ``.at["__call__"]`` attribute to call the layer
+        with an input of known shape.
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> lazy_cell = sk.nn.SimpleRNNCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy_layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)
+        >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
+        >>> _, materialized_layer = lazy_layer.at["__call__"](x)
+        >>> materialized_layer(x).shape
+        (5, 20)
+
+    Reference:
+        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
+    """
+
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -102,53 +158,6 @@ class SimpleRNNCell(RNNCell):
         act: ActivationType = jax.nn.tanh,
         dtype: DType = jnp.float32,
     ):
-        """Vanilla RNN cell that defines the update rule for the hidden state
-
-        Args:
-            in_features: the number of input features
-            hidden_features: the number of hidden features
-            key: the key to use to initialize the weights
-            weight_init: the function to use to initialize the weights
-            bias_init: the function to use to initialize the bias
-            recurrent_weight_init: the function to use to initialize the recurrent weights
-            act: the activation function to use for the hidden state update
-            dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
-
-        Example:
-            >>> import serket as sk
-            >>> import jax.numpy as jnp
-            >>> import jax.random as jr
-            >>> # 10-dimensional input, 20-dimensional hidden state
-            >>> cell = sk.nn.SimpleRNNCell(10, 20, key=jr.PRNGKey(0))
-            >>> # 20-dimensional hidden state
-            >>> rnn_state = sk.tree_state(cell)
-            >>> x = jnp.ones((10,)) # 10 features
-            >>> result = cell(x, rnn_state)
-            >>> result.hidden_state.shape  # 20 features
-            (20,)
-
-        Note:
-            :class:`.SimpleRNNCell` supports lazy initialization, meaning that the
-            weights and biases are not initialized until the first call to the layer.
-            This is useful when the input shape is not known at initialization time.
-
-            To use lazy initialization, pass ``None`` as the ``in_features`` argument
-            and use the ``.at["__call__"]`` attribute to call the layer
-            with an input of known shape.
-
-            >>> import serket as sk
-            >>> import jax.numpy as jnp
-            >>> import jax.random as jr
-            >>> lazy_cell = sk.nn.SimpleRNNCell(None, 20, key=jr.PRNGKey(0))
-            >>> lazy_layer = sk.nn.ScanRNN(lazy_cell, return_sequences=True)
-            >>> x = jnp.ones((5, 10)) # 5 timesteps, 10 features
-            >>> _, materialized_layer = lazy_layer.at["__call__"](x)
-            >>> materialized_layer(x).shape
-            (5, 20)
-
-        Reference:
-            - https://www.tensorflow.org/api_docs/python/tf/keras/layers/SimpleRNNCell.
-        """
         k1, k2 = jr.split(key, 2)
 
         self.in_features = positive_int_cb(in_features)
@@ -187,9 +196,7 @@ class SimpleRNNCell(RNNCell):
         h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
         return SimpleRNNState(self.act(h))
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 0
+    spatial_ndim: int = 0
 
 
 class DenseState(RNNState):
@@ -277,9 +284,7 @@ class DenseCell(RNNCell):
         h = self.act(self.in_to_hidden(x))
         return DenseState(h)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 0
+    spatial_ndim: int = 0
 
 
 @sk.autoinit
@@ -399,9 +404,7 @@ class LSTMCell(RNNCell):
         h = o * self.act(c)
         return LSTMState(h, c)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 0
+    spatial_ndim: int = 0
 
 
 class GRUState(RNNState):
@@ -513,9 +516,7 @@ class GRUCell(RNNCell):
         h = (1 - u) * o + u * h
         return GRUState(hidden_state=h)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 0
+    spatial_ndim: int = 0
 
 
 @sk.autoinit
@@ -598,6 +599,11 @@ class ConvLSTMNDCell(RNNCell):
     def convolution_layer(self):
         ...
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        ...
+
 
 class ConvLSTM1DCell(ConvLSTMNDCell):
     """1D Convolution LSTM cell that defines the update rule for the hidden state and cell state
@@ -650,13 +656,8 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.Conv1D
+    spatial_ndim: int = 1
+    convolution_layer = Conv1D
 
 
 class FFTConvLSTM1DCell(ConvLSTMNDCell):
@@ -710,13 +711,8 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM1D
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.FFTConv1D
+    spatial_ndim: int = 1
+    convolution_layer = FFTConv1D
 
 
 class ConvLSTM2DCell(ConvLSTMNDCell):
@@ -770,13 +766,8 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.Conv2D
+    spatial_ndim: int = 2
+    convolution_layer = Conv2D
 
 
 class FFTConvLSTM2DCell(ConvLSTMNDCell):
@@ -830,13 +821,8 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM2D
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.FFTConv2D
+    spatial_ndim: int = 2
+    convolution_layer = FFTConv2D
 
 
 class ConvLSTM3DCell(ConvLSTMNDCell):
@@ -890,13 +876,8 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.Conv3D
+    spatial_ndim: int = 3
+    convolution_layer = Conv3D
 
 
 class FFTConvLSTM3DCell(ConvLSTMNDCell):
@@ -950,13 +931,8 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ConvLSTM3D
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.FFTConv3D
+    spatial_ndim: int = 3
+    convolution_layer = FFTConv3D
 
 
 class ConvGRUNDState(RNNState):
@@ -1036,6 +1012,11 @@ class ConvGRUNDCell(RNNCell):
     def convolution_layer(self):
         ...
 
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        ...
+
 
 class ConvGRU1DCell(ConvGRUNDCell):
     """1D Convolution GRU cell that defines the update rule for the hidden state and cell state
@@ -1085,13 +1066,8 @@ class ConvGRU1DCell(ConvGRUNDCell):
         (1, 2, 4)
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.Conv1D
+    spatial_ndim: int = 1
+    convolution_layer = Conv1D
 
 
 class FFTConvGRU1DCell(ConvGRUNDCell):
@@ -1142,13 +1118,8 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         (1, 2, 4)
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.FFTConv1D
+    spatial_ndim: int = 1
+    convolution_layer = FFTConv1D
 
 
 class ConvGRU2DCell(ConvGRUNDCell):
@@ -1199,13 +1170,8 @@ class ConvGRU2DCell(ConvGRUNDCell):
         (1, 2, 4, 4)
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.Conv2D
+    spatial_ndim: int = 2
+    convolution_layer = Conv2D
 
 
 class FFTConvGRU2DCell(ConvGRUNDCell):
@@ -1256,13 +1222,8 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         (1, 2, 4, 4)
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.FFTConv2D
+    spatial_ndim: int = 2
+    convolution_layer = FFTConv2D
 
 
 class ConvGRU3DCell(ConvGRUNDCell):
@@ -1313,13 +1274,8 @@ class ConvGRU3DCell(ConvGRUNDCell):
         (1, 2, 4, 4, 4)
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.Conv3D
+    spatial_ndim: int = 3
+    convolution_layer = Conv3D
 
 
 class FFTConvGRU3DCell(ConvGRUNDCell):
@@ -1370,13 +1326,8 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         (1, 2, 4, 4, 4)
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
-
-    @property
-    def convolution_layer(self):
-        return sk.nn.FFTConv3D
+    spatial_ndim: int = 3
+    convolution_layer = FFTConv3D
 
 
 # Scanning API
