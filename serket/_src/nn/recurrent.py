@@ -188,11 +188,11 @@ class SimpleRNNCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: SimpleRNNState) -> SimpleRNNState:
+    def __call__(self, array: jax.Array, state: SimpleRNNState) -> SimpleRNNState:
         if not isinstance(state, SimpleRNNState):
             raise TypeError(f"Expected {state=} to be an instance of `SimpleRNNState`")
 
-        ih = jnp.concatenate([x, state.hidden_state], axis=-1)
+        ih = jnp.concatenate([array, state.hidden_state], axis=-1)
         h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
         return SimpleRNNState(self.act(h))
 
@@ -277,11 +277,11 @@ class DenseCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: DenseState) -> DenseState:
+    def __call__(self, array: jax.Array, state: DenseState) -> DenseState:
         if not isinstance(state, DenseState):
             raise TypeError(f"Expected {state=} to be an instance of `DenseState`")
 
-        h = self.act(self.in_to_hidden(x))
+        h = self.act(self.in_to_hidden(array))
         return DenseState(h)
 
     spatial_ndim: int = 0
@@ -388,12 +388,12 @@ class LSTMCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: LSTMState) -> LSTMState:
+    def __call__(self, array: jax.Array, state: LSTMState) -> LSTMState:
         if not isinstance(state, LSTMState):
             raise TypeError(f"Expected {state=} to be an instance of `LSTMState`")
 
         h, c = state.hidden_state, state.cell_state
-        ih = jnp.concatenate([x, h], axis=-1)
+        ih = jnp.concatenate([array, h], axis=-1)
         h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
         i, f, g, o = jnp.split(h, 4, axis=-1)
         i = self.recurrent_act(i)
@@ -503,12 +503,12 @@ class GRUCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: GRUState) -> GRUState:
+    def __call__(self, array: jax.Array, state: GRUState) -> GRUState:
         if not isinstance(state, GRUState):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
         h = state.hidden_state
-        xe, xu, xo = jnp.split(self.in_to_hidden(x), 3, axis=-1)
+        xe, xu, xo = jnp.split(self.in_to_hidden(array), 3, axis=-1)
         he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=-1)
         e = self.recurrent_act(xe + he)
         u = self.recurrent_act(xu + hu)
@@ -579,12 +579,12 @@ class ConvLSTMNDCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: ConvLSTMNDState) -> ConvLSTMNDState:
+    def __call__(self, array: jax.Array, state: ConvLSTMNDState) -> ConvLSTMNDState:
         if not isinstance(state, ConvLSTMNDState):
             raise TypeError(f"Expected {state=} to be an instance of ConvLSTMNDState.")
 
         h, c = state.hidden_state, state.cell_state
-        h = self.in_to_hidden(x) + self.hidden_to_hidden(h)
+        h = self.in_to_hidden(array) + self.hidden_to_hidden(h)
         i, f, g, o = jnp.split(h, 4, axis=0)
         i = self.recurrent_act(i)
         f = self.recurrent_act(f)
@@ -994,12 +994,12 @@ class ConvGRUNDCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, x: jax.Array, state: ConvGRUNDState) -> ConvGRUNDState:
+    def __call__(self, array: jax.Array, state: ConvGRUNDState) -> ConvGRUNDState:
         if not isinstance(state, ConvGRUNDState):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
         h = state.hidden_state
-        xe, xu, xo = jnp.split(self.in_to_hidden(x), 3, axis=0)
+        xe, xu, xo = jnp.split(self.in_to_hidden(array), 3, axis=0)
         he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=0)
         e = self.recurrent_act(xe + he)
         u = self.recurrent_act(xu + hu)
@@ -1432,9 +1432,8 @@ class ScanRNN(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
         self,
-        x: jax.Array,
+        array: jax.Array,
         state: RNNState | None = None,
-        **k,
     ) -> jax.Array | tuple[jax.Array, RNNState]:
         """Scans the RNN cell over a sequence.
 
@@ -1451,30 +1450,30 @@ class ScanRNN(sk.TreeClass):
         if not isinstance(state, (RNNState, type(None))):
             raise TypeError(f"Expected state to be an instance of RNNState, {state=}")
 
-        if x.ndim != self.cell.spatial_ndim + 2:
+        if array.ndim != self.cell.spatial_ndim + 2:
             raise ValueError(
                 f"Expected x to have {(self.cell.spatial_ndim + 2)=} dimensions corresponds to "
                 f"(timesteps, in_features, {','.join('...'*self.cell.spatial_ndim)}),"
-                f" got {x.ndim=}"
+                f" got {array.ndim=}"
             )
 
-        if self.cell.in_features != x.shape[1]:
+        if self.cell.in_features != array.shape[1]:
             raise ValueError(
                 f"Expected x to have shape (timesteps, {self.cell.in_features},"
-                f"{'*'*self.cell.spatial_ndim}), got {x.shape=}"
+                f"{'*'*self.cell.spatial_ndim}), got {array.shape=}"
             )
 
-        state: RNNState = tree_state(self, array=x)  # if state is None else state
+        state: RNNState = tree_state(self, array=array)  # if state is None else state
         scan_func = _accumulate_scan if self.return_sequences else _no_accumulate_scan
 
         if self.backward_cell is None:
-            result, state = scan_func(x, self.cell, state)
+            result, state = scan_func(array, self.cell, state)
             return (result, state) if self.return_state else result
 
         # bidirectional
         lhs_state, rhs_state = split_state(state, splits=2)
-        lhs_result, lhs_state = scan_func(x, self.cell, lhs_state, False)
-        rhs_result, rhs_state = scan_func(x, self.backward_cell, rhs_state, True)
+        lhs_result, lhs_state = scan_func(array, self.cell, lhs_state, False)
+        rhs_result, rhs_state = scan_func(array, self.backward_cell, rhs_state, True)
         concat_axis = int(self.return_sequences)
         result = jnp.concatenate((lhs_result, rhs_result), axis=concat_axis)
         state: RNNState = concat_state((lhs_state, rhs_state))
@@ -1496,25 +1495,25 @@ def concat_state(states: list[RNNState]) -> RNNState:
 
 
 def _accumulate_scan(
-    x: jax.Array,
+    array: jax.Array,
     cell: RNNCell,
     state: RNNState,
     reverse: bool = False,
 ) -> tuple[jax.Array, RNNState]:
-    def scan_func(carry, x):
-        state = cell(x, state=carry)
+    def scan_func(carry, array):
+        state = cell(array, state=carry)
         return state, state
 
-    x = jnp.flip(x, axis=0) if reverse else x  # flip over time axis
-    result = jax.lax.scan(scan_func, state, x)[1].hidden_state
-    carry, result = jax.lax.scan(scan_func, state, x)
+    array = jnp.flip(array, axis=0) if reverse else array  # flip over time axis
+    result = jax.lax.scan(scan_func, state, array)[1].hidden_state
+    carry, result = jax.lax.scan(scan_func, state, array)
     result = result.hidden_state
     result = jnp.flip(result, axis=-1) if reverse else result
     return result, carry
 
 
 def _no_accumulate_scan(
-    x: jax.Array,
+    array: jax.Array,
     cell: RNNCell,
     state: RNNState,
     reverse: bool = False,
@@ -1523,8 +1522,8 @@ def _no_accumulate_scan(
         state = cell(x, state=carry)
         return state, None
 
-    x = jnp.flip(x, axis=0) if reverse else x
-    carry, _ = jax.lax.scan(scan_func, state, x)
+    array = jnp.flip(array, axis=0) if reverse else array
+    carry, _ = jax.lax.scan(scan_func, state, array)
     result = carry.hidden_state
     return result, carry
 

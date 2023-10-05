@@ -33,18 +33,18 @@ from serket._src.utils import (
 
 
 def layer_norm(
-    x: jax.Array,
+    array: jax.Array,
     *,
     gamma: jax.Array,
     beta: jax.Array,
     eps: float,
     normalized_shape: int | tuple[int],
 ) -> jax.Array:
-    dims = tuple(range(len(x.shape) - len(normalized_shape), len(x.shape)))
+    dims = tuple(range(len(array.shape) - len(normalized_shape), len(array.shape)))
 
-    μ = jnp.mean(x, axis=dims, keepdims=True)
-    σ_2 = jnp.var(x, axis=dims, keepdims=True)
-    x̂ = (x - μ) * jax.lax.rsqrt((σ_2 + eps))
+    μ = jnp.mean(array, axis=dims, keepdims=True)
+    σ_2 = jnp.var(array, axis=dims, keepdims=True)
+    x̂ = (array - μ) * jax.lax.rsqrt((σ_2 + eps))
 
     if gamma is not None:
         x̂ = x̂ * gamma
@@ -56,7 +56,7 @@ def layer_norm(
 
 
 def group_norm(
-    x: jax.Array,
+    array: jax.Array,
     *,
     gamma: jax.Array,
     beta: jax.Array,
@@ -64,18 +64,18 @@ def group_norm(
     groups: int,
 ) -> jax.Array:
     # split channels into groups
-    xx = x.reshape(groups, -1)
+    xx = array.reshape(groups, -1)
     μ = jnp.mean(xx, axis=-1, keepdims=True)
     σ_2 = jnp.var(xx, axis=-1, keepdims=True)
     x̂ = (xx - μ) * jax.lax.rsqrt((σ_2 + eps))
-    x̂ = x̂.reshape(*x.shape)
+    x̂ = x̂.reshape(*array.shape)
 
     if gamma is not None:
-        gamma = jnp.expand_dims(gamma, axis=range(1, x.ndim))
+        gamma = jnp.expand_dims(gamma, axis=range(1, array.ndim))
         x̂ *= gamma
 
     if beta is not None:
-        beta = jnp.expand_dims(beta, axis=range(1, x.ndim))
+        beta = jnp.expand_dims(beta, axis=range(1, array.ndim))
         x̂ += beta
     return x̂
 
@@ -159,9 +159,9 @@ class LayerNorm(sk.TreeClass):
         self.beta = resolve_init(bias_init)(key, self.normalized_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array) -> jax.Array:
         return layer_norm(
-            x,
+            array=array,
             gamma=self.gamma,
             beta=self.beta,
             eps=self.eps,
@@ -258,9 +258,9 @@ class GroupNorm(sk.TreeClass):
         self.bias = resolve_init(bias_init)(key, (in_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array) -> jax.Array:
         return group_norm(
-            x=x,
+            array=array,
             gamma=self.weight,
             beta=self.bias,
             eps=self.eps,
@@ -344,7 +344,7 @@ class BatchNormState(sk.TreeClass):
 
 
 def _batchnorm_impl(
-    x: jax.Array,
+    array: jax.Array,
     state: BatchNormState,
     momentum: float = 0.1,
     eps: float = 1e-3,
@@ -354,33 +354,34 @@ def _batchnorm_impl(
     axis: int = 1,
     axis_name: str | None = None,
 ):
-    broadcast_shape = [1] * x.ndim
-    broadcast_shape[axis] = x.shape[axis]
+    broadcast_shape = [1] * array.ndim
+    broadcast_shape[axis] = array.shape[axis]
 
-    def eval_step(x, state):
+    def eval_step(array, state):
         run_mean, run_var = state.running_mean, state.running_var
         run_mean = jnp.reshape(run_mean, broadcast_shape)
         run_var = jnp.reshape(run_var, broadcast_shape)
-        output = (x - run_mean) * jax.lax.rsqrt(run_var + eps)
+        output = (array - run_mean) * jax.lax.rsqrt(run_var + eps)
         return output, state
 
-    def train_step(x, state):
+    def train_step(array, state):
         run_mean, run_var = state.running_mean, state.running_var
-        axes = list(range(x.ndim))
+        axes = list(range(array.ndim))
         with jax.ensure_compile_time_eval():
             del axes[axis]
-        batch_mean = jnp.mean(x, axis=axes, keepdims=True)
+        batch_mean = jnp.mean(array, axis=axes, keepdims=True)
         if axis_name is not None:
             batch_mean = jax.lax.pmean(batch_mean, axis_name)
-        batch_var = jnp.mean(jnp.square(x), axis=axes, keepdims=True) - batch_mean**2
+        batch_var = jnp.mean(jnp.square(array), axis=axes, keepdims=True)
+        batch_var -= batch_mean**2
         if axis_name is not None:
             batch_var = jax.lax.pmean(batch_var, axis_name)
-        output = (x - batch_mean) / jnp.sqrt(batch_var + eps)
+        output = (array - batch_mean) / jnp.sqrt(batch_var + eps)
         run_mean = momentum * run_mean + (1 - momentum) * jnp.squeeze(batch_mean)
         run_var = momentum * run_var + (1 - momentum) * jnp.squeeze(batch_var)
         return output, BatchNormState(run_mean, run_var)
 
-    output, state = jax.lax.cond(evalution, eval_step, train_step, x, state)
+    output, state = jax.lax.cond(evalution, eval_step, train_step, array, state)
     state = jax.lax.stop_gradient(state)
     if gamma is not None:
         output *= jnp.reshape(gamma, broadcast_shape)
@@ -517,16 +518,16 @@ class BatchNorm(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
         self,
-        x: jax.Array,
+        array: jax.Array,
         state: BatchNormState | None = None,
     ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
         batchnorm = custom_vmap(lambda x, state: (x, state))
 
         @batchnorm.def_vmap
-        def _(_, __, x: jax.Array, state: BatchNormState):
+        def _(_, __, array: jax.Array, state: BatchNormState):
             output = _batchnorm_impl(
-                x=x,
+                array=array,
                 state=state,
                 momentum=self.momentum,
                 eps=self.eps,
@@ -538,7 +539,7 @@ class BatchNorm(sk.TreeClass):
             )
             return output, (True, BatchNormState(True, True))
 
-        return batchnorm(x, state)
+        return batchnorm(array, state)
 
 
 class EvalNorm(sk.TreeClass):
@@ -627,9 +628,9 @@ class EvalNorm(sk.TreeClass):
         batchnorm = custom_vmap(lambda x, state: (x, state))
 
         @batchnorm.def_vmap
-        def _(_, __, x: jax.Array, state: BatchNormState):
+        def _(_, __, array: jax.Array, state: BatchNormState):
             output = _batchnorm_impl(
-                x=x,
+                array=array,
                 state=state,
                 momentum=0.0,
                 eps=self.eps,

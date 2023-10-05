@@ -37,22 +37,22 @@ from serket._src.utils import (
 
 def dropout_nd(
     key: jax.Array,
-    x: jax.Array,
+    array: jax.Array,
     drop_rate,
     drop_axes: Sequence[int] | None = None,
 ) -> jax.Array:
     """Drop some elements of the input array."""
     # drop_axes = None means dropout is applied to all axes
     shape = (
-        x.shape
+        array.shape
         if drop_axes is None
-        else (x.shape[i] if i in drop_axes else 1 for i in range(x.ndim))
+        else (array.shape[i] if i in drop_axes else 1 for i in range(array.ndim))
     )
 
     return jnp.where(
         (keep_prop := (1 - drop_rate)) == 0.0,
-        jnp.zeros_like(x),
-        jnp.where(jr.bernoulli(key, keep_prop, shape=shape), x / keep_prop, 0),
+        jnp.zeros_like(array),
+        jnp.where(jr.bernoulli(key, keep_prop, shape=shape), array / keep_prop, 0),
     )
 
 
@@ -152,14 +152,14 @@ class Dropout(sk.TreeClass):
     )
     drop_axes: tuple[int, ...] | None = None
 
-    def __call__(self, x, *, key: jax.Array):
+    def __call__(self, array: jax.Array, *, key: jax.Array):
         """Drop some elements of the input array.
 
         Args:
             x: input array
             key: random number generator key
         """
-        return dropout_nd(key, x, self.drop_rate, self.drop_axes)
+        return dropout_nd(key, array, self.drop_rate, self.drop_axes)
 
 
 @sk.autoinit
@@ -171,14 +171,14 @@ class DropoutND(sk.TreeClass):
     )
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x, *, key):
+    def __call__(self, array: jax.Array, *, key):
         """Drop some elements of the input array.
 
         Args:
             x: input array
             key: random number generator key
         """
-        return dropout_nd(key, x, self.drop_rate, [0])
+        return dropout_nd(key, array, self.drop_rate, [0])
 
     @property
     @abc.abstractmethod
@@ -341,7 +341,7 @@ class RandomCutoutND(sk.TreeClass):
         self.fill_value = fill_value
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
         """Drop some elements of the input array.
 
         Args:
@@ -353,7 +353,7 @@ class RandomCutoutND(sk.TreeClass):
         def cutout(x):
             return random_cutout_nd(key, x, self.shape, self.cutout_count, fill_value)
 
-        return jax.vmap(cutout)(x)
+        return jax.vmap(cutout)(array)
 
     @property
     @abc.abstractmethod

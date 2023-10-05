@@ -37,15 +37,15 @@ MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 
 def random_crop_nd(
     key: jax.Array,
-    x: jax.Array,
+    array: jax.Array,
     *,
     crop_size: tuple[int, ...],
 ) -> jax.Array:
     start: tuple[int, ...] = tuple(
-        jr.randint(key, shape=(), minval=0, maxval=x.shape[i] - s)
+        jr.randint(key, shape=(), minval=0, maxval=array.shape[i] - s)
         for i, s in enumerate(crop_size)
     )
-    return jax.lax.dynamic_slice(x, start, crop_size)
+    return jax.lax.dynamic_slice(array, start, crop_size)
 
 
 def center_crop_nd(array: jax.Array, sizes: tuple[int, ...]) -> jax.Array:
@@ -176,10 +176,10 @@ class UpsampleND(sk.TreeClass):
         self.method = method
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        resized_shape = tuple(s * x.shape[i + 1] for i, s in enumerate(self.scale))
+    def __call__(self, array: jax.Array) -> jax.Array:
+        resized_shape = tuple(s * array.shape[i + 1] for i, s in enumerate(self.scale))
         in_axes = (0, None, None)
-        args = (x, resized_shape, self.method)
+        args = (array, resized_shape, self.method)
         return jax.vmap(jax.image.resize, in_axes=in_axes)(*args)
 
     @property
@@ -290,9 +290,9 @@ class CropND(sk.TreeClass):
         self.start = canonicalize(start, self.spatial_ndim, name="start")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, array: jax.Array, **k) -> jax.Array:
         in_axes = (0, None, None)
-        args = (x, self.start, self.size)
+        args = (array, self.start, self.size)
         return jax.vmap(jax.lax.dynamic_slice, in_axes=in_axes)(*args)
 
     @property
@@ -370,10 +370,10 @@ class PadND(sk.TreeClass):
         self.value = value
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array) -> jax.Array:
         value = jax.lax.stop_gradient(self.value)
         pad = ft.partial(jnp.pad, pad_width=self.padding, constant_values=value)
-        return jax.vmap(pad)(x)
+        return jax.vmap(pad)(array)
 
     @property
     @abc.abstractmethod
@@ -567,8 +567,8 @@ class Flatten(sk.TreeClass):
     start_dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
     end_dim: int = sk.field(default=-1, on_setattr=[IsInstance(int)])
 
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return flatten(x, self.start_dim, self.end_dim)
+    def __call__(self, array: jax.Array) -> jax.Array:
+        return flatten(array, self.start_dim, self.end_dim)
 
 
 @sk.autoinit
@@ -591,8 +591,8 @@ class Unflatten(sk.TreeClass):
     dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
     shape: tuple = sk.field(default=None, on_setattr=[IsInstance(tuple)])
 
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return unflatten(x, self.dim, self.shape)
+    def __call__(self, array: jax.Array) -> jax.Array:
+        return unflatten(array, self.dim, self.shape)
 
 
 class RandomCropND(sk.TreeClass):
@@ -600,9 +600,9 @@ class RandomCropND(sk.TreeClass):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
-        crop_size = [x.shape[0], *self.size]
-        return random_crop_nd(key, x, crop_size=crop_size)
+    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
+        crop_size = [array.shape[0], *self.size]
+        return random_crop_nd(key, array, crop_size=crop_size)
 
     @property
     @abc.abstractmethod
@@ -737,11 +737,11 @@ class RandomZoom1D(sk.TreeClass):
         self.length_range = length_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2 = jr.split(key, 2)
         low, high = jax.lax.stop_gradient(self.length_range)
         factor = (jr.uniform(k1, minval=low, maxval=high),)
-        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k2, x, factor)
+        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k2, array, factor)
 
     spatial_ndim: int = 1
 
@@ -777,14 +777,14 @@ class RandomZoom2D(sk.TreeClass):
         self.width_range = width_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2, k3 = jr.split(key, 3)
         factors = (self.height_range, self.width_range)
         ((hfl, hfh), (wfl, wfh)) = jax.lax.stop_gradient(factors)
         factor_r = jr.uniform(k1, minval=hfl, maxval=hfh)
         factor_c = jr.uniform(k2, minval=wfl, maxval=wfh)
         factor = (factor_r, factor_c)
-        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k3, x, factor)
+        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k3, array, factor)
 
     spatial_ndim: int = 2
 

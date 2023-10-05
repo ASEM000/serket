@@ -152,15 +152,15 @@ class MaxPoolND(sk.TreeClass):
         self.padding = padding
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x):
+    def __call__(self, array: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape,
+            in_dim=array.shape,
             kernel_size=self.kernel_size,
             strides=self.strides,
             padding=self.padding,
         )
 
-        return max_pool_nd(x, self.kernel_size, self.strides, padding)
+        return max_pool_nd(array, self.kernel_size, self.strides, padding)
 
     @property
     @abc.abstractmethod
@@ -240,15 +240,15 @@ class AvgPoolND(sk.TreeClass):
         self.padding = padding
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x):
+    def __call__(self, array: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape,
+            in_dim=array.shape,
             kernel_size=self.kernel_size,
             strides=self.strides,
             padding=self.padding,
         )
 
-        return avg_pool_nd(x, self.kernel_size, self.strides, padding)
+        return avg_pool_nd(array, self.kernel_size, self.strides, padding)
 
     @property
     @abc.abstractmethod
@@ -312,15 +312,17 @@ class LPPoolND(sk.TreeClass):
         self.padding = padding
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
-            in_dim=x.shape,
+            in_dim=array.shape,
             kernel_size=self.kernel_size,
             strides=self.strides,
             padding=self.padding,
         )
 
-        return lp_pool_nd(x, self.norm_type, self.kernel_size, self.strides, padding)
+        return lp_pool_nd(
+            array, self.norm_type, self.kernel_size, self.strides, padding
+        )
 
     @property
     @abc.abstractmethod
@@ -372,9 +374,9 @@ class GlobalAvgPoolND(sk.TreeClass):
         self.keepdims = keepdims
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array) -> jax.Array:
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
-        return jnp.mean(x, axis=axes, keepdims=self.keepdims)
+        return jnp.mean(array, axis=axes, keepdims=self.keepdims)
 
     @property
     @abc.abstractmethod
@@ -417,9 +419,9 @@ class GlobalMaxPoolND(sk.TreeClass):
         self.keepdims = keepdims
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array) -> jax.Array:
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
-        return jnp.max(x, axis=axes, keepdims=self.keepdims)
+        return jnp.max(array, axis=axes, keepdims=self.keepdims)
 
     @property
     @abc.abstractmethod
@@ -466,8 +468,8 @@ class AdaptiveAvgPoolND(sk.TreeClass):
         )
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return adaptive_avg_pool_nd(x, self.output_size)
+    def __call__(self, array: jax.Array) -> jax.Array:
+        return adaptive_avg_pool_nd(array, self.output_size)
 
     @property
     @abc.abstractmethod
@@ -514,8 +516,8 @@ class AdaptiveMaxPoolND(sk.TreeClass):
         )
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return adaptive_max_pool_nd(x, self.output_size)
+    def __call__(self, array: jax.Array) -> jax.Array:
+        return adaptive_max_pool_nd(array, self.output_size)
 
     @property
     @abc.abstractmethod
