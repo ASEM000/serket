@@ -469,7 +469,7 @@ class FNN(sk.TreeClass):
 
 
 def _scan_linear(
-    x: jax.Array,
+    array: jax.Array,
     weight: Batched[jax.Array],
     bias: Batched[jax.Array] | None,
     act: ActivationFunctionType,
@@ -479,16 +479,16 @@ def _scan_linear(
         def scan_func(x: jax.Array, weight: Batched[jax.Array]):
             return act(x @ weight), None
 
-        x, _ = jax.lax.scan(scan_func, x, weight)
-        return x
+        array, _ = jax.lax.scan(scan_func, array, weight)
+        return array
 
     def scan_func(x: jax.Array, weight_bias: Batched[jax.Array]):
         weight, bias = weight_bias[..., :-1], weight_bias[..., -1]
         return act(x @ weight + bias), None
 
     weight_bias = jnp.concatenate([weight, bias[:, :, None]], axis=-1)
-    x, _ = jax.lax.scan(scan_func, x, weight_bias)
-    return x
+    array, _ = jax.lax.scan(scan_func, array, weight_bias)
+    return array
 
 
 class MLP(sk.TreeClass):
