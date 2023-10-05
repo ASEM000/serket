@@ -228,9 +228,7 @@ class Dropout1D(DropoutND):
         - https://arxiv.org/abs/1411.4280
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class Dropout2D(DropoutND):
@@ -279,9 +277,7 @@ class Dropout2D(DropoutND):
         - https://arxiv.org/abs/1411.4280
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Dropout3D(DropoutND):
@@ -330,9 +326,7 @@ class Dropout3D(DropoutND):
         - https://arxiv.org/abs/1411.4280
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class RandomCutoutND(sk.TreeClass):
@@ -390,9 +384,7 @@ class RandomCutout1D(RandomCutoutND):
         - https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class RandomCutout2D(RandomCutoutND):
@@ -432,9 +424,7 @@ class RandomCutout2D(RandomCutoutND):
         - https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class RandomCutout3D(RandomCutoutND):
@@ -473,9 +463,7 @@ class RandomCutout3D(RandomCutoutND):
         - https://keras.io/api/keras_cv/layers/preprocessing/random_cutout/
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 @tree_eval.def_eval(RandomCutoutND)

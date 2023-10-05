@@ -274,17 +274,19 @@ class GeneralLinear(sk.TreeClass):
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
     Example:
+        Apply linear layer to first and second axes of input
+
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
         >>> x = jnp.ones([1, 2, 3, 4])
-        >>> layer = sk.nn.GeneralLinear(in_features=(1, 2), in_axes=(0, 1), out_features=5, key=jr.PRNGKey(0))
+        >>> in_features = (1, 2)
+        >>> out_features = 5
+        >>> in_axes = (0, 1)
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.GeneralLinear(in_features, out_features, in_axes=in_axes, key=key)
         >>> layer(x).shape
         (3, 4, 5)
-
-    Note:
-        This layer is similar to to ``flax`` linen's ``DenseGeneral``, the difference
-        is that this layer uses einsum to apply the linear layer to the specified axes.
 
     Note:
         :class:`.GeneralLinear` supports lazy initialization, meaning that the weights and
@@ -292,8 +294,7 @@ class GeneralLinear(sk.TreeClass):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use the ``.at["__call__"]`` to call the layer with an input of known shape.
 
         >>> import jax
         >>> import jax.numpy as jnp

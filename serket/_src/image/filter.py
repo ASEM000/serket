@@ -242,9 +242,7 @@ class AvgBlur2DBase(sk.TreeClass):
         self.kernel_x = calculate_average_kernel(kx, dtype)
         self.kernel_y = calculate_average_kernel(ky, dtype)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class AvgBlur2D(AvgBlur2DBase):
@@ -320,9 +318,7 @@ class GaussianBlur2DBase(sk.TreeClass):
         self.kernel_x = calculate_gaussian_kernel(kx, sigma_x, dtype)
         self.kernel_y = calculate_gaussian_kernel(ky, sigma_y, dtype)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class GaussianBlur2D(GaussianBlur2DBase):
@@ -457,9 +453,7 @@ class BoxBlur2DBase(sk.TreeClass):
         self.kernel_x = calculate_box_kernel(kx, dtype)
         self.kernel_y = calculate_box_kernel(ky, dtype)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class BoxBlur2D(BoxBlur2DBase):
@@ -530,9 +524,7 @@ class Laplacian2DBase(sk.TreeClass):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
         self.kernel = calculate_laplacian_kernel(self.kernel_size, dtype)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Laplacian2D(Laplacian2DBase):
@@ -612,9 +604,7 @@ class MotionBlur2DBase(sk.TreeClass):
         args = (self.kernel_size, self.angle, self.direction, dtype)
         self.kernel = calculate_motion_kernel(*args)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class MotionBlur2D(MotionBlur2DBase):
@@ -709,18 +699,14 @@ class MedianBlur2D(sk.TreeClass):
         x = jax.vmap(median_blur_2d, in_axes=(0, None))(x, self.kernel_size)
         return x
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Sobel2DBase(sk.TreeClass):
     def __init__(self, *, dtype: DType = jnp.float32):
         self.kernel = calculate_sobel_kernel(dtype)
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Sobel2D(Sobel2DBase):
@@ -811,9 +797,7 @@ class Filter2D(sk.TreeClass):
         x = jax.vmap(filter_2d, in_axes=(0, None))(x, kernel)
         return x
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class FFTFilter2D(sk.TreeClass):
@@ -846,6 +830,4 @@ class FFTFilter2D(sk.TreeClass):
         x = jax.vmap(fft_filter_2d, in_axes=(0, None))(x, kernel)
         return x
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2

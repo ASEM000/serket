@@ -697,9 +697,7 @@ class Conv1D(ConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class Conv2D(ConvND):
@@ -793,9 +791,7 @@ class Conv2D(ConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Conv3D(ConvND):
@@ -889,9 +885,7 @@ class Conv3D(ConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class FFTConvND(BaseConvND):
@@ -1009,9 +1003,7 @@ class FFTConv1D(FFTConvND):
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class FFTConv2D(FFTConvND):
@@ -1105,9 +1097,7 @@ class FFTConv2D(FFTConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class FFTConv3D(FFTConvND):
@@ -1201,9 +1191,7 @@ class FFTConv3D(FFTConvND):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class BaseConvNDTranspose(sk.TreeClass):
@@ -1375,9 +1363,7 @@ class Conv1DTranspose(ConvNDTranspose):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class Conv2DTranspose(ConvNDTranspose):
@@ -1474,9 +1460,7 @@ class Conv2DTranspose(ConvNDTranspose):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Conv3DTranspose(ConvNDTranspose):
@@ -1574,9 +1558,7 @@ class Conv3DTranspose(ConvNDTranspose):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class FFTConvNDTranspose(BaseConvNDTranspose):
@@ -1698,9 +1680,7 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class FFTConv2DTranspose(FFTConvNDTranspose):
@@ -1798,9 +1778,7 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class FFTConv3DTranspose(FFTConvNDTranspose):
@@ -1898,9 +1876,7 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class BaseDepthwiseConvND(sk.TreeClass):
@@ -2039,9 +2015,7 @@ class DepthwiseConv1D(DepthwiseConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class DepthwiseConv2D(DepthwiseConvND):
@@ -2122,9 +2096,7 @@ class DepthwiseConv2D(DepthwiseConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class DepthwiseConv3D(DepthwiseConvND):
@@ -2205,9 +2177,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class DepthwiseFFTConvND(BaseDepthwiseConvND):
@@ -2310,9 +2280,7 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class DepthwiseFFTConv2D(DepthwiseFFTConvND):
@@ -2393,9 +2361,7 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class DepthwiseFFTConv3D(DepthwiseFFTConvND):
@@ -2475,9 +2441,7 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class SeparableConvNDBase(sk.TreeClass):
@@ -2640,9 +2604,7 @@ class SeparableConv1D(SeparableConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class SeparableConv2D(SeparableConvND):
@@ -2730,9 +2692,7 @@ class SeparableConv2D(SeparableConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class SeparableConv3D(SeparableConvND):
@@ -2820,9 +2780,7 @@ class SeparableConv3D(SeparableConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class SeparableFFTConvND(SeparableConvNDBase):
@@ -2939,9 +2897,7 @@ class SeparableFFTConv1D(SeparableFFTConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class SeparableFFTConv2D(SeparableConvND):
@@ -3029,9 +2985,7 @@ class SeparableFFTConv2D(SeparableConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class SeparableFFTConv3D(SeparableConvND):
@@ -3119,9 +3073,7 @@ class SeparableFFTConv3D(SeparableConvND):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 class SpectralConvND(sk.TreeClass):
@@ -3211,9 +3163,7 @@ class SpectralConv1D(SpectralConvND):
         - https://arxiv.org/abs/2010.08895
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class SpectralConv2D(SpectralConvND):
@@ -3272,9 +3222,7 @@ class SpectralConv2D(SpectralConvND):
         - https://arxiv.org/abs/2010.08895
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class SpectralConv3D(SpectralConvND):
@@ -3333,9 +3281,7 @@ class SpectralConv3D(SpectralConvND):
         - https://arxiv.org/abs/2010.08895
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
 
 
 def is_lazy_call(instance, *_, **__) -> bool:
@@ -3532,9 +3478,7 @@ class Conv1DLocal(ConvNDLocal):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 1
+    spatial_ndim: int = 1
 
 
 class Conv2DLocal(ConvNDLocal):
@@ -3623,9 +3567,7 @@ class Conv2DLocal(ConvNDLocal):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 2
+    spatial_ndim: int = 2
 
 
 class Conv3DLocal(ConvNDLocal):
@@ -3714,6 +3656,4 @@ class Conv3DLocal(ConvNDLocal):
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
 
-    @property
-    def spatial_ndim(self) -> int:
-        return 3
+    spatial_ndim: int = 3
