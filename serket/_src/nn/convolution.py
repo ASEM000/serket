@@ -265,8 +265,12 @@ def separable_fft_conv_nd(
             tuple of integers for different padding in each dimension.
         pointwise_padding: padding of the input before pointwise convolution accepts
             tuple of integers for different padding in each dimension.
-        mask: a binary mask multiplied with the convolutional kernel. shape is
-            (out_features, in_features, kernel). set to ``None`` to not use a mask.
+        depthwise_mask: a binary mask multiplied with the depthwise convolutional
+            kernel. shape is (depth_multiplier * in_features, 1, *self.kernel_size).
+            set to ``None`` to not use a mask.
+        pointwise_mask: a binary mask multiplied with the pointwise convolutional
+            kernel. shape is (out_features, depth_multiplier * in_features, 1, *self.kernel_size).
+            set to ``None`` to not use a mask.
     """
 
     array = depthwise_fft_conv_nd(
@@ -424,47 +428,6 @@ def separable_conv_nd(
     )
 
 
-def local_conv_nd(
-    array: jax.Array,
-    weight: Weight,
-    bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
-    dilation: tuple[int, ...],
-    kernel_size: tuple[int, ...],
-    mask: Weight | None = None,
-) -> jax.Array:
-    """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
-
-    Args:
-        array: input array. shape is (in_features, spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, kernel).
-        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
-        strides: stride of the convolution accepts tuple of integers for different
-         strides in each dimension.
-        padding: padding of the input before convolution accepts tuple of integers
-         for different padding in each dimension.
-        dilation: dilation of the convolution accepts tuple of integers for different
-            dilation in each dimension.
-        kernel_size: size of the convolutional kernel accepts tuple of integers for
-            different kernel sizes in each dimension.
-        mask: a binary mask multiplied with the convolutional kernel. shape is
-            (out_features, in_features, kernel). set to ``None`` to not use a mask.
-    """
-
-    x = jax.lax.conv_general_dilated_local(
-        lhs=jnp.expand_dims(array, 0),
-        rhs=weight if mask is None else weight * mask,
-        window_strides=strides,
-        padding=padding,
-        filter_shape=kernel_size,
-        rhs_dilation=dilation,
-        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
-    )
-
-    return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
-
-
 def depthwise_conv_nd(
     array: jax.Array,
     weight: Weight,
@@ -531,6 +494,62 @@ def spectral_conv_nd(
         matmul_out = jnp.einsum("i...,oi...->o...", x_fft[tuple(slice_i)], weight[i])
         out = out.at[tuple(slice_i)].set(matmul_out)
     return jnp.fft.irfftn(out, s=(*si, sl))
+
+
+def local_conv_nd(
+    array: jax.Array,
+    weight: Weight,
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+    dilation: tuple[int, ...],
+    kernel_size: tuple[int, ...],
+    mask: Weight | None = None,
+) -> jax.Array:
+    """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
+
+    Args:
+        array: input array. shape is (in_features, spatial).
+        weight: convolutional kernel. shape is (out_features, in_features, kernel).
+        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+        dilation: dilation of the convolution accepts tuple of integers for different
+            dilation in each dimension.
+        kernel_size: size of the convolutional kernel accepts tuple of integers for
+            different kernel sizes in each dimension.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            (out_features, in_features, kernel). set to ``None`` to not use a mask.
+    """
+
+    x = jax.lax.conv_general_dilated_local(
+        lhs=jnp.expand_dims(array, 0),
+        rhs=weight if mask is None else weight * mask,
+        window_strides=strides,
+        padding=padding,
+        filter_shape=kernel_size,
+        rhs_dilation=dilation,
+        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
+    )
+
+    return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
+
+
+def deformable_conv_nd(
+    array: jax.Array,
+    weight: Weight,
+    bias: jax.Array | None,
+    strides: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+    dilation: tuple[int, ...],
+    kernel_size: tuple[int, ...],
+    offset: jax.Array,
+    mask: Weight | None = None,
+) -> jax.Array:
+    ...
+
 
 
 def is_lazy_call(instance, *_, **__) -> bool:

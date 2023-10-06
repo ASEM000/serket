@@ -18,12 +18,10 @@ import functools as ft
 from typing import Any, Callable, Sequence
 
 import jax
-import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
-from serket._src.utils import Range
 
 
 @ft.singledispatch
