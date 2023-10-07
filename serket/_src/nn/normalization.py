@@ -339,55 +339,65 @@ class InstanceNorm(GroupNorm):
 
 @sk.autoinit
 class BatchNormState(sk.TreeClass):
-    running_mean: jax.Array
-    running_var: jax.Array
+    running_mean: jax.Array = sk.field(on_getattr=[jax.lax.stop_gradient_p.bind])
+    running_var: jax.Array = sk.field(on_getattr=[jax.lax.stop_gradient_p.bind])
 
 
-def _batchnorm_impl(
+def batchnorm(
     array: jax.Array,
     state: BatchNormState,
     momentum: float = 0.1,
     eps: float = 1e-3,
     gamma: jax.Array = None,
     beta: jax.Array = None,
-    evalution: bool = False,
     axis: int = 1,
     axis_name: str | None = None,
 ):
     broadcast_shape = [1] * array.ndim
     broadcast_shape[axis] = array.shape[axis]
+    axes = list(range(array.ndim))
+    with jax.ensure_compile_time_eval():
+        del axes[axis]
+    batch_mean = jnp.mean(array, axis=axes, keepdims=True)
+    if axis_name is not None:
+        batch_mean = jax.lax.pmean(batch_mean, axis_name)
+    batch_var = jnp.mean(jnp.square(array), axis=axes, keepdims=True)
+    batch_var -= batch_mean**2
+    if axis_name is not None:
+        batch_var = jax.lax.pmean(batch_var, axis_name)
+    output = (array - batch_mean) / jnp.sqrt(batch_var + eps)
+    run_mean = momentum * state.running_mean + (1 - momentum) * jnp.squeeze(batch_mean)
+    run_var = momentum * state.running_var + (1 - momentum) * jnp.squeeze(batch_var)
 
-    def eval_step(array, state):
-        run_mean, run_var = state.running_mean, state.running_var
-        run_mean = jnp.reshape(run_mean, broadcast_shape)
-        run_var = jnp.reshape(run_var, broadcast_shape)
-        output = (array - run_mean) * jax.lax.rsqrt(run_var + eps)
-        return output, state
-
-    def train_step(array, state):
-        run_mean, run_var = state.running_mean, state.running_var
-        axes = list(range(array.ndim))
-        with jax.ensure_compile_time_eval():
-            del axes[axis]
-        batch_mean = jnp.mean(array, axis=axes, keepdims=True)
-        if axis_name is not None:
-            batch_mean = jax.lax.pmean(batch_mean, axis_name)
-        batch_var = jnp.mean(jnp.square(array), axis=axes, keepdims=True)
-        batch_var -= batch_mean**2
-        if axis_name is not None:
-            batch_var = jax.lax.pmean(batch_var, axis_name)
-        output = (array - batch_mean) / jnp.sqrt(batch_var + eps)
-        run_mean = momentum * run_mean + (1 - momentum) * jnp.squeeze(batch_mean)
-        run_var = momentum * run_var + (1 - momentum) * jnp.squeeze(batch_var)
-        return output, BatchNormState(run_mean, run_var)
-
-    output, state = jax.lax.cond(evalution, eval_step, train_step, array, state)
-    state = jax.lax.stop_gradient(state)
+    state = BatchNormState(run_mean, run_var)
     if gamma is not None:
         output *= jnp.reshape(gamma, broadcast_shape)
     if beta is not None:
         output += jnp.reshape(beta, broadcast_shape)
-    output = jax.lax.cond(evalution, jax.lax.stop_gradient, lambda x: x, output)
+    return output, state
+
+
+def evalnorm(
+    array: jax.Array,
+    state: BatchNormState,
+    momentum: float = 0.1,
+    eps: float = 1e-3,
+    gamma: jax.Array = None,
+    beta: jax.Array = None,
+    axis: int = 1,
+    axis_name: str | None = None,
+):
+    broadcast_shape = [1] * array.ndim
+    broadcast_shape[axis] = array.shape[axis]
+    run_mean, run_var = state.running_mean, state.running_var
+    run_mean = jnp.reshape(run_mean, broadcast_shape)
+    run_var = jnp.reshape(run_var, broadcast_shape)
+    output = (array - run_mean) * jax.lax.rsqrt(run_var + eps)
+
+    if gamma is not None:
+        output *= jnp.reshape(gamma, broadcast_shape)
+    if beta is not None:
+        output += jnp.reshape(beta, broadcast_shape)
     return output, state
 
 
@@ -405,8 +415,8 @@ class BatchNorm(sk.TreeClass):
 
     .. warning::
         Works under
-            - ``jax.vmap(BatchNorm(...), in_axes=(0, None))(x, state)``
-            - ``jax.vmap(BatchNorm(...))(x)``
+            - ``jax.vmap(BatchNorm(...), in_axes=(0, None), out_axes=(0, None))(x, state)``
+            - ``jax.vmap(BatchNorm(...), out_axes=(0, None))(x)``
 
         otherwise will be a no-op.
 
@@ -522,24 +532,24 @@ class BatchNorm(sk.TreeClass):
         state: BatchNormState | None = None,
     ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
-        batchnorm = custom_vmap(lambda x, state: (x, state))
+        batchnorm_impl = custom_vmap(lambda x, state: (x, state))
+        momentum, eps = jax.lax.stop_gradient((self.momentum, self.eps))
 
-        @batchnorm.def_vmap
-        def _(_, __, array: jax.Array, state: BatchNormState):
-            output = _batchnorm_impl(
+        @batchnorm_impl.def_vmap
+        def _(_, batch_tree, array: jax.Array, state: BatchNormState):
+            output = batchnorm(
                 array=array,
                 state=state,
-                momentum=self.momentum,
-                eps=self.eps,
+                momentum=momentum,
+                eps=eps,
                 gamma=self.weight,
                 beta=self.bias,
-                evalution=False,
                 axis=self.axis,
                 axis_name=self.axis_name,
             )
-            return output, (True, BatchNormState(True, True))
+            return output, tuple(batch_tree)
 
-        return batchnorm(array, state)
+        return batchnorm_impl(array, state)
 
 
 class EvalNorm(sk.TreeClass):
@@ -550,8 +560,8 @@ class EvalNorm(sk.TreeClass):
 
     .. warning::
         Works under
-            - ``jax.vmap(BatchNorm(...), in_axes=(0, None))(x, state)``
-            - ``jax.vmap(BatchNorm(...))(x)``
+            - ``jax.vmap(BatchNorm(...), in_axes=(0, None), out_axes=(0, None))(x, state)``
+            - ``jax.vmap(BatchNorm(...), out_axes=(0, None))(x)``
 
         otherwise will be a no-op.
 
@@ -625,24 +635,24 @@ class EvalNorm(sk.TreeClass):
         state: BatchNormState | None = None,
     ) -> tuple[jax.Array, BatchNormState]:
         state = sk.tree_state(self) if state is None else state
-        batchnorm = custom_vmap(lambda x, state: (x, state))
+        evalnorm_impl = custom_vmap(lambda x, state: (x, state))
+        eps = jax.lax.stop_gradient(self.eps)
 
-        @batchnorm.def_vmap
-        def _(_, __, array: jax.Array, state: BatchNormState):
-            output = _batchnorm_impl(
+        @evalnorm_impl.def_vmap
+        def _(_, batch_tree, array: jax.Array, state: BatchNormState):
+            output = evalnorm(
                 array=array,
                 state=state,
                 momentum=0.0,
-                eps=self.eps,
+                eps=eps,
                 gamma=self.weight,
                 beta=self.bias,
-                evalution=True,
                 axis=self.axis,
                 axis_name=self.axis_name,
             )
-            return output, (True, BatchNormState(True, True))
+            return output, tuple(batch_tree)
 
-        return batchnorm(x, state)
+        return evalnorm_impl(x, state)
 
 
 @tree_eval.def_eval(BatchNorm)
@@ -652,7 +662,7 @@ def _(batchnorm: BatchNorm) -> EvalNorm:
         momentum=batchnorm.momentum,  # ignored
         eps=batchnorm.eps,
         weight_init=lambda *_: batchnorm.weight,
-        bias_init=lambda *_: batchnorm.bias,
+        bias_init=None if batchnorm.bias is None else lambda *_: batchnorm.bias,
         axis=batchnorm.axis,
         axis_name=batchnorm.axis_name,
         key=None,
