@@ -256,7 +256,8 @@ def test_batchnorm(axis, axis_name):
     state = sk.tree_state(bn_sk)
     x_sk = mat_jax((5, 10, 7, 8))
     in_axes = (0, None)
-    kwargs = dict(axis_name=axis_name, in_axes=in_axes)
+    out_axes = (0, None)
+    kwargs = dict(axis_name=axis_name, in_axes=in_axes, out_axes=out_axes)
     if axis_name is None:
         kwargs.pop("axis_name")
     for _ in range(5):
