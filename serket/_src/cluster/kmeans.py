@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import NamedTuple
 
 import jax
 import jax.numpy as jnp
@@ -88,7 +87,7 @@ def kmeans(
 
             - centers: The initial centers of the clusters.
             - error: The initial error of the centers at each iteration.
-            - iters: The inital number of iterations (i.e. 0)
+            - iters: The initial number of iterations (i.e. 0)
 
         clusters: The number of clusters.
         tol: The tolerance for convergence. default: 1e-4
@@ -227,7 +226,7 @@ class KMeans(KmeansBase):
 
                 - centers: The initial centers of the clusters.
                 - error: The initial error of the centers at each iteration.
-                - iters: The inital number of iterations (i.e. 0)
+                - iters: The initial number of iterations (i.e. 0)
 
         Note:
             Use :func:`.tree_state` to initialize the state.
