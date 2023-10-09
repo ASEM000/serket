@@ -27,3 +27,6 @@ Geometric API
 
 .. autoclass:: WaveTransform2D
 .. autoclass:: RandomWaveTransform2D
+
+.. autoclass:: ElasticTransform2D
+.. autoclass:: FFTElasticTransform2D

@@ -38,8 +38,10 @@ from serket._src.image.color import (
 from serket._src.image.filter import (
     AvgBlur2D,
     BoxBlur2D,
+    ElasticTransform2D,
     FFTAvgBlur2D,
     FFTBoxBlur2D,
+    FFTElasticTransform2D,
     FFTFilter2D,
     FFTGaussianBlur2D,
     FFTLaplacian2D,
@@ -94,8 +96,10 @@ __all__ = [
     # filter
     "AvgBlur2D",
     "BoxBlur2D",
+    "ElasticTransform2D",
     "FFTAvgBlur2D",
     "FFTBoxBlur2D",
+    "FFTElasticTransform2D",
     "FFTFilter2D",
     "FFTGaussianBlur2D",
     "FFTLaplacian2D",

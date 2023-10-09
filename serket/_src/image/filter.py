@@ -18,6 +18,8 @@ import functools as ft
 
 import jax
 import jax.numpy as jnp
+import jax.random as jr
+from jax.scipy.ndimage import map_coordinates
 
 import serket as sk
 from serket._src.image.geometric import rotate_2d
@@ -230,7 +232,47 @@ def median_blur_2d(array: HWArray, kernel_size: tuple[int, int]) -> HWArray:
     return median_kernel(array)
 
 
-class AvgBlur2DBase(sk.TreeClass):
+def elastic_transform_2d(
+    key: jax.Array,
+    image: HWArray,
+    kernel_y: HWArray,
+    kernel_x: HWArray,
+    alpha: tuple[float, float],
+):
+    ay, ax = alpha
+    k1, k2 = jr.split(key)
+    noise_y = jr.uniform(k1, shape=image.shape, dtype=image.dtype) * 2 - 1
+    noise_x = jr.uniform(k2, shape=image.shape, dtype=image.dtype) * 2 - 1
+    dy = filter_2d(filter_2d(noise_y, kernel_y), kernel_y.T) * ay
+    dx = filter_2d(filter_2d(noise_x, kernel_x), kernel_x.T) * ax
+    r, c = image.shape
+    ny, nx = jnp.meshgrid(jnp.arange(r), jnp.arange(c), indexing="ij")
+    ny = (ny + dy).reshape(-1, 1)
+    nx = (nx + dx).reshape(-1, 1)
+    return map_coordinates(image, (ny, nx), order=1, mode="nearest").reshape(r, c)
+
+
+def fft_elastic_transform_2d(
+    key: jax.Array,
+    image: HWArray,
+    kernel_y: HWArray,
+    kernel_x: HWArray,
+    alpha: tuple[float, float],
+):
+    ay, ax = alpha
+    k1, k2 = jr.split(key)
+    noise_y = jr.uniform(k1, shape=image.shape, dtype=image.dtype) * 2 - 1
+    noise_x = jr.uniform(k2, shape=image.shape, dtype=image.dtype) * 2 - 1
+    dy = fft_filter_2d(fft_filter_2d(noise_y, kernel_y), kernel_y.T) * ay
+    dx = fft_filter_2d(fft_filter_2d(noise_x, kernel_x), kernel_x.T) * ax
+    r, c = image.shape
+    ny, nx = jnp.meshgrid(jnp.arange(r), jnp.arange(c), indexing="ij")
+    ny = (ny + dy).reshape(-1, 1)
+    nx = (nx + dx).reshape(-1, 1)
+    return map_coordinates(image, (ny, nx), order=1, mode="nearest").reshape(r, c)
+
+
+class BaseAvgBlur2D(sk.TreeClass):
     def __init__(
         self,
         kernel_size: int | tuple[int, int],
@@ -245,7 +287,7 @@ class AvgBlur2DBase(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class AvgBlur2D(AvgBlur2DBase):
+class AvgBlur2D(BaseAvgBlur2D):
     """Average blur 2D layer.
 
     .. image:: ../_static/avgblur2d.png
@@ -274,7 +316,7 @@ class AvgBlur2D(AvgBlur2DBase):
         return x
 
 
-class FFTAvgBlur2D(AvgBlur2DBase):
+class FFTAvgBlur2D(BaseAvgBlur2D):
     """Average blur 2D layer using FFT.
 
     .. image:: ../_static/avgblur2d.png
@@ -303,7 +345,7 @@ class FFTAvgBlur2D(AvgBlur2DBase):
         return x
 
 
-class GaussianBlur2DBase(sk.TreeClass):
+class BaseGaussianBlur2D(sk.TreeClass):
     def __init__(
         self,
         kernel_size: int | tuple[int, int],
@@ -321,7 +363,7 @@ class GaussianBlur2DBase(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class GaussianBlur2D(GaussianBlur2DBase):
+class GaussianBlur2D(BaseGaussianBlur2D):
     """Apply Gaussian blur to a channel-first image.
 
     .. image:: ../_static/gaussianblur2d.png
@@ -351,7 +393,7 @@ class GaussianBlur2D(GaussianBlur2DBase):
         return x
 
 
-class FFTGaussianBlur2D(GaussianBlur2DBase):
+class FFTGaussianBlur2D(BaseGaussianBlur2D):
     """Apply Gaussian blur to a channel-first image using FFT.
 
     .. image:: ../_static/gaussianblur2d.png
@@ -381,7 +423,7 @@ class FFTGaussianBlur2D(GaussianBlur2DBase):
         return x
 
 
-class UnsharpMask2D(GaussianBlur2DBase):
+class UnsharpMask2D(BaseGaussianBlur2D):
     """Apply unsharp mask to a channel-first image.
 
     .. image:: ../_static/unsharpmask2d.png
@@ -411,7 +453,7 @@ class UnsharpMask2D(GaussianBlur2DBase):
         return x + (x - blur)
 
 
-class FFTUnsharpMask2D(GaussianBlur2DBase):
+class FFTUnsharpMask2D(BaseGaussianBlur2D):
     """Apply unsharp mask to a channel-first image using FFT.
 
     .. image:: ../_static/unsharpmask2d.png
@@ -831,3 +873,87 @@ class FFTFilter2D(sk.TreeClass):
         return x
 
     spatial_ndim: int = 2
+
+
+class ElasticTransform2DBase(sk.TreeClass):
+    def __init__(
+        self,
+        kernel_size: int | tuple[int, int],
+        sigma: float | tuple[float, float],
+        alpha: float | tuple[float, float],
+        *,
+        dtype=jnp.float32,
+    ):
+        self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
+        self.alpha = canonicalize(alpha, ndim=2, name="alpha")
+        self.sigma = canonicalize(sigma, ndim=2, name="sigma")
+        ky, kx = self.kernel_size
+        sy, sx = self.sigma
+        self.kernel_y = calculate_gaussian_kernel(ky, sy, dtype)
+        self.kernel_x = calculate_gaussian_kernel(kx, sx, dtype)
+
+
+class ElasticTransform2D(ElasticTransform2DBase):
+    """Apply an elastic transform to an image.
+
+    .. image:: ../_static/elastictransform2d.png
+
+    Args:
+        kernel_size: The size of the Gaussian kernel. either a single integer or
+            a tuple of two integers.
+        sigma: The standard deviation of the Gaussian in the y and x directions,
+        alpha : The scaling factor that controls the intensity of the deformation
+            in the y and x directions, respectively.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.random as jr
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.ElasticTransform2D(kernel_size=3, sigma=1.0, alpha=1.0)
+        >>> key = jr.PRNGKey(0)
+        >>> image = jnp.arange(1, 26).reshape(1, 5, 5).astype(jnp.float32)
+        >>> print(layer(image, key=key))  # doctest: +SKIP
+        [[[ 1.0669159  2.2596366  3.210071   3.9703817  4.9207525]
+          [ 5.70821    7.483665   8.857002   8.663773   8.794132 ]
+          [13.809857  15.865877  15.109764  12.897442  13.0018215]
+          [18.35189   18.817993  17.2193    15.731948  17.026705 ]
+          [21.        21.659977  21.43855   21.138866  22.583244 ]]]
+    """
+
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+        in_axes = (None, 0, None, None, None)
+        args = jax.lax.stop_gradient((self.kernel_y, self.kernel_x, self.alpha))
+        return jax.vmap(elastic_transform_2d, in_axes=in_axes)(key, image, *args)
+
+
+class FFTElasticTransform2D(ElasticTransform2DBase):
+    """Apply an elastic transform to an image using FFT.
+
+    .. image:: ../_static/elastictransform2d.png
+
+    Args:
+        kernel_size: The size of the Gaussian kernel. either a single integer or
+            a tuple of two integers.
+        sigma: The standard deviation of the Gaussian in the y and x directions,
+        alpha : The scaling factor that controls the intensity of the deformation
+            in the y and x directions, respectively.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.random as jr
+        >>> import jax.numpy as jnp
+        >>> layer = sk.image.FFTElasticTransform2D(kernel_size=3, sigma=1.0, alpha=1.0)
+        >>> key = jr.PRNGKey(0)
+        >>> image = jnp.arange(1, 26).reshape(1, 5, 5).astype(jnp.float32)
+        >>> print(layer(image, key=key))  # doctest: +SKIP
+        [[[ 1.0669159  2.2596366  3.210071   3.9703817  4.9207525]
+          [ 5.70821    7.483665   8.857002   8.663773   8.794132 ]
+          [13.809857  15.865877  15.109764  12.897442  13.0018215]
+          [18.35189   18.817993  17.2193    15.731948  17.026705 ]
+          [21.        21.659977  21.43855   21.138866  22.583244 ]]]
+    """
+
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+        in_axes = (None, 0, None, None, None)
+        args = jax.lax.stop_gradient((self.kernel_y, self.kernel_x, self.alpha))
+        return jax.vmap(fft_elastic_transform_2d, in_axes=in_axes)(key, image, *args)

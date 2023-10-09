@@ -138,9 +138,9 @@ def fft_conv_nd(
         Use ``jax.vmap`` to apply the convolution to a batch of array.
 
     Args:
-        array: input array. shape is (in_features, spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, kernel).
-        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
+        array: input array. shape is ``(in_features, spatial)``.
+        weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
+        bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -149,7 +149,7 @@ def fft_conv_nd(
             for different dilation in each dimension.
         groups: number of groups to use for grouped convolution.
         mask: a binary mask multiplied with the convolutional kernel. shape is
-            (out_features, in_features, kernel). set to ``None`` to not use a mask.
+            ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
     x = fft_conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
@@ -176,9 +176,9 @@ def fft_conv_nd_transpose(
     """Transposed convolution function using fft.
 
     Args:
-        array: input array. shape is (in_features, spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, kernel).
-        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
+        array: input array. shape is ``(in_features, spatial)``.
+        weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
+        bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -187,7 +187,7 @@ def fft_conv_nd_transpose(
             for different dilation in each dimension.
         out_padding: padding of the output after convolution.
         mask: a binary mask multiplied with the convolutional kernel. shape is
-            (out_features, in_features, kernel). set to ``None`` to not use a mask.
+            ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
     transposed_padding = calculate_transpose_padding(
         padding=padding,
@@ -218,15 +218,15 @@ def depthwise_fft_conv_nd(
     """Depthwise convolution function using fft.
 
     Args:
-        array: input array. shape is (in_features, spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, kernel).
-        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
+        array: input array. shape is ``(in_features, spatial)``.
+        weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
+        bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
          for different padding in each dimension.
         mask: a binary mask multiplied with the convolutional kernel. shape is
-            (out_features, in_features, kernel). set to ``None`` to not use a mask.
+            ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
 
     x = fft_conv_general_dilated(
@@ -255,7 +255,7 @@ def separable_fft_conv_nd(
     """Separable convolution function using fft.
 
     Args:
-        array: input array. shape is (in_features, spatial).
+        array: input array. shape is ``(in_features, spatial)``.
         depthwise_weight: depthwise convolutional kernel.
         pointwise_weight: pointwise convolutional kernel.
         pointwise_bias: bias for the pointwise convolution.
@@ -266,10 +266,10 @@ def separable_fft_conv_nd(
         pointwise_padding: padding of the input before pointwise convolution accepts
             tuple of integers for different padding in each dimension.
         depthwise_mask: a binary mask multiplied with the depthwise convolutional
-            kernel. shape is (depth_multiplier * in_features, 1, *self.kernel_size).
+            kernel. shape is ``(depth_multiplier * in_features, 1, *self.kernel_size)``.
             set to ``None`` to not use a mask.
         pointwise_mask: a binary mask multiplied with the pointwise convolutional
-            kernel. shape is (out_features, depth_multiplier * in_features, 1, *self.kernel_size).
+            kernel. shape is ``(out_features, depth_multiplier * in_features, 1, *self.kernel_size)``.
             set to ``None`` to not use a mask.
     """
 
@@ -307,9 +307,9 @@ def conv_nd(
     """Convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is (in_features, spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, kernel).
-        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
+        array: input array. shape is ``(in_features, spatial)``.
+        weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
+        bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
             strides in each dimension.
         padding: padding of the input before convolution accepts tuple of two integers
@@ -318,7 +318,7 @@ def conv_nd(
             for different dilation in each dimension.
         groups: number of groups to use for grouped convolution.
         mask: a binary mask multiplied with the convolutional kernel. shape is
-            (out_features, in_features, kernel). set
+            ``(out_features, in_features, kernel)``. set
     """
     x = jax.lax.conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
@@ -346,9 +346,9 @@ def conv_nd_transpose(
     """Transposed convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is (in_features, spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, kernel).
-        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
+        array: input array. shape is ``(in_features, spatial)``.
+        weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
+        bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -357,7 +357,7 @@ def conv_nd_transpose(
             for different dilation in each dimension.
         out_padding: padding of the output after convolution.
         mask: a binary mask multiplied with the convolutional kernel. shape is
-            (out_features, in_features, kernel). set to ``None`` to not use a mask.
+            ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
     transposed_padding = calculate_transpose_padding(
         padding=padding,
@@ -391,7 +391,7 @@ def separable_conv_nd(
     """Seprable convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is (in_features, spatial).
+        array: input array. shape is ``(in_features, spatial)``.
         depthwise_weight: depthwise convolutional kernel.
         pointwise_weight: pointwise convolutional kernel.
         pointwise_bias: bias for the pointwise convolution.
@@ -402,10 +402,10 @@ def separable_conv_nd(
         pointwise_padding: padding of the input before pointwise convolution accepts
             tuple of integers for different padding in each dimension.
         depthwise_mask: a binary mask multiplied with the depthwise convolutional
-            kernel. shape is (depth_multiplier * in_features, 1, *self.kernel_size)
+            kernel. shape is ``(depth_multiplier * in_features, 1, *self.kernel_size)``
             set to ``None`` to not use a mask.
         pointwise_mask: a binary mask multiplied with the pointwise convolutional
-            kernel. shape is (out_features, depth_multiplier * in_features, *kernel_size)
+            kernel. shape is ``(out_features, depth_multiplier * in_features, *kernel_size)``
     """
     array = depthwise_conv_nd(
         array=array,
@@ -439,15 +439,15 @@ def depthwise_conv_nd(
     """Depthwise convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is (in_features, spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, kernel).
-        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
+        array: input array. shape is ``(in_features, spatial)``.
+        weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
+        bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
          for different padding in each dimension.
         mask: a binary mask multiplied with the convolutional kernel. shape is
-            (out_features, in_features, kernel). set to ``None`` to not use a mask.
+            ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
     x = jax.lax.conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
@@ -471,10 +471,10 @@ def spectral_conv_nd(
     """fourier neural operator convolution function.
 
     Args:
-        array: input array. shape is (in_features, spatial size).
-        weight_r: real convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size).
+        array: input array. shape is ``(in_features, spatial size)``.
+        weight_r: real convolutional kernel. shape is ``(2 ** (dim-1), out_features, in_features, kernel size)``.
             where dim is the number of spatial dimensions.
-        weight_i: convolutional kernel. shape is (2 ** (dim-1), out_features, in_features, kernel size).
+        weight_i: convolutional kernel. shape is ``(2 ** (dim-1), out_features, in_features, kernel size)``.
             where dim is the number of spatial dimensions.
         modes: number of modes included in the fft representation of the input.
     """
@@ -509,9 +509,9 @@ def local_conv_nd(
     """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
 
     Args:
-        array: input array. shape is (in_features, spatial).
-        weight: convolutional kernel. shape is (out_features, in_features, kernel).
-        bias: bias. shape is (out_features, spatial). set to ``None`` to not use a bias.
+        array: input array. shape is ``(in_features, spatial)``.
+        weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
+        bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
          strides in each dimension.
         padding: padding of the input before convolution accepts tuple of integers
@@ -521,7 +521,7 @@ def local_conv_nd(
         kernel_size: size of the convolutional kernel accepts tuple of integers for
             different kernel sizes in each dimension.
         mask: a binary mask multiplied with the convolutional kernel. shape is
-            (out_features, in_features, kernel). set to ``None`` to not use a mask.
+            ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
 
     x = jax.lax.conv_general_dilated_local(
@@ -535,21 +535,6 @@ def local_conv_nd(
     )
 
     return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
-
-
-def deformable_conv_nd(
-    array: jax.Array,
-    weight: Weight,
-    bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
-    dilation: tuple[int, ...],
-    kernel_size: tuple[int, ...],
-    offset: jax.Array,
-    mask: Weight | None = None,
-) -> jax.Array:
-    ...
-
 
 
 def is_lazy_call(instance, *_, **__) -> bool:
@@ -618,11 +603,11 @@ class ConvND(BaseConvND):
         """Apply the layer.
 
         Args:
-            array: input array. shape is (in_features, spatial size). spatial size
+            array: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
-                (out_features, in_features // groups, kernel size). set to ``None``
+                ``(out_features, in_features // groups, kernel size)``. set to ``None``
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
@@ -934,11 +919,11 @@ class FFTConvND(BaseConvND):
         """Apply the layer.
 
         Args:
-            array: input array. shape is (in_features, spatial size). spatial size
+            array: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
-                (out_features, in_features // groups, kernel size). set to ``None``
+                ``(out_features, in_features // groups, kernel size)``. set to ``None``
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
@@ -1296,11 +1281,11 @@ class ConvNDTranspose(BaseConvNDTranspose):
         """Apply the layer.
 
         Args:
-            array: input array. shape is (in_features, spatial size). spatial size
+            array: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
-                (out_features, in_features // groups, kernel size). set to ``None``
+                ``(out_features, in_features // groups, kernel size)``. set to ``None``
                 to not use a mask.
         """
 
@@ -1624,11 +1609,11 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
         """Apply the layer.
 
         Args:
-            array: input array. shape is (in_features, spatial size). spatial size
+            array: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
-                (out_features, in_features // groups, kernel size). set to ``None``
+                ``(out_features, in_features // groups, kernel size)``. set to ``None``
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
@@ -1988,11 +1973,11 @@ class DepthwiseConvND(BaseDepthwiseConvND):
         """Apply the layer.
 
         Args:
-            array: input array. shape is (in_features, spatial size). spatial size
+            array: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
-                (depth_multiplier * in_features, 1, *self.kernel_size). set to ``None``
+                ``(depth_multiplier * in_features, 1, *self.kernel_size)``. set to ``None``
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
@@ -2263,11 +2248,11 @@ class DepthwiseFFTConvND(BaseDepthwiseConvND):
         """Apply the layer.
 
         Args:
-            array: input array. shape is (in_features, spatial size). spatial size
+            array: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
-                (depth_multiplier * in_features, 1, *self.kernel_size). set to ``None``
+                ``(depth_multiplier * in_features, 1, *self.kernel_size)``. set to ``None``
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
@@ -2587,14 +2572,14 @@ class SeparableConvND(SeparableConvNDBase):
         """Apply the layer.
 
         Args:
-            array: input array. shape is (in_features, spatial size). spatial size
+            array: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             depthwise_mask: a binary mask multiplied with the depthwise convolutional
-                kernel. shape is (depth_multiplier * in_features, 1, *self.kernel_size).
+                kernel. shape is ``(depth_multiplier * in_features, 1, *self.kernel_size)``.
                 set to ``None`` to not use a mask.
             pointwise_mask: a binary mask multiplied with the pointwise convolutional
-                kernel. shape is (out_features, depth_multiplier * in_features, 1, *self.kernel_size).
+                kernel. shape is ``(out_features, depth_multiplier * in_features, 1, *self.kernel_size)``.
                 set to ``None`` to not use a mask.
         """
         depthwise_padding = delayed_canonicalize_padding(
@@ -2898,14 +2883,14 @@ class SeparableFFTConvND(SeparableConvNDBase):
         """Apply the layer.
 
         Args:
-            array: input array. shape is (in_features, spatial size). spatial size
+            array: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             depthwise_mask: a binary mask multiplied with the depthwise convolutional
-                kernel. shape is (depth_multiplier * in_features, 1, *self.kernel_size).
+                kernel. shape is ``(depth_multiplier * in_features, 1, *self.kernel_size)``.
                 set to ``None`` to not use a mask.
             pointwise_mask: a binary mask multiplied with the pointwise convolutional
-                kernel. shape is (out_features, depth_multiplier * in_features, 1, *self.kernel_size).
+                kernel. shape is ``(out_features, depth_multiplier * in_features, 1, *self.kernel_size)``.
                 set to ``None`` to not use a mask.
         """
 
@@ -3501,7 +3486,7 @@ class ConvNDLocal(sk.TreeClass):
         """Apply the layer.
 
         Args:
-            array: input array. shape is (in_features, spatial size). spatial size
+            array: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: mask to apply to the weights. shape is

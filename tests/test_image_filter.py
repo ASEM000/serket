@@ -730,3 +730,29 @@ def test_random_brightness():
         jnp.array([[[0.6, 0.7, 0.8], [0.9, 1.0, 1.0], [1.0, 1.0, 1.0]]]),
         atol=1e-6,
     )
+
+
+def test_elastic_transform_2d():
+    layer = sk.image.ElasticTransform2D(kernel_size=5, sigma=1.0, alpha=1.0)
+    key = jr.PRNGKey(0)
+    image = jnp.arange(1, 26).reshape(1, 5, 5).astype(jnp.float32)
+    y = layer(image, key=key)
+    npt.assert_allclose(
+        jnp.array(
+            [
+                [
+                    [1.016196, 2.1166031, 3.101904, 3.9978292, 4.950251],
+                    [6.4011364, 7.65492, 8.359732, 8.447475, 9.246953],
+                    [12.352943, 13.375501, 13.5076475, 13.214482, 13.972327],
+                    [17.171738, 17.772211, 17.501146, 17.446032, 18.450916],
+                    [20.999998, 21.80103, 22.054277, 22.589563, 23.693525],
+                ]
+            ]
+        ),
+        y,
+        atol=1e-6,
+    )
+
+    layer = sk.image.FFTElasticTransform2D(kernel_size=5, sigma=1.0, alpha=1.0)
+    y_ = layer(image, key=key)
+    npt.assert_allclose(y, y_, atol=1e-6)
