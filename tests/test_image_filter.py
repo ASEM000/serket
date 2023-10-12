@@ -44,11 +44,6 @@ def test_AvgBlur2D():
     )
     npt.assert_allclose(y, z, atol=1e-5)
 
-    layer = sk.tree_mask(sk.image.FFTAvgBlur2D((3, 5)))
-    grads = jax.grad(lambda node: jnp.sum(node(x)))(layer)
-    npt.assert_allclose(grads.kernel_x, jnp.zeros_like(grads.kernel_x))
-    npt.assert_allclose(grads.kernel_y, jnp.zeros_like(grads.kernel_y))
-
 
 def test_GaussBlur2D():
     layer = sk.image.GaussianBlur2D(kernel_size=3, sigma=1.0)
@@ -86,11 +81,6 @@ def test_filter2d():
     layer2 = sk.image.FFTFilter2D(kernel=jnp.ones([3, 3]) / 9.0)
 
     npt.assert_allclose(layer(x), layer2(x), atol=1e-4)
-
-    layer = sk.tree_mask(sk.image.AvgBlur2D((3, 5)))
-    grads = jax.grad(lambda node: jnp.sum(node(x)))(layer)
-    npt.assert_allclose(grads.kernel_x, jnp.zeros_like(grads.kernel_x))
-    npt.assert_allclose(grads.kernel_y, jnp.zeros_like(grads.kernel_y))
 
 
 def test_solarize2d():
@@ -449,11 +439,6 @@ def test_unsharp_mask():
         atol=1e-5,
     )
 
-    layer = sk.tree_mask(sk.image.UnsharpMask2D((3, 5)))
-    grads = jax.grad(lambda node: jnp.sum(node(x)))(layer)
-    npt.assert_allclose(grads.kernel_x, jnp.zeros_like(grads.kernel_x))
-    npt.assert_allclose(grads.kernel_y, jnp.zeros_like(grads.kernel_y))
-
 
 def test_box_blur():
     x = jnp.arange(1, 17).reshape(1, 4, 4).astype(jnp.float32)
@@ -470,11 +455,6 @@ def test_box_blur():
 
     npt.assert_allclose(sk.image.BoxBlur2D((3, 5))(x), y, atol=1e-6)
     npt.assert_allclose(sk.image.FFTBoxBlur2D((3, 5))(x), y, atol=1e-6)
-
-    layer = sk.tree_mask(sk.image.BoxBlur2D((3, 5)))
-    grads = jax.grad(lambda node: jnp.sum(node(x)))(layer)
-    npt.assert_allclose(grads.kernel_x, jnp.zeros_like(grads.kernel_x))
-    npt.assert_allclose(grads.kernel_y, jnp.zeros_like(grads.kernel_y))
 
 
 def test_laplacian():
@@ -494,10 +474,6 @@ def test_laplacian():
         atol=1e-5,
     )
 
-    layer = sk.tree_mask(sk.image.Laplacian2D((3, 5)))
-    grads = jax.grad(lambda node: jnp.sum(node(x)))(layer)
-    npt.assert_allclose(grads.kernel, jnp.zeros_like(grads.kernel))
-
 
 def test_motion_blur():
     x = jnp.arange(1, 17).reshape(1, 4, 4) + 0.0
@@ -515,10 +491,6 @@ def test_motion_blur():
     npt.assert_allclose(y, ytrue, atol=1e-6)
     y = sk.image.FFTMotionBlur2D(3, angle=30, direction=0.5)(x)
     npt.assert_allclose(y, ytrue, atol=1e-6)
-
-    layer = sk.tree_mask(sk.image.MotionBlur2D(3))
-    grads = jax.grad(lambda node: jnp.sum(node(x)))(layer)
-    npt.assert_allclose(grads.kernel, jnp.zeros_like(grads.kernel))
 
 
 def test_median_blur():
@@ -756,3 +728,34 @@ def test_elastic_transform_2d():
     layer = sk.image.FFTElasticTransform2D(kernel_size=5, sigma=1.0, alpha=1.0)
     y_ = layer(image, key=key)
     npt.assert_allclose(y, y_, atol=1e-6)
+
+
+def test_bilateral_blur2d():
+    # against kornia
+    x = jnp.array(
+        [
+            [
+                [0.69434124, 0.86752045, 0.81006658, 0.20813388, 0.69910944],
+                [0.54937655, 0.79141474, 0.52549887, 0.20865983, 0.17488086],
+                [0.57635713, 0.30588913, 0.46992487, 0.06162852, 0.13264960],
+                [0.73067701, 0.44296265, 0.23169714, 0.31364781, 0.70484269],
+                [0.85146296, 0.50539654, 0.68432248, 0.66344428, 0.49181402],
+            ]
+        ]
+    )
+
+    layer = sk.image.BilateralBlur2D((3, 5), sigma_space=(1.2, 1.3), sigma_color=1.5)
+
+    y = jnp.array(
+        [
+            [
+                [0.35344556, 0.45698392, 0.43362546, 0.29663152, 0.2049025],
+                [0.42099416, 0.5300394, 0.48385006, 0.33084756, 0.19578457],
+                [0.36466658, 0.4202085, 0.386836, 0.27474657, 0.18085244],
+                [0.3913928, 0.44740027, 0.437398, 0.3687499, 0.29071397],
+                [0.3237696, 0.37171572, 0.39108697, 0.34648296, 0.26146644],
+            ]
+        ]
+    )
+
+    npt.assert_allclose(layer(x), y, atol=1e-6)

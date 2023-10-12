@@ -6,6 +6,7 @@ Filter API
 .. autoclass:: FFTAvgBlur2D
 .. autoclass:: BoxBlur2D
 .. autoclass:: FFTBoxBlur2D
+.. autoclass:: BilateralBlur2D
 .. autoclass:: GaussianBlur2D
 .. autoclass:: FFTGaussianBlur2D
 .. autoclass:: Laplacian2D
