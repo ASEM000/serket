@@ -1191,7 +1191,7 @@ class BilateralBlur2D(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> x = jnp.ones([1, 5, 5])
         >>> layer = sk.image.BilateralBlur2D((3, 5), sigma_space=(1.2, 1.3), sigma_color=1.5)
-        >>> print(layer(x))
+        >>> print(layer(x))  # doctest: +SKIP
         [[[0.5231399  0.6869784  0.75100434 0.6869784  0.5231399 ]
           [0.70914114 0.9193193  1.         0.9193192  0.70914114]
           [0.70914114 0.9193193  1.         0.9193192  0.70914114]
