@@ -3490,11 +3490,8 @@ class ConvNDLocal(sk.TreeClass):
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: mask to apply to the weights. shape is
-                (
-                    self.out_features,
-                    self.in_features * ft.reduce(op.mul, self.kernel_size),
-                    *out_size,
-            ), use ``None`` for no mask.
+                ``(out_features, in_features * prod(kernel_size), *out_size)``
+                use ``None`` for no mask.
         """
         return local_conv_nd(
             array=array,

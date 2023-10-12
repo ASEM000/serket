@@ -37,6 +37,7 @@ from serket._src.image.color import (
 )
 from serket._src.image.filter import (
     AvgBlur2D,
+    BilateralBlur2D,
     BoxBlur2D,
     ElasticTransform2D,
     FFTAvgBlur2D,
@@ -95,6 +96,7 @@ __all__ = [
     "Solarize2D",
     # filter
     "AvgBlur2D",
+    "BilateralBlur2D",
     "BoxBlur2D",
     "ElasticTransform2D",
     "FFTAvgBlur2D",
