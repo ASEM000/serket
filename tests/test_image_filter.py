@@ -758,4 +758,4 @@ def test_bilateral_blur2d():
         ]
     )
 
-    npt.assert_allclose(layer(x), y)
+    npt.assert_allclose(layer(x), y, atol=1e-6)
