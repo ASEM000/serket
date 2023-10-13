@@ -42,7 +42,7 @@ def pool_nd(
     strides: tuple[int, ...],
     padding: tuple[int, ...],
 ):
-    """ND pooling operation
+    """Pooling operation
 
     Args:
         reducer: reducer function. Takes an array and returns a single value
@@ -52,15 +52,16 @@ def pool_nd(
         padding: padding of the kernel. accepts tuple of tuples of two ints for
             each spatial dimension for each side of the array
     """
+    _, *S = array.shape
 
     @jax.vmap
     @ft.partial(
         kernel_map,
-        shape=array.shape[1:],
+        shape=S,
         kernel_size=kernel_size,
         strides=strides,
         padding=padding,
-        padding_kwargs=dict(constant_values=inital_value),
+        padding_mode=inital_value,
     )
     def reducer_map(x):
         return reducer(x)

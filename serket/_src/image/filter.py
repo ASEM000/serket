@@ -384,7 +384,7 @@ def motion_blur_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
     angle: float,
-    direction,
+    direction: int | float,
     dtype: DType,
 ) -> HWArray:
     kernel = calculate_motion_kernel(kernel_size, angle, direction, dtype)
@@ -395,7 +395,7 @@ def fft_motion_blur_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
     angle: float,
-    direction,
+    direction: int | float,
     dtype: DType,
 ) -> HWArray:
     kernel = calculate_motion_kernel(kernel_size, angle, direction, dtype)
@@ -430,11 +430,10 @@ def fft_sobel_2d(array: HWArray, dtype: DType = jnp.float32) -> HWArray:
     return jnp.sqrt(gx**2 + gy**2)
 
 
-@ft.partial(jax.jit, inline=True, static_argnums=1)
 def median_blur_2d(array: HWArray, kernel_size: tuple[int, int]) -> HWArray:
     """Median blur"""
     assert array.ndim == 2
-    # def resolve_string_padding(in_dim, padding, kernel_size, strides):
+
     padding = resolve_string_padding(
         in_dim=array.shape,
         padding="same",
@@ -448,6 +447,7 @@ def median_blur_2d(array: HWArray, kernel_size: tuple[int, int]) -> HWArray:
         kernel_size=kernel_size,
         strides=(1, 1),
         padding=padding,
+        padding_mode=0,
     )
     def median_kernel(array: jax.Array) -> jax.Array:
         return jnp.median(array)
@@ -526,6 +526,7 @@ def bilateral_blur_2d(
         kernel_size=kernel_size,
         strides=(1, 1),
         padding=padding,
+        padding_mode=0,
     )
     def bilateral_blur_2d(array):
         color_distance = (array - array[center_index]) ** 2
@@ -534,6 +535,44 @@ def bilateral_blur_2d(
         return jnp.sum(array * kernel) / jnp.sum(kernel)
 
     return bilateral_blur_2d(array)
+
+
+def joint_bilateral_blur_2d(
+    array: HWArray,
+    guidance: HWArray,
+    kernel_size: tuple[int, int],
+    sigma_space: tuple[float, float],
+    sigma_color: float,
+    dtype: DType,
+):
+    (ky, kx), (sy, sx) = kernel_size, sigma_space
+    center_index = (ky // 2, kx // 2)
+    gy = calculate_gaussian_kernel(ky, sy, dtype=dtype)
+    gx = calculate_gaussian_kernel(kx, sx, dtype=dtype)
+    space_kernel = gy.T @ gx
+    padding = delayed_canonicalize_padding(
+        array.shape,
+        padding="same",
+        kernel_size=kernel_size,
+        strides=(1, 1),
+    )
+
+    @ft.partial(
+        kernel_map,
+        shape=(2, *array.shape),
+        kernel_size=(2, *kernel_size),
+        strides=(1, 1, 1),
+        padding=((0, 0), *padding),
+        padding_mode=0,
+    )
+    def joint_bilateral_blur(array_guidance):
+        array, guidance = array_guidance
+        color_distance = (guidance - guidance[center_index]) ** 2
+        color_kernel = jnp.exp(-0.5 / sigma_color**2 * color_distance)
+        kernel = color_kernel * space_kernel
+        return jnp.sum(array * kernel) / jnp.sum(kernel)
+
+    return jnp.squeeze(joint_bilateral_blur(jnp.stack([array, guidance], axis=0)), 0)
 
 
 class BaseAvgBlur2D(sk.TreeClass):
@@ -1109,6 +1148,8 @@ class ElasticTransform2DBase(sk.TreeClass):
         self.alpha = canonicalize(alpha, ndim=2, name="alpha")
         self.sigma = canonicalize(sigma, ndim=2, name="sigma")
 
+    spatial_ndim: int = 2
+
 
 class ElasticTransform2D(ElasticTransform2DBase):
     """Apply an elastic transform to an image.
@@ -1137,6 +1178,7 @@ class ElasticTransform2D(ElasticTransform2DBase):
           [21.        21.659977  21.43855   21.138866  22.583244 ]]]
     """
 
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
         in_axes = (None, 0, None, None, None, None)
         args = (array, self.kernel_size, self.sigma, self.alpha, array.dtype)
@@ -1170,6 +1212,7 @@ class FFTElasticTransform2D(ElasticTransform2DBase):
           [21.        21.659977  21.43855   21.138866  22.583244 ]]]
     """
 
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
         in_axes = (None, 0, None, None, None, None)
         args = (array, self.kernel_size, self.sigma, self.alpha, array.dtype)
@@ -1210,13 +1253,60 @@ class BilateralBlur2D(sk.TreeClass):
         self.sigma_space = canonicalize(sigma_space, ndim=2, name="sigma_space")
         self.sigma_color = sigma_color
 
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
         in_axes = (0, None, None, None, None)
-        args = (
-            array,
-            self.kernel_size,
-            self.sigma_space,
-            self.sigma_color,
-            array.dtype,
-        )
-        return jax.vmap(bilateral_blur_2d, in_axes=in_axes)(*args)
+        args = (self.kernel_size, self.sigma_space, self.sigma_color, array.dtype)
+        return jax.vmap(bilateral_blur_2d, in_axes=in_axes)(array, *args)
+
+    spatial_ndim: int = 2
+
+
+class JointBilateralBlur2D(sk.TreeClass):
+    """Apply joint bilateral blur to a channel-first image.
+
+    .. image:: ../_static/jointbilateralblur2d.png
+
+    Args:
+        kernel_size: kernel size. accepts int or tuple of two ints.
+        sigma_space: sigma in the coordinate space. accepts float or tuple of two floats.
+        sigma_color: sigma in the color space. accepts float.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.ones([1, 5, 5])
+        >>> guide = jnp.ones([1, 5, 5])
+        >>> layer = sk.image.JointBilateralBlur2D((3, 5), sigma_space=(1.2, 1.3), sigma_color=1.5)
+        >>> print(layer(x, guide))  # doctest: +SKIP
+        [[[0.5231399  0.6869784  0.75100434 0.6869784  0.5231399 ]
+          [0.70914114 0.9193193  1.         0.9193192  0.70914114]
+          [0.70914114 0.9193193  1.         0.9193192  0.70914114]
+          [0.70914114 0.9193193  1.         0.9193192  0.70914114]
+          [0.5231399  0.6869784  0.75100434 0.6869784  0.5231399 ]]]
+    """
+
+    def __init__(
+        self,
+        kernel_size: int | tuple[int, int],
+        *,
+        sigma_space: float | tuple[float, float],
+        sigma_color: float,
+    ):
+        self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
+        self.sigma_space = canonicalize(sigma_space, ndim=2, name="sigma_space")
+        self.sigma_color = sigma_color
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, array: CHWArray, guide: CHWArray) -> CHWArray:
+        """Apply joint bilateral blur to a channel-first image.
+
+        Args:
+            array: input image.
+            guide: guide image used for computing the gaussian for color space.
+        """
+        in_axes = (0, 0, None, None, None, None)
+        args = (self.kernel_size, self.sigma_space, self.sigma_color, array.dtype)
+        return jax.vmap(joint_bilateral_blur_2d, in_axes=in_axes)(array, guide, *args)
+
+    spatial_ndim: int = 2
