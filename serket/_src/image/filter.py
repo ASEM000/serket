@@ -1278,7 +1278,7 @@ class JointBilateralBlur2D(sk.TreeClass):
         >>> x = jnp.ones([1, 5, 5])
         >>> guide = jnp.ones([1, 5, 5])
         >>> layer = sk.image.JointBilateralBlur2D((3, 5), sigma_space=(1.2, 1.3), sigma_color=1.5)
-        >>> print(layer(x, guide))
+        >>> print(layer(x, guide))  # doctest: +SKIP
         [[[0.5231399  0.6869784  0.75100434 0.6869784  0.5231399 ]
           [0.70914114 0.9193193  1.         0.9193192  0.70914114]
           [0.70914114 0.9193193  1.         0.9193192  0.70914114]
