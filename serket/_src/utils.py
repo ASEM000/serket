@@ -24,7 +24,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.util import safe_zip
-from typing_extensions import Annotated, ParamSpec
+from typing_extensions import Annotated, Literal, ParamSpec
 
 import serket as sk
 
@@ -36,6 +36,19 @@ P = ParamSpec("P")
 T = TypeVar("T")
 HWArray = Annotated[jax.Array, "HW"]
 CHWArray = Annotated[jax.Array, "CHW"]
+PaddingLiteral = Literal[
+    "constant",
+    "edge",
+    "linear_ramp",
+    "maximum",
+    "mean",
+    "median",
+    "minimum",
+    "reflect",
+    "symmetric",
+    "wrap",
+]
+PaddingMode = Union[PaddingLiteral, Union[int, float], Callable]
 
 
 @ft.lru_cache(maxsize=None)
@@ -510,7 +523,7 @@ def kernel_map(
     kernel_size: tuple[int, ...],
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
-    padding_kwargs: dict[str, Any] | None = None,
+    padding_mode: PaddingMode = "constant",
 ) -> Callable:
     """Minimal implementation of kmap from kernex"""
     # Copyright 2023 Kernex authors
@@ -529,6 +542,10 @@ def kernel_map(
 
     # copied here to avoid requiring kernex as a dependency
     # does not support most of the kernex features
+    if isinstance(padding_mode, (int, float)):
+        pad_kwargs = dict(mode="constant", constant_values=padding_mode)
+    elif isinstance(padding_mode, (str, Callable)):
+        pad_kwargs = dict(mode=padding_mode)
 
     gather_kwargs = dict(
         mode="promise_in_bounds",
@@ -614,10 +631,9 @@ def kernel_map(
     args = (shape, kernel_size, strides, padding)
     views = generate_views(*args)
     output_shape = calculate_kernel_map_output_shape(*args)
-    padding_kwargs = padding_kwargs or {}
 
     def single_call_wrapper(array: jax.Array, *a, **k):
-        padded_array = jnp.pad(array, pad_width, **padding_kwargs)
+        padded_array = jnp.pad(array, pad_width, **pad_kwargs)
         reduced_func = absolute_wrapper(*a, **k)
 
         def map_func(view):

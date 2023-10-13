@@ -7,6 +7,7 @@ Filter API
 .. autoclass:: BoxBlur2D
 .. autoclass:: FFTBoxBlur2D
 .. autoclass:: BilateralBlur2D
+.. autoclass:: JointBilateralBlur2D
 .. autoclass:: GaussianBlur2D
 .. autoclass:: FFTGaussianBlur2D
 .. autoclass:: Laplacian2D
