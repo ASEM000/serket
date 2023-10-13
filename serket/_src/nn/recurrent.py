@@ -1438,7 +1438,7 @@ class ScanRNN(sk.TreeClass):
         """Scans the RNN cell over a sequence.
 
         Args:
-            x: the input sequence.
+            array: the input sequence.
             state: the initial state. if None, state is initialized by the rule
                 defined using :func:`.tree_state`.
 
