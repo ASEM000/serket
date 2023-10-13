@@ -17,7 +17,6 @@ from __future__ import annotations
 import abc
 import functools as ft
 from itertools import chain
-from typing import Sequence
 
 import jax
 import jax.numpy as jnp
@@ -35,14 +34,21 @@ from serket._src.utils import (
 )
 
 
+@ft.partial(jax.jit, inline=True, static_argnums=3)
 def dropout_nd(
     key: jax.Array,
     array: jax.Array,
-    drop_rate,
-    drop_axes: Sequence[int] | None = None,
+    drop_rate: float,
+    drop_axes: tuple[int, ...] | None = None,
 ) -> jax.Array:
-    """Drop some elements of the input array."""
-    # drop_axes = None means dropout is applied to all axes
+    """Drop some elements of the input array.
+
+    Args:
+        key: random number generator key
+        array: input array
+        drop_rate: probability of an element to be zeroed.
+        drop_axes: axes to apply dropout. Default: None to apply to all axes.
+    """
     shape = (
         array.shape
         if drop_axes is None
@@ -63,14 +69,14 @@ def random_cutout_nd(
     cutout_count: int,
     fill_value: int | float,
 ):
-    """Random Cutouts for spatial ND array.
+    """Randomly cutout a region of the input array.
 
     Args:
         key: random number generator key
         array: input array
-        shape: shape of the cutout
-        cutout_count: number of holes. Defaults to 1.
-        fill_value: fill_value to fill. Defaults to 0.
+        shape: shape of the cutout region. acecepts a tuple of int.
+        cutout_count: number of holes.
+        fill_value: fill_value to fill.
     """
     start_indices = [0] * len(shape)
     slice_sizes = [di - (di % ki) for di, ki in zip(array.shape, shape)]
@@ -122,27 +128,17 @@ class Dropout(sk.TreeClass):
         [2. 0. 2. 2. 2. 2. 2. 2. 0. 0.]
 
     Note:
-        Use :func:`.tree_eval` to turn off dropout during evaluation.
+        Use :func:`.tree_eval` to turn off dropout during evaluation by converting
+        dropout to :class:`.Identity`.
 
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
-        >>> dropout = sk.nn.Dropout(0.5)
-        >>> layers = sk.Sequential(dropout, linear)
-        >>> sk.tree_eval(layers)
-        Sequential(
-          layers=(
-            Identity(),
-            Linear(
-              in_features=(10),
-              out_features=10,
-              weight_init=glorot_uniform,
-              bias_init=zeros,
-              weight=f32[10,10](μ=0.01, σ=0.31, ∈[-0.54,0.54]),
-              bias=f32[10](μ=0.00, σ=0.00, ∈[0.00,0.00])
-            )
-          )
-        )
+        >>> @sk.autoinit
+        ... class Model(sk.TreeClass):
+        ...     dropout: sk.nn.Dropout = sk.nn.Dropout(0.5)
+        >>> model = Model()
+        >>> sk.tree_eval(model)
+        Model(dropout=Identity())
     """
 
     drop_rate: float = sk.field(
@@ -175,10 +171,10 @@ class DropoutND(sk.TreeClass):
         """Drop some elements of the input array.
 
         Args:
-            x: input array
+            array: input array
             key: random number generator key
         """
-        return dropout_nd(key, array, self.drop_rate, [0])
+        return dropout_nd(key, array, self.drop_rate, (0,))
 
     @property
     @abc.abstractmethod
@@ -201,27 +197,17 @@ class Dropout1D(DropoutND):
         [[2. 2. 2. 2. 2. 2. 2. 2. 2. 2.]]
 
     Note:
-        Use :func:`.tree_eval` to turn off dropout during evaluation.
+        Use :func:`.tree_eval` to turn off dropout during evaluation by converting
+        dropout to :class:`.Identity`.
 
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
-        >>> dropout = sk.nn.Dropout1D(0.5)
-        >>> layers = sk.Sequential(dropout, linear)
-        >>> sk.tree_eval(layers)
-        Sequential(
-          layers=(
-            Identity(),
-            Linear(
-              in_features=(10),
-              out_features=10,
-              weight_init=glorot_uniform,
-              bias_init=zeros,
-              weight=f32[10,10](μ=0.01, σ=0.31, ∈[-0.54,0.54]),
-              bias=f32[10](μ=0.00, σ=0.00, ∈[0.00,0.00])
-            )
-          )
-        )
+        >>> @sk.autoinit
+        ... class Model(sk.TreeClass):
+        ...     dropout: sk.nn.Dropout1D = sk.nn.Dropout1D(0.5)
+        >>> model = Model()
+        >>> sk.tree_eval(model)
+        Model(dropout=Identity())
 
     Reference:
         - https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
@@ -250,27 +236,17 @@ class Dropout2D(DropoutND):
           [2. 2. 2. 2. 2.]]]
 
     Note:
-        Use :func:`.tree_eval` to turn off dropout during evaluation.
+        Use :func:`.tree_eval` to turn off dropout during evaluation by converting
+        dropout to :class:`.Identity`.
 
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
-        >>> dropout = sk.nn.Dropout2D(0.5)
-        >>> layers = sk.Sequential(dropout, linear)
-        >>> sk.tree_eval(layers)
-        Sequential(
-          layers=(
-            Identity(),
-            Linear(
-              in_features=(10),
-              out_features=10,
-              weight_init=glorot_uniform,
-              bias_init=zeros,
-              weight=f32[10,10](μ=0.01, σ=0.31, ∈[-0.54,0.54]),
-              bias=f32[10](μ=0.00, σ=0.00, ∈[0.00,0.00])
-            )
-          )
-        )
+        >>> @sk.autoinit
+        ... class Model(sk.TreeClass):
+        ...     dropout: sk.nn.Dropout2D = sk.nn.Dropout2D(0.5)
+        >>> model = Model()
+        >>> sk.tree_eval(model)
+        Model(dropout=Identity())
 
     Reference:
         - https://keras.io/api/layers/regularization_layers/spatial_dropout1d/
@@ -299,27 +275,17 @@ class Dropout3D(DropoutND):
         [2. 2.]]]]
 
     Note:
-        Use :func:`.tree_eval` to turn off dropout during evaluation.
+        Use :func:`.tree_eval` to turn off dropout during evaluation by converting
+        dropout to :class:`.Identity`.
 
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> linear = sk.nn.Linear(10, 10, key=jr.PRNGKey(0))
-        >>> dropout = sk.nn.Dropout3D(0.5)
-        >>> layers = sk.Sequential(dropout, linear)
-        >>> sk.tree_eval(layers)
-        Sequential(
-          layers=(
-            Identity(),
-            Linear(
-              in_features=(10),
-              out_features=10,
-              weight_init=glorot_uniform,
-              bias_init=zeros,
-              weight=f32[10,10](μ=0.01, σ=0.31, ∈[-0.54,0.54]),
-              bias=f32[10](μ=0.00, σ=0.00, ∈[0.00,0.00])
-            )
-          )
-        )
+        >>> @sk.autoinit
+        ... class Model(sk.TreeClass):
+        ...     dropout: sk.nn.Dropout2D = sk.nn.Dropout2D(0.5)
+        >>> model = Model()
+        >>> sk.tree_eval(model)
+        Model(dropout=Identity())
 
     Reference:
         - https://keras.io/api/layers/regularization_layers/spatial_dropout1d/

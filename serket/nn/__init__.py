@@ -95,6 +95,8 @@ from serket._src.nn.dropout import (
     RandomCutout1D,
     RandomCutout2D,
     RandomCutout3D,
+    dropout_nd,
+    random_cutout_nd,
 )
 from serket._src.nn.linear import (
     FNN,
@@ -261,6 +263,8 @@ __all__ = [
     "RandomCutout1D",
     "RandomCutout2D",
     "RandomCutout3D",
+    "dropout_nd",
+    "random_cutout_nd",
     # linear
     "FNN",
     "MLP",

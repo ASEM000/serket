@@ -28,7 +28,7 @@ def test_dropout():
         layer(x, key=jax.random.PRNGKey(0)), jnp.array([0.0, 0.0, 0.0, 0.0, 0.0])
     )
 
-    layer = layer.at["drop_rate"].set(0.0, is_leaf=sk.is_frozen)
+    layer = layer.at["drop_rate"].set(0.0)
     npt.assert_allclose(layer(x, key=jax.random.PRNGKey(0)), x)
 
     with pytest.raises(ValueError):
