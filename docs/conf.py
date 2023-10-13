@@ -100,6 +100,7 @@ html_theme_options = {
     "globaltoc_maxdepth": None,
 }
 
+html_css_files = ["custom.css"]
 
 # -- Options for doctest -----------------------------------------------------
 
