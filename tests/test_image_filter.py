@@ -72,17 +72,6 @@ def test_GaussBlur2D():
     npt.assert_allclose(layer(x), z, atol=1e-5)
 
 
-def test_filter2d():
-    layer = sk.image.Filter2D(kernel=jnp.ones([3, 3]) / 9.0)
-    x = jnp.ones([1, 5, 5])
-
-    npt.assert_allclose(sk.image.AvgBlur2D(3)(x), layer(x), atol=1e-4)
-
-    layer2 = sk.image.FFTFilter2D(kernel=jnp.ones([3, 3]) / 9.0)
-
-    npt.assert_allclose(layer(x), layer2(x), atol=1e-4)
-
-
 def test_solarize2d():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
     layer = sk.image.Solarize2D(threshold=10, max_val=25)
@@ -461,18 +450,10 @@ def test_laplacian():
     x = jax.random.uniform(jax.random.PRNGKey(0), (2, 10, 10))
 
     kernel = jnp.array(([[1.0, 1.0, 1.0], [1.0, -8.0, 1.0], [1.0, 1.0, 1.0]]))
+    y = jax.vmap(sk.image.filter_2d, in_axes=(0, None))(x, kernel)
+    npt.assert_allclose(sk.image.Laplacian2D(3)(x), y, atol=1e-5)
 
-    npt.assert_allclose(
-        sk.image.Laplacian2D(3)(x),
-        sk.image.Filter2D(kernel)(x),
-        atol=1e-5,
-    )
-
-    npt.assert_allclose(
-        sk.image.FFTLaplacian2D(3)(x),
-        sk.image.Filter2D(kernel)(x),
-        atol=1e-5,
-    )
+    npt.assert_allclose(sk.image.FFTLaplacian2D(3)(x), y, atol=1e-5)
 
 
 def test_motion_blur():
