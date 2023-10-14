@@ -66,6 +66,7 @@ def filter_2d(
         padding="same",
         rhs_dilation=(1, 1),
         dimension_numbers=generate_conv_dim_numbers(2),
+        feature_group_count=1,
     )
     return jnp.squeeze(x, (0, 1))
 
@@ -100,6 +101,7 @@ def fft_filter_2d(
         strides=strides,
         padding=padding,
         dilation=(1, 1),
+        groups=1,
     )
     return jnp.squeeze(x, (0, 1))
 
