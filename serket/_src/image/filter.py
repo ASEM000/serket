@@ -41,12 +41,17 @@ from serket._src.utils import (
 # specific implementation of the filter, either fft or direct convolution.
 
 
-def filter_2d(array: HWArray, weight: HWArray) -> HWArray:
+def filter_2d(
+    array: HWArray,
+    weight: HWArray,
+    strides: tuple[int, int] = (1, 1),
+) -> HWArray:
     """Filtering wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
         array: 2D input array. shape is ``(height, width)``.
         weight: convolutional kernel. shape is ``(height, width)``.
+        strides: stride of the convolution. Accepts tuple of two ints.
     """
     assert array.ndim == 2
     assert weight.ndim == 2
@@ -57,21 +62,25 @@ def filter_2d(array: HWArray, weight: HWArray) -> HWArray:
     x = jax.lax.conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
         rhs=weight,
-        window_strides=(1, 1),
+        window_strides=strides,
         padding="same",
         rhs_dilation=(1, 1),
         dimension_numbers=generate_conv_dim_numbers(2),
-        feature_group_count=array.shape[0],  # in_features
     )
     return jnp.squeeze(x, (0, 1))
 
 
-def fft_filter_2d(array: HWArray, weight: HWArray) -> HWArray:
+def fft_filter_2d(
+    array: HWArray,
+    weight: HWArray,
+    strides: tuple[int, int] = (1, 1),
+) -> HWArray:
     """Filtering wrapping ``serket`` ``fft_conv_general_dilated``
 
     Args:
         array: 2D input array. shape is (height, width).
         weight: convolutional kernel. shape is (height, width).
+        strides: stride of the convolution. Accepts tuple of two ints.
     """
     assert array.ndim == 2
     assert weight.ndim == 2
@@ -83,21 +92,19 @@ def fft_filter_2d(array: HWArray, weight: HWArray) -> HWArray:
         in_dim=array.shape[1:],
         padding="same",
         kernel_size=weight.shape[2:],
-        strides=(1, 1),
+        strides=strides,
     )
-
     x = fft_conv_general_dilated(
         lhs=jnp.expand_dims(array, 0),
         rhs=weight,
-        strides=(1, 1),
+        strides=strides,
         padding=padding,
         dilation=(1, 1),
-        groups=array.shape[0],  # in_features
     )
     return jnp.squeeze(x, (0, 1))
 
 
-def calculate_average_kernel(kernel_size: int, dtype: DType) -> HWArray:
+def calculate_average_kernel_1d(kernel_size: int, dtype: DType) -> HWArray:
     """Calculate average kernel.
 
     Args:
@@ -105,13 +112,11 @@ def calculate_average_kernel(kernel_size: int, dtype: DType) -> HWArray:
         dtype: data type of the kernel.
 
     Returns:
-        Average kernel. shape is (1, kernel_size).
+        Average kernel. shape is (kernel_size, ).
     """
     kernel = jnp.ones((kernel_size), dtype=dtype)
     kernel = kernel / jnp.sum(kernel)
-    kernel = kernel.astype(dtype)
-    kernel = jnp.expand_dims(kernel, 0)
-    return kernel
+    return kernel.astype(dtype)
 
 
 def avg_blur_2d(
@@ -130,8 +135,8 @@ def avg_blur_2d(
         Average blurred array. shape is (height, width).
     """
     (ky, kx) = kernel_size
-    kernel_x = calculate_average_kernel(kx, dtype)
-    kernel_y = calculate_average_kernel(ky, dtype)
+    kernel_x = calculate_average_kernel_1d(kx, dtype)[None]  # (1, kx)
+    kernel_y = calculate_average_kernel_1d(ky, dtype)[None]  # (1, ky)
     return filter_2d(filter_2d(array, kernel_x), kernel_y.T)
 
 
@@ -151,12 +156,16 @@ def fft_avg_blur_2d(
         Average blurred array. shape is ``(height, width)``.
     """
     (ky, kx) = kernel_size
-    kernel_x = calculate_average_kernel(kx, dtype)
-    kernel_y = calculate_average_kernel(ky, dtype)
+    kernel_x = calculate_average_kernel_1d(kx, dtype)[None]  # (1, kx)
+    kernel_y = calculate_average_kernel_1d(ky, dtype)[None]  # (1, ky)
     return fft_filter_2d(fft_filter_2d(array, kernel_x), kernel_y.T)
 
 
-def calculate_gaussian_kernel(kernel_size: int, sigma: float, dtype: DType) -> HWArray:
+def calculate_gaussian_kernel_1d(
+    kernel_size: int,
+    sigma: float,
+    dtype: DType,
+) -> HWArray:
     """Calculate gaussian kernel.
 
     Args:
@@ -165,15 +174,13 @@ def calculate_gaussian_kernel(kernel_size: int, sigma: float, dtype: DType) -> H
         dtype: data type of the kernel.
 
     Returns:
-        gaussian kernel. shape is (1, kernel_size).
+        gaussian kernel. shape is (kernel_size, ).
     """
     x = jnp.arange(kernel_size, dtype=dtype) - kernel_size // 2
     x = x + 0.5 if kernel_size % 2 == 0 else x
     kernel = jnp.exp(-(x**2) / (2 * sigma**2))
     kernel = kernel / jnp.sum(kernel)
-    kernel = kernel.astype(dtype)
-    kernel = jnp.expand_dims(kernel, (0))
-    return kernel
+    return kernel.astype(dtype)
 
 
 def gaussian_blur_2d(
@@ -191,8 +198,8 @@ def gaussian_blur_2d(
         dtype: data type of the kernel.
     """
     (ky, kx), (sy, sx) = kernel_size, sigma
-    gy = calculate_gaussian_kernel(ky, sy, dtype)
-    gx = calculate_gaussian_kernel(kx, sx, dtype)
+    gy = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
+    gx = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
     return filter_2d(filter_2d(array, gy), gx.T)
 
 
@@ -211,8 +218,8 @@ def fft_gaussian_blur_2d(
         dtype: data type of the kernel.
     """
     (ky, kx), (sy, sx) = kernel_size, sigma
-    gy = calculate_gaussian_kernel(ky, sy, dtype)
-    gx = calculate_gaussian_kernel(kx, sx, dtype)
+    gy = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
+    gx = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
     return fft_filter_2d(fft_filter_2d(array, gy), gx.T)
 
 
@@ -234,8 +241,8 @@ def unsharp_mask_2d(
         Unsharp masked array. shape is ``(height, width)``.
     """
     (ky, kx), (sy, sx) = kernel_size, sigma
-    gy = calculate_gaussian_kernel(ky, sy, dtype)
-    gx = calculate_gaussian_kernel(kx, sx, dtype)
+    gy = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
+    gx = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
     blur = filter_2d(filter_2d(array, gy), gx.T)
     return array + (array - blur)
 
@@ -258,13 +265,13 @@ def fft_unsharp_mask_2d(
         Unsharp masked array. shape is (height, width).
     """
     (ky, kx), (sy, sx) = kernel_size, sigma
-    gy = calculate_gaussian_kernel(ky, sy, dtype)
-    gx = calculate_gaussian_kernel(kx, sx, dtype)
+    gy = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
+    gx = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
     blur = fft_filter_2d(fft_filter_2d(array, gy), gx.T)
     return array + (array - blur)
 
 
-def calculate_box_kernel(kernel_size: int, dtype: DType) -> HWArray:
+def calculate_box_kernel_1d(kernel_size: int, dtype: DType) -> HWArray:
     """Calculate box kernel.
 
     Args:
@@ -276,7 +283,6 @@ def calculate_box_kernel(kernel_size: int, dtype: DType) -> HWArray:
     """
     kernel = jnp.ones((kernel_size))
     kernel = kernel.astype(dtype)
-    kernel = jnp.expand_dims(kernel, 0)
     return kernel / kernel_size
 
 
@@ -296,8 +302,8 @@ def box_blur_2d(
         Box blurred array. shape is ``(height, width)``.
     """
     (ky, kx) = kernel_size
-    kernel_x = calculate_box_kernel(kx, dtype)
-    kernel_y = calculate_box_kernel(ky, dtype)
+    kernel_x = calculate_box_kernel_1d(kx, dtype)[None]
+    kernel_y = calculate_box_kernel_1d(ky, dtype)[None]
     return filter_2d(filter_2d(array, kernel_x), kernel_y.T)
 
 
@@ -317,12 +323,14 @@ def fft_box_blur_2d(
         Box blurred array. shape is ``(height, width)``.
     """
     (ky, kx) = kernel_size
-    kernel_x = calculate_box_kernel(kx, dtype)
-    kernel_y = calculate_box_kernel(ky, dtype)
+    kernel_x = calculate_box_kernel_1d(kx, dtype)[None]
+    kernel_y = calculate_box_kernel_1d(ky, dtype)[None]
     return fft_filter_2d(fft_filter_2d(array, kernel_x), kernel_y.T)
 
 
-def calculate_laplacian_kernel(kernel_size: tuple[int, int], dtype: DType) -> HWArray:
+def calculate_laplacian_kernel_2d(
+    kernel_size: tuple[int, int], dtype: DType
+) -> HWArray:
     """Calculate laplacian kernel.
 
     Args:
@@ -349,7 +357,7 @@ def laplacian_2d(array: HWArray, kernel_size: tuple[int, int], dtype: DType) -> 
     Returns:
         Laplacian array. shape is ``(height, width)``.
     """
-    kernel = calculate_laplacian_kernel(kernel_size, dtype)
+    kernel = calculate_laplacian_kernel_2d(kernel_size, dtype)
     return filter_2d(array, kernel)
 
 
@@ -368,11 +376,11 @@ def fft_laplacian_2d(
     Returns:
         Laplacian array. shape is ``(height, width)``.
     """
-    kernel = calculate_laplacian_kernel(kernel_size, dtype)
+    kernel = calculate_laplacian_kernel_2d(kernel_size, dtype)
     return fft_filter_2d(array, kernel)
 
 
-def calculate_motion_kernel(
+def calculate_motion_kernel_2d(
     kernel_size: int,
     angle: float,
     direction,
@@ -415,7 +423,7 @@ def motion_blur_2d(
         dtype: data type of the kernel.
     """
 
-    kernel = calculate_motion_kernel(kernel_size, angle, direction, dtype)
+    kernel = calculate_motion_kernel_2d(kernel_size, angle, direction, dtype)
     return filter_2d(array, kernel)
 
 
@@ -435,11 +443,11 @@ def fft_motion_blur_2d(
         direction: direction of the motion blur in degrees (anti-clockwise rotation).
         dtype: data type of the kernel.
     """
-    kernel = calculate_motion_kernel(kernel_size, angle, direction, dtype)
+    kernel = calculate_motion_kernel_2d(kernel_size, angle, direction, dtype)
     return fft_filter_2d(array, kernel)
 
 
-def calculate_sobel_kernel(dtype: DType):
+def calculate_sobel_kernel_2d(dtype: DType):
     """Calculate sobel kernel."""
     # used in separable manner
     x0 = jnp.array([1, 2, 1])
@@ -456,7 +464,7 @@ def sobel_2d(array: HWArray, dtype: DType) -> HWArray:
         array: 2D input array. shape is ``(height, width)``.
         dtype: data type of the kernel.
     """
-    kernel = calculate_sobel_kernel(dtype)
+    kernel = calculate_sobel_kernel_2d(dtype)
     gx0, gx1, gy0, gy1 = jnp.split(kernel, 4)
     gx = filter_2d(filter_2d(array, gx0), gx1.T)
     gy = filter_2d(filter_2d(array, gy0), gy1.T)
@@ -470,7 +478,7 @@ def fft_sobel_2d(array: HWArray, dtype: DType) -> HWArray:
         array: 2D input array. shape is ``(height, width)``.
         dtype: data type of the kernel.
     """
-    kernel = calculate_sobel_kernel(dtype)
+    kernel = calculate_sobel_kernel_2d(dtype)
     gx0, gx1, gy0, gy1 = jnp.split(kernel, 4)
     gx = fft_filter_2d(fft_filter_2d(array, gx0), gx1.T)
     gy = fft_filter_2d(fft_filter_2d(array, gy0), gy1.T)
@@ -527,8 +535,8 @@ def elastic_transform_2d(
     """
 
     (ky, kx), (ay, ax), (sy, sx) = kernel_size, alpha, sigma
-    kernel_y = calculate_gaussian_kernel(ky, sy, dtype)
-    kernel_x = calculate_gaussian_kernel(kx, sx, dtype)
+    kernel_y = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
+    kernel_x = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
     k1, k2 = jr.split(key)
     noise_y = jr.uniform(k1, shape=image.shape, dtype=image.dtype) * 2 - 1
     noise_x = jr.uniform(k2, shape=image.shape, dtype=image.dtype) * 2 - 1
@@ -560,8 +568,8 @@ def fft_elastic_transform_2d(
         dtype: data type of the kernel.
     """
     (ky, kx), (ay, ax), (sy, sx) = kernel_size, alpha, sigma
-    kernel_y = calculate_gaussian_kernel(ky, sy, dtype)
-    kernel_x = calculate_gaussian_kernel(kx, sx, dtype)
+    kernel_y = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
+    kernel_x = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
     k1, k2 = jr.split(key)
     noise_y = jr.uniform(k1, shape=image.shape, dtype=image.dtype) * 2 - 1
     noise_x = jr.uniform(k2, shape=image.shape, dtype=image.dtype) * 2 - 1
@@ -592,8 +600,8 @@ def bilateral_blur_2d(
     """
     (ky, kx), (sy, sx) = kernel_size, sigma_space
     center_index = (ky // 2, kx // 2)
-    gy = calculate_gaussian_kernel(ky, sy, dtype=dtype)
-    gx = calculate_gaussian_kernel(kx, sx, dtype=dtype)
+    gy = calculate_gaussian_kernel_1d(ky, sy, dtype=dtype)[None]
+    gx = calculate_gaussian_kernel_1d(kx, sx, dtype=dtype)[None]
     space_kernel = gy.T @ gx
     padding = delayed_canonicalize_padding(
         array.shape,
@@ -639,8 +647,8 @@ def joint_bilateral_blur_2d(
     """
     (ky, kx), (sy, sx) = kernel_size, sigma_space
     center_index = (ky // 2, kx // 2)
-    gy = calculate_gaussian_kernel(ky, sy, dtype=dtype)
-    gx = calculate_gaussian_kernel(kx, sx, dtype=dtype)
+    gy = calculate_gaussian_kernel_1d(ky, sy, dtype=dtype)[None]
+    gx = calculate_gaussian_kernel_1d(kx, sx, dtype=dtype)[None]
     space_kernel = gy.T @ gx
     padding = delayed_canonicalize_padding(
         array.shape,
@@ -665,6 +673,52 @@ def joint_bilateral_blur_2d(
         return jnp.sum(array * kernel) / jnp.sum(kernel)
 
     return jnp.squeeze(joint_bilateral_blur(jnp.stack([array, guidance], axis=0)), 0)
+
+
+def calculate_pascal_kernel_1d(kernel_size: int):
+    kernel = jnp.array([1.0], dtype=float)
+    stencil = jnp.array([1.0, 1.0], dtype=float)
+    for _ in range(1, kernel_size):
+        kernel = jnp.convolve(kernel, stencil, mode="full")
+    return kernel
+
+
+def blur_pool_2d(
+    array: HWArray,
+    kernel_size: tuple[int, int],
+    strides: tuple[int, int],
+) -> HWArray:
+    """Blur pooling see https://arxiv.org/abs/1904.11486
+
+    Args:
+        array: 2D input array. shape is ``(height, width)``.
+        kernel_size: size of the convolving kernel. Accepts tuple of two ints.
+        strides: stride of the convolution. Accepts tuple of two ints.
+    """
+    kx = calculate_pascal_kernel_1d(kernel_size[0])
+    ky = calculate_pascal_kernel_1d(kernel_size[1])
+    kernel = jnp.outer(kx, ky)
+    kernel = kernel / jnp.sum(kernel)  # normalize
+    return filter_2d(array, kernel, strides)
+
+
+def fft_blur_pool_2d(
+    array: HWArray,
+    kernel_size: tuple[int, int],
+    strides: tuple[int, int],
+) -> HWArray:
+    """Blur pooling see https://arxiv.org/abs/1904.11486
+
+    Args:
+        array: 2D input array. shape is ``(height, width)``.
+        kernel_size: size of the convolving kernel. Accepts tuple of two ints.
+        strides: stride of the convolution. Accepts tuple of two ints.
+    """
+    kx = calculate_pascal_kernel_1d(kernel_size[0])
+    ky = calculate_pascal_kernel_1d(kernel_size[1])
+    kernel = jnp.outer(kx, ky)
+    kernel = kernel / jnp.sum(kernel)  # normalize
+    return fft_filter_2d(array, kernel, strides)
 
 
 class BaseAvgBlur2D(sk.TreeClass):
@@ -1338,3 +1392,69 @@ class JointBilateralBlur2D(sk.TreeClass):
         return jax.vmap(joint_bilateral_blur_2d, in_axes=in_axes)(array, guide, *args)
 
     spatial_ndim: int = 2
+
+
+class BlurPool2DBase(sk.TreeClass):
+    def __init__(
+        self,
+        kernel_size: int | tuple[int, int],
+        strides: int | tuple[int, int],
+    ):
+        self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
+        self.strides = canonicalize(strides, ndim=2, name="strides")
+
+    spatial_ndim: int = 2
+
+
+class BlurPool2D(BlurPool2DBase):
+    """Blur and downsample a channel-first image.
+
+    .. image:: ../_static/blurpool2d.png
+
+    Args:
+        kernel_size: kernel size. accepts int or tuple of two ints.
+        strides: strides. accepts int or tuple of two ints.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> layer = sk.image.BlurPool2D(kernel_size=3, stride=2)
+        >>> print(layer(x))  # doctest: +SKIP
+        [[[ 1.6875  3.5     3.5625]
+          [ 8.5    13.     11.    ]
+          [11.0625 16.     12.9375]]]
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, array: CHWArray) -> CHWArray:
+        in_axes = (0, None, None)
+        args = (array, self.kernel_size, self.strides)
+        return jax.vmap(blur_pool_2d, in_axes=in_axes)(*args)
+
+
+class FFTBlurPool2D(BlurPool2DBase):
+    """Blur and downsample a channel-first image using FFT.
+
+    .. image:: ../_static/blurpool2d.png
+
+    Args:
+        kernel_size: kernel size. accepts int or tuple of two ints.
+        strides: stride. accepts int or tuple of two ints.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> layer = sk.image.FFTBlurPool2D(kernel_size=3, stride=2)
+        >>> print(layer(x))  # doctest: +SKIP
+        [[[ 1.6875  3.5     3.5625]
+          [ 8.5    13.     11.    ]
+          [11.0625 16.     12.9375]]]
+    """
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    def __call__(self, array: CHWArray) -> CHWArray:
+        in_axes = (0, None, None)
+        args = (array, self.kernel_size, self.strides)
+        return jax.vmap(fft_blur_pool_2d, in_axes=in_axes)(*args)
