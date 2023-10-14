@@ -815,3 +815,35 @@ def test_joint_bilateral_blur_2d():
         sigma_space=(1.2, 1.3),
     )
     npt.assert_allclose(layer(x, y), z, atol=1e-6)
+
+
+def test_blur_pool_2d():
+    # test against kornia
+    x = jnp.array(
+        [
+            [
+                [0.4139353, 0.9534693, 0.75953954, 0.58387464, 0.96926004],
+                [0.1243794, 0.95703536, 0.40123367, 0.50165236, 0.14891201],
+                [0.15226442, 0.57921094, 0.28390247, 0.69786924, 0.00421089],
+                [0.69519806, 0.14696085, 0.37243962, 0.7077443, 0.32187456],
+                [0.99285686, 0.884988, 0.8843235, 0.5459984, 0.03278035],
+            ]
+        ]
+    )
+    y = jnp.array(
+        [
+            [
+                [0.29802963, 0.5233751, 0.36526662],
+                [0.28191438, 0.47190684, 0.222722],
+                [0.45492253, 0.49992818, 0.16091321],
+            ]
+        ]
+    )
+
+    layer = sk.image.BlurPool2D((3, 3), strides=2)
+
+    npt.assert_allclose(layer(x), y, atol=1e-6)
+
+    layer = sk.image.FFTBlurPool2D((3, 3), strides=2)
+
+    npt.assert_allclose(layer(x), y, atol=1e-6)

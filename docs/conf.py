@@ -98,6 +98,7 @@ html_theme_options = {
     "navigation_depth": 4,
     "globaltoc_collapse": True,
     "globaltoc_maxdepth": None,
+    "pygment_dark_style": "github-dark-high-contrast",
 }
 
 html_css_files = ["custom.css"]

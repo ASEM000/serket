@@ -8,6 +8,9 @@ Filter API
 .. autoclass:: BoxBlur2D
 .. autoclass:: FFTBoxBlur2D
 
+.. autoclass:: BlurPool2D
+.. autoclass:: FFTBlurPool2D
+
 .. autoclass:: BilateralBlur2D
 .. autoclass:: JointBilateralBlur2D
 .. autoclass:: MedianBlur2D
@@ -32,6 +35,9 @@ Filter API
 
 .. autofunction:: box_blur_2d
 .. autofunction:: fft_box_blur_2d
+
+.. autofunction:: blur_pool_2d
+.. autofunction:: fft_blur_pool_2d
 
 .. autofunction:: bilateral_blur_2d
 .. autofunction:: joint_bilateral_blur_2d
