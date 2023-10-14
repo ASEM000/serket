@@ -697,9 +697,10 @@ def blur_pool_2d(
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         strides: stride of the convolution. Accepts tuple of two ints.
     """
-    kx = calculate_pascal_kernel_1d(kernel_size[0])
-    ky = calculate_pascal_kernel_1d(kernel_size[1])
-    kernel = jnp.outer(kx, ky)
+    ky, kx = kernel_size
+    py = calculate_pascal_kernel_1d(ky)
+    px = calculate_pascal_kernel_1d(kx)
+    kernel = jnp.outer(py, px)
     kernel = kernel / jnp.sum(kernel)  # normalize
     return filter_2d(array, kernel, strides)
 
@@ -716,9 +717,10 @@ def fft_blur_pool_2d(
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         strides: stride of the convolution. Accepts tuple of two ints.
     """
-    kx = calculate_pascal_kernel_1d(kernel_size[0])
-    ky = calculate_pascal_kernel_1d(kernel_size[1])
-    kernel = jnp.outer(kx, ky)
+    ky, kx = kernel_size
+    py = calculate_pascal_kernel_1d(ky)
+    px = calculate_pascal_kernel_1d(kx)
+    kernel = jnp.outer(py, px)
     kernel = kernel / jnp.sum(kernel)  # normalize
     return fft_filter_2d(array, kernel, strides)
 
