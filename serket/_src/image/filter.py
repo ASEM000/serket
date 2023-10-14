@@ -1421,7 +1421,7 @@ class BlurPool2D(BlurPool2DBase):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> layer = sk.image.BlurPool2D(kernel_size=3, stride=2)
+        >>> layer = sk.image.BlurPool2D(kernel_size=3, strides=2)
         >>> print(layer(x))  # doctest: +SKIP
         [[[ 1.6875  3.5     3.5625]
           [ 8.5    13.     11.    ]
@@ -1448,7 +1448,7 @@ class FFTBlurPool2D(BlurPool2DBase):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> layer = sk.image.FFTBlurPool2D(kernel_size=3, stride=2)
+        >>> layer = sk.image.FFTBlurPool2D(kernel_size=3, strides=2)
         >>> print(layer(x))  # doctest: +SKIP
         [[[ 1.6875  3.5     3.5625]
           [ 8.5    13.     11.    ]
