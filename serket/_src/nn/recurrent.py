@@ -1368,6 +1368,122 @@ def is_lazy_call(instance, x, state=None, **_) -> bool:
 updates = dict(cell=materialize_cell, backward_cell=materialize_backward_cell)
 
 
+def split_state(state: RNNState, splits: int) -> list[RNNState]:
+    flat_arrays: list[jax.Array] = jtu.tree_leaves(state)
+    return [type(state)(*x) for x in zip(*(jnp.split(x, splits) for x in flat_arrays))]
+
+
+def concat_state(states: list[RNNState]) -> RNNState:
+    # undo the split
+    return (
+        states[0]
+        if len(states) == 1
+        else jax.tree_map(lambda *x: jnp.concatenate([*x]), *states)
+    )
+
+
+def accumulate_scan(
+    cell: RNNCell,
+    array: jax.Array,
+    state: RNNState,
+    reverse: bool = False,
+) -> tuple[jax.Array, RNNState]:
+    """Scans a RNN cell over a sequence. Accumulates the output for each timestep."""
+
+    def scan_func(carry, array):
+        state = cell(array, state=carry)
+        return state, state
+
+    array = jnp.flip(array, axis=0) if reverse else array  # flip over time axis
+    result = jax.lax.scan(scan_func, state, array)[1].hidden_state
+    carry, result = jax.lax.scan(scan_func, state, array)
+    result = result.hidden_state
+    result = jnp.flip(result, axis=-1) if reverse else result
+    return result, carry
+
+
+def unaccumulate_scan(
+    cell: RNNCell,
+    array: jax.Array,
+    state: RNNState,
+    reverse: bool = False,
+) -> jax.Array:
+    """Scans a RNN cell over a sequence. Returns the output for the last timestep."""
+
+    def scan_func(carry, x):
+        state = cell(x, state=carry)
+        return state, None
+
+    array = jnp.flip(array, axis=0) if reverse else array
+    carry, _ = jax.lax.scan(scan_func, state, array)
+    result = carry.hidden_state
+    return result, carry
+
+
+def scan_unidirectional_rnn(
+    cell: RNNCell,
+    backward_cell: None,
+    array: jax.Array,
+    state: RNNState,
+    return_sequences: bool,
+    return_state: bool,
+) -> jax.Array | tuple[jax.Array, RNNState]:
+    """Scans a unidirectional RNN cell over a sequence.
+
+    Args:
+        cell: the RNN cell to scan.
+        backward_cell: placeholder for consistency with bidirectional RNN. ignored.
+        array: the input sequence. shape: ``[time, features]``.
+        state: the initial state of the RNN cell.
+        return_sequences: whether to return the output for each timestep.
+        return_state: whether to return the final state of the RNN cell(s).
+    """
+    del backward_cell  # for consistency with bidirectional RNN
+    scan_func = accumulate_scan if return_sequences else unaccumulate_scan
+    result, state = scan_func(cell, array, state)
+    return (result, state) if return_state else result
+
+
+def scan_bidirectional_rnn(
+    cell: RNNCell,
+    backward_cell: RNNCell,
+    array: jax.Array,
+    state: RNNState,
+    return_sequences: bool,
+    return_state: bool,
+) -> jax.Array | tuple[jax.Array, RNNState]:
+    """Scans a bidirectional RNN cell over a sequence.
+
+    Args:
+        cell: the forward RNN cell to scan.
+        backward_cell: the backward RNN cell to scan.
+        array: the input sequence. shape: ``[time, features]``.
+        state: the initial state of the RNN cell.
+        return_sequences: whether to return the output for each timestep.
+        return_state: whether to return the final state of the RNN cell(s).
+    """
+    lhs_state, rhs_state = split_state(state, splits=2)
+    scan_func = accumulate_scan if return_sequences else unaccumulate_scan
+    lhs_result, lhs_state = scan_func(cell, array, lhs_state, False)
+    rhs_result, rhs_state = scan_func(backward_cell, array, rhs_state, True)
+    concat_axis = int(return_sequences)
+    result = jnp.concatenate((lhs_result, rhs_result), axis=concat_axis)
+    state: RNNState = concat_state((lhs_state, rhs_state))
+    return (result, state) if return_state else result
+
+
+def check_cells(*cells: Any) -> None:
+    """Checks that the cells are compatible with each other."""
+    cell0, *cells = cells
+    for cell in cells:
+        if not isinstance(cell, RNNCell):
+            raise TypeError(f"{cell=} to be an instance of `RNNCell`.")
+        if cell0.in_features != cell.in_features:
+            raise ValueError(f"{cell0.in_features=} != {cell.in_features=}")
+        if cell0.hidden_features != cell.hidden_features:
+            raise ValueError(f"{cell0.hidden_features=} != {cell.hidden_features=}")
+
+
 class ScanRNN(sk.TreeClass):
     """Scans RNN cell over a sequence.
 
@@ -1414,15 +1530,7 @@ class ScanRNN(sk.TreeClass):
             raise TypeError(f"Expected {cell=} to be an instance of `RNNCell`.")
 
         if backward_cell is not None:
-            # bidirectional
-            if not isinstance(backward_cell, RNNCell):
-                raise TypeError(f"{backward_cell=} to be an instance of `RNNCell`.")
-            if cell.in_features != backward_cell.in_features:
-                raise ValueError(f"{cell.in_features=} != {backward_cell.in_features=}")
-            if cell.hidden_features != backward_cell.hidden_features:
-                raise ValueError(
-                    f"{cell.hidden_features=} != {backward_cell.hidden_features=}"
-                )
+            check_cells(cell, backward_cell)
 
         self.cell = cell
         self.backward_cell = backward_cell
@@ -1463,69 +1571,19 @@ class ScanRNN(sk.TreeClass):
                 f"{'*'*self.cell.spatial_ndim}), got {array.shape=}"
             )
 
-        state: RNNState = tree_state(self, array=array)  # if state is None else state
-        scan_func = _accumulate_scan if self.return_sequences else _no_accumulate_scan
-
-        if self.backward_cell is None:
-            result, state = scan_func(array, self.cell, state)
-            return (result, state) if self.return_state else result
-
-        # bidirectional
-        lhs_state, rhs_state = split_state(state, splits=2)
-        lhs_result, lhs_state = scan_func(array, self.cell, lhs_state, False)
-        rhs_result, rhs_state = scan_func(array, self.backward_cell, rhs_state, True)
-        concat_axis = int(self.return_sequences)
-        result = jnp.concatenate((lhs_result, rhs_result), axis=concat_axis)
-        state: RNNState = concat_state((lhs_state, rhs_state))
-        return (result, state) if self.return_state else result
-
-
-def split_state(state: RNNState, splits: int) -> list[RNNState]:
-    flat_arrays: list[jax.Array] = jtu.tree_leaves(state)
-    return [type(state)(*x) for x in zip(*(jnp.split(x, splits) for x in flat_arrays))]
-
-
-def concat_state(states: list[RNNState]) -> RNNState:
-    # undo the split
-    return (
-        states[0]
-        if len(states) == 1
-        else jax.tree_map(lambda *x: jnp.concatenate([*x]), *states)
-    )
-
-
-def _accumulate_scan(
-    array: jax.Array,
-    cell: RNNCell,
-    state: RNNState,
-    reverse: bool = False,
-) -> tuple[jax.Array, RNNState]:
-    def scan_func(carry, array):
-        state = cell(array, state=carry)
-        return state, state
-
-    array = jnp.flip(array, axis=0) if reverse else array  # flip over time axis
-    result = jax.lax.scan(scan_func, state, array)[1].hidden_state
-    carry, result = jax.lax.scan(scan_func, state, array)
-    result = result.hidden_state
-    result = jnp.flip(result, axis=-1) if reverse else result
-    return result, carry
-
-
-def _no_accumulate_scan(
-    array: jax.Array,
-    cell: RNNCell,
-    state: RNNState,
-    reverse: bool = False,
-) -> jax.Array:
-    def scan_func(carry, x):
-        state = cell(x, state=carry)
-        return state, None
-
-    array = jnp.flip(array, axis=0) if reverse else array
-    carry, _ = jax.lax.scan(scan_func, state, array)
-    result = carry.hidden_state
-    return result, carry
+        args = (
+            self.cell,
+            self.backward_cell,
+            array,
+            tree_state(self, array=array) if state is None else state,
+            self.return_sequences,
+            self.return_state,
+        )
+        return (
+            scan_unidirectional_rnn(*args)
+            if self.backward_cell is None
+            else scan_bidirectional_rnn(*args)
+        )
 
 
 # register state handlers
