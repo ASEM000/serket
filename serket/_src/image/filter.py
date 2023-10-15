@@ -124,18 +124,20 @@ def calculate_average_kernel_1d(kernel_size: int, dtype: DType) -> HWArray:
 def avg_blur_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Average blur.
 
     Args:
         array: 2D input array. shape is (height, width).
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
 
     Returns:
         Average blurred array. shape is (height, width).
     """
+    dtype = dtype or array.dtype
     (ky, kx) = kernel_size
     kernel_x = calculate_average_kernel_1d(kx, dtype)[None]  # (1, kx)
     kernel_y = calculate_average_kernel_1d(ky, dtype)[None]  # (1, ky)
@@ -145,18 +147,20 @@ def avg_blur_2d(
 def fft_avg_blur_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Average blur using FFT.
 
     Args:
         array: 2D input array. shape is ``(height, width)``.
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
 
     Returns:
         Average blurred array. shape is ``(height, width)``.
     """
+    dtype = dtype or array.dtype
     (ky, kx) = kernel_size
     kernel_x = calculate_average_kernel_1d(kx, dtype)[None]  # (1, kx)
     kernel_y = calculate_average_kernel_1d(ky, dtype)[None]  # (1, ky)
@@ -189,7 +193,7 @@ def gaussian_blur_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
     sigma: tuple[float, float],
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Gaussian blur.
 
@@ -197,8 +201,10 @@ def gaussian_blur_2d(
         array: 2D input array. shape is ``(height, width)``.
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         sigma: sigma of gaussian kernel.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
     """
+    dtype = dtype or array.dtype
     (ky, kx), (sy, sx) = kernel_size, sigma
     gy = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
     gx = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
@@ -209,7 +215,7 @@ def fft_gaussian_blur_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
     sigma: tuple[float, float],
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Gaussian blur using FFT.
 
@@ -217,8 +223,10 @@ def fft_gaussian_blur_2d(
         array: 2D input array. shape is ``(height, width)``.
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         sigma: sigma of gaussian kernel.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
     """
+    dtype = dtype or array.dtype
     (ky, kx), (sy, sx) = kernel_size, sigma
     gy = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
     gx = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
@@ -229,7 +237,7 @@ def unsharp_mask_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
     sigma: tuple[float, float],
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Unsharp mask.
 
@@ -237,11 +245,13 @@ def unsharp_mask_2d(
         array: 2D input array. shape is ``(height, width)``.
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         sigma: sigma of gaussian kernel.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
 
     Returns:
         Unsharp masked array. shape is ``(height, width)``.
     """
+    dtype = dtype or array.dtype
     (ky, kx), (sy, sx) = kernel_size, sigma
     gy = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
     gx = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
@@ -253,7 +263,7 @@ def fft_unsharp_mask_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
     sigma: tuple[float, float],
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Unsharp mask using FFT.
 
@@ -261,11 +271,13 @@ def fft_unsharp_mask_2d(
         array: 2D input array. shape is (height, width).
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         sigma: sigma of gaussian kernel.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
 
     Returns:
         Unsharp masked array. shape is (height, width).
     """
+    dtype = dtype or array.dtype
     (ky, kx), (sy, sx) = kernel_size, sigma
     gy = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
     gx = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
@@ -291,18 +303,20 @@ def calculate_box_kernel_1d(kernel_size: int, dtype: DType) -> HWArray:
 def box_blur_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Box blur.
 
     Args:
         array: 2D input array. shape is ``(height, width)``.
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
 
     Returns:
         Box blurred array. shape is ``(height, width)``.
     """
+    dtype = dtype or array.dtype
     (ky, kx) = kernel_size
     kernel_x = calculate_box_kernel_1d(kx, dtype)[None]
     kernel_y = calculate_box_kernel_1d(ky, dtype)[None]
@@ -312,18 +326,20 @@ def box_blur_2d(
 def fft_box_blur_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Box blur using FFT.
 
     Args:
         array: 2D input array. shape is ``(height, width)``.
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
 
     Returns:
         Box blurred array. shape is ``(height, width)``.
     """
+    dtype = dtype or array.dtype
     (ky, kx) = kernel_size
     kernel_x = calculate_box_kernel_1d(kx, dtype)[None]
     kernel_y = calculate_box_kernel_1d(ky, dtype)[None]
@@ -348,17 +364,23 @@ def calculate_laplacian_kernel_2d(
     return kernel
 
 
-def laplacian_2d(array: HWArray, kernel_size: tuple[int, int], dtype: DType) -> HWArray:
+def laplacian_2d(
+    array: HWArray,
+    kernel_size: tuple[int, int],
+    dtype: DType | None = None,
+) -> HWArray:
     """Laplacian.
 
     Args:
         array: 2D input array. shape is ``(height, width)``.
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
 
     Returns:
         Laplacian array. shape is ``(height, width)``.
     """
+    dtype = dtype or array.dtype
     kernel = calculate_laplacian_kernel_2d(kernel_size, dtype)
     return filter_2d(array, kernel)
 
@@ -366,18 +388,20 @@ def laplacian_2d(array: HWArray, kernel_size: tuple[int, int], dtype: DType) -> 
 def fft_laplacian_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Laplacian using FFT.
 
     Args:
         array: 2D input array. shape is ``(height, width)``.
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
 
     Returns:
         Laplacian array. shape is ``(height, width)``.
     """
+    dtype = dtype or array.dtype
     kernel = calculate_laplacian_kernel_2d(kernel_size, dtype)
     return fft_filter_2d(array, kernel)
 
@@ -413,7 +437,7 @@ def motion_blur_2d(
     kernel_size: tuple[int, int],
     angle: float,
     direction: int | float,
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Motion blur.
 
@@ -422,9 +446,10 @@ def motion_blur_2d(
         kernel_size: motion kernel width and height. It should be odd and positive.
         angle: angle of the motion blur in degrees (anti-clockwise rotation).
         direction: direction of the motion blur in degrees (anti-clockwise rotation).
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
     """
-
+    dtype = dtype or array.dtype
     kernel = calculate_motion_kernel_2d(kernel_size, angle, direction, dtype)
     return filter_2d(array, kernel)
 
@@ -434,7 +459,7 @@ def fft_motion_blur_2d(
     kernel_size: tuple[int, int],
     angle: float,
     direction: int | float,
-    dtype: DType,
+    dtype: DType | None = None,
 ) -> HWArray:
     """Motion blur using FFT.
 
@@ -443,8 +468,10 @@ def fft_motion_blur_2d(
         kernel_size: motion kernel width and height. It should be odd and positive.
         angle: angle of the motion blur in degrees (anti-clockwise rotation).
         direction: direction of the motion blur in degrees (anti-clockwise rotation).
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
     """
+    dtype = dtype or array.dtype
     kernel = calculate_motion_kernel_2d(kernel_size, angle, direction, dtype)
     return fft_filter_2d(array, kernel)
 
@@ -459,13 +486,14 @@ def calculate_sobel_kernel_2d(dtype: DType):
     return jnp.stack([x0, x1, y0, y1], axis=0).astype(dtype)
 
 
-def sobel_2d(array: HWArray, dtype: DType) -> HWArray:
+def sobel_2d(array: HWArray, dtype: DType | None = None) -> HWArray:
     """Sobel filter.
 
     Args:
         array: 2D input array. shape is ``(height, width)``.
         dtype: data type of the kernel.
     """
+    dtype = dtype or array.dtype
     kernel = calculate_sobel_kernel_2d(dtype)
     gx0, gx1, gy0, gy1 = jnp.split(kernel, 4)
     gx = filter_2d(filter_2d(array, gx0), gx1.T)
@@ -473,13 +501,15 @@ def sobel_2d(array: HWArray, dtype: DType) -> HWArray:
     return jnp.sqrt(gx**2 + gy**2)
 
 
-def fft_sobel_2d(array: HWArray, dtype: DType) -> HWArray:
+def fft_sobel_2d(array: HWArray, dtype: DType | None = None) -> HWArray:
     """Sobel filter using FFT.
 
     Args:
         array: 2D input array. shape is ``(height, width)``.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
     """
+    dtype = dtype or array.dtype
     kernel = calculate_sobel_kernel_2d(dtype)
     gx0, gx1, gy0, gy1 = jnp.split(kernel, 4)
     gx = fft_filter_2d(fft_filter_2d(array, gx0), gx1.T)
@@ -487,6 +517,7 @@ def fft_sobel_2d(array: HWArray, dtype: DType) -> HWArray:
     return jnp.sqrt(gx**2 + gy**2)
 
 
+@ft.partial(jax.jit, inline=True, static_argnums=1)
 def median_blur_2d(array: HWArray, kernel_size: tuple[int, int]) -> HWArray:
     """Median blur
 
@@ -523,7 +554,7 @@ def elastic_transform_2d(
     kernel_size: tuple[int, int],
     sigma: tuple[float, float],
     alpha: tuple[float, float],
-    dtype: DType,
+    dtype: DType | None = None,
 ):
     """Elastic transform.
 
@@ -533,9 +564,10 @@ def elastic_transform_2d(
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         sigma: sigma of gaussian kernel.
         alpha: alpha of gaussian kernel.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
     """
-
+    dtype = dtype or image.dtype
     (ky, kx), (ay, ax), (sy, sx) = kernel_size, alpha, sigma
     kernel_y = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
     kernel_x = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
@@ -557,7 +589,7 @@ def fft_elastic_transform_2d(
     kernel_size: tuple[int, int],
     sigma: tuple[float, float],
     alpha: tuple[float, float],
-    dtype: DType,
+    dtype: DType | None = None,
 ):
     """Elastic transform using FFT.
 
@@ -567,8 +599,10 @@ def fft_elastic_transform_2d(
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         sigma: sigma of gaussian kernel.
         alpha: alpha of gaussian kernel.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
     """
+    dtype = dtype or image.dtype
     (ky, kx), (ay, ax), (sy, sx) = kernel_size, alpha, sigma
     kernel_y = calculate_gaussian_kernel_1d(ky, sy, dtype)[None]
     kernel_x = calculate_gaussian_kernel_1d(kx, sx, dtype)[None]
@@ -584,12 +618,13 @@ def fft_elastic_transform_2d(
     return map_coordinates(image, (ny, nx), order=1, mode="nearest").reshape(r, c)
 
 
+@ft.partial(jax.jit, inline=True, static_argnums=1)
 def bilateral_blur_2d(
     array: HWArray,
     kernel_size: tuple[int, int],
     sigma_space: tuple[float, float],
     sigma_color: float,
-    dtype: DType,
+    dtype: DType | None = None,
 ):
     """Bilateral blur.
 
@@ -598,8 +633,10 @@ def bilateral_blur_2d(
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         sigma_space: sigma of gaussian kernel.
         sigma_color: sigma of gaussian kernel.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
     """
+    dtype = dtype or array.dtype
     (ky, kx), (sy, sx) = kernel_size, sigma_space
     center_index = (ky // 2, kx // 2)
     gy = calculate_gaussian_kernel_1d(ky, sy, dtype=dtype)[None]
@@ -629,13 +666,14 @@ def bilateral_blur_2d(
     return bilateral_blur_2d(array)
 
 
+@ft.partial(jax.jit, inline=True, static_argnums=2)
 def joint_bilateral_blur_2d(
     array: HWArray,
     guidance: HWArray,
     kernel_size: tuple[int, int],
     sigma_space: tuple[float, float],
     sigma_color: float,
-    dtype: DType,
+    dtype: DType | None = None,
 ):
     """Joint bilateral blur.
 
@@ -645,8 +683,10 @@ def joint_bilateral_blur_2d(
         kernel_size: size of the convolving kernel. Accepts tuple of two ints.
         sigma_space: sigma of gaussian kernel.
         sigma_color: sigma of gaussian kernel.
-        dtype: data type of the kernel.
+        dtype: data type of the kernel. Defaults to ``None`` to use the same
+            data type as ``array``.
     """
+    dtype = dtype or array.dtype
     (ky, kx), (sy, sx) = kernel_size, sigma_space
     center_index = (ky // 2, kx // 2)
     gy = calculate_gaussian_kernel_1d(ky, sy, dtype=dtype)[None]
@@ -755,8 +795,8 @@ class AvgBlur2D(BaseAvgBlur2D):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        args = (array, self.kernel_size, array.dtype)
+        in_axes = (0, None)
+        args = (array, self.kernel_size)
         return jax.vmap(avg_blur_2d, in_axes=in_axes)(*args)
 
 
@@ -783,8 +823,8 @@ class FFTAvgBlur2D(BaseAvgBlur2D):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        args = (array, self.kernel_size, array.dtype)
+        in_axes = (0, None)
+        args = (array, self.kernel_size)
         return jax.vmap(fft_avg_blur_2d, in_axes=in_axes)(*args)
 
 
@@ -825,9 +865,9 @@ class GaussianBlur2D(BaseGaussianBlur2D):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None, None)
+        in_axes = (0, None, None)
         sigma = jax.lax.stop_gradient(self.sigma)
-        args = (array, self.kernel_size, sigma, array.dtype)
+        args = (array, self.kernel_size, sigma)
         return jax.vmap(gaussian_blur_2d, in_axes=in_axes)(*args)
 
 
@@ -855,9 +895,9 @@ class FFTGaussianBlur2D(BaseGaussianBlur2D):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None, None)
+        in_axes = (0, None, None)
         sigma = jax.lax.stop_gradient(self.sigma)
-        args = (array, self.kernel_size, sigma, array.dtype)
+        args = (array, self.kernel_size, sigma)
         return jax.vmap(fft_gaussian_blur_2d, in_axes=in_axes)(*args)
 
 
@@ -885,9 +925,9 @@ class UnsharpMask2D(BaseGaussianBlur2D):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None, None)
+        in_axes = (0, None, None)
         sigma = jax.lax.stop_gradient(self.sigma)
-        args = (array, self.kernel_size, sigma, array.dtype)
+        args = (array, self.kernel_size, sigma)
         return jax.vmap(unsharp_mask_2d, in_axes=in_axes)(*args)
 
 
@@ -915,9 +955,9 @@ class FFTUnsharpMask2D(BaseGaussianBlur2D):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None, None)
+        in_axes = (0, None, None)
         sigma = jax.lax.stop_gradient(self.sigma)
-        args = (array, self.kernel_size, sigma, array.dtype)
+        args = (array, self.kernel_size, sigma)
         return jax.vmap(fft_unsharp_mask_2d, in_axes=in_axes)(*args)
 
 
@@ -951,8 +991,8 @@ class BoxBlur2D(BoxBlur2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        args = (array, self.kernel_size, array.dtype)
+        in_axes = (0, None)
+        args = (array, self.kernel_size)
         return jax.vmap(box_blur_2d, in_axes=in_axes)(*args)
 
 
@@ -979,8 +1019,8 @@ class FFTBoxBlur2D(BoxBlur2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        args = (array, self.kernel_size, array.dtype)
+        in_axes = (0, None)
+        args = (array, self.kernel_size)
         return jax.vmap(box_blur_2d, in_axes=in_axes)(*args)
 
 
@@ -1017,8 +1057,8 @@ class Laplacian2D(Laplacian2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        args = (array, self.kernel_size, array.dtype)
+        in_axes = (0, None)
+        args = (array, self.kernel_size)
         return jax.vmap(laplacian_2d, in_axes=in_axes)(*args)
 
 
@@ -1048,8 +1088,8 @@ class FFTLaplacian2D(Laplacian2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        args = (array, self.kernel_size, array.dtype)
+        in_axes = (0, None)
+        args = (array, self.kernel_size)
         return jax.vmap(fft_laplacian_2d, in_axes=in_axes)(*args)
 
 
@@ -1092,9 +1132,9 @@ class MotionBlur2D(MotionBlur2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None, None, None)
+        in_axes = (0, None, None, None)
         angle, direction = jax.lax.stop_gradient((self.angle, self.direction))
-        args = (array, self.kernel_size, angle, direction, array.dtype)
+        args = (array, self.kernel_size, angle, direction)
         return jax.vmap(motion_blur_2d, in_axes=in_axes)(*args)
 
 
@@ -1122,9 +1162,9 @@ class FFTMotionBlur2D(MotionBlur2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None, None, None)
+        in_axes = (0, None, None, None)
         angle, direction = jax.lax.stop_gradient((self.angle, self.direction))
-        args = (array, self.kernel_size, angle, direction, array.dtype)
+        args = (array, self.kernel_size, angle, direction)
         return jax.vmap(fft_motion_blur_2d, in_axes=in_axes)(*args)
 
 
@@ -1193,9 +1233,7 @@ class Sobel2D(Sobel2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None)
-        args = (array, array.dtype)
-        return jax.vmap(sobel_2d, in_axes=in_axes)(*args)
+        return jax.vmap(sobel_2d)(array)
 
 
 class FFTSobel2D(Sobel2DBase):
@@ -1218,9 +1256,7 @@ class FFTSobel2D(Sobel2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None)
-        args = (array, array.dtype)
-        return jax.vmap(fft_sobel_2d, in_axes=in_axes)(*args)
+        return jax.vmap(fft_sobel_2d)(array)
 
 
 class ElasticTransform2DBase(sk.TreeClass):
@@ -1266,8 +1302,8 @@ class ElasticTransform2D(ElasticTransform2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
-        in_axes = (None, 0, None, None, None, None)
-        args = (array, self.kernel_size, self.sigma, self.alpha, array.dtype)
+        in_axes = (None, 0, None, None, None)
+        args = (array, self.kernel_size, self.sigma, self.alpha)
         return jax.vmap(elastic_transform_2d, in_axes=in_axes)(key, *args)
 
 
@@ -1300,8 +1336,8 @@ class FFTElasticTransform2D(ElasticTransform2DBase):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
-        in_axes = (None, 0, None, None, None, None)
-        args = (array, self.kernel_size, self.sigma, self.alpha, array.dtype)
+        in_axes = (None, 0, None, None, None)
+        args = (array, self.kernel_size, self.sigma, self.alpha)
         return jax.vmap(fft_elastic_transform_2d, in_axes=in_axes)(key, *args)
 
 
@@ -1341,8 +1377,8 @@ class BilateralBlur2D(sk.TreeClass):
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None, None, None)
-        args = (self.kernel_size, self.sigma_space, self.sigma_color, array.dtype)
+        in_axes = (0, None, None, None)
+        args = (self.kernel_size, self.sigma_space, self.sigma_color)
         return jax.vmap(bilateral_blur_2d, in_axes=in_axes)(array, *args)
 
     spatial_ndim: int = 2
@@ -1391,8 +1427,8 @@ class JointBilateralBlur2D(sk.TreeClass):
             array: input image.
             guide: guide image used for computing the gaussian for color space.
         """
-        in_axes = (0, 0, None, None, None, None)
-        args = (self.kernel_size, self.sigma_space, self.sigma_color, array.dtype)
+        in_axes = (0, 0, None, None, None)
+        args = (self.kernel_size, self.sigma_space, self.sigma_color)
         return jax.vmap(joint_bilateral_blur_2d, in_axes=in_axes)(array, guide, *args)
 
     spatial_ndim: int = 2
