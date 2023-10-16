@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
+from math import floor
 
 import jax
 import jax.numpy as jnp
@@ -209,6 +210,30 @@ def random_saturation_3d(key: jax.Array, image: CHWArray, range: tuple[float, fl
     return adust_saturation_3d(image, factor)
 
 
+def fourier_domain_adapt_2d(image: HWArray, styler: HWArray, beta: float):
+    # adapted from https://github.com/albumentations-team/albumentations/
+    # and original source from https://github.com/YanchaoYang/FDA
+    dtype = image.dtype
+    height, width = image.shape
+    styler = jax.image.resize(styler, (height, width), method="bilinear")
+    image_fft = jnp.fft.fft2(image, axes=(0, 1))
+    styler_fft = jnp.fft.fft2(styler, axes=(0, 1))
+    image_amp, image_phase = jnp.abs(image_fft), jnp.angle(image_fft)
+    styler_amp = jnp.abs(styler_fft)
+    image_amp = jnp.fft.fftshift(image_amp, axes=(0, 1))
+    styler_amp = jnp.fft.fftshift(styler_amp, axes=(0, 1))
+    border = int(floor(min((height, width)) * beta))
+    center_y = int(floor(height / 2.0))
+    center_x = int(floor(width / 2.0))
+    y1, y2 = center_y - border, center_y + border + 1
+    x1, x2 = center_x - border, center_x + border + 1
+    image_amp = image_amp.at[y1:y2, x1:x2].set(styler_amp[y1:y2, x1:x2])
+    image_amp = jnp.fft.ifftshift(image_amp, axes=(0, 1))
+    image_out = jnp.fft.ifft2(image_amp * jnp.exp(1j * image_phase), axes=(0, 1))
+    image_out = jnp.real(image_out)
+    return image_out.astype(dtype)
+
+
 class PixelShuffle2D(sk.TreeClass):
     """Rearrange elements in a tensor.
 
@@ -228,8 +253,8 @@ class PixelShuffle2D(sk.TreeClass):
         self.upscale_factor = (upscale_factor, upscale_factor)
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
-        return pixel_shuffle_3d(x, self.upscale_factor)
+    def __call__(self, array: CHWArray) -> CHWArray:
+        return pixel_shuffle_3d(array, self.upscale_factor)
 
     spatial_ndim: int = 2
 
@@ -283,10 +308,10 @@ class RandomContrast2D(sk.TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
-        return jax.vmap(random_contrast_2d, in_axes=in_axes)(key, x, range)
+        return jax.vmap(random_contrast_2d, in_axes=in_axes)(key, array, range)
 
     spatial_ndim: int = 2
 
@@ -314,9 +339,9 @@ class AdjustBrightness2D(sk.TreeClass):
     factor: float = sk.field(on_setattr=[IsInstance(float), Range(0, 1)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
+    def __call__(self, array: CHWArray) -> CHWArray:
         factor = jax.lax.stop_gradient(self.factor)
-        return jax.vmap(adjust_brightness_2d, in_axes=(0, None))(x, factor)
+        return jax.vmap(adjust_brightness_2d, in_axes=(0, None))(array, factor)
 
     spatial_ndim: int = 2
 
@@ -336,10 +361,10 @@ class RandomBrightness2D(sk.TreeClass):
     range: tuple[float, float] = sk.field(on_setattr=[IsInstance(tuple)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
-        return jax.vmap(random_brightness_2d, in_axes=in_axes)(key, x, range)
+        return jax.vmap(random_brightness_2d, in_axes=in_axes)(key, array, range)
 
     spatial_ndim: int = 2
 
@@ -373,8 +398,8 @@ class Pixelate2D(sk.TreeClass):
         self.scale = scale
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
-        return jax.vmap(pixelate_2d, in_axes=(0, None))(x, self.scale)
+    def __call__(self, array: CHWArray) -> CHWArray:
+        return jax.vmap(pixelate_2d, in_axes=(0, None))(array, self.scale)
 
     spatial_ndim: int = 2
 
@@ -410,9 +435,11 @@ class Solarize2D(sk.TreeClass):
     max_val: float = 1.0
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
+    def __call__(self, array: CHWArray) -> CHWArray:
         threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
-        return jax.vmap(solarize_2d, in_axes=(0, None, None))(x, threshold, max_val)
+        in_axes = (0, None, None)
+        args = (array, threshold, max_val)
+        return jax.vmap(solarize_2d, in_axes=in_axes)(*args)
 
     spatial_ndim: int = 2
 
@@ -462,8 +489,8 @@ class Posterize2D(sk.TreeClass):
     bits: int = sk.field(on_setattr=[IsInstance(int), Range(1, 8)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
-        return jax.vmap(posterize_2d, in_axes=(0, None))(x, self.bits)
+    def __call__(self, array: CHWArray) -> CHWArray:
+        return jax.vmap(posterize_2d, in_axes=(0, None))(array, self.bits)
 
     spatial_ndim: int = 2
 
@@ -515,14 +542,16 @@ class RandomJigSaw2D(sk.TreeClass):
     tiles: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
         """Mixes up tiles of an image.
 
         Args:
             x: channel-first image (CHW)
             key: random key
         """
-        return jax.vmap(random_jigsaw_2d, in_axes=(None, 0, None))(key, x, self.tiles)
+        in_axes = (None, 0, None)
+        args = (key, array, self.tiles)
+        return jax.vmap(random_jigsaw_2d, in_axes=in_axes)(*args)
 
     spatial_ndim: int = 2
 
@@ -551,10 +580,10 @@ class AdjustLog2D(sk.TreeClass):
         self.inv = inv
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
+    def __call__(self, array: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
         gain = jax.lax.stop_gradient(self.gain)
-        return jax.vmap(adjust_log_2d, in_axes=in_axes)(x, gain, self.inv)
+        return jax.vmap(adjust_log_2d, in_axes=in_axes)(array, gain, self.inv)
 
     spatial_ndim: int = 2
 
@@ -586,10 +615,11 @@ class AdjustSigmoid2D(sk.TreeClass):
         self.inv = inv
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
+    def __call__(self, array: CHWArray) -> CHWArray:
         in_axes = (0, None, None, None)
         cutoff, gain = jax.lax.stop_gradient((self.cutoff, self.gain))
-        return jax.vmap(adjust_sigmoid_2d, in_axes=in_axes)(x, cutoff, gain, self.inv)
+        args = (array, cutoff, gain, self.inv)
+        return jax.vmap(adjust_sigmoid_2d, in_axes=in_axes)(*args)
 
     spatial_ndim: int = 2
 
@@ -608,9 +638,9 @@ class AdjustHue2D(sk.TreeClass):
         self.factor = factor
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
+    def __call__(self, array: CHWArray) -> CHWArray:
         factor = jax.lax.stop_gradient(self.factor)
-        return adjust_hue_3d(x, factor)
+        return adjust_hue_3d(array, factor)
 
     spatial_ndim: int = 2
 
@@ -631,9 +661,9 @@ class RandomHue2D(sk.TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
-        return random_hue_3d(key, x, range)
+        return random_hue_3d(key, array, range)
 
     spatial_ndim: int = 2
 
@@ -652,9 +682,9 @@ class AdjustSaturation2D(sk.TreeClass):
         self.factor = factor
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
+    def __call__(self, array: CHWArray) -> CHWArray:
         factor = jax.lax.stop_gradient(self.factor)
-        return adust_saturation_3d(x, factor)
+        return adust_saturation_3d(array, factor)
 
     spatial_ndim: int = 2
 
@@ -678,6 +708,54 @@ class RandomSaturation2D(sk.TreeClass):
     def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         return random_saturation_3d(key, x, range)
+
+    spatial_ndim: int = 2
+
+
+class FourierDomainAdapt2D(sk.TreeClass):
+    """Domain adaptation via style transfer
+
+    .. image:: ../_static/fourierdomainadapt2d.png
+
+    Steps:
+        1. Apply FFT to source and target images.
+        2. Replace the low frequency part of the source amplitude with that from the target.
+        3. Apply inverse FFT to the modified source spectrum.
+
+    Args:
+        beta: controls the size of the low frequency part to be replaced. accepts
+            float.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> source = jnp.ones((1, 5, 5))
+        >>> target = jnp.ones((1, 10, 10))
+        >>> layer = sk.image.FourierDomainAdapt2D(0.5)
+        >>> layer(source, target).shape
+        (1, 5, 5)
+
+    Reference:
+        - https://openaccess.thecvf.com/content_CVPR_2020/papers/Yang_FDA_Fourier_Domain_Adaptation_for_Semantic_Segmentation_CVPR_2020_paper.pdf
+        - https://github.com/albumentations-team/albumentations/
+    """
+
+    def __init__(self, beta: float):
+        self.beta = beta
+
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim", argnum=0)
+    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim", argnum=1)
+    def __call__(self, image: CHWArray, target: CHWArray) -> CHWArray:
+        """Fourier Domain Adaptation
+
+        Args:
+            image: channel-first source image.
+            target: channel-first target image to adapt to.
+        """
+        beta = jax.lax.stop_gradient(self.beta)
+        in_axes = (0, 0, None)
+        args = (image, target, beta)
+        return jax.vmap(fourier_domain_adapt_2d, in_axes=in_axes)(*args)
 
     spatial_ndim: int = 2
 

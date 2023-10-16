@@ -847,3 +847,10 @@ def test_blur_pool_2d():
     layer = sk.image.FFTBlurPool2D((3, 3), strides=2)
 
     npt.assert_allclose(layer(x), y, atol=1e-6)
+
+
+def test_fourier_domain_adapt_2d():
+    x = jnp.ones([3, 10, 10])
+    y = jnp.ones([3, 5, 5])
+    layer = sk.image.FourierDomainAdapt2D(beta=0.5)
+    assert layer(x, y).shape == (3, 10, 10)
