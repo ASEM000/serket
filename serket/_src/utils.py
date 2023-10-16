@@ -262,7 +262,11 @@ def recursive_getattr(obj, attr: Sequence[str]):
     )
 
 
-def validate_spatial_nd(func: Callable[P, T], attribute_name: str) -> Callable[P, T]:
+def validate_spatial_nd(
+    func: Callable[P, T],
+    attribute_name: str,
+    argnum: int = 0,
+) -> Callable[P, T]:
     """Decorator to validate spatial input shape."""
     attribute_list: Sequence[str] = attribute_name.split(".")
 
@@ -286,9 +290,10 @@ def validate_spatial_nd(func: Callable[P, T], attribute_name: str) -> Callable[P
         )
 
     @ft.wraps(func)
-    def wrapper(self, array, *a, **k):
-        array = check_spatial_in_shape(array, recursive_getattr(self, attribute_list))
-        return func(self, array, *a, **k)
+    def wrapper(self, *args, **kwargs):
+        array = args[argnum]
+        check_spatial_in_shape(array, recursive_getattr(self, attribute_list))
+        return func(self, *args, **kwargs)
 
     return wrapper
 

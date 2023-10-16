@@ -23,3 +23,5 @@ Augment API
 .. autoclass:: Posterize2D
 
 .. autoclass:: Solarize2D
+
+.. autoclass:: FourierDomainAdapt2D
