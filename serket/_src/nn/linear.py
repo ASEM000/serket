@@ -55,52 +55,48 @@ def infer_multilinear_in_features(_, *x, **__) -> int | tuple[int, ...]:
 updates = dict(in_features=infer_multilinear_in_features)
 
 
-@ft.lru_cache(maxsize=None)
-def _multilinear_einsum_string(degree: int) -> str:
-    # Generate einsum string for a linear layer of degree n
-    # Example:
-    #     >>> _multilinear_einsum_string(1)
-    #     '...a,ab->....b'
-    #     >>> _multilinear_einsum_string(2)
-    #     '...a,...b,abc->....c'
-    alpha = "".join(map(str, range(degree + 1)))
-    xs_string = [f"...{i}" for i in alpha[:degree]]
-    output_string = ",".join(xs_string)
-    output_string += f",{alpha[:degree+1]}->...{alpha[degree]}"
-    return output_string
+def multilinear(
+    arrays: tuple[jax.Array, ...],
+    weight: jax.Array,
+    bias: jax.Array | None,
+) -> jax.Array:
+    """Apply a linear layer to multiple inputs"""
+
+    def generate_einsum_string(degree: int) -> str:
+        alpha = "".join(map(str, range(degree + 1)))
+        xs_string = [f"...{i}" for i in alpha[:degree]]
+        output_string = ",".join(xs_string)
+        output_string += f",{alpha[:degree+1]}->...{alpha[degree]}"
+        return output_string
+
+    einsum_string = generate_einsum_string(len(arrays))
+    out = jnp.einsum(einsum_string, *arrays, weight)
+    return out if bias is None else (out + bias)
 
 
-@ft.lru_cache(maxsize=None)
-def _general_linear_einsum_string(*axes: tuple[int, ...]) -> str:
-    # Return the einsum string for a general linear layer.
-    # Example:
-    #     # apply linear layer to last axis
-    #     >>> _general_linear_einsum_string(-1)
-    #     '...0,01->...1'
+def general_linear(
+    array: jax.Array,
+    weight: jax.Array,
+    bias: jax.Array | None,
+    axes: tuple[int, ...],
+) -> jax.Array:
+    """Apply a linear layer to input at axes defined by ``axes``"""
 
-    #     # apply linear layer to last two axes
-    #     >>> _general_linear_einsum_string(-1,-2)
-    #     '...01,012->...2'
+    # ensure negative axes
+    def generate_einsum_string(*axes: tuple[int, ...]) -> str:
+        axes = sorted(axes)
+        total_axis = abs(min(axes))  # get the total number of axes
+        alpha = "".join(map(str, range(total_axis + 1)))
+        array_str = "..." + alpha[:total_axis]
+        weight_str = "".join([array_str[axis] for axis in axes]) + alpha[total_axis]
+        result_string = "".join([ai for ai in array_str if ai not in weight_str])
+        result_string += alpha[total_axis]
+        return f"{array_str},{weight_str}->{result_string}"
 
-    #     # apply linear layer to second last axis
-    #     >>> _general_linear_einsum_string(-2)
-    #     '...01,02->...12'
-
-    #     # apply linear layer to last and third last axis
-    #     >>> _general_linear_einsum_string(-1,-3)
-    #     '...012,023->...13'
-
-    if not all([i < 0 for i in axes]):
-        raise ValueError("axes should be negative")
-
-    axes = sorted(axes)
-    total_axis = abs(min(axes))  # get the total number of axes
-    alpha = "".join(map(str, range(total_axis + 1)))
-    input_string = "..." + alpha[:total_axis]
-    weight_string = "".join([input_string[axis] for axis in axes]) + alpha[total_axis]
-    result_string = "".join([ai for ai in input_string if ai not in weight_string])
-    result_string += alpha[total_axis]
-    return f"{input_string},{weight_string}->{result_string}"
+    axes = map(lambda i: i if i < 0 else i - array.ndim, axes)
+    einsum_string = generate_einsum_string(*axes)
+    out = jnp.einsum(einsum_string, array, weight)
+    return out if bias is None else (out + bias)
 
 
 class Multilinear(sk.TreeClass):
@@ -181,10 +177,8 @@ class Multilinear(sk.TreeClass):
         self.bias = resolve_init(bias_init)(k2, (out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, *x) -> jax.Array:
-        einsum_string = _multilinear_einsum_string(len(self.in_features))
-        x = jnp.einsum(einsum_string, *x, self.weight)
-        return x if self.bias is None else (x + self.bias)
+    def __call__(self, *arrays) -> jax.Array:
+        return multilinear(arrays, self.weight, self.bias)
 
 
 class Linear(Multilinear):
@@ -341,12 +335,8 @@ class GeneralLinear(sk.TreeClass):
         self.bias = resolve_init(bias_init)(k2, (self.out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, x: jax.Array) -> jax.Array:
-        # ensure negative axes
-        axes = map(lambda i: i if i < 0 else i - x.ndim, self.in_axes)
-        einsum_string = _general_linear_einsum_string(*axes)
-        x = jnp.einsum(einsum_string, x, self.weight)
-        return x
+    def __call__(self, array: jax.Array) -> jax.Array:
+        return general_linear(array, self.weight, self.bias, self.in_axes)
 
 
 class Identity(sk.TreeClass):
@@ -458,14 +448,12 @@ class FNN(sk.TreeClass):
         names = (f"linear_{i}" for i, _ in enumerate(keys))
         vars(self).update(zip(names, layers))
 
-    def __call__(self, x: jax.Array) -> jax.Array:
-        # to give it more meaningful names in the repr
-        # and index by FNN.at['linear_1'] instead of FNN.at['layers'][0] ...
+    def __call__(self, array: jax.Array) -> jax.Array:
         vs = vars(self)
         *layers, last = [vs[k] for k in vs if k.startswith("linear_")]
         for li in layers:
-            x = self.act(li(x))
-        return last(x)
+            array = self.act(li(array))
+        return last(array)
 
 
 def _scan_linear(
@@ -590,8 +578,8 @@ class MLP(sk.TreeClass):
         self.linear_h = sk.tree_unmask(batched_linear(keys[1:-1]))
         self.linear_o = Linear(hidden_size, out_features, key=keys[-1], **kwargs)
 
-    def __call__(self, x: jax.Array) -> jax.Array:
-        x = self.act(self.linear_i(x))
+    def __call__(self, array: jax.Array) -> jax.Array:
+        array = self.act(self.linear_i(array))
         weight_h, bias_h = self.linear_h.weight, self.linear_h.bias
-        x = _scan_linear(x, weight_h, bias_h, self.act)
-        return self.linear_o(x)
+        array = _scan_linear(array, weight_h, bias_h, self.act)
+        return self.linear_o(array)

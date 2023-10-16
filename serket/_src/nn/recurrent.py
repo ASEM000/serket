@@ -82,7 +82,7 @@ class RNNCell(sk.TreeClass):
     """
 
     @abc.abstractmethod
-    def __call__(self, x: jax.Array, state: RNNState) -> RNNState:
+    def __call__(self, array: jax.Array, state: RNNState) -> RNNState:
         ...
 
     @property
