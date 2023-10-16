@@ -151,9 +151,9 @@ class ResizeND(sk.TreeClass):
         self.antialias = antialias
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, **k) -> jax.Array:
+    def __call__(self, array: jax.Array, **k) -> jax.Array:
         in_axes = (0, None, None, None)
-        args = (x, self.size, self.method, self.antialias)
+        args = (array, self.size, self.method, self.antialias)
         return jax.vmap(jax.image.resize, in_axes=in_axes)(*args)
 
     @property
@@ -649,9 +649,9 @@ class ZoomND(sk.TreeClass):
         self.factor = canonicalize(factor, self.spatial_ndim, name="factor")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array) -> jax.Array:
         factor = jax.lax.stop_gradient(self.factor)
-        return jax.vmap(zoom_nd, in_axes=(0, None))(x, factor)
+        return jax.vmap(zoom_nd, in_axes=(0, None))(array, factor)
 
     @property
     @abc.abstractmethod
@@ -824,7 +824,7 @@ class RandomZoom3D(sk.TreeClass):
         self.depth_range = depth_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2, k3, k4 = jr.split(key, 4)
         factors = (self.height_range, self.width_range, self.depth_range)
         ((hfl, hfh), (wfl, wfh), (dfl, dfh)) = jax.lax.stop_gradient(factors)
@@ -832,7 +832,7 @@ class RandomZoom3D(sk.TreeClass):
         factor_c = jr.uniform(k2, minval=wfl, maxval=wfh)
         factor_d = jr.uniform(k3, minval=dfl, maxval=dfh)
         factor = (factor_r, factor_c, factor_d)
-        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k4, x, factor)
+        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k4, array, factor)
 
     spatial_ndim: int = 3
 
@@ -842,8 +842,8 @@ class CenterCropND(sk.TreeClass):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return jax.vmap(ft.partial(center_crop_nd, sizes=self.size))(x)
+    def __call__(self, array: jax.Array) -> jax.Array:
+        return jax.vmap(ft.partial(center_crop_nd, sizes=self.size))(array)
 
     @property
     @abc.abstractmethod
