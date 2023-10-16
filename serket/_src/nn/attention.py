@@ -22,7 +22,7 @@ import jax.random as jr
 from typing_extensions import Annotated
 
 import serket as sk
-from serket._src.nn.initialization import InitType
+from serket._src.nn.initialization import DType, InitType
 from serket._src.utils import maybe_lazy_call, maybe_lazy_init
 
 """Defines attention layers."""
@@ -115,12 +115,15 @@ class MultiHeadAttention(sk.TreeClass):
         q_weight_init: Initializer for the query weight. Defaults to ``glorot_uniform``.
         q_bias_init: Initializer for the query bias. Defaults to zeros. use
             ``None`` to disable bias.
+        q_dtype: Data type for the query weight and bias. Defaults to ``jnp.float32``.
         k_weight_init: Initializer for the key weight. Defaults to ``glorot_uniform``.
         k_bias_init: Initializer for the key bias. Defaults to zeros. use
             ``None`` to disable bias.
+        k_dtype: Data type for the key weight and bias. Defaults to ``jnp.float32``.
         v_weight_init: Initializer for the value weight. Defaults to ``glorot_uniform``.
         v_bias_init: Initializer for the value bias. Defaults to zeros. use
             ``None`` to disable bias.
+        v_dtype: Data type for the value weight and bias. Defaults to ``jnp.float32``.
         out_weight_init: Initializer for the output weight. Defaults to ``glorot_uniform``.
         out_bias_init: Initializer for the output bias. Defaults to zeros. use
             ``None`` to disable bias.
@@ -206,12 +209,16 @@ class MultiHeadAttention(sk.TreeClass):
         key: jax.Array,
         q_weight_init: InitType = "glorot_uniform",
         q_bias_init: InitType = "zeros",
+        q_dtype: DType = jnp.float32,
         k_weight_init: InitType = "glorot_uniform",
         k_bias_init: InitType = "zeros",
+        k_dtype: DType = jnp.float32,
         v_weight_init: InitType = "glorot_uniform",
         v_bias_init: InitType = "zeros",
+        v_dtype: DType = jnp.float32,
         out_weight_init: InitType = "glorot_uniform",
         out_bias_init: InitType = "zeros",
+        out_dtype: DType = jnp.float32,
         drop_rate: float = 0.0,
         drop_broadcast: bool = False,
     ):
@@ -232,7 +239,7 @@ class MultiHeadAttention(sk.TreeClass):
             raise ValueError(f"{out_features=} % {num_heads=} != 0.")
 
         head_features = q_features // num_heads
-        qkey, kkey, vkey, okey = jr.split(key, 4)
+        q_key, k_key, v_key, out_key = jr.split(key, 4)
 
         self.num_heads = num_heads
         drop_axes = (-1, -2) if drop_broadcast else None
@@ -243,7 +250,8 @@ class MultiHeadAttention(sk.TreeClass):
             out_features=head_features * num_heads,
             weight_init=q_weight_init,
             bias_init=q_bias_init,
-            key=qkey,
+            key=q_key,
+            dtype=q_dtype,
         )
 
         self.k_projection = sk.nn.Linear(
@@ -251,7 +259,8 @@ class MultiHeadAttention(sk.TreeClass):
             out_features=head_features * num_heads,
             weight_init=k_weight_init,
             bias_init=k_bias_init,
-            key=kkey,
+            key=k_key,
+            dtype=k_dtype,
         )
 
         self.v_projection = sk.nn.Linear(
@@ -259,7 +268,8 @@ class MultiHeadAttention(sk.TreeClass):
             out_features=head_features * num_heads,
             weight_init=v_weight_init,
             bias_init=v_bias_init,
-            key=vkey,
+            key=v_key,
+            dtype=v_dtype,
         )
 
         self.out_projection = sk.nn.Linear(
@@ -267,7 +277,8 @@ class MultiHeadAttention(sk.TreeClass):
             out_features=out_features,
             weight_init=out_weight_init,
             bias_init=out_bias_init,
-            key=okey,
+            key=out_key,
+            dtype=out_dtype,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=attention_updates)
