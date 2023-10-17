@@ -404,7 +404,7 @@ def maybe_lazy_init(
     func: Callable[P, T],
     is_lazy: Callable[..., bool],
 ) -> Callable[P, T]:
-    """Sets input argumets to instance attribute if lazy initialization is ``True``.
+    """Sets input arguments to instance attribute if lazy initialization is ``True``.
 
     The key idea is to store the input arguments to the instance attribute to
     be used later when the instance is re-initialized using ``maybe_lazy_call``
@@ -454,15 +454,17 @@ def maybe_lazy_init(
 LAZY_CALL_ERROR = """\
 Cannot call ``{func_name}`` directly on a lazy layer.
 use ``layer.at['{func_name}'](...)`` instead to return a tuple of:
-    - The layer output. 
+    - Layer output.
     - Materialized layer.
 
 Example:
     >>> layer = {class_name}(...)
     >>> layer(x)  # this will raise an error
-    Traceback (most recent call last):
-        ...
-    >>> _, materialized_layer = layer.at['{func_name}'](x)
+    ...
+    
+    Instead use the following pattern:
+
+    >>> layer_output, materialized_layer = layer.at['{func_name}'](x)
     >>> materialized_layer(x)
     ...
 """
