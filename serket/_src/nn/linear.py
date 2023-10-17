@@ -99,106 +99,41 @@ def general_linear(
     return out if bias is None else (out + bias)
 
 
-class Multilinear(sk.TreeClass):
+class Linear(sk.TreeClass):
     """Linear layer with arbitrary number of inputs applied to last axis of each input
 
     Args:
-        in_features: number of input features for each input
-        out_features: number of output features
+        in_features: number of input features for each input. accepts a tuple of ints
+            or a single int for single input. If ``None``, the layer is lazily
+            initialized.
+        out_features: number of output features.
         key: key for the random number generator.
         weight_init: function to initialize the weights. Defaults to ``glorot_uniform``.
         bias_init: function to initialize the bias. Defaults to ``zeros``.
         dtype: dtype of the weights and bias. defaults to ``jnp.float32``.
 
     Example:
-        >>> # Bilinear layer
+        Linear layer example
+
         >>> import jax.numpy as jnp
-        >>> import jax.random as jr
         >>> import serket as sk
-        >>> layer = sk.nn.Multilinear((5,6), 7, key=jr.PRNGKey(0))
-        >>> layer(jnp.ones((1,5)), jnp.ones((1,6))).shape
-        (1, 7)
-
-        >>> # Trilinear layer
-        >>> layer = sk.nn.Multilinear((5,6,7), 8, key=jr.PRNGKey(0))
-        >>> layer(jnp.ones((1,5)), jnp.ones((1,6)), jnp.ones((1,7))).shape
-        (1, 8)
-
-    Note:
-        :class:`.Multilinear` supports lazy initialization, meaning that the weights and
-        biases are not initialized until the first call to the layer. This is
-        useful when the input shape is not known at initialization time.
-
-        To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
-
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> import jax
-        >>> k1, k2 = jr.split(jr.PRNGKey(0))
-        >>> @sk.autoinit
-        ... class Linears(sk.TreeClass):
-        ...    l1: sk.nn.Multilinear = sk.nn.Multilinear(None, 32, key=k1)
-        ...    l2: sk.nn.Multilinear = sk.nn.Multilinear((32,), 10, key=k2)
-        ...    def __call__(self, x: jax.Array, y: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x, y)))
-        >>> lazy_linears = Linears()
-        >>> x = jnp.ones([100, 28])
-        >>> y = jnp.ones([100, 56])
-        >>> _, materialized_linears = lazy_linears.at["__call__"](x, y)
-        >>> materialized_linears.l1.in_features
-        (28, 56)
-    """
-
-    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
-    def __init__(
-        self,
-        in_features: tuple[int, ...] | None,
-        out_features: int,
-        key: jax.Array,
-        *,
-        weight_init: InitType = "glorot_uniform",
-        bias_init: InitType = "zeros",
-        dtype: DType = jnp.float32,
-    ):
-        self.in_features = in_features
-        self.out_features = out_features
-        self.weight_init = weight_init
-        self.bias_init = bias_init
-
-        if not isinstance(in_features, (tuple, int)):
-            raise ValueError(f"Expected tuple or int for {in_features=}.")
-
-        k1, k2 = jr.split(key)
-        weight_shape = (*in_features, out_features)
-        self.weight = resolve_init(weight_init)(k1, weight_shape, dtype)
-        self.bias = resolve_init(bias_init)(k2, (out_features,), dtype)
-
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, *arrays) -> jax.Array:
-        return multilinear(arrays, self.weight, self.bias)
-
-
-class Linear(Multilinear):
-    """Linear layer with 1 input applied to last axis of input
-
-    Args:
-        in_features: number of input features
-        out_features: number of output features
-        key: key for the random number generator.
-        weight_init: function to initialize the weights. Defaults to ``glorot_uniform``.
-        bias_init: function to initialize the bias. Defaults to ``zeros``.
-        dtype: data type of the weights and biases. defaults to ``jnp.float32``.
+        >>> array = jnp.ones((1, 5))
+        >>> layer = sk.nn.Linear(5, 6, key=jr.PRNGKey(0))
+        >>> layer(array).shape
+        (1, 6)
 
     Example:
+        Bilinear layer example
+
         >>> import jax.numpy as jnp
-        >>> import serket as sk
         >>> import jax.random as jr
-        >>> layer = sk.nn.Linear(5, 6, key=jr.PRNGKey(0))
-        >>> layer(jnp.ones((1,5))).shape
-        (1, 6)
+        >>> import serket as sk
+        >>> array_1 = jnp.ones((1, 5))
+        >>> array_2 = jnp.ones((1, 6))
+        >>> layer = sk.nn.Linear((5,6), 7, key=jr.PRNGKey(0))
+        >>> layer(array_1, array_2).shape
+        (1, 7)
 
     Note:
         :class:`.Linear` supports lazy initialization, meaning that the weights and
@@ -216,35 +151,53 @@ class Linear(Multilinear):
         >>> k1, k2 = jr.split(jr.PRNGKey(0))
         >>> @sk.autoinit
         ... class Linears(sk.TreeClass):
-        ...    l1: sk.nn.Linear = sk.nn.Linear(None, 32,key=k1)
-        ...    l2: sk.nn.Linear = sk.nn.Linear(32, 10,key=k2)
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
+        ...    l1: sk.nn.Linear = sk.nn.Linear(None, 32, key=k1)
+        ...    l2: sk.nn.Linear = sk.nn.Linear((32,), 10, key=k2)
+        ...    def __call__(self, x: jax.Array, y: jax.Array) -> jax.Array:
+        ...        return self.l2(jax.nn.relu(self.l1(x, y)))
         >>> lazy_linears = Linears()
-        >>> x = jnp.ones((100, 28, 28)).reshape(100, -1)
-        >>> _, materialized_linears = lazy_linears.at["__call__"](x)
+        >>> x = jnp.ones([100, 28])
+        >>> y = jnp.ones([100, 56])
+        >>> _, materialized_linears = lazy_linears.at["__call__"](x, y)
         >>> materialized_linears.l1.in_features
-        (784,)
+        (28, 56)
+
+    Note:
+        The difference between :class:`.Linear` and :class:`.GeneralLinear` is that
+        :class:`.Linear` applies the linear layer to the last axis of each input
+        for possibly multiple inputs, while :class:`.GeneralLinear` applies the
+        linear layer to the axes specified by ``in_axes`` of a single input.
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
-        in_features: int | None,
+        in_features: int | tuple[int, ...] | None,
         out_features: int,
-        *,
         key: jax.Array,
+        *,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        super().__init__(
-            in_features if in_features is None else (in_features,),
-            out_features,
-            key=key,
-            weight_init=weight_init,
-            bias_init=bias_init,
-            dtype=dtype,
-        )
+        if not isinstance(in_features, (int, tuple, type(None))):
+            raise TypeError(f"{in_features=} must be `None`, `tuple` or `int`")
+        if isinstance(in_features, int):
+            in_features = (in_features,)
+        self.in_features = in_features
+        self.out_features = out_features
+        self.weight_init = weight_init
+        self.bias_init = bias_init
+        k1, k2 = jr.split(key)
+        weight_shape = (*self.in_features, self.out_features)
+        self.weight = resolve_init(weight_init)(k1, weight_shape, dtype)
+        self.bias = resolve_init(bias_init)(k2, (out_features,), dtype)
+
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
+    def __call__(self, *arrays) -> jax.Array:
+        if len(arrays) != len(self.in_features):
+            raise ValueError(f"{len(arrays)=} != {len(self.in_features)=}")
+        return multilinear(arrays, self.weight, self.bias)
 
 
 def infer_in_features(instance, x, **__) -> tuple[int, ...]:
@@ -300,6 +253,12 @@ class GeneralLinear(sk.TreeClass):
         (10, 4)
         >>> materialized_linear(jnp.ones((10, 5, 4))).shape
         (5, 12)
+
+    Note:
+        The difference between :class:`.Linear` and :class:`.GeneralLinear` is that
+        :class:`.Linear` applies the linear layer to the last axis of each input
+        for possibly multiple inputs, while :class:`.GeneralLinear` applies the
+        linear layer to the axes specified by ``in_axes`` of a single input.
     """
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
