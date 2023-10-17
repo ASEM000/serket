@@ -99,6 +99,8 @@ html_theme_options = {
     "globaltoc_collapse": True,
     "globaltoc_maxdepth": None,
     "pygment_dark_style": "github-dark-high-contrast",
+    "path_to_docs": "docs",
+    "repository_branch": "main",
     "launch_buttons": {
         "binderhub_url": "https://mybinder.org",
         "notebook_interface": "jupyterlab",
