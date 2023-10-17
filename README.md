@@ -86,7 +86,7 @@ net = sk.tree_unmask(net)
 | Attention         | - `MultiHeadAttention`                                                                                                                                                                                                                                                                                                    |
 | Convolution       | - `{FFT,_}Conv{1D,2D,3D}` <br> - `{FFT,_}Conv{1D,2D,3D}Transpose` <br> - `Depthwise{FFT,_}Conv{1D,2D,3D}` <br> - `Separable{FFT,_}Conv{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local` <br> - `SpectralConv{1D,2D,3D}`                                                                                                            |
 | Dropout           | - `Dropout`<br> - `Dropout{1D,2D,3D}` <br> - `RandomCutout{1D,2D,3D}`                                                                                                                                                                                                                                                     |
-| Linear            | - `Linear`, `Multilinear`, `GeneralLinear`, `Identity`                                                                                                                                                                                                                                                                    |
+| Linear            | - `Linear`, `GeneralLinear`, `Identity`                                                                                                                                                                                                                                                                                   |
 | Densely connected | - `FNN` , <br> - `MLP` _compile time_ optimized                                                                                                                                                                                                                                                                           |
 | Normalization     | - `{Layer,Instance,Group,Batch}Norm`                                                                                                                                                                                                                                                                                      |
 | Pooling           | - `{Avg,Max,LP}Pool{1D,2D,3D}` <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `Adaptive{Avg,Max}Pool{1D,2D,3D}`                                                                                                                                                                                                            |
@@ -96,12 +96,12 @@ net = sk.tree_unmask(net)
 
 #### 🖼️ Image package: `serket.image`
 
-| Group     | Layers                                                                                                                                                                                       |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Filter    | - `{FFT,_}{Avg,Box,Gaussian,Motion}Blur2D` <br> - `{JointBilateral,Bilateral,Median}Blur2D` <br> - `{FFT,_}{UnsharpMask}2D` <br> - `{FFT,_}{Sobel,Laplacian}2D` <br> - `{FFT,_}BlurPool2D`   |
-| Augment   | - `Adjust{Sigmoid,Log}2D` <br> - `{Adjust,Random}{Brightness,Contrast,Hue,Saturation}2D`, <br> - `RandomJigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`,`Posterize2D`,`Solarize2D` <br> `FourierDomainAdapt2D`   |
-| Geometric | - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D` <br> - `{Random,_}WaveTransform2D` <br> - `{FFT,_}ElasticTransform2D` |
-| Color     | - `RGBToGrayscale2D` , `GrayscaleToRGB2D` <br> - `RGBToHSV2D`, `HSVToRGB2D`                                                                                                                  |
+| Group     | Layers                                                                                                                                                                                                           |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Filter    | - `{FFT,_}{Avg,Box,Gaussian,Motion}Blur2D` <br> - `{JointBilateral,Bilateral,Median}Blur2D` <br> - `{FFT,_}{UnsharpMask}2D` <br> - `{FFT,_}{Sobel,Laplacian}2D` <br> - `{FFT,_}BlurPool2D`                       |
+| Augment   | - `Adjust{Sigmoid,Log}2D` <br> - `{Adjust,Random}{Brightness,Contrast,Hue,Saturation}2D`, <br> - `RandomJigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`,`Posterize2D`,`Solarize2D` <br> - `FourierDomainAdapt2D` |
+| Geometric | - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D` <br> - `{Random,_}WaveTransform2D` <br> - `{FFT,_}ElasticTransform2D`                     |
+| Color     | - `RGBToGrayscale2D` , `GrayscaleToRGB2D` <br> - `RGBToHSV2D`, `HSVToRGB2D`                                                                                                                                      |
 
 #### 🌈 Cluster package: `serket.cluster`
 

@@ -87,12 +87,12 @@ def test_bilinear():
     x1 = jnp.array([[-0.7676, -0.7205, -0.0586]])
     x2 = jnp.array([[0.4600, -0.2508, 0.0115, 0.6155]])
     y = jnp.array([[-0.3001916, 0.28336674]])
-    layer = sk.nn.Multilinear((3, 4), 2, bias_init=None, key=jax.random.PRNGKey(0))
+    layer = sk.nn.Linear((3, 4), 2, bias_init=None, key=jax.random.PRNGKey(0))
     layer = layer.at["weight"].set(W)
 
     npt.assert_allclose(y, layer(x1, x2), atol=1e-4)
 
-    layer = sk.nn.Multilinear((3, 4), 2, bias_init="zeros", key=jax.random.PRNGKey(0))
+    layer = sk.nn.Linear((3, 4), 2, bias_init="zeros", key=jax.random.PRNGKey(0))
     layer = layer.at["weight"].set(W)
 
     npt.assert_allclose(y, layer(x1, x2), atol=1e-4)
@@ -107,11 +107,11 @@ def test_identity():
 def test_multi_linear():
     x = jnp.linspace(0, 1, 100)[:, None]
     lhs = sk.nn.Linear(1, 10, key=jax.random.PRNGKey(0))
-    rhs = sk.nn.Multilinear((1,), 10, key=jax.random.PRNGKey(0))
+    rhs = sk.nn.Linear((1,), 10, key=jax.random.PRNGKey(0))
     npt.assert_allclose(lhs(x), rhs(x), atol=1e-4)
 
-    with pytest.raises(ValueError):
-        sk.nn.Multilinear([1, 2], 10, key=jax.random.PRNGKey(0))
+    with pytest.raises(TypeError):
+        sk.nn.Linear([1, 2], 10, key=jax.random.PRNGKey(0))
 
 
 def test_general_linear():

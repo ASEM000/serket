@@ -4,7 +4,6 @@ Linear
     
 .. autoclass:: Linear
 .. autoclass:: Identity
-.. autoclass:: Multilinear
 .. autoclass:: GeneralLinear
 .. autoclass:: Embedding
 
