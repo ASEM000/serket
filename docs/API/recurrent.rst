@@ -23,3 +23,6 @@ Recurrent
 .. autoclass:: FFTConvGRU3DCell
 
 .. autoclass:: ScanRNN
+
+
+.. autofunction:: scan_rnn

@@ -1382,86 +1382,121 @@ def concat_state(states: list[RNNState]) -> RNNState:
     )
 
 
-def accumulate_scan(
+def scan_rnn(
     cell: RNNCell,
+    backward_cell: RNNCell | None,
     array: jax.Array,
     state: RNNState,
-    reverse: bool = False,
-) -> tuple[jax.Array, RNNState]:
-    """Scans a RNN cell over a sequence. Accumulates the output for each timestep."""
-
-    def scan_func(carry, array):
-        state = cell(array, state=carry)
-        return state, state
-
-    array = jnp.flip(array, axis=0) if reverse else array  # flip over time axis
-    result = jax.lax.scan(scan_func, state, array)[1].hidden_state
-    carry, result = jax.lax.scan(scan_func, state, array)
-    result = result.hidden_state
-    result = jnp.flip(result, axis=-1) if reverse else result
-    return result, carry
-
-
-def unaccumulate_scan(
-    cell: RNNCell,
-    array: jax.Array,
-    state: RNNState,
-    reverse: bool = False,
-) -> jax.Array:
-    """Scans a RNN cell over a sequence. Returns the output for the last timestep."""
-
-    def scan_func(carry, x):
-        state = cell(x, state=carry)
-        return state, None
-
-    array = jnp.flip(array, axis=0) if reverse else array
-    carry, _ = jax.lax.scan(scan_func, state, array)
-    result = carry.hidden_state
-    return result, carry
-
-
-def scan_unidirectional_rnn(
-    cell: RNNCell,
-    backward_cell: None,
-    array: jax.Array,
-    state: RNNState,
-    return_sequences: bool,
-    return_state: bool,
+    return_sequences: bool = False,
+    return_state: bool = False,
 ) -> jax.Array | tuple[jax.Array, RNNState]:
-    """Scans a unidirectional RNN cell over a sequence.
-
-    Args:
-        cell: the RNN cell to scan.
-        backward_cell: placeholder for consistency with bidirectional RNN. ignored.
-        array: the input sequence. shape: ``[time, features]``.
-        state: the initial state of the RNN cell.
-        return_sequences: whether to return the output for each timestep.
-        return_state: whether to return the final state of the RNN cell(s).
-    """
-    del backward_cell  # for consistency with bidirectional RNN
-    scan_func = accumulate_scan if return_sequences else unaccumulate_scan
-    result, state = scan_func(cell, array, state)
-    return (result, state) if return_state else result
-
-
-def scan_bidirectional_rnn(
-    cell: RNNCell,
-    backward_cell: RNNCell,
-    array: jax.Array,
-    state: RNNState,
-    return_sequences: bool,
-    return_state: bool,
-) -> jax.Array | tuple[jax.Array, RNNState]:
-    """Scans a bidirectional RNN cell over a sequence.
+    """Scans a RNN cell(s) over a sequence.
 
     Args:
         cell: the forward RNN cell to scan.
-        backward_cell: the backward RNN cell to scan.
-        array: the input sequence. shape: ``[time, features]``.
-        state: the initial state of the RNN cell.
-        return_sequences: whether to return the output for each timestep.
-        return_state: whether to return the final state of the RNN cell(s).
+        backward_cell: the backward RNN cell to scan. Pass ``None`` for unidirectional RNN.
+        array: the input sequence.
+        state: the initial state of the RNN cell. In case of bidirectional RNN,
+            the forward and backward states are concatenated along the first axis.
+        return_sequences: whether to return the output for each timestep. Defaults
+            to ``False``.
+        return_state: whether to return the final state of the RNN cell(s). Defaults
+            to ``False``.
+
+    Example:
+        Unionidirectional RNN:
+
+        >>> import serket as sk
+        >>> import jax
+        >>> import jax.numpy as jnp
+        <BLANKLINE>
+        >>> cell = sk.nn.SimpleRNNCell(1, 2, key=jax.random.PRNGKey(0))
+        >>> state = sk.tree_state(cell)
+        >>> array = jnp.ones([10, 1])  # [time steps, features]
+        <BLANKLINE>
+        >>> out = sk.nn.scan_rnn(cell, None, array, state)
+        >>> print(out.shape)
+        (2,)
+        <BLANKLINE>
+        >>> out = sk.nn.scan_rnn(cell, None, array, state, return_sequences=True)
+        >>> print(out.shape)
+        (10, 2)
+        <BLANKLINE>
+        >>> out, state = sk.nn.scan_rnn(cell, None, array, state, return_state=True)
+        >>> print(repr(state))
+        SimpleRNNState(hidden_state=f32[2](μ=0.05, σ=0.93, ∈[-0.88,0.98]))
+
+    Example:
+        Bidirectional RNN:
+
+        >>> import serket as sk
+        >>> import jax
+        >>> import jax.numpy as jnp
+        <BLANKLINE>
+        >>> cell = sk.nn.SimpleRNNCell(1, 2, key=jax.random.PRNGKey(0))
+        >>> back_cell = sk.nn.SimpleRNNCell(1, 2, key=jax.random.PRNGKey(1))
+        >>> # concat state of forward and backward cells
+        >>> concat_state_func = lambda *x: jnp.concatenate([*x])
+        >>> state = jax.tree_map(concat_state_func, *sk.tree_state((cell, back_cell)))
+        >>> array = jnp.ones([10, 1])  # [time steps, features]
+        <BLANKLINE>
+        >>> out = sk.nn.scan_rnn(cell, back_cell, array, state)
+        >>> print(out.shape)
+        (4,)
+        <BLANKLINE>
+        >>> out = sk.nn.scan_rnn(cell, back_cell, array, state, return_sequences=True)
+        >>> print(out.shape)
+        (10, 4)
+        <BLANKLINE>
+        >>> out, state = sk.nn.scan_rnn(cell, back_cell, array, state, return_state=True)
+        >>> print(repr(state))
+        SimpleRNNState(hidden_state=f32[4](μ=-0.05, σ=0.67, ∈[-0.88,0.98]))
+
+    Returns:
+        return the result and state if ``return_state`` is ``True``. otherwise,
+        return the result.
+
+    Note:
+        See :class:`.nn.ScanRNN` for a class-based API.
     """
+
+    def accumulate_scan(
+        cell: RNNCell,
+        array: jax.Array,
+        state: RNNState,
+        reverse: bool = False,
+    ) -> tuple[jax.Array, RNNState]:
+        def scan_func(carry, array):
+            state = cell(array, state=carry)
+            return state, state
+
+        array = jnp.flip(array, axis=0) if reverse else array  # flip over time axis
+        result = jax.lax.scan(scan_func, state, array)[1].hidden_state
+        carry, result = jax.lax.scan(scan_func, state, array)
+        result = result.hidden_state
+        result = jnp.flip(result, axis=-1) if reverse else result
+        return result, carry
+
+    def unaccumulate_scan(
+        cell: RNNCell,
+        array: jax.Array,
+        state: RNNState,
+        reverse: bool = False,
+    ) -> jax.Array:
+        def scan_func(carry, x):
+            state = cell(x, state=carry)
+            return state, None
+
+        array = jnp.flip(array, axis=0) if reverse else array
+        carry, _ = jax.lax.scan(scan_func, state, array)
+        result = carry.hidden_state
+        return result, carry
+
+    if backward_cell is None:
+        scan_func = accumulate_scan if return_sequences else unaccumulate_scan
+        result, state = scan_func(cell, array, state)
+        return (result, state) if return_state else result
+    # bidirectional RNN
     lhs_state, rhs_state = split_state(state, splits=2)
     scan_func = accumulate_scan if return_sequences else unaccumulate_scan
     lhs_result, lhs_state = scan_func(cell, array, lhs_state, False)
@@ -1571,18 +1606,13 @@ class ScanRNN(sk.TreeClass):
                 f"{'*'*self.cell.spatial_ndim}), got {array.shape=}"
             )
 
-        args = (
+        return scan_rnn(
             self.cell,
             self.backward_cell,
             array,
             tree_state(self, array=array) if state is None else state,
             self.return_sequences,
             self.return_state,
-        )
-        return (
-            scan_unidirectional_rnn(*args)
-            if self.backward_cell is None
-            else scan_bidirectional_rnn(*args)
         )
 
 
