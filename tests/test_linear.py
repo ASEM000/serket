@@ -178,7 +178,7 @@ def test_mlp():
     mlp = sk.nn.MLP(
         in_features=1,
         out_features=1,
-        hidden_size=2,
+        hidden_features=2,
         num_hidden_layers=1,
         key=jax.random.PRNGKey(0),
     )
@@ -189,7 +189,7 @@ def test_mlp():
     mlp = sk.nn.MLP(
         in_features=1,
         out_features=1,
-        hidden_size=2,
+        hidden_features=2,
         num_hidden_layers=2,
         act="tanh",
         key=jax.random.PRNGKey(0),
@@ -228,7 +228,7 @@ def test_mlp():
     layer = sk.nn.MLP(
         1,
         4,
-        hidden_size=10,
+        hidden_features=10,
         num_hidden_layers=2,
         act="tanh",
         bias_init=None,
@@ -247,7 +247,7 @@ def test_fnn_mlp():
     mlp = sk.nn.MLP(
         2,
         2,
-        hidden_size=4,
+        hidden_features=4,
         num_hidden_layers=2,
         act="relu",
         key=jax.random.PRNGKey(0),

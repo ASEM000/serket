@@ -445,7 +445,7 @@ class MLP(sk.TreeClass):
         in_features: Number of input features.
         out_features: Number of output features.
         key: Random number generator key.
-        hidden_size: Number of hidden units in each hidden layer.
+        hidden_features: Number of hidden units in each hidden layer.
         num_hidden_layers: Number of hidden layers including the output layer.
         act: Activation function. Defaults to ``tanh``.
         weight_init: Weight initialization function. Defaults to ``glorot_uniform``.
@@ -456,12 +456,12 @@ class MLP(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> mlp = sk.nn.MLP(1, 2, hidden_size=4, num_hidden_layers=2, key=jr.PRNGKey(0))
+        >>> mlp = sk.nn.MLP(1, 2, hidden_features=4, num_hidden_layers=2, key=jr.PRNGKey(0))
         >>> mlp(jnp.ones((3, 1))).shape
         (3, 2)
 
     Note:
-        - :class:`.MLP` with ``in_features=1``, ``out_features=2``, ``hidden_size=4``,
+        - :class:`.MLP` with ``in_features=1``, ``out_features=2``, ``hidden_features=4``,
           ``num_hidden_layers=2`` is equivalent to ``[1, 4, 4, 2]`` which has one
           input layer (1, 4), one intermediate  layer (4, 4), and one output
           layer (4, 2) = ``num_hidden_layers + 1``
@@ -481,7 +481,7 @@ class MLP(sk.TreeClass):
         >>> import serket as sk
         >>> import numpy.testing as npt
         >>> fnn = sk.nn.FNN([1] + [4] * 100 + [2], key=jr.PRNGKey(0))
-        >>> mlp = sk.nn.MLP(1, 2, hidden_size=4, num_hidden_layers=100, key=jr.PRNGKey(0))
+        >>> mlp = sk.nn.MLP(1, 2, hidden_features=4, num_hidden_layers=100, key=jr.PRNGKey(0))
         >>> x = jnp.ones((100, 1))
         >>> fnn_jaxpr = jax.make_jaxpr(fnn)(x)
         >>> mlp_jaxpr = jax.make_jaxpr(mlp)(x)
@@ -503,7 +503,7 @@ class MLP(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_mlp = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_size=10, key=jr.PRNGKey(0))
+        >>> lazy_mlp = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_features=10, key=jr.PRNGKey(0))
         >>> _, materialized_mlp = lazy_mlp.at['__call__'](jnp.ones([1, 10]))
         >>> materialized_mlp.linear_i.in_features
         (10,)
@@ -515,15 +515,15 @@ class MLP(sk.TreeClass):
         out_features: int,
         *,
         key: jax.Array,
-        hidden_size: int,
+        hidden_features: int,
         num_hidden_layers: int,
         act: ActivationType = "tanh",
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        if hidden_size < 1:
-            raise ValueError(f"`{hidden_size=}` must be positive.")
+        if hidden_features < 1:
+            raise ValueError(f"`{hidden_features=}` must be positive.")
 
         keys = jr.split(key, num_hidden_layers + 1)
         self.act = resolve_activation(act)
@@ -531,11 +531,11 @@ class MLP(sk.TreeClass):
 
         @jax.vmap
         def batched_linear(key: jax.Array) -> Batched[Linear]:
-            return sk.tree_mask(Linear(hidden_size, hidden_size, key=key, **kwargs))
+            return sk.tree_mask(Linear(hidden_features, hidden_features, key=key, **kwargs))
 
-        self.linear_i = Linear(in_features, hidden_size, key=keys[0], **kwargs)
+        self.linear_i = Linear(in_features, hidden_features, key=keys[0], **kwargs)
         self.linear_h = sk.tree_unmask(batched_linear(keys[1:-1]))
-        self.linear_o = Linear(hidden_size, out_features, key=keys[-1], **kwargs)
+        self.linear_o = Linear(hidden_features, out_features, key=keys[-1], **kwargs)
 
     def __call__(self, array: jax.Array) -> jax.Array:
         array = self.act(self.linear_i(array))
