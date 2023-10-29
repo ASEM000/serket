@@ -10,3 +10,4 @@
     notebooks/train_bilstm
     notebooks/train_pinn_burgers
     notebooks/train_fourier_features_network
+    notebooks/train_convlstm

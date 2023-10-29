@@ -1595,15 +1595,16 @@ class ScanRNN(sk.TreeClass):
 
         if array.ndim != self.cell.spatial_ndim + 2:
             raise ValueError(
-                f"Expected x to have {(self.cell.spatial_ndim + 2)=} dimensions corresponds to "
-                f"(timesteps, in_features, {','.join('...'*self.cell.spatial_ndim)}),"
-                f" got {array.ndim=}"
+                f"Expected input to have {(self.cell.spatial_ndim + 2)=} dimensions corresponds to "
+                f"(timesteps, in_features, {', '.join(['...']*self.cell.spatial_ndim)})."
+                f"\nGot {array.ndim=} and {array.shape=}."
             )
 
         if self.cell.in_features != array.shape[1]:
             raise ValueError(
-                f"Expected x to have shape (timesteps, {self.cell.in_features},"
-                f"{'*'*self.cell.spatial_ndim}), got {array.shape=}"
+                f"Expected input to have shape (timesteps, {self.cell.in_features}, "
+                f"{', '.join(['...']*self.cell.spatial_ndim)})."
+                f"\nGot {array.shape[1]=} and {self.cell.in_features=}."
             )
 
         return scan_rnn(
