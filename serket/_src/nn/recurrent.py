@@ -1692,3 +1692,14 @@ def _(rnn: ScanRNN, array: jax.Array | None = None, **_) -> RNNState:
         if rnn.backward_cell is None
         else concat_state(tree_state((rnn.cell, rnn.backward_cell), array=array[0]))
     )
+
+
+@sk.tree_summary.def_type(ScanRNN)
+def _(rnn: ScanRNN) -> str:
+    return (
+        f"{type(rnn).__name__}"
+        + "["
+        + f"{type(rnn.cell).__name__}"
+        + (f",{type(rnn.backward_cell).__name__}" if rnn.backward_cell else "")
+        + "]"
+    )
