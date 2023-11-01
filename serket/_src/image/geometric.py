@@ -676,7 +676,7 @@ class RandomVerticalTranslate2D(sk.TreeClass):
     """
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array = jr.PRNGKey(0)) -> CHWArray:
+    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
         return jax.vmap(random_vertical_translate_2d, in_axes=(None, 0))(key, x)
 
     spatial_ndim: int = 2
