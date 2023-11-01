@@ -19,7 +19,7 @@ from itertools import product
 
 import jax
 import jax.numpy as jnp
-import keras_core as keras
+import keras
 import numpy.testing as npt
 import pytest
 

@@ -634,7 +634,7 @@ def test_random_horizontal_translate_2d():
 
 def test_random_vertical_translate_2d():
     layer = sk.image.RandomVerticalTranslate2D()
-    assert layer(jnp.ones([3, 10, 10])).shape == (3, 10, 10)
+    assert layer(jnp.ones([3, 10, 10]), key=jax.random.PRNGKey(0)).shape == (3, 10, 10)
 
 
 def test_random_perspective_2d():

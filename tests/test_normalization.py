@@ -226,7 +226,7 @@ def test_group_norm():
 def test_batchnorm(axis, axis_name):
     import math
 
-    from keras_core.layers import BatchNormalization
+    from keras.layers import BatchNormalization
 
     mat_jax = lambda n: jnp.arange(1, math.prod(n) + 1).reshape(*n).astype(jnp.float32)
 
