@@ -654,6 +654,7 @@ class RandomVerticalTranslate2D(sk.TreeClass):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
         >>> layer = sk.image.RandomVerticalTranslate2D()
         >>> eval_layer = sk.tree_eval(layer)
@@ -666,8 +667,9 @@ class RandomVerticalTranslate2D(sk.TreeClass):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.image.RandomVerticalTranslate2D()(x))
+        >>> print(sk.image.RandomVerticalTranslate2D()(x, key=jr.PRNGKey(0)))
         [[[16 17 18 19 20]
           [21 22 23 24 25]
           [ 0  0  0  0  0]
