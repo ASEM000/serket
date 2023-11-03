@@ -102,7 +102,6 @@ html_theme_options = {
     "path_to_docs": "docs",
     "repository_branch": "main",
     "launch_buttons": {
-        "binderhub_url": "https://mybinder.org",
         "notebook_interface": "jupyterlab",
         "colab_url": "https://colab.research.google.com/",
     },
