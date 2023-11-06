@@ -2,7 +2,9 @@ Recurrent
 ---------------------------------
 
 .. currentmodule:: serket.nn
-    
+
+.. autoclass:: RNNCell
+
 .. autoclass:: LSTMCell
 .. autoclass:: GRUCell
 .. autoclass:: SimpleRNNCell

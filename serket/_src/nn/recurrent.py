@@ -73,12 +73,77 @@ class RNNState(sk.TreeClass):
 class RNNCell(sk.TreeClass):
     """Abstract class for RNN cells.
 
-    Subclasses should
-        - Implement `__call__` method that accept an input and a state and return a new state.
-        - Define state rule using :func:`serket.tree_state` decorator.
+    Subclass this class to define a new RNN cell that can be used with :class:`nn.ScanRNN`.
+    or :func:`nn.scan_rnn`.
 
-    Subclassed classes can by used with `ScanRNN` to scan the RNN over a sequence
-    of inputs. for example, check out `SimpleRNNCell`.
+    Subclasses must
+        - Implement ``__call__`` method that accept an input and a state and return a new state.
+        - Define state rule using :func:`serket.tree_state` decorator.
+        - Define ``spatial_ndim`` attribute that specifies the spatial dimension of
+          the cell. For non-spatial cells (e.g. :class:`.LSTMCell`), set ``spatial_ndim`` to 0,
+          for 1D cells (e.g. :class:`.ConvLSTM1DCell` ) set it to 1 and so on.
+
+    Note:
+        :class:`.ScanRNN` and :func:`.scan_rnn` offers a unified interface for
+        scanning over time steps of RNN cells. Supports forward and backward
+        scanning, helpful error messages for wrong input shapes and more.
+
+    Example:
+        Define a simple ``RNN`` cell that matrix multiplies the input with a ones matrix
+        and adds the result to the hidden state.
+
+        >>> import serket as sk
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> class CustomRNNState(sk.TreeClass):
+        ...    def __init__(self, hidden_state: jax.Array):
+        ...        self.hidden_state = hidden_state
+        <BLANKLINE>
+        >>> class CustomRNNCell(sk.nn.RNNCell):
+        ...    def __init__(self, in_features: int, hidden_features: int):
+        ...        self.in_features = in_features
+        ...        self.hidden_features = hidden_features
+        ...        self.in_to_hidden = lambda x: x @ jnp.ones((in_features, hidden_features))
+        ...    def __call__(
+        ...        self,
+        ...        array: jax.Array,
+        ...        state: CustomRNNState | None = None,
+        ...    ) -> CustomRNNState:
+        ...        # if no state is provided, by default it will be initialized with
+        ...        # rule defined using `sk.tree_state.def_state` below when the cell is
+        ...        # wrapped with `sk.nn.ScanRNN`/`sk.nn.scan_rnn`
+        ...        hidden = self.in_to_hidden(array)
+        ...        return CustomRNNState(state.hidden_state + hidden)
+        ...    # to validate the shape of the input and give more helpful error message
+        ...    # define the shape of the input array. e.g. in case of Non-spatial RNN
+        ...    # spatial_ndim should be 0, otherwise it should be 1 for 1D (e.g. ConvLSTM1D)
+        ...    # 2 for 2D (e.g. ConvLSTM2D) and so on.
+        ...    spatial_ndim: int = 0
+        <BLANKLINE>
+        >>> # initialize the cell with zeros hidden state
+        >>> @sk.tree_state.def_state(CustomRNNCell)
+        ... def custom_rnn_state(cell: CustomRNNCell, **_) -> CustomRNNState:
+        ...    zeros = jnp.zeros((cell.hidden_features,))
+        ...    return CustomRNNState(hidden_state=zeros)
+        >>> cell = CustomRNNCell(5, 10)
+        >>> print(repr(sk.tree_state(cell)))
+        CustomRNNState(hidden_state=f32[10](μ=0.00, σ=0.00, ∈[0.00,0.00]))
+        >>> inputs = jnp.ones((5, 5))  # 5 time steps, 5 features
+        >>> # 5 time steps will perform 5 steps of matrix multiplication of
+        >>> # the running hidden state with ones matrix of shape (5, 10) and
+        >>> # add the result to the hidden state
+        >>> print(sk.nn.ScanRNN(cell)(inputs))
+        [25. 25. 25. 25. 25. 25. 25. 25. 25. 25.]
+
+        This is equivalent to the following code:
+
+        >>> import jax.numpy as jnp
+        >>> h = jnp.zeros(10)  # 10 hidden features initialized with zeros
+        >>> inputs = jnp.ones((5, 5)) # 5 time steps, 5 input_features
+        >>> for i in range(5):  # the scanning as a python loop
+        ...    h = h + inputs[i] @ jnp.ones((5, 10))
+        >>> print(h)
+        [25. 25. 25. 25. 25. 25. 25. 25. 25. 25.]
     """
 
     @abc.abstractmethod
@@ -1696,6 +1761,8 @@ def _(rnn: ScanRNN, array: jax.Array | None = None, **_) -> RNNState:
 
 @sk.tree_summary.def_type(ScanRNN)
 def _(rnn: ScanRNN) -> str:
+    # display the type of the rnn cell and the type of the cell(s) it scans
+    # e.g. ScanRNN[SimpleRNNCell] instead of ScanRNN
     return (
         f"{type(rnn).__name__}"
         + "["
