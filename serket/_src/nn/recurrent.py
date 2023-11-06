@@ -83,6 +83,11 @@ class RNNCell(sk.TreeClass):
           the cell. For non-spatial cells (e.g. :class:`.LSTMCell`), set ``spatial_ndim`` to 0,
           for 1D cells (e.g. :class:`.ConvLSTM1DCell` ) set it to 1 and so on.
 
+    Note:
+        :class:`.ScanRNN` and :func:`.scan_rnn` offers a unified interface for
+        scanning over time steps of RNN cells. Supports forward and backward
+        scanning, helpful error messages for wrong input shapes and more.
+
     Example:
         Define a simple ``RNN`` cell that matrix multiplies the input with a ones matrix
         and adds the result to the hidden state.
@@ -129,9 +134,9 @@ class RNNCell(sk.TreeClass):
         >>> # add the result to the hidden state
         >>> print(sk.nn.ScanRNN(cell)(inputs))
         [25. 25. 25. 25. 25. 25. 25. 25. 25. 25.]
-        
+
         This is equivalent to the following code:
-        
+
         >>> import jax.numpy as jnp
         >>> h = jnp.zeros(10)  # 10 hidden features initialized with zeros
         >>> inputs = jnp.ones((5, 5)) # 5 time steps, 5 input_features
