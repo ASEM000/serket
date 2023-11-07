@@ -474,6 +474,45 @@ class BatchNorm(sk.TreeClass):
         >>> x = jax.random.uniform(jax.random.PRNGKey(0), shape=(5, 10))
         >>> x, state = jax.vmap(tree, in_axes=(0, None))(x, state)
 
+
+    Example:
+        Working with :class:`.BatchNorm` without threading the state.
+
+        Instead of threading a state in and out of the layer's ``__call__`` method as
+        previously shown, this example demonstrates a state that is integrated
+        within the layer, akin to the approaches used in Keras or PyTorch. However,
+        since the state is embedded in the layer, some additional work is required
+        to make sure the layer works within the functional paradigm by using the
+        ``at`` functionality, which is illustrated in the example below.
+
+        >>> import jax
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> class BatchNormNoThread(sk.TreeClass):
+        ...    def __init__(self, in_features: int, *, key: jax.Array):
+        ...        self.bn = sk.nn.BatchNorm(in_features, key=key, axis=-1)
+        ...        self.bn_state = sk.tree_state(self.bn)
+        ...    def _call(self, x: jax.Array) -> jax.Array:
+        ...        # because this operation includes stateful update
+        ...        # (e.g. changing self state), this method will only
+        ...        # work when used with `at` functionality
+        ...        # otherwise will result in `AttributeError`
+        ...        x, self.bn_state = self.bn(x, self.bn_state)
+        ...        return x
+        ...    def __call__(self, x: jax.Array) -> tuple[jax.Array, "BatchNormNoThread"]:
+        ...        # little trick to make sure that this layer works well with `jax.vmap`
+        ...        # in essence all outputs must be of inexact type)
+        ...        return sk.tree_mask(sk.tree_unmask(self).at["_call"](x))
+        >>> x = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
+        >>> net = BatchNormNoThread(5, key=jr.PRNGKey(0))
+        >>> for xi in x:
+        ...    outputs, net = jax.vmap(net, out_axes=(0, None))(xi)
+        >>> print(net.bn_state)
+        BatchNormState(
+            running_mean=[0.01683246 0.01797775 0.01912302 0.02026827 0.02141353],
+            running_var=[0.819393  0.8193929 0.819393  0.819393  0.819393 ]
+        )
+
     Note:
         :class:`.BatchNorm` supports lazy initialization, meaning that the
         weights and biases are not initialized until the first call to the layer.
