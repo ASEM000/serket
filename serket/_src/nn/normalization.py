@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
+from typing import Any
 
 import jax
 import jax.numpy as jnp
@@ -439,7 +440,8 @@ class BatchNorm(sk.TreeClass):
             if None, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
-        axis: the axis that should be normalized. Defaults to 1.
+        axis: the feature axis that should be normalized. Defaults to 1. i.e.
+            the other axes are reduced over.
         axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -739,3 +741,64 @@ def _(batchnorm: BatchNorm, **_) -> BatchNormState:
     running_mean = jnp.zeros([batchnorm.in_features])
     running_var = jnp.ones([batchnorm.in_features])
     return BatchNormState(running_mean, running_var)
+
+
+@sk.autoinit
+class WeightNormMarker(sk.TreeClass):
+    # marker class for weight norm to indicate which weights to normalize
+    wrapped: Any
+
+
+class WeightNormWrapper(sk.TreeClass):
+    """L2 Weight normalization layer wrapper.
+
+    Apply weight normalization at ``__call__`` time to weight entries defined by ``mask``.
+
+    Args:
+        wrapped: the callable tree to be wrapped.
+        mask: same structure mask as ``wrapped``. ``True`` indicates that the weight
+            is to be normalized,otherwise the weight is not normalized.
+        axis: the feature axis to be normalized. defaults to -1.
+        eps: the epsilon value to be added to the denominator. defaults to 1e-5.
+
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import serket as sk
+        >>> linear = sk.nn.Linear(2, 4, key=jr.PRNGKey(0))
+        >>> mask = linear.at["weight"].set(True)
+        >>> linear = sk.nn.WeightNorm(linear, mask)
+        >>> x = jnp.ones((1, 2)) + 0.0
+        >>> linear(x)
+        [[ 1.1072401  0.8549473 -1.389786  -1.1090337]]
+    """
+
+    def __init__(self, wrapped, mask, axis: int = -1, eps: float = 1e-12):
+        def wrap_func(weight, mask):
+            return WeightNormMarker(weight) if mask is True else weight
+
+        # avoid keeping the mask in the tree structure
+        # instead keep a marker to indicate which weights is to be normalized
+        self.wrapped = jax.tree_map(wrap_func, wrapped, mask)
+        self.axis = axis
+        self.eps = eps
+
+    def __call__(self, *args, **kwargs):
+        eps = jax.lax.stop_gradient(self.eps)
+
+        def l2_map_func(weight):
+            if not isinstance(weight, WeightNormMarker):
+                return weight
+            weight = weight.wrapped
+            reduction_axes = None
+            if self.axis is not None:
+                reduction_axes = list(range(weight.ndim))
+                del reduction_axes[self.axis]
+            ssum = jnp.sum(jnp.square(weight), axis=reduction_axes, keepdims=True)
+            return weight * jax.lax.rsqrt(ssum + eps)
+
+        def is_norm_wrap(x):
+            return isinstance(x, WeightNormMarker)
+
+        wrapped = jax.tree_map(l2_map_func, self.wrapped, is_leaf=is_norm_wrap)
+        return wrapped(*args, **kwargs)

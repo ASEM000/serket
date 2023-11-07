@@ -99,7 +99,13 @@ from serket._src.nn.dropout import (
     random_cutout_nd,
 )
 from serket._src.nn.linear import FNN, MLP, Embedding, GeneralLinear, Identity, Linear
-from serket._src.nn.normalization import BatchNorm, GroupNorm, InstanceNorm, LayerNorm
+from serket._src.nn.normalization import (
+    BatchNorm,
+    GroupNorm,
+    InstanceNorm,
+    LayerNorm,
+    WeightNormWrapper,
+)
 from serket._src.nn.pooling import (
     AdaptiveAvgPool1D,
     AdaptiveAvgPool2D,
@@ -271,6 +277,7 @@ __all__ = [
     "GroupNorm",
     "InstanceNorm",
     "LayerNorm",
+    "WeightNormWrapper",
     # pooling
     "AdaptiveAvgPool1D",
     "AdaptiveAvgPool2D",
