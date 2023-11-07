@@ -767,10 +767,10 @@ class WeightNormWrapper(sk.TreeClass):
         >>> import serket as sk
         >>> linear = sk.nn.Linear(2, 4, key=jr.PRNGKey(0))
         >>> mask = linear.at["weight"].set(True)
-        >>> linear = sk.nn.WeightNorm(linear, mask)
+        >>> linear = sk.nn.WeightNormWrapper(linear, mask)
         >>> x = jnp.ones((1, 2)) + 0.0
-        >>> linear(x)
-        [[ 1.1072401  0.8549473 -1.389786  -1.1090337]]
+        >>> print(linear(x))
+        [[ 1.1072588  0.8549536 -1.3897915 -1.1090417]]
     """
 
     def __init__(self, wrapped, mask, axis: int = -1, eps: float = 1e-12):
