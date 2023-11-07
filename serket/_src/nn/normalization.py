@@ -500,13 +500,13 @@ class BatchNorm(sk.TreeClass):
         ...        x, self.bn_state = self.bn(x, self.bn_state)
         ...        return x
         ...    def __call__(self, x: jax.Array) -> tuple[jax.Array, "BatchNormNoThread"]:
-        ...        # little trick to make sure that this layer works well with `jax.vmap`
-        ...        # in essence all outputs must be of inexact type)
-        ...        return sk.tree_mask(sk.tree_unmask(self).at["_call"](x))
+        ...        # all outputs must be of inexact type for `jax.vmap` to work
+        ...        return sk.tree_mask(self.at["_call"](x))
         >>> x = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
         >>> net = BatchNormNoThread(5, key=jr.PRNGKey(0))
         >>> for xi in x:
-        ...    outputs, net = jax.vmap(net, out_axes=(0, None))(xi)
+        ...    # unmask `net` that was masked by `tree_mask` in `__call__`
+        ...    outputs, net = sk.tree_unmask(jax.vmap(net, out_axes=(0, None))(xi))
         >>> print(net.bn_state)
         BatchNormState(
             running_mean=[0.01683246 0.01797775 0.01912302 0.02026827 0.02141353],
