@@ -453,27 +453,41 @@ class BatchNorm(sk.TreeClass):
         >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
 
     Example:
-        >>> # working with multiple states
+        Working with :class:`.BatchNorm` with threading the state.
+
         >>> import jax
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> k1, k2 = jax.random.split(jr.PRNGKey(0))
-        >>> @sk.autoinit
-        ... class Tree(sk.TreeClass):
-        ...    bn1: sk.nn.BatchNorm = sk.nn.BatchNorm(10, key=k1)
-        ...    bn2: sk.nn.BatchNorm = sk.nn.BatchNorm(10, key=k2)
+        >>> import jax.numpy as jnp
+        >>> class ThreadedBatchNorm(sk.TreeClass):
+        ...    def __init__(self, *, key: jax.Array):
+        ...        k1, k2 = jax.random.split(key)
+        ...        self.bn1 = sk.nn.BatchNorm(5, axis=-1, key=k1)
+        ...        self.bn2 = sk.nn.BatchNorm(5, axis=-1, key=k2)
         ...    def __call__(self, x, state):
         ...        x, bn1 = self.bn1(x, state.bn1)
+        ...        x = x + 1.0
         ...        x, bn2 = self.bn2(x, state.bn2)
         ...        # update the output state
         ...        state = state.at["bn1"].set(bn1).at["bn2"].set(bn2)
         ...        return x, state
-        >>> tree = Tree()
+        >>> net: ThreadedBatchNorm = ThreadedBatchNorm(key=jr.PRNGKey(0))
         >>> # initialize state as the same structure as tree
-        >>> state = sk.tree_state(tree)
-        >>> x = jax.random.uniform(jax.random.PRNGKey(0), shape=(5, 10))
-        >>> x, state = jax.vmap(tree, in_axes=(0, None))(x, state)
-
+        >>> state: ThreadedBatchNorm = sk.tree_state(net)
+        >>> x = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
+        >>> for xi in x:
+        ...    out, state = jax.vmap(net, in_axes=(0, None), out_axes=(0, None))(xi, state)
+        >>> print(state)
+        ThreadedBatchNorm(
+          bn1=BatchNormState(
+            running_mean=[0.01683246 0.01797775 0.01912302 0.02026827 0.02141353],
+            running_var=[0.819393  0.8193929 0.819393  0.819393  0.819393 ]
+          ),
+          bn2=BatchNormState(
+            running_mean=[0.18209304 0.18209311 0.18209308 0.18209308 0.18209304],
+            running_var=[0.9997767  0.99978393 0.99978125 0.99977994 0.99978155]
+          )
+        )
 
     Example:
         Working with :class:`.BatchNorm` without threading the state.
@@ -487,30 +501,42 @@ class BatchNorm(sk.TreeClass):
 
         >>> import jax
         >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> class BatchNormNoThread(sk.TreeClass):
-        ...    def __init__(self, in_features: int, *, key: jax.Array):
-        ...        self.bn = sk.nn.BatchNorm(in_features, key=key, axis=-1)
-        ...        self.bn_state = sk.tree_state(self.bn)
-        ...    def _call(self, x: jax.Array) -> jax.Array:
-        ...        # because this operation includes stateful update
-        ...        # (e.g. changing self state), this method will only
-        ...        # work when used with `at` functionality
-        ...        # otherwise will result in `AttributeError`
-        ...        x, self.bn_state = self.bn(x, self.bn_state)
+        >>> import jax.random as jr
+        >>> import functools as ft
+        >>> class UnthreadedBatchNorm(sk.TreeClass):
+        ...    def __init__(self, *, key: jax.Array):
+        ...        k1, k2 = jax.random.split(key)
+        ...        self.bn1 = sk.nn.BatchNorm(5, axis=-1, key=k1)
+        ...        self.bn1_state = sk.tree_state(self.bn1)
+        ...        self.bn2 = sk.nn.BatchNorm(5, axis=-1, key=k2)
+        ...        self.bn2_state = sk.tree_state(self.bn2)
+        ...    def _call(self, x):
+        ...        x, self.bn1_state = self.bn1(x, self.bn1_state)
+        ...        x = x + 1.0
+        ...        x, self.bn2_state = self.bn2(x, self.bn2_state)
         ...        return x
-        ...    def __call__(self, x: jax.Array) -> tuple[jax.Array, "BatchNormNoThread"]:
-        ...        # all outputs must be of inexact type for `jax.vmap` to work
-        ...        return sk.tree_mask(self.at["_call"](x))
+        ...    def __call__(self, x):
+        ...        return self.at["_call"](x)
+        >>> # define a function to mask and unmask the net across `vmap`
+        >>> # this is necessary because `vmap` needs the output to be of inexact
+        >>> def mask_vmap(net, x):
+        ...    @ft.partial(jax.vmap, out_axes=(0, None))
+        ...    def forward(x):
+        ...        return sk.tree_mask(net(x))
+        ...    return sk.tree_unmask(forward(x))
+        >>> net: UnthreadedBatchNorm = UnthreadedBatchNorm(key=jr.PRNGKey(0))
         >>> x = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
-        >>> net = BatchNormNoThread(5, key=jr.PRNGKey(0))
         >>> for xi in x:
-        ...    # unmask `net` that was masked by `tree_mask` in `__call__`
-        ...    outputs, net = sk.tree_unmask(jax.vmap(net, out_axes=(0, None))(xi))
-        >>> print(net.bn_state)
+        ...    out, net = mask_vmap(net, xi)
+        >>> print(net.bn1_state)
         BatchNormState(
-            running_mean=[0.01683246 0.01797775 0.01912302 0.02026827 0.02141353],
-            running_var=[0.819393  0.8193929 0.819393  0.819393  0.819393 ]
+          running_mean=[0.01683246 0.01797775 0.01912302 0.02026827 0.02141353],
+          running_var=[0.819393  0.8193929 0.819393  0.819393  0.819393 ]
+        )
+        >>> print(net.bn2_state)
+        BatchNormState(
+          running_mean=[0.18209304 0.18209311 0.18209308 0.18209308 0.18209304],
+          running_var=[0.9997767  0.99978393 0.99978125 0.99977994 0.99978155]
         )
 
     Note:
