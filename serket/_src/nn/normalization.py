@@ -764,17 +764,6 @@ def weight_norm(
         eps: the epsilon value to be added to the denominator. defaults to 1e-12.
 
     Example:
-        >>> import jax.numpy as jnp
-        >>> import jax.random as jr
-        >>> import serket as sk
-        >>> linear = sk.nn.Linear(2, 4, key=jr.PRNGKey(0))
-        >>> # apply weight normalization to the `weight` leaf
-        >>> linear = linear.at["weight"].apply(sk.nn.weight_norm)
-        >>> x = jnp.ones((1, 2)) + 0.0
-        >>> print(linear(x))
-        [[ 1.1072588  0.8549536 -1.3897915 -1.1090417]]
-
-    Example:
         Normalize ``weight`` arrays of two-layer linear network but not ``bias``
 
         >>> import jax
