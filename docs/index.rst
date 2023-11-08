@@ -80,6 +80,7 @@ Install from github::
     notebooks/deep_ensembles
     notebooks/hyperparam
     notebooks/model_surgery
+    notebooks/distributed_training
     notebooks/common_recipes
 
 
