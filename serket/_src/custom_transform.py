@@ -17,7 +17,8 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Any, TypeVar
+from inspect import getfullargspec
+from typing import Any, Callable, TypeVar
 
 import jax
 
@@ -101,7 +102,25 @@ def tree_state(tree: T, **kwargs) -> T:
 
 
 tree_state.state_dispatcher = ft.singledispatch(NoState)
-tree_state.def_state = tree_state.state_dispatcher.register
+
+
+def def_state(klass: type, func: Callable[..., Any] | None = None):
+    # check if the function pass `**kwargs` before registering
+    def check_func(func: Callable[..., Any]) -> Callable[..., Any]:
+        if getfullargspec(func).varkw is not None:
+            return func
+        raise TypeError(
+            f"Upon registering {klass} to `tree_state`,"
+            f" the function {func} is missing variable keyword argument."
+        )
+
+    if func is None:
+        return lambda F: tree_state.state_dispatcher.register(klass, check_func(F))
+
+    return tree_state.state_dispatcher.register(klass, check_func(func))
+
+
+tree_state.def_state = def_state
 
 
 def tree_eval(tree):
