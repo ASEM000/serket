@@ -271,3 +271,17 @@ def test_batchnorm(axis, axis_name):
     in_axes = (0, None)
     x_sk, _ = jax.vmap(bn_sk_eval, in_axes, axis_name=axis_name)(x_sk, state)
     npt.assert_allclose(x_keras, x_sk, rtol=1e-4)
+
+
+def test_weight_norm_wrapper():
+    weight: jax.Array = jnp.array(
+        [
+            [-1.2662824, 0.6269297, 0.35720623, 0.04510251],
+            [0.557601, 0.11622565, -0.27115023, -0.19996592],
+        ],
+    )
+    linear = sk.nn.Linear(2, 4, key=jax.random.PRNGKey(0))
+    linear = linear.at["weight"].set(sk.nn.weight_norm(weight))
+    true = jnp.array([[-0.51219565, 1.1655288, 0.19189113, -0.7554708]])
+    pred = linear(jnp.ones((1, 2)))
+    npt.assert_allclose(true, pred, atol=1e-5)

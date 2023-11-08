@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
+from typing import TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -439,7 +440,8 @@ class BatchNorm(sk.TreeClass):
             if None, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
-        axis: the axis that should be normalized. Defaults to 1.
+        axis: the feature axis that should be normalized. Defaults to 1. i.e.
+            the other axes are reduced over.
         axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
 
@@ -511,6 +513,10 @@ class BatchNorm(sk.TreeClass):
         ...        self.bn2 = sk.nn.BatchNorm(5, axis=-1, key=k2)
         ...        self.bn2_state = sk.tree_state(self.bn2)
         ...    def _call(self, x):
+        ...        # this method will raise `AttributeError` if used directly
+        ...        # because this method mutates the state
+        ...        # instead, use `at["_call"]` to call this method to
+        ...        # return the output and updated state in a functional manner
         ...        x, self.bn1_state = self.bn1(x, self.bn1_state)
         ...        x = x + 1.0
         ...        x, self.bn2_state = self.bn2(x, self.bn2_state)
@@ -739,3 +745,49 @@ def _(batchnorm: BatchNorm, **_) -> BatchNormState:
     running_mean = jnp.zeros([batchnorm.in_features])
     running_var = jnp.ones([batchnorm.in_features])
     return BatchNormState(running_mean, running_var)
+
+
+T = TypeVar("T")
+
+
+def weight_norm(
+    leaf: T,
+    axis: int | None = -1,
+    eps: float = 1e-12,
+) -> T:
+    """Apply L2 weight normalization to an array.
+
+    Args:
+        leaf: the array to be normalized. If ``leaf`` is not an array, then it will
+            be returned as is.
+        axis: the feature axis to be normalized. defaults to -1.
+        eps: the epsilon value to be added to the denominator. defaults to 1e-12.
+
+    Example:
+        Normalize ``weight`` arrays of two-layer linear network but not ``bias``
+
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> class Net(sk.TreeClass):
+        ...     def __init__(self, *, key: jax.Array):
+        ...         k1, k2 = jax.random.split(key)
+        ...         self.l1 = sk.nn.Linear(2, 4, key=k1)
+        ...         self.l2 = sk.nn.Linear(4, 2, key=k2)
+        ...     def __call__(self, inputs: jax.Array) -> jax.Array:
+        ...         # `...` selects all the first level nodes of `Net` (e.g. `l1`, `l2`)
+        ...         # then the `weight` attribute of each layer at the second level
+        ...         self = self.at[...]["weight"].apply(sk.nn.weight_norm)
+        ...         return self.l2(self.l1(inputs))
+
+    Reference:
+        - https://arxiv.org/pdf/1602.07868.pdf
+    """
+    if not (hasattr(leaf, "ndim") and hasattr(leaf, "shape")):
+        return leaf
+    if axis is not None:
+        reduction_axes = list(range(leaf.ndim))
+        with jax.ensure_compile_time_eval():
+            del reduction_axes[axis]
+    ssum = jnp.sum(jnp.square(leaf), axis=reduction_axes, keepdims=True)
+    return leaf * jax.lax.rsqrt(ssum + eps)
