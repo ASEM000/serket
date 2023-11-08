@@ -774,7 +774,7 @@ def weight_norm(
         ...         k1, k2 = jax.random.split(key)
         ...         self.l1 = sk.nn.Linear(2, 4, key=k1)
         ...         self.l2 = sk.nn.Linear(4, 2, key=k2)
-        >>>     def __call__(self, inputs: jax.Array) -> jax.Array:
+        ...     def __call__(self, inputs: jax.Array) -> jax.Array:
         ...         # `...` selects all the first level nodes of `Net` (e.g. `l1`, `l2`)
         ...         # then the `weight` attribute of each layer at the second level
         ...         self = self.at[...]["weight"].apply(sk.nn.weight_norm)
