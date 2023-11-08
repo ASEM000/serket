@@ -6,4 +6,4 @@ Normalization
 .. autoclass:: InstanceNorm
 .. autoclass:: GroupNorm
 .. autoclass:: BatchNorm
-.. autoclass:: WeightNormWrapper
+.. autofunction:: weight_norm

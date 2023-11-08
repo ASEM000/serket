@@ -104,7 +104,7 @@ from serket._src.nn.normalization import (
     GroupNorm,
     InstanceNorm,
     LayerNorm,
-    WeightNormWrapper,
+    weight_norm,
 )
 from serket._src.nn.pooling import (
     AdaptiveAvgPool1D,
@@ -277,7 +277,7 @@ __all__ = [
     "GroupNorm",
     "InstanceNorm",
     "LayerNorm",
-    "WeightNormWrapper",
+    "weight_norm",
     # pooling
     "AdaptiveAvgPool1D",
     "AdaptiveAvgPool2D",
