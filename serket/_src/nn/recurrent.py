@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import abc
 import functools as ft
+from contextlib import suppress
 from typing import Any, Callable
 
 import jax
@@ -1476,13 +1477,13 @@ def materialize_backward_cell(instance, x, state=None, **__) -> RNNCell | None:
 
 
 def is_lazy_init(_, cell, backward_cell=None, **__) -> bool:
-    lhs = cell.in_features is None
+    lhs = getattr(cell, "in_features", False) is None
     rhs = getattr(backward_cell, "in_features", False) is None
     return lhs or rhs
 
 
 def is_lazy_call(instance, x, state=None, **_) -> bool:
-    lhs = instance.cell.in_features is None
+    lhs = getattr(instance.cell, "in_features", False) is None
     rhs = getattr(instance.backward_cell, "in_features", False) is None
     return lhs or rhs
 
@@ -1633,10 +1634,16 @@ def check_cells(*cells: Any) -> None:
     for cell in cells:
         if not isinstance(cell, RNNCell):
             raise TypeError(f"{cell=} to be an instance of `RNNCell`.")
-        if cell0.in_features != cell.in_features:
-            raise ValueError(f"{cell0.in_features=} != {cell.in_features=}")
-        if cell0.hidden_features != cell.hidden_features:
-            raise ValueError(f"{cell0.hidden_features=} != {cell.hidden_features=}")
+        with suppress(AttributeError):
+            # if the user has not specified the in_features, we cannot check
+            # that the cells are compatible
+            if cell0.in_features != cell.in_features:
+                raise ValueError(f"{cell0.in_features=} != {cell.in_features=}")
+        with suppress(AttributeError):
+            # if the user has not specified the hidden_features, we cannot check
+            # that the cells are compatible
+            if cell0.hidden_features != cell.hidden_features:
+                raise ValueError(f"{cell0.hidden_features=} != {cell.hidden_features=}")
 
 
 class ScanRNN(sk.TreeClass):
@@ -1710,9 +1717,6 @@ class ScanRNN(sk.TreeClass):
             return only the result.
         """
 
-        if not isinstance(state, (RNNState, type(None))):
-            raise TypeError(f"Expected state to be an instance of RNNState, {state=}")
-
         if array.ndim != self.cell.spatial_ndim + 2:
             raise ValueError(
                 f"Expected input to have {(self.cell.spatial_ndim + 2)=} dimensions corresponds to "
@@ -1720,12 +1724,15 @@ class ScanRNN(sk.TreeClass):
                 f"\nGot {array.ndim=} and {array.shape=}."
             )
 
-        if self.cell.in_features != array.shape[1]:
-            raise ValueError(
-                f"Expected input to have shape (timesteps, {self.cell.in_features}, "
-                f"{', '.join(['...']*self.cell.spatial_ndim)})."
-                f"\nGot {array.shape[1]=} and {self.cell.in_features=}."
-            )
+        with suppress(AttributeError):
+            # if the user has not specified the in_features, we cannot check
+            # that the cells are compatible
+            if self.cell.in_features != array.shape[1]:
+                raise ValueError(
+                    f"Expected input to have shape (timesteps, {self.cell.in_features}, "
+                    f"{', '.join(['...']*self.cell.spatial_ndim)})."
+                    f"\nGot {array.shape[1]=} and {self.cell.in_features=}."
+                )
 
         return scan_rnn(
             self.cell,

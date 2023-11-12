@@ -777,7 +777,7 @@ def test_bilstm():
 
 
 def test_rnn_error():
-    with pytest.raises(AttributeError):
+    with pytest.raises(TypeError):
         ScanRNN(None)
 
     with pytest.raises(TypeError):
@@ -787,8 +787,6 @@ def test_rnn_error():
         SimpleRNNCell(3, 3, key=jax.random.PRNGKey(0)),
         SimpleRNNCell(3, 3, key=jax.random.PRNGKey(0)),
     )
-    with pytest.raises(TypeError):
-        layer(jnp.ones([10, 3]), 1.0)
 
     with pytest.raises(ValueError):
         layer(jnp.ones([10, 3, 3]))
