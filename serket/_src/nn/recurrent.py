@@ -47,6 +47,8 @@ from serket._src.utils import (
     validate_spatial_nd,
 )
 
+State = Any
+
 """Defines RNN related classes."""
 
 
@@ -149,7 +151,7 @@ class RNNCell(sk.TreeClass):
     """
 
     @abc.abstractmethod
-    def __call__(self, array: jax.Array, state: RNNState) -> RNNState:
+    def __call__(self, array: jax.Array, state: State) -> tuple[jax.Array, State]:
         ...
 
     @property
@@ -256,7 +258,11 @@ class SimpleRNNCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, state: SimpleRNNState) -> SimpleRNNState:
+    def __call__(
+        self,
+        array: jax.Array,
+        state: SimpleRNNState,
+    ) -> tuple[jax.Array, SimpleRNNState]:
         if not isinstance(state, SimpleRNNState):
             raise TypeError(f"Expected {state=} to be an instance of `SimpleRNNState`")
 
@@ -347,7 +353,11 @@ class DenseCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, state: DenseState) -> DenseState:
+    def __call__(
+        self,
+        array: jax.Array,
+        state: DenseState,
+    ) -> tuple[jax.Array, DenseState]:
         if not isinstance(state, DenseState):
             raise TypeError(f"Expected {state=} to be an instance of `DenseState`")
 
@@ -459,7 +469,11 @@ class LSTMCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, state: LSTMState) -> LSTMState:
+    def __call__(
+        self,
+        array: jax.Array,
+        state: LSTMState,
+    ) -> tuple[jax.Array, LSTMState]:
         if not isinstance(state, LSTMState):
             raise TypeError(f"Expected {state=} to be an instance of `LSTMState`")
 
@@ -575,7 +589,11 @@ class GRUCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, state: GRUState) -> GRUState:
+    def __call__(
+        self,
+        array: jax.Array,
+        state: GRUState,
+    ) -> tuple[jax.Array, GRUState]:
         if not isinstance(state, GRUState):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
@@ -651,7 +669,11 @@ class ConvLSTMNDCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, state: ConvLSTMNDState) -> ConvLSTMNDState:
+    def __call__(
+        self,
+        array: jax.Array,
+        state: ConvLSTMNDState,
+    ) -> tuple[jax.Array, ConvLSTMNDState]:
         if not isinstance(state, ConvLSTMNDState):
             raise TypeError(f"Expected {state=} to be an instance of ConvLSTMNDState.")
 
@@ -1078,7 +1100,11 @@ class ConvGRUNDCell(RNNCell):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, state: ConvGRUNDState) -> ConvGRUNDState:
+    def __call__(
+        self,
+        array: jax.Array,
+        state: ConvGRUNDState,
+    ) -> tuple[jax.Array, ConvGRUNDState]:
         if not isinstance(state, ConvGRUNDState):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
@@ -1482,10 +1508,10 @@ def scan_rnn(
     cell: RNNCell,
     backward_cell: RNNCell | None,
     array: jax.Array,
-    state: RNNState,
+    state: State,
     return_sequences: bool = False,
     return_state: bool = False,
-) -> jax.Array | tuple[jax.Array, RNNState]:
+) -> jax.Array | tuple[jax.Array, State]:
     """Scans a RNN cell(s) over a sequence.
 
     Args:
@@ -1559,9 +1585,9 @@ def scan_rnn(
     def accumulate_scan(
         cell: RNNCell,
         array: jax.Array,
-        state: RNNState,
+        state: State,
         reverse: bool = False,
-    ) -> tuple[jax.Array, RNNState]:
+    ) -> tuple[jax.Array, State]:
         def scan_func(carry, array):
             output, state = cell(array, state=carry)
             return state, output
@@ -1574,7 +1600,7 @@ def scan_rnn(
     def unaccumulate_scan(
         cell: RNNCell,
         array: jax.Array,
-        state: RNNState,
+        state: State,
         reverse: bool = False,
     ) -> jax.Array:
         def scan_func(carry, array):
