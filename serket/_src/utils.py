@@ -270,29 +270,27 @@ def validate_spatial_nd(
     """Decorator to validate spatial input shape."""
     attribute_list: Sequence[str] = attribute_name.split(".")
 
-    def check_spatial_in_shape(x, spatial_ndim: int) -> None:
-        if x.ndim == spatial_ndim + 1:
-            return x
-
-        spatial = ", ".join(("rows", "cols", "depths")[:spatial_ndim])
-        raise ValueError(
-            f"Dimesion mismatch error.\n"
-            f"Input should satisfy:\n"
-            f"  - {(spatial_ndim + 1) = } dimension, but got {x.ndim = }.\n"
-            f"  - shape of (in_features, {spatial}), but got {x.shape = }.\n"
-            + (
-                # maybe the user apply the layer on a batched input
-                "The input should be unbatched (no batch dimension).\n"
-                "To apply on batched input, use `jax.vmap(...)(input)`."
-                if x.ndim == spatial_ndim + 2
-                else ""
-            )
-        )
-
     @ft.wraps(func)
     def wrapper(self, *args, **kwargs):
         array = args[argnum]
-        check_spatial_in_shape(array, recursive_getattr(self, attribute_list))
+        spatial_ndim = recursive_getattr(self, attribute_list)
+
+        if array.ndim != spatial_ndim + 1:
+            spatial = ", ".join(("rows", "cols", "depths")[:spatial_ndim])
+            name = type(self).__name__
+            raise ValueError(
+                f"Dimesion mismatch error in inputs of {name}\n"
+                f"Input should satisfy:\n"
+                f"  - {(spatial_ndim + 1) = } dimension, but got {array.ndim = }.\n"
+                f"  - shape of (in_features, {spatial}), but got {array.shape = }.\n"
+                + (
+                    # maybe the user apply the layer on a batched input
+                    "The input should be unbatched (no batch dimension).\n"
+                    "To apply on batched input, use `jax.vmap(...)(input)`."
+                    if array.ndim == spatial_ndim + 2
+                    else ""
+                )
+            )
         return func(self, *args, **kwargs)
 
     return wrapper
@@ -388,9 +386,9 @@ libraries like ``pytorch`` and ``tensorflow``.
 >>> print(repr(simple_lazy_linear))
 SimpleLinear(in_features=None, out_features=1)
 <BLANKLINE>
->>> _, materialized_linear = simple_lazy_linear.at["__call__"](x)
+>>> _, material_linear = simple_lazy_linear.at["__call__"](x)
 <BLANKLINE>
->>> print(repr(materialized_linear))
+>>> print(repr(material_linear))
 SimpleLinear(
     in_features=2, 
     out_features=1, 
@@ -464,8 +462,8 @@ Example:
     
     Instead use the following pattern:
 
-    >>> layer_output, materialized_layer = layer.at['{func_name}'](x)
-    >>> materialized_layer(x)
+    >>> layer_output, material_layer = layer.at['{func_name}'](x)
+    >>> material_layer(x)
     ...
 """
 
