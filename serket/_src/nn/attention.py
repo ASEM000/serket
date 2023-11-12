@@ -183,8 +183,8 @@ class MultiHeadAttention(sk.TreeClass):
         >>> k = jr.uniform(jr.PRNGKey(1), (3, 2, 6))
         >>> v = jr.uniform(jr.PRNGKey(2), (3, 2, 6))
         >>> lazy_layer = sk.nn.MultiHeadAttention(2, None, key=jr.PRNGKey(0))
-        >>> _, materialized_layer = lazy_layer.at["__call__"](q, k, v, key=jr.PRNGKey(0))
-        >>> materialized_layer(q, k, v, key=jr.PRNGKey(0)).shape
+        >>> _, material_layer = lazy_layer.at["__call__"](q, k, v, key=jr.PRNGKey(0))
+        >>> material_layer(q, k, v, key=jr.PRNGKey(0)).shape
         (3, 2, 6)
 
     Reference:

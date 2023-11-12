@@ -158,8 +158,8 @@ class Linear(sk.TreeClass):
         >>> lazy_linears = Linears()
         >>> x = jnp.ones([100, 28])
         >>> y = jnp.ones([100, 56])
-        >>> _, materialized_linears = lazy_linears.at["__call__"](x, y)
-        >>> materialized_linears.l1.in_features
+        >>> _, material_linears = lazy_linears.at["__call__"](x, y)
+        >>> material_linears.l1.in_features
         (28, 56)
 
     Note:
@@ -248,10 +248,10 @@ class GeneralLinear(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> lazy_linear = sk.nn.GeneralLinear(None, 12, in_axes=(0, 2), key=jr.PRNGKey(0))
-        >>> _, materialized_linear = lazy_linear.at['__call__'](jnp.ones((10, 5, 4)))
-        >>> materialized_linear.in_features
+        >>> _, material_linear = lazy_linear.at['__call__'](jnp.ones((10, 5, 4)))
+        >>> material_linear.in_features
         (10, 4)
-        >>> materialized_linear(jnp.ones((10, 5, 4))).shape
+        >>> material_linear(jnp.ones((10, 5, 4))).shape
         (5, 12)
 
     Note:
@@ -384,8 +384,8 @@ class FNN(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> lazy_fnn = sk.nn.FNN([None, 10, 2, 1], key=jr.PRNGKey(0))
-        >>> _, materialized_fnn = lazy_fnn.at['__call__'](jnp.ones([1, 10]))
-        >>> materialized_fnn.linear_0.in_features
+        >>> _, material_fnn = lazy_fnn.at['__call__'](jnp.ones([1, 10]))
+        >>> material_fnn.linear_0.in_features
         (10,)
     """
 
@@ -504,8 +504,8 @@ class MLP(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> lazy_mlp = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_features=10, key=jr.PRNGKey(0))
-        >>> _, materialized_mlp = lazy_mlp.at['__call__'](jnp.ones([1, 10]))
-        >>> materialized_mlp.linear_i.in_features
+        >>> _, material_mlp = lazy_mlp.at['__call__'](jnp.ones([1, 10]))
+        >>> material_mlp.linear_i.in_features
         (10,)
     """
 
@@ -531,7 +531,9 @@ class MLP(sk.TreeClass):
 
         @jax.vmap
         def batched_linear(key: jax.Array) -> Batched[Linear]:
-            return sk.tree_mask(Linear(hidden_features, hidden_features, key=key, **kwargs))
+            return sk.tree_mask(
+                Linear(hidden_features, hidden_features, key=key, **kwargs)
+            )
 
         self.linear_i = Linear(in_features, hidden_features, key=keys[0], **kwargs)
         self.linear_h = sk.tree_unmask(batched_linear(keys[1:-1]))

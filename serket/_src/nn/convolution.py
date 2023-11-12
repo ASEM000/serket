@@ -712,8 +712,8 @@ class Conv1D(ConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     Reference:
@@ -806,8 +806,8 @@ class Conv2D(ConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     Reference:
@@ -900,8 +900,8 @@ class Conv3D(ConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     Reference:
@@ -1028,8 +1028,8 @@ class FFTConv1D(FFTConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     References:
@@ -1122,8 +1122,8 @@ class FFTConv2D(FFTConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     References:
@@ -1216,8 +1216,8 @@ class FFTConv3D(FFTConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     References:
@@ -1395,8 +1395,8 @@ class Conv1DTranspose(ConvNDTranspose):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     Reference:
@@ -1492,8 +1492,8 @@ class Conv2DTranspose(ConvNDTranspose):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     Reference:
@@ -1590,8 +1590,8 @@ class Conv3DTranspose(ConvNDTranspose):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     Reference:
@@ -1722,8 +1722,8 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     References:
@@ -1820,8 +1820,8 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     References:
@@ -1918,8 +1918,8 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     References:
@@ -2066,8 +2066,8 @@ class DepthwiseConv1D(DepthwiseConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 5
 
     Reference:
@@ -2147,8 +2147,8 @@ class DepthwiseConv2D(DepthwiseConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 5
 
     Reference:
@@ -2228,8 +2228,8 @@ class DepthwiseConv3D(DepthwiseConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 5
 
     Reference:
@@ -2341,8 +2341,8 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 5
 
     References:
@@ -2422,8 +2422,8 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 5
 
     References:
@@ -2503,8 +2503,8 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 5
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2686,7 +2686,7 @@ class SeparableConv1D(SeparableConvND):
         >>> # lazy initialization
         >>> lazy_cnn = CNN()
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2774,7 +2774,7 @@ class SeparableConv2D(SeparableConvND):
         >>> # lazy initialization
         >>> lazy_cnn = CNN()
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2862,7 +2862,7 @@ class SeparableConv3D(SeparableConvND):
         >>> # lazy initialization
         >>> lazy_cnn = CNN()
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2999,7 +2999,7 @@ class SeparableFFTConv1D(SeparableFFTConvND):
         >>> # lazy initialization
         >>> lazy_cnn = CNN()
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -3087,7 +3087,7 @@ class SeparableFFTConv2D(SeparableConvND):
         >>> # lazy initialization
         >>> lazy_cnn = CNN()
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -3175,7 +3175,7 @@ class SeparableFFTConv3D(SeparableConvND):
         >>> # lazy initialization
         >>> lazy_cnn = CNN()
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -3263,8 +3263,8 @@ class SpectralConv1D(SpectralConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jnp.sin(self.l1(x)))
         >>> lazy_net = Net()
-        >>> _, materialized_net = lazy_net.at["__call__"](jnp.ones((5, 10)))
-        >>> materialized_net.l1.in_features
+        >>> _, material_net = lazy_net.at["__call__"](jnp.ones((5, 10)))
+        >>> material_net.l1.in_features
         5
 
     Reference:
@@ -3314,8 +3314,8 @@ class SpectralConv2D(SpectralConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jnp.sin(self.l1(x)))
         >>> lazy_net = Net()
-        >>> _, materialized_net = lazy_net.at["__call__"](jnp.ones((5, 10, 10)))
-        >>> materialized_net.l1.in_features
+        >>> _, material_net = lazy_net.at["__call__"](jnp.ones((5, 10, 10)))
+        >>> material_net.l1.in_features
         5
 
     Example:
@@ -3381,8 +3381,8 @@ class SpectralConv3D(SpectralConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jnp.sin(self.l1(x)))
         >>> lazy_net = Net()
-        >>> _, materialized_net = lazy_net.at["__call__"](jnp.ones((5, 10, 10, 10)))
-        >>> materialized_net.l1.in_features
+        >>> _, material_net = lazy_net.at["__call__"](jnp.ones((5, 10, 10, 10)))
+        >>> material_net.l1.in_features
         5
 
     Reference:
@@ -3588,8 +3588,8 @@ class Conv1DLocal(ConvNDLocal):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     Reference:
@@ -3677,8 +3677,8 @@ class Conv2DLocal(ConvNDLocal):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     Reference:
@@ -3766,8 +3766,8 @@ class Conv3DLocal(ConvNDLocal):
         >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, materialized_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(materialized_cnn.l1.in_features, materialized_cnn.l2.in_features)
+        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
         5 12
 
     Reference:
