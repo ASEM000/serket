@@ -75,7 +75,7 @@ Install from github::
     notebooks/mixed_precision
     notebooks/checkpointing
     notebooks/subset_training
-    notebooks/mini_optax
+    notebooks/optimlib
     notebooks/augmentations
     notebooks/deep_ensembles
     notebooks/hyperparam
