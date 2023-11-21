@@ -452,7 +452,7 @@ class BatchNorm(sk.TreeClass):
         >>> bn = sk.nn.BatchNorm(10, key=jr.PRNGKey(0))
         >>> state = sk.tree_state(bn)
         >>> x = jax.random.uniform(jax.random.PRNGKey(0), shape=(5, 10))
-        >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
+        >>> x, state = jax.vmap(bn, in_axes=(0, None), out_axes=(0, None)))(x, state)
 
     Example:
         Working with :class:`.BatchNorm` with threading the state.
@@ -662,7 +662,7 @@ class EvalNorm(sk.TreeClass):
         >>> bn = sk.nn.BatchNorm(10, key=jr.PRNGKey(0))
         >>> state = sk.tree_state(bn)
         >>> x = jax.random.uniform(jax.random.PRNGKey(0), shape=(5, 10))
-        >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
+        >>> x, state = jax.vmap(bn, in_axes=(0, None), out_axes=(0, None))(x, state)
         >>> # convert to evaluation mode
         >>> bn = sk.tree_eval(bn)
         >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
