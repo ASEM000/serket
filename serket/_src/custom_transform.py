@@ -73,9 +73,9 @@ def tree_state(tree: T, **kwargs) -> T:
         >>> @sk.tree_state.def_state(LayerWithState)
         ... def _(leaf, **kwargs):
         ...    # pull out some keyword argument
-        ...    array = kwargs["array"]
-        ...    return jax.random.normal(jax.random.PRNGKey(0), array.shape)
-        >>> sk.tree_state(LayerWithState(), array=jax.numpy.ones((1, 1))).shape
+        ...    input = kwargs["input"]
+        ...    return jax.random.normal(jax.random.PRNGKey(0), input.shape)
+        >>> sk.tree_state(LayerWithState(), input=jax.numpy.ones((1, 1))).shape
         (1, 1)
 
     Example:

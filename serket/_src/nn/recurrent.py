@@ -61,8 +61,8 @@ def is_lazy_init(_, in_features: int | None, *__, **___) -> bool:
     return in_features is None
 
 
-def infer_in_features(_, x: jax.Array, *__, **___) -> int:
-    return x.shape[0]
+def infer_in_features(_, input: jax.Array, *__, **___) -> int:
+    return input.shape[0]
 
 
 updates = dict(in_features=infer_in_features)
@@ -110,17 +110,17 @@ class RNNCell(sk.TreeClass):
         ...        self.in_to_hidden = lambda x: x @ jnp.ones((in_features, hidden_features))
         ...    def __call__(
         ...        self,
-        ...        array: jax.Array,
+        ...        input: jax.Array,
         ...        state: CustomRNNState | None = None,
         ...    ) -> CustomRNNState:
         ...        # if no state is provided, by default it will be initialized with
         ...        # rule defined using `sk.tree_state.def_state` below when the cell is
         ...        # wrapped with `sk.nn.ScanRNN`/`sk.nn.scan_rnn`
-        ...        output = self.in_to_hidden(array)
+        ...        output = self.in_to_hidden(input)
         ...        state = CustomRNNState(state.hidden_state + output)
         ...        return output, state
         ...    # to validate the shape of the input and give more helpful error message
-        ...    # define the shape of the input array. e.g. in case of Non-spatial RNN
+        ...    # define the shape of the input input. e.g. in case of Non-spatial RNN
         ...    # spatial_ndim should be 0, otherwise it should be 1 for 1D (e.g. ConvLSTM1D)
         ...    # 2 for 2D (e.g. ConvLSTM2D) and so on.
         ...    spatial_ndim: int = 0
@@ -152,7 +152,7 @@ class RNNCell(sk.TreeClass):
     """
 
     @abc.abstractmethod
-    def __call__(self, array: jax.Array, state: State) -> tuple[jax.Array, State]:
+    def __call__(self, input: jax.Array, state: State) -> tuple[jax.Array, State]:
         ...
 
     @property
@@ -261,13 +261,13 @@ class SimpleRNNCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(
         self,
-        array: jax.Array,
+        input: jax.Array,
         state: SimpleRNNState,
     ) -> tuple[jax.Array, SimpleRNNState]:
         if not isinstance(state, SimpleRNNState):
             raise TypeError(f"Expected {state=} to be an instance of `SimpleRNNState`")
 
-        ih = jnp.concatenate([array, state.hidden_state], axis=-1)
+        ih = jnp.concatenate([input, state.hidden_state], axis=-1)
         h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
         h = self.act(h)
         return h, SimpleRNNState(h)
@@ -356,13 +356,13 @@ class DenseCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(
         self,
-        array: jax.Array,
+        input: jax.Array,
         state: DenseState,
     ) -> tuple[jax.Array, DenseState]:
         if not isinstance(state, DenseState):
             raise TypeError(f"Expected {state=} to be an instance of `DenseState`")
 
-        h = self.act(self.in_to_hidden(array))
+        h = self.act(self.in_to_hidden(input))
         return h, DenseState(h)
 
     spatial_ndim: int = 0
@@ -472,14 +472,14 @@ class LSTMCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(
         self,
-        array: jax.Array,
+        input: jax.Array,
         state: LSTMState,
     ) -> tuple[jax.Array, LSTMState]:
         if not isinstance(state, LSTMState):
             raise TypeError(f"Expected {state=} to be an instance of `LSTMState`")
 
         h, c = state.hidden_state, state.cell_state
-        ih = jnp.concatenate([array, h], axis=-1)
+        ih = jnp.concatenate([input, h], axis=-1)
         h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
         i, f, g, o = jnp.split(h, 4, axis=-1)
         i = self.recurrent_act(i)
@@ -592,14 +592,14 @@ class GRUCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(
         self,
-        array: jax.Array,
+        input: jax.Array,
         state: GRUState,
     ) -> tuple[jax.Array, GRUState]:
         if not isinstance(state, GRUState):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
         h = state.hidden_state
-        xe, xu, xo = jnp.split(self.in_to_hidden(array), 3, axis=-1)
+        xe, xu, xo = jnp.split(self.in_to_hidden(input), 3, axis=-1)
         he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=-1)
         e = self.recurrent_act(xe + he)
         u = self.recurrent_act(xu + hu)
@@ -672,14 +672,14 @@ class ConvLSTMNDCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(
         self,
-        array: jax.Array,
+        input: jax.Array,
         state: ConvLSTMNDState,
     ) -> tuple[jax.Array, ConvLSTMNDState]:
         if not isinstance(state, ConvLSTMNDState):
             raise TypeError(f"Expected {state=} to be an instance of ConvLSTMNDState.")
 
         h, c = state.hidden_state, state.cell_state
-        h = self.in_to_hidden(array) + self.hidden_to_hidden(h)
+        h = self.in_to_hidden(input) + self.hidden_to_hidden(h)
         i, f, g, o = jnp.split(h, 4, axis=0)
         i = self.recurrent_act(i)
         f = self.recurrent_act(f)
@@ -724,7 +724,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.ConvLSTM1DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4)
@@ -743,7 +743,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.ConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(lazy_cell, array=input)
+        >>> state = sk.tree_state(lazy_cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -781,7 +781,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.FFTConvLSTM1DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4)
@@ -800,7 +800,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.FFTConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -838,7 +838,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.ConvLSTM2DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4)
@@ -857,7 +857,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.ConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(lazy_cell, array=input)
+        >>> state = sk.tree_state(lazy_cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -895,7 +895,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.FFTConvLSTM2DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4)
@@ -914,7 +914,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.FFTConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(lazy_cell, array=input)
+        >>> state = sk.tree_state(lazy_cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -952,7 +952,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.ConvLSTM3DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4, 4)
@@ -971,7 +971,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.ConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -1009,7 +1009,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.FFTConvLSTM3DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4, 4)
@@ -1028,7 +1028,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.FFTConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -1103,14 +1103,14 @@ class ConvGRUNDCell(RNNCell):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(
         self,
-        array: jax.Array,
+        input: jax.Array,
         state: ConvGRUNDState,
     ) -> tuple[jax.Array, ConvGRUNDState]:
         if not isinstance(state, ConvGRUNDState):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
         h = state.hidden_state
-        xe, xu, xo = jnp.split(self.in_to_hidden(array), 3, axis=0)
+        xe, xu, xo = jnp.split(self.in_to_hidden(input), 3, axis=0)
         he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=0)
         e = self.recurrent_act(xe + he)
         u = self.recurrent_act(xu + hu)
@@ -1153,7 +1153,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.ConvGRU1DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4)
@@ -1172,7 +1172,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.ConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -1207,7 +1207,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.FFTConvGRU1DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4)
@@ -1226,7 +1226,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.FFTConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -1261,7 +1261,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.ConvGRU2DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4)
@@ -1280,7 +1280,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.ConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -1315,7 +1315,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.FFTConvGRU2DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4)
@@ -1334,7 +1334,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.FFTConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -1369,7 +1369,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.ConvGRU3DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4, 4)
@@ -1388,7 +1388,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.ConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(lazy_cell, array=input)
+        >>> state = sk.tree_state(lazy_cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -1423,7 +1423,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> cell = sk.nn.FFTConvGRU3DCell(10, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4, 4)
@@ -1442,7 +1442,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         >>> import jax.random as jr
         >>> lazy_cell = sk.nn.FFTConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(cell, array=input)
+        >>> state = sk.tree_state(cell, input=input)
         >>> _, material_cell = lazy_cell.at["__call__"](input, state)
         >>> output, state = material_cell(input, state)
         >>> state.hidden_state.shape
@@ -1456,13 +1456,13 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
 # Scanning API
 
 
-def materialize_cell(instance, x: jax.Array, state=None, **__) -> RNNCell:
+def materialize_cell(instance, input: jax.Array, state=None, **__) -> RNNCell:
     # in case of lazy initialization, we need to materialize the cell
     # before it can be passed to the scan function
     cell = instance.cell
-    state = state if state is not None else sk.tree_state(instance, array=x)
+    state = state if state is not None else sk.tree_state(instance, input=input)
     state = split_state(state, 2) if instance.backward_cell is not None else [state]
-    _, cell = cell.at["__call__"](x[0], state[0])
+    _, cell = cell.at["__call__"](input[0], state[0])
     return cell
 
 
@@ -1470,7 +1470,7 @@ def materialize_backward_cell(instance, x, state=None, **__) -> RNNCell | None:
     if instance.backward_cell is None:
         return None
     cell = instance.cell
-    state = state if state is not None else sk.tree_state(instance, array=x)
+    state = state if state is not None else sk.tree_state(instance, input=x)
     state = split_state(state, 2) if instance.backward_cell is not None else [state]
     _, cell = cell.at["__call__"](x[0], state[-1])
     return cell
@@ -1508,7 +1508,7 @@ def concat_state(states: list[RNNState]) -> RNNState:
 def scan_rnn(
     cell: RNNCell,
     backward_cell: RNNCell | None,
-    array: jax.Array,
+    input: jax.Array,
     state: State,
     return_sequences: bool = False,
     return_state: bool = False,
@@ -1518,7 +1518,7 @@ def scan_rnn(
     Args:
         cell: the forward RNN cell to scan.
         backward_cell: the backward RNN cell to scan. Pass ``None`` for unidirectional RNN.
-        array: the input sequence.
+        input: the input sequence.
         state: the initial state of the RNN cell. In case of bidirectional RNN,
             the forward and backward states are concatenated along the first axis.
         return_sequences: whether to return the output for each timestep. Defaults
@@ -1535,17 +1535,17 @@ def scan_rnn(
         <BLANKLINE>
         >>> cell = sk.nn.SimpleRNNCell(1, 2, key=jax.random.PRNGKey(0))
         >>> state = sk.tree_state(cell)
-        >>> array = jnp.ones([10, 1])  # [time steps, features]
+        >>> input = jnp.ones([10, 1])  # [time steps, features]
         <BLANKLINE>
-        >>> out = sk.nn.scan_rnn(cell, None, array, state)
+        >>> out = sk.nn.scan_rnn(cell, None, input, state)
         >>> print(out.shape)
         (2,)
         <BLANKLINE>
-        >>> out = sk.nn.scan_rnn(cell, None, array, state, return_sequences=True)
+        >>> out = sk.nn.scan_rnn(cell, None, input, state, return_sequences=True)
         >>> print(out.shape)
         (10, 2)
         <BLANKLINE>
-        >>> out, state = sk.nn.scan_rnn(cell, None, array, state, return_state=True)
+        >>> out, state = sk.nn.scan_rnn(cell, None, input, state, return_state=True)
         >>> print(repr(state))
         SimpleRNNState(hidden_state=f32[2](μ=0.05, σ=0.93, ∈[-0.88,0.98]))
 
@@ -1561,17 +1561,17 @@ def scan_rnn(
         >>> # concat state of forward and backward cells
         >>> concat_state_func = lambda *x: jnp.concatenate([*x])
         >>> state = jax.tree_map(concat_state_func, *sk.tree_state((cell, back_cell)))
-        >>> array = jnp.ones([10, 1])  # [time steps, features]
+        >>> input = jnp.ones([10, 1])  # [time steps, features]
         <BLANKLINE>
-        >>> out = sk.nn.scan_rnn(cell, back_cell, array, state)
+        >>> out = sk.nn.scan_rnn(cell, back_cell, input, state)
         >>> print(out.shape)
         (4,)
         <BLANKLINE>
-        >>> out = sk.nn.scan_rnn(cell, back_cell, array, state, return_sequences=True)
+        >>> out = sk.nn.scan_rnn(cell, back_cell, input, state, return_sequences=True)
         >>> print(out.shape)
         (10, 4)
         <BLANKLINE>
-        >>> out, state = sk.nn.scan_rnn(cell, back_cell, array, state, return_state=True)
+        >>> out, state = sk.nn.scan_rnn(cell, back_cell, input, state, return_state=True)
         >>> print(repr(state))
         SimpleRNNState(hidden_state=f32[4](μ=-0.05, σ=0.67, ∈[-0.88,0.98]))
 
@@ -1585,43 +1585,43 @@ def scan_rnn(
 
     def accumulate_scan(
         cell: RNNCell,
-        array: jax.Array,
+        input: jax.Array,
         state: State,
         reverse: bool = False,
     ) -> tuple[jax.Array, State]:
-        def scan_func(carry, array):
-            output, state = cell(array, state=carry)
+        def scan_func(carry, input):
+            output, state = cell(input, state=carry)
             return state, output
 
-        array = jnp.flip(array, axis=0) if reverse else array  # flip over time axis
-        carry, output = jax.lax.scan(scan_func, state, array)
+        input = jnp.flip(input, axis=0) if reverse else input  # flip over time axis
+        carry, output = jax.lax.scan(scan_func, state, input)
         output = jnp.flip(output, axis=-1) if reverse else output
         return output, carry
 
     def unaccumulate_scan(
         cell: RNNCell,
-        array: jax.Array,
+        input: jax.Array,
         state: State,
         reverse: bool = False,
     ) -> jax.Array:
-        def scan_func(carry, array):
-            _, state = cell(array, state=carry)
+        def scan_func(carry, input):
+            _, state = cell(input, state=carry)
             return state, None
 
-        array = jnp.flip(array, axis=0) if reverse else array
-        carry, _ = jax.lax.scan(scan_func, state, array)
+        input = jnp.flip(input, axis=0) if reverse else input
+        carry, _ = jax.lax.scan(scan_func, state, input)
         result = carry.hidden_state
         return result, carry
 
     if backward_cell is None:
         scan_func = accumulate_scan if return_sequences else unaccumulate_scan
-        result, state = scan_func(cell, array, state)
+        result, state = scan_func(cell, input, state)
         return (result, state) if return_state else result
     # bidirectional RNN
     lhs_state, rhs_state = split_state(state, splits=2)
     scan_func = accumulate_scan if return_sequences else unaccumulate_scan
-    lhs_result, lhs_state = scan_func(cell, array, lhs_state, False)
-    rhs_result, rhs_state = scan_func(backward_cell, array, rhs_state, True)
+    lhs_result, lhs_state = scan_func(cell, input, lhs_state, False)
+    rhs_result, rhs_state = scan_func(backward_cell, input, rhs_state, True)
     concat_axis = int(return_sequences)
     result = jnp.concatenate((lhs_result, rhs_result), axis=concat_axis)
     state = concat_state((lhs_state, rhs_state))
@@ -1702,13 +1702,13 @@ class ScanRNN(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
         self,
-        array: jax.Array,
+        input: jax.Array,
         state: RNNState | None = None,
     ) -> jax.Array | tuple[jax.Array, RNNState]:
         """Scans the RNN cell over a sequence.
 
         Args:
-            array: the input sequence.
+            input: the input sequence.
             state: the initial state. if None, state is initialized by the rule
                 defined using :func:`.tree_state`.
 
@@ -1717,28 +1717,28 @@ class ScanRNN(sk.TreeClass):
             return only the result.
         """
 
-        if array.ndim != self.cell.spatial_ndim + 2:
+        if input.ndim != self.cell.spatial_ndim + 2:
             raise ValueError(
                 f"Expected input to have {(self.cell.spatial_ndim + 2)=} dimensions corresponds to "
                 f"(timesteps, in_features, {', '.join(['...']*self.cell.spatial_ndim)})."
-                f"\nGot {array.ndim=} and {array.shape=}."
+                f"\nGot {input.ndim=} and {input.shape=}."
             )
 
         with suppress(AttributeError):
             # if the user has not specified the in_features, we cannot check
             # that the cells are compatible
-            if self.cell.in_features != array.shape[1]:
+            if self.cell.in_features != input.shape[1]:
                 raise ValueError(
                     f"Expected input to have shape (timesteps, {self.cell.in_features}, "
                     f"{', '.join(['...']*self.cell.spatial_ndim)})."
-                    f"\nGot {array.shape[1]=} and {self.cell.in_features=}."
+                    f"\nGot {input.shape[1]=} and {self.cell.in_features=}."
                 )
 
         return scan_rnn(
             self.cell,
             self.backward_cell,
-            array,
-            tree_state(self, array=array) if state is None else state,
+            input,
+            tree_state(self, input=input) if state is None else state,
             self.return_sequences,
             self.return_state,
         )
@@ -1768,56 +1768,56 @@ def _(cell: GRUCell, **_) -> GRUState:
     return GRUState(jnp.zeros([cell.hidden_features]))
 
 
-def _check_rnn_cell_tree_state_input(cell: RNNCell, array):
-    if not (hasattr(array, "ndim") and hasattr(array, "shape")):
+def _check_rnn_cell_tree_state_input(cell: RNNCell, input):
+    if not (hasattr(input, "ndim") and hasattr(input, "shape")):
         raise TypeError(
-            f"Expected {array=} to have `ndim` and `shape` attributes."
+            f"Expected {input=} to have `ndim` and `shape` attributes."
             f"To initialize the `{type(cell).__name__}` state.\n"
-            "Pass a single sample array to `tree_state(..., array=)`."
+            "Pass a single sample input to `tree_state(..., input=)`."
         )
 
-    if array.ndim != cell.spatial_ndim + 1:
+    if input.ndim != cell.spatial_ndim + 1:
         raise ValueError(
-            f"{array.ndim=} != {(cell.spatial_ndim + 1)=}."
+            f"{input.ndim=} != {(cell.spatial_ndim + 1)=}."
             f"Expected input to {type(cell).__name__} to have `shape` (in_features, {'...'*cell.spatial_ndim})."
-            "Pass a single sample array to `tree_state`"
+            "Pass a single sample input to `tree_state`"
         )
 
-    if len(spatial_dim := array.shape[1:]) != cell.spatial_ndim:
+    if len(spatial_dim := input.shape[1:]) != cell.spatial_ndim:
         raise ValueError(f"{len(spatial_dim)=} != {cell.spatial_ndim=}.")
 
-    return array
+    return input
 
 
 @tree_state.def_state(ConvLSTMNDCell)
-def _(cell: ConvLSTMNDCell, array, **_) -> ConvLSTMNDState:
-    array = _check_rnn_cell_tree_state_input(cell, array)
-    shape = (cell.hidden_features, *array.shape[1:])
-    zeros = jnp.zeros(shape).astype(array.dtype)
+def _(cell: ConvLSTMNDCell, input, **_) -> ConvLSTMNDState:
+    input = _check_rnn_cell_tree_state_input(cell, input)
+    shape = (cell.hidden_features, *input.shape[1:])
+    zeros = jnp.zeros(shape).astype(input.dtype)
     return ConvLSTMNDState(zeros, zeros)
 
 
 @tree_state.def_state(ConvGRUNDCell)
-def _(cell: ConvGRUNDCell, *, array: Any, **_) -> ConvGRUNDState:
-    array = _check_rnn_cell_tree_state_input(cell, array)
-    shape = (cell.hidden_features, *array.shape[1:])
-    return ConvGRUNDState(jnp.zeros(shape).astype(array.dtype))
+def _(cell: ConvGRUNDCell, *, input: Any, **_) -> ConvGRUNDState:
+    input = _check_rnn_cell_tree_state_input(cell, input)
+    shape = (cell.hidden_features, *input.shape[1:])
+    return ConvGRUNDState(jnp.zeros(shape).astype(input.dtype))
 
 
 @tree_state.def_state(ScanRNN)
-def _(rnn: ScanRNN, array: jax.Array | None = None, **_) -> RNNState:
+def _(rnn: ScanRNN, input: jax.Array | None = None, **_) -> RNNState:
     # the idea here is to combine the state of the forward and backward cells
     # if backward cell exists. to have single state input for `ScanRNN` and
     # single state output not to complicate the ``__call__`` signature on the
     # user side.
-    array = [None] if array is None else array
+    input = [None] if input is None else input
     # non-spatial cells don't need an input instead
     # pass `None` to `tree_state`
     # otherwise pass the a single time step input to the cells
     return (
-        tree_state(rnn.cell, array=array[0])
+        tree_state(rnn.cell, input=input[0])
         if rnn.backward_cell is None
-        else concat_state(tree_state((rnn.cell, rnn.backward_cell), array=array[0]))
+        else concat_state(tree_state((rnn.cell, rnn.backward_cell), input=input[0]))
     )
 
 

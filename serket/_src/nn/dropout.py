@@ -37,7 +37,7 @@ from serket._src.utils import (
 @ft.partial(jax.jit, inline=True, static_argnums=3)
 def dropout_nd(
     key: jax.Array,
-    array: jax.Array,
+    input: jax.Array,
     drop_rate: float,
     drop_axes: tuple[int, ...] | None = None,
 ) -> jax.Array:
@@ -45,26 +45,26 @@ def dropout_nd(
 
     Args:
         key: random number generator key
-        array: input array
+        input: input array
         drop_rate: probability of an element to be zeroed.
         drop_axes: axes to apply dropout. Default: None to apply to all axes.
     """
     shape = (
-        array.shape
+        input.shape
         if drop_axes is None
-        else (array.shape[i] if i in drop_axes else 1 for i in range(array.ndim))
+        else (input.shape[i] if i in drop_axes else 1 for i in range(input.ndim))
     )
 
     return jnp.where(
         (keep_prop := (1 - drop_rate)) == 0.0,
-        jnp.zeros_like(array),
-        jnp.where(jr.bernoulli(key, keep_prop, shape=shape), array / keep_prop, 0),
+        jnp.zeros_like(input),
+        jnp.where(jr.bernoulli(key, keep_prop, shape=shape), input / keep_prop, 0),
     )
 
 
 def random_cutout_nd(
     key: jax.Array,
-    array: jax.Array,
+    input: jax.Array,
     shape: tuple[int, ...],
     cutout_count: int,
     fill_value: int | float,
@@ -73,27 +73,27 @@ def random_cutout_nd(
 
     Args:
         key: random number generator key
-        array: input array
+        input: input array
         shape: shape of the cutout region. acecepts a tuple of int.
         cutout_count: number of holes.
         fill_value: fill_value to fill.
     """
     start_indices = [0] * len(shape)
-    slice_sizes = [di - (di % ki) for di, ki in zip(array.shape, shape)]
-    valid_array = jax.lax.dynamic_slice(array, start_indices, slice_sizes)
+    slice_sizes = [di - (di % ki) for di, ki in zip(input.shape, shape)]
+    valid_array = jax.lax.dynamic_slice(input, start_indices, slice_sizes)
 
     @ft.partial(
         kernel_map,
-        shape=array.shape,
+        shape=input.shape,
         kernel_size=shape,
         strides=shape,
         padding=((0, 0),) * len(shape),
     )
-    def generate_patches(array):
-        return array
+    def generate_patches(input):
+        return input
 
     # get non-overlapping patches
-    patches = generate_patches(array)
+    patches = generate_patches(input)
     patches_shape = patches.shape
 
     # patches_shape = (patch_0, ..., patch_n, k0, ..., kn)
@@ -105,7 +105,7 @@ def random_cutout_nd(
     kernel_axes = range(len(shape), len(shape) * 2)
     transpose_axes = list(chain.from_iterable(zip(patch_axes, kernel_axes)))
     depatched = patches.transpose(transpose_axes).reshape(valid_array.shape)
-    return jax.lax.dynamic_update_slice(array, depatched, start_indices)
+    return jax.lax.dynamic_update_slice(input, depatched, start_indices)
 
 
 @sk.autoinit
@@ -148,14 +148,14 @@ class Dropout(sk.TreeClass):
     )
     drop_axes: tuple[int, ...] | None = None
 
-    def __call__(self, array: jax.Array, *, key: jax.Array):
+    def __call__(self, input: jax.Array, *, key: jax.Array):
         """Drop some elements of the input array.
 
         Args:
             x: input array
             key: random number generator key
         """
-        return dropout_nd(key, array, self.drop_rate, self.drop_axes)
+        return dropout_nd(key, input, self.drop_rate, self.drop_axes)
 
 
 @sk.autoinit
@@ -167,14 +167,14 @@ class DropoutND(sk.TreeClass):
     )
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array, *, key):
+    def __call__(self, input: jax.Array, *, key):
         """Drop some elements of the input array.
 
         Args:
-            array: input array
+            input: input array
             key: random number generator key
         """
-        return dropout_nd(key, array, self.drop_rate, (0,))
+        return dropout_nd(key, input, self.drop_rate, (0,))
 
     @property
     @abc.abstractmethod
@@ -307,7 +307,7 @@ class RandomCutoutND(sk.TreeClass):
         self.fill_value = fill_value
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
         """Drop some elements of the input array.
 
         Args:
@@ -319,7 +319,7 @@ class RandomCutoutND(sk.TreeClass):
         def cutout(x):
             return random_cutout_nd(key, x, self.shape, self.cutout_count, fill_value)
 
-        return jax.vmap(cutout)(array)
+        return jax.vmap(cutout)(input)
 
     @property
     @abc.abstractmethod
@@ -328,7 +328,7 @@ class RandomCutoutND(sk.TreeClass):
 
 
 class RandomCutout1D(RandomCutoutND):
-    """Random Cutouts for spatial 1D array.
+    """Random Cutouts for spatial 1D input.
 
     Args:
         shape: shape of the cutout. accepts an int or a tuple of int.
@@ -354,7 +354,7 @@ class RandomCutout1D(RandomCutoutND):
 
 
 class RandomCutout2D(RandomCutoutND):
-    """Random Cutouts for spatial 2D array
+    """Random Cutouts for spatial 2D input
 
     .. image:: ../_static/randomcutout2d.png
 
@@ -394,7 +394,7 @@ class RandomCutout2D(RandomCutoutND):
 
 
 class RandomCutout3D(RandomCutoutND):
-    """Random Cutouts for spatial 2D array
+    """Random Cutouts for spatial 2D input
 
     Args:
         shape: shape of the cutout. accepts int or a three element tuple.

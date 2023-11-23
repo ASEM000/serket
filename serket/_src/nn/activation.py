@@ -28,7 +28,7 @@ T = TypeVar("T")
 
 
 def adaptive_leaky_relu(
-    array: jax.typing.ArrayLike,
+    input: jax.typing.ArrayLike,
     a: float = 1.0,
     v: float = 1.0,
 ) -> jax.Array:
@@ -37,7 +37,7 @@ def adaptive_leaky_relu(
     Reference:
         https://arxiv.org/pdf/1906.01170.pdf.
     """
-    return jnp.maximum(0, a * array) - v * jnp.maximum(0, -a * array)
+    return jnp.maximum(0, a * input) - v * jnp.maximum(0, -a * input)
 
 
 @sk.autoinit
@@ -55,17 +55,17 @@ class AdaptiveLeakyReLU(sk.TreeClass):
         on_getattr=[lax.stop_gradient_p.bind],
     )
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return adaptive_leaky_relu(array, self.a, self.v)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return adaptive_leaky_relu(input, self.a, self.v)
 
 
-def adaptive_relu(array: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
+def adaptive_relu(input: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
     """Adaptive ReLU activation function
 
     Reference:
         https://arxiv.org/pdf/1906.01170.pdf.
     """
-    return jnp.maximum(0, a * array)
+    return jnp.maximum(0, a * input)
 
 
 @sk.autoinit
@@ -78,17 +78,17 @@ class AdaptiveReLU(sk.TreeClass):
 
     a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return adaptive_relu(array, self.a)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return adaptive_relu(input, self.a)
 
 
-def adaptive_sigmoid(array: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
+def adaptive_sigmoid(input: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
     """Adaptive sigmoid activation function
 
     Reference:
         https://arxiv.org/pdf/1906.01170.pdf.
     """
-    return 1 / (1 + jnp.exp(-a * array))
+    return 1 / (1 + jnp.exp(-a * input))
 
 
 @sk.autoinit
@@ -101,18 +101,18 @@ class AdaptiveSigmoid(sk.TreeClass):
 
     a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return adaptive_sigmoid(array, self.a)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return adaptive_sigmoid(input, self.a)
 
 
-def adaptive_tanh(array: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
+def adaptive_tanh(input: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
     """Adaptive tanh activation function
 
     Reference:
         https://arxiv.org/pdf/1906.01170.pdf.
     """
-    return (jnp.exp(a * array) - jnp.exp(-a * array)) / (
-        jnp.exp(a * array) + jnp.exp(-a * array)
+    return (jnp.exp(a * input) - jnp.exp(-a * input)) / (
+        jnp.exp(a * input) + jnp.exp(-a * input)
     )
 
 
@@ -126,8 +126,8 @@ class AdaptiveTanh(sk.TreeClass):
 
     a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return adaptive_tanh(array, self.a)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return adaptive_tanh(input, self.a)
 
 
 @sk.autoinit
@@ -140,8 +140,8 @@ class CeLU(sk.TreeClass):
         on_getattr=[lax.stop_gradient_p.bind],
     )
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.celu(array, alpha=self.alpha)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.celu(input, alpha=self.alpha)
 
 
 @sk.autoinit
@@ -154,8 +154,8 @@ class ELU(sk.TreeClass):
         on_getattr=[lax.stop_gradient_p.bind],
     )
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.elu(array, alpha=self.alpha)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.elu(input, alpha=self.alpha)
 
 
 @sk.autoinit
@@ -164,25 +164,25 @@ class GELU(sk.TreeClass):
 
     approximate: bool = sk.field(default=False, on_setattr=[IsInstance(bool)])
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.gelu(array, approximate=self.approximate)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.gelu(input, approximate=self.approximate)
 
 
 @sk.autoinit
 class GLU(sk.TreeClass):
     """Gated linear unit"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.glu(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.glu(input)
 
 
-def hard_shrink(array: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
+def hard_shrink(input: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
     """Hard shrink activation function
 
     Reference:
         https://arxiv.org/pdf/1702.00783.pdf.
     """
-    return jnp.where(array > alpha, array, jnp.where(array < -alpha, array, 0.0))
+    return jnp.where(input > alpha, input, jnp.where(input < -alpha, input, 0.0))
 
 
 @sk.autoinit
@@ -195,43 +195,43 @@ class HardShrink(sk.TreeClass):
         on_getattr=[lax.stop_gradient_p.bind],
     )
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return hard_shrink(array, self.alpha)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return hard_shrink(input, self.alpha)
 
 
 class HardSigmoid(sk.TreeClass):
     """Hard sigmoid activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.hard_sigmoid(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.hard_sigmoid(input)
 
 
 class HardSwish(sk.TreeClass):
     """Hard swish activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.hard_swish(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.hard_swish(input)
 
 
 class HardTanh(sk.TreeClass):
     """Hard tanh activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.hard_tanh(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.hard_tanh(input)
 
 
 class LogSigmoid(sk.TreeClass):
     """Log sigmoid activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.log_sigmoid(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.log_sigmoid(input)
 
 
 class LogSoftmax(sk.TreeClass):
     """Log softmax activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.log_softmax(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.log_softmax(input)
 
 
 @sk.autoinit
@@ -244,43 +244,43 @@ class LeakyReLU(sk.TreeClass):
         on_getattr=[lax.stop_gradient_p.bind],
     )
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.leaky_relu(array, self.negative_slope)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.leaky_relu(input, self.negative_slope)
 
 
 class ReLU(sk.TreeClass):
     """ReLU activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.relu(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.relu(input)
 
 
 class ReLU6(sk.TreeClass):
     """ReLU6 activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.relu6(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.relu6(input)
 
 
 class SeLU(sk.TreeClass):
     """Scaled Exponential Linear Unit"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.selu(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.selu(input)
 
 
 class Sigmoid(sk.TreeClass):
     """Sigmoid activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.sigmoid(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.sigmoid(input)
 
 
 class SoftPlus(sk.TreeClass):
     """SoftPlus activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.softplus(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.softplus(input)
 
 
 def softsign(x: jax.typing.ArrayLike) -> jax.Array:
@@ -291,20 +291,20 @@ def softsign(x: jax.typing.ArrayLike) -> jax.Array:
 class SoftSign(sk.TreeClass):
     """SoftSign activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return softsign(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return softsign(input)
 
 
-def softshrink(array: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
+def softshrink(input: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
     """Soft shrink activation function
 
     Reference:
         https://arxiv.org/pdf/1702.00783.pdf.
     """
     return jnp.where(
-        array < -alpha,
-        array + alpha,
-        jnp.where(array > alpha, array - alpha, 0.0),
+        input < -alpha,
+        input + alpha,
+        jnp.where(input > alpha, input - alpha, 0.0),
     )
 
 
@@ -318,59 +318,59 @@ class SoftShrink(sk.TreeClass):
         on_getattr=[lax.stop_gradient_p.bind],
     )
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return softshrink(array, self.alpha)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return softshrink(input, self.alpha)
 
 
-def squareplus(array: jax.typing.ArrayLike) -> jax.Array:
+def squareplus(input: jax.typing.ArrayLike) -> jax.Array:
     """SquarePlus activation function
 
     Reference:
         https://arxiv.org/pdf/1908.08681.pdf.
     """
-    return 0.5 * (array + jnp.sqrt(array * array + 4))
+    return 0.5 * (input + jnp.sqrt(input * input + 4))
 
 
 class SquarePlus(sk.TreeClass):
     """SquarePlus activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return squareplus(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return squareplus(input)
 
 
 class Swish(sk.TreeClass):
     """Swish activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.swish(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.swish(input)
 
 
 class Tanh(sk.TreeClass):
     """Tanh activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.nn.tanh(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.nn.tanh(input)
 
 
-def tanh_shrink(array: jax.typing.ArrayLike) -> jax.Array:
+def tanh_shrink(input: jax.typing.ArrayLike) -> jax.Array:
     """TanhShrink activation function"""
-    return array - jnp.tanh(array)
+    return input - jnp.tanh(input)
 
 
 class TanhShrink(sk.TreeClass):
     """TanhShrink activation function"""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return tanh_shrink(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return tanh_shrink(input)
 
 
-def thresholded_relu(array: jax.typing.ArrayLike, theta: float = 1.0) -> jax.Array:
+def thresholded_relu(input: jax.typing.ArrayLike, theta: float = 1.0) -> jax.Array:
     """Thresholded ReLU activation function
 
     Reference:
         https://arxiv.org/pdf/1911.09737.pdf.
     """
-    return jnp.where(array > theta, array, 0)
+    return jnp.where(input > theta, input, 0)
 
 
 @sk.autoinit
@@ -383,25 +383,25 @@ class ThresholdedReLU(sk.TreeClass):
         on_getattr=[lax.stop_gradient_p.bind],
     )
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return thresholded_relu(array, self.theta)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return thresholded_relu(input, self.theta)
 
 
-def mish(array: jax.typing.ArrayLike) -> jax.Array:
+def mish(input: jax.typing.ArrayLike) -> jax.Array:
     """Mish activation function https://arxiv.org/pdf/1908.08681.pdf."""
-    return array * jax.nn.tanh(jax.nn.softplus(array))
+    return input * jax.nn.tanh(jax.nn.softplus(input))
 
 
 class Mish(sk.TreeClass):
     """Mish activation function https://arxiv.org/pdf/1908.08681.pdf."""
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return mish(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return mish(input)
 
 
-def prelu(array: jax.typing.ArrayLike, a: float = 0.25) -> jax.Array:
+def prelu(input: jax.typing.ArrayLike, a: float = 0.25) -> jax.Array:
     """Parametric ReLU activation function"""
-    return jnp.where(array >= 0, array, array * a)
+    return jnp.where(input >= 0, input, input * a)
 
 
 @sk.autoinit
@@ -410,11 +410,11 @@ class PReLU(sk.TreeClass):
 
     a: float = sk.field(default=0.25, on_setattr=[Range(0), ScalarLike()])
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return prelu(array, self.a)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return prelu(input, self.a)
 
 
-def snake(array: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
+def snake(input: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
     """Snake activation function
 
     Args:
@@ -423,7 +423,7 @@ def snake(array: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
     Reference:
         https://arxiv.org/pdf/2006.08195.pdf.
     """
-    return array + (1 - jnp.cos(2 * a * array)) / (2 * a)
+    return input + (1 - jnp.cos(2 * a * input)) / (2 * a)
 
 
 @sk.autoinit
@@ -443,8 +443,8 @@ class Snake(sk.TreeClass):
         on_getattr=[lax.stop_gradient_p.bind],
     )
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return snake(array, self.a)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return snake(input, self.a)
 
 
 # useful for building layers from configuration text

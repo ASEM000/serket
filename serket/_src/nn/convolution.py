@@ -123,7 +123,7 @@ def fft_conv_general_dilated(
 
 
 def fft_conv_nd(
-    array: jax.Array,
+    input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
@@ -135,10 +135,10 @@ def fft_conv_nd(
     """Convolution function using fft.
 
     Note:
-        Use ``jax.vmap`` to apply the convolution to a batch of array.
+        Use ``jax.vmap`` to apply the convolution to a batch of input.
 
     Args:
-        array: input array. shape is ``(in_features, spatial)``.
+        input: input array. shape is ``(in_features, spatial)``.
         weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
         bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
@@ -152,7 +152,7 @@ def fft_conv_nd(
             ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
     x = fft_conv_general_dilated(
-        lhs=jnp.expand_dims(array, 0),
+        lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
         strides=strides,
         padding=padding,
@@ -164,7 +164,7 @@ def fft_conv_nd(
 
 
 def fft_conv_nd_transpose(
-    array: jax.Array,
+    input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
@@ -176,7 +176,7 @@ def fft_conv_nd_transpose(
     """Transposed convolution function using fft.
 
     Args:
-        array: input array. shape is ``(in_features, spatial)``.
+        input: input array. shape is ``(in_features, spatial)``.
         weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
         bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
@@ -196,7 +196,7 @@ def fft_conv_nd_transpose(
         input_dilation=dilation,
     )
     x = fft_conv_general_dilated(
-        lhs=jnp.expand_dims(array, 0),
+        lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
         strides=strides,
         padding=transposed_padding,
@@ -208,7 +208,7 @@ def fft_conv_nd_transpose(
 
 
 def depthwise_fft_conv_nd(
-    array: jax.Array,
+    input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
@@ -218,7 +218,7 @@ def depthwise_fft_conv_nd(
     """Depthwise convolution function using fft.
 
     Args:
-        array: input array. shape is ``(in_features, spatial)``.
+        input: input array. shape is ``(in_features, spatial)``.
         weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
         bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
@@ -230,19 +230,19 @@ def depthwise_fft_conv_nd(
     """
 
     x = fft_conv_general_dilated(
-        lhs=jnp.expand_dims(array, 0),
+        lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
         strides=strides,
         padding=padding,
-        dilation=(1,) * (array.ndim - 1),
-        groups=array.shape[0],  # in_features
+        dilation=(1,) * (input.ndim - 1),
+        groups=input.shape[0],  # in_features
     )
 
     return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
 
 
 def separable_fft_conv_nd(
-    array: jax.Array,
+    input: jax.Array,
     depthwise_weight: Weight,
     pointwise_weight: Weight,
     pointwise_bias: jax.Array | None,
@@ -255,7 +255,7 @@ def separable_fft_conv_nd(
     """Separable convolution function using fft.
 
     Args:
-        array: input array. shape is ``(in_features, spatial)``.
+        input: input array. shape is ``(in_features, spatial)``.
         depthwise_weight: depthwise convolutional kernel.
         pointwise_weight: pointwise convolutional kernel.
         pointwise_bias: bias for the pointwise convolution.
@@ -273,8 +273,8 @@ def separable_fft_conv_nd(
             set to ``None`` to not use a mask.
     """
 
-    array = depthwise_fft_conv_nd(
-        array=array,
+    input = depthwise_fft_conv_nd(
+        input=input,
         weight=depthwise_weight,
         bias=None,
         strides=strides,
@@ -283,19 +283,19 @@ def separable_fft_conv_nd(
     )
 
     return fft_conv_nd(
-        array=array,
+        input=input,
         weight=pointwise_weight,
         bias=pointwise_bias,
         strides=strides,
         padding=pointwise_padding,
-        dilation=(1,) * (array.ndim - 1),
+        dilation=(1,) * (input.ndim - 1),
         groups=1,
         mask=pointwise_mask,
     )
 
 
 def conv_nd(
-    array: jax.Array,
+    input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
@@ -307,7 +307,7 @@ def conv_nd(
     """Convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is ``(in_features, spatial)``.
+        input: input array. shape is ``(in_features, spatial)``.
         weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
         bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
@@ -321,12 +321,12 @@ def conv_nd(
             ``(out_features, in_features, kernel)``. set
     """
     x = jax.lax.conv_general_dilated(
-        lhs=jnp.expand_dims(array, 0),
+        lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
         window_strides=strides,
         padding=padding,
         rhs_dilation=dilation,
-        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),  # OIH...
+        dimension_numbers=generate_conv_dim_numbers(input.ndim - 1),  # OIH...
         feature_group_count=groups,
     )
 
@@ -334,7 +334,7 @@ def conv_nd(
 
 
 def conv_nd_transpose(
-    array: jax.Array,
+    input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
@@ -346,7 +346,7 @@ def conv_nd_transpose(
     """Transposed convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is ``(in_features, spatial)``.
+        input: input array. shape is ``(in_features, spatial)``.
         weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
         bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
@@ -366,19 +366,19 @@ def conv_nd_transpose(
         input_dilation=dilation,
     )
     x = jax.lax.conv_transpose(
-        lhs=jnp.expand_dims(array, 0),
+        lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
         strides=strides,
         padding=transposed_padding,
         rhs_dilation=dilation,
-        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
+        dimension_numbers=generate_conv_dim_numbers(input.ndim - 1),
     )
 
     return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
 
 
 def separable_conv_nd(
-    array: jax.Array,
+    input: jax.Array,
     depthwise_weight: Weight,
     pointwise_weight: Weight,
     pointwise_bias: jax.Array | None,
@@ -391,7 +391,7 @@ def separable_conv_nd(
     """Seprable convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is ``(in_features, spatial)``.
+        input: input array. shape is ``(in_features, spatial)``.
         depthwise_weight: depthwise convolutional kernel.
         pointwise_weight: pointwise convolutional kernel.
         pointwise_bias: bias for the pointwise convolution.
@@ -407,8 +407,8 @@ def separable_conv_nd(
         pointwise_mask: a binary mask multiplied with the pointwise convolutional
             kernel. shape is ``(out_features, depth_multiplier * in_features, *kernel_size)``
     """
-    array = depthwise_conv_nd(
-        array=array,
+    input = depthwise_conv_nd(
+        input=input,
         weight=depthwise_weight,
         bias=None,
         strides=strides,
@@ -417,19 +417,19 @@ def separable_conv_nd(
     )
 
     return conv_nd(
-        array=array,
+        input=input,
         weight=pointwise_weight,
         bias=pointwise_bias,
         strides=strides,
         padding=pointwise_padding,
-        dilation=(1,) * (array.ndim - 1),
+        dilation=(1,) * (input.ndim - 1),
         groups=1,
         mask=pointwise_mask,
     )
 
 
 def depthwise_conv_nd(
-    array: jax.Array,
+    input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
@@ -439,7 +439,7 @@ def depthwise_conv_nd(
     """Depthwise convolution function wrapping ``jax.lax.conv_general_dilated``.
 
     Args:
-        array: input array. shape is ``(in_features, spatial)``.
+        input: input array. shape is ``(in_features, spatial)``.
         weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
         bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
@@ -450,20 +450,20 @@ def depthwise_conv_nd(
             ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
     x = jax.lax.conv_general_dilated(
-        lhs=jnp.expand_dims(array, 0),
+        lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
         window_strides=strides,
         padding=padding,
-        rhs_dilation=(1,) * (array.ndim - 1),
-        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
-        feature_group_count=array.shape[0],  # in_features
+        rhs_dilation=(1,) * (input.ndim - 1),
+        dimension_numbers=generate_conv_dim_numbers(input.ndim - 1),
+        feature_group_count=input.shape[0],  # in_features
     )
 
     return jnp.squeeze(x, 0) if bias is None else jnp.squeeze(x + bias, 0)
 
 
 def spectral_conv_nd(
-    array: Annotated[jax.Array, "I..."],
+    input: Annotated[jax.Array, "I..."],
     weight_r: Annotated[jax.Array, "NOI..."],
     weight_i: Annotated[jax.Array, "NOI..."],
     modes: tuple[int, ...],
@@ -471,7 +471,7 @@ def spectral_conv_nd(
     """fourier neural operator convolution function.
 
     Args:
-        array: input array. shape is ``(in_features, spatial size)``.
+        input: input array. shape is ``(in_features, spatial size)``.
         weight_r: real convolutional kernel. shape is ``(2 ** (dim-1), out_features, in_features, kernel size)``.
             where dim is the number of spatial dimensions.
         weight_i: convolutional kernel. shape is ``(2 ** (dim-1), out_features, in_features, kernel size)``.
@@ -485,11 +485,11 @@ def spectral_conv_nd(
         slices_ += [[slice(None, mode), slice(-mode, None)] for mode in reversed(ms)]
         return [[slice(None)] + list(reversed(i)) for i in product(*slices_)]
 
-    _, *si, sl = array.shape
+    _, *si, sl = input.shape
     weight = weight_r + 1j * weight_i
     _, o, *_ = weight.shape
-    x_fft = jnp.fft.rfftn(array, s=(*si, sl))
-    out = jnp.zeros([o, *si, sl // 2 + 1], dtype=array.dtype) + 0j
+    x_fft = jnp.fft.rfftn(input, s=(*si, sl))
+    out = jnp.zeros([o, *si, sl // 2 + 1], dtype=input.dtype) + 0j
     for i, slice_i in enumerate(generate_modes_slices(modes)):
         matmul_out = jnp.einsum("i...,oi...->o...", x_fft[tuple(slice_i)], weight[i])
         out = out.at[tuple(slice_i)].set(matmul_out)
@@ -497,7 +497,7 @@ def spectral_conv_nd(
 
 
 def local_conv_nd(
-    array: jax.Array,
+    input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
     strides: tuple[int, ...],
@@ -509,7 +509,7 @@ def local_conv_nd(
     """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
 
     Args:
-        array: input array. shape is ``(in_features, spatial)``.
+        input: input array. shape is ``(in_features, spatial)``.
         weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
         bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
         strides: stride of the convolution accepts tuple of integers for different
@@ -525,13 +525,13 @@ def local_conv_nd(
     """
 
     x = jax.lax.conv_general_dilated_local(
-        lhs=jnp.expand_dims(array, 0),
+        lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
         window_strides=strides,
         padding=padding,
         filter_shape=kernel_size,
         rhs_dilation=dilation,
-        dimension_numbers=generate_conv_dim_numbers(array.ndim - 1),
+        dimension_numbers=generate_conv_dim_numbers(input.ndim - 1),
     )
 
     return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
@@ -599,11 +599,11 @@ class ConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, mask: Weight | None = None) -> jax.Array:
+    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
         Args:
-            array: input array. shape is ``(in_features, spatial size)``. spatial size
+            input: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
@@ -611,14 +611,14 @@ class ConvND(BaseConvND):
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
         return conv_nd(
-            array=array,
+            input=input,
             weight=self.weight,
             bias=self.bias,
             strides=self.strides,
@@ -915,11 +915,11 @@ class FFTConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, mask: Weight | None = None) -> jax.Array:
+    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
         Args:
-            array: input array. shape is ``(in_features, spatial size)``. spatial size
+            input: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
@@ -927,14 +927,14 @@ class FFTConvND(BaseConvND):
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
         return fft_conv_nd(
-            array=array,
+            input=input,
             weight=self.weight,
             bias=self.bias,
             strides=self.strides,
@@ -1277,11 +1277,11 @@ class ConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, mask: Weight | None = None) -> jax.Array:
+    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
         Args:
-            array: input array. shape is ``(in_features, spatial size)``. spatial size
+            input: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
@@ -1290,14 +1290,14 @@ class ConvNDTranspose(BaseConvNDTranspose):
         """
 
         padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
         return conv_nd_transpose(
-            array=array,
+            input=input,
             weight=self.weight,
             bias=self.bias,
             strides=self.strides,
@@ -1605,11 +1605,11 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, mask: Weight | None = None) -> jax.Array:
+    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
         Args:
-            array: input array. shape is ``(in_features, spatial size)``. spatial size
+            input: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
@@ -1617,14 +1617,14 @@ class FFTConvNDTranspose(BaseConvNDTranspose):
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
         return fft_conv_nd_transpose(
-            array=array,
+            input=input,
             weight=self.weight,
             bias=self.bias,
             strides=self.strides,
@@ -1969,11 +1969,11 @@ class DepthwiseConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, mask: Weight | None = None) -> jax.Array:
+    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
         Args:
-            array: input array. shape is ``(in_features, spatial size)``. spatial size
+            input: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
@@ -1981,14 +1981,14 @@ class DepthwiseConvND(BaseDepthwiseConvND):
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
         return depthwise_conv_nd(
-            array=array,
+            input=input,
             weight=self.weight,
             bias=self.bias,
             strides=self.strides,
@@ -2244,11 +2244,11 @@ class DepthwiseFFTConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, mask: Weight | None = None) -> jax.Array:
+    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
         Args:
-            array: input array. shape is ``(in_features, spatial size)``. spatial size
+            input: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: a binary mask multiplied with the convolutional kernel. shape is
@@ -2256,14 +2256,14 @@ class DepthwiseFFTConvND(BaseDepthwiseConvND):
                 to not use a mask.
         """
         padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
         return depthwise_fft_conv_nd(
-            array=array,
+            input=input,
             weight=self.weight,
             bias=self.bias,
             strides=self.strides,
@@ -2565,14 +2565,14 @@ class SeparableConvND(SeparableConvNDBase):
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(
         self,
-        array: jax.Array,
+        input: jax.Array,
         depthwise_mask: Weight | None = None,
         pointwise_mask: Weight | None = None,
     ) -> jax.Array:
         """Apply the layer.
 
         Args:
-            array: input array. shape is ``(in_features, spatial size)``. spatial size
+            input: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             depthwise_mask: a binary mask multiplied with the depthwise convolutional
@@ -2583,20 +2583,20 @@ class SeparableConvND(SeparableConvNDBase):
                 set to ``None`` to not use a mask.
         """
         depthwise_padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
         pointwise_padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=canonicalize(1, self.spatial_ndim),
             strides=self.strides,
         )
 
         return separable_conv_nd(
-            array=array,
+            input=input,
             depthwise_weight=self.depthwise_weight,
             pointwise_weight=self.pointwise_weight,
             pointwise_bias=self.pointwise_bias,
@@ -2876,14 +2876,14 @@ class SeparableFFTConvND(SeparableConvNDBase):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
         self,
-        array: jax.Array,
+        input: jax.Array,
         depthwise_mask: Weight | None = None,
         pointwise_mask: Weight | None = None,
     ) -> jax.Array:
         """Apply the layer.
 
         Args:
-            array: input array. shape is ``(in_features, spatial size)``. spatial size
+            input: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             depthwise_mask: a binary mask multiplied with the depthwise convolutional
@@ -2895,21 +2895,21 @@ class SeparableFFTConvND(SeparableConvNDBase):
         """
 
         depthwise_padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=self.kernel_size,
             strides=self.strides,
         )
 
         pointwise_padding = delayed_canonicalize_padding(
-            in_dim=array.shape[1:],
+            in_dim=input.shape[1:],
             padding=self.padding,
             kernel_size=canonicalize(1, self.spatial_ndim),
             strides=self.strides,
         )
 
         return separable_fft_conv_nd(
-            array=array,
+            input=input,
             depthwise_weight=self.depthwise_weight,
             pointwise_weight=self.pointwise_weight,
             pointwise_bias=self.pointwise_bias,
@@ -3208,8 +3208,8 @@ class SpectralConvND(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return spectral_conv_nd(array, self.weight_r, self.weight_i, self.modes)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return spectral_conv_nd(input, self.weight_r, self.weight_i, self.modes)
 
     @property
     @abc.abstractmethod
@@ -3482,11 +3482,11 @@ class ConvNDLocal(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, array: jax.Array, mask: Weight | None = None) -> jax.Array:
+    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
         Args:
-            array: input array. shape is ``(in_features, spatial size)``. spatial size
+            input: input array. shape is ``(in_features, spatial size)``. spatial size
                 is length for 1D convolution, height, width for 2D convolution and
                 height, width, depth for 3D convolution.
             mask: mask to apply to the weights. shape is
@@ -3494,7 +3494,7 @@ class ConvNDLocal(sk.TreeClass):
                 use ``None`` for no mask.
         """
         return local_conv_nd(
-            array=array,
+            input=input,
             weight=self.weight,
             bias=self.bias,
             strides=self.strides,

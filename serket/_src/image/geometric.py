@@ -376,9 +376,9 @@ class VerticalShear2D(sk.TreeClass):
         self.angle = angle
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array) -> jax.Array:
         angle = jax.lax.stop_gradient(self.angle)
-        return jax.vmap(vertical_shear_2d, in_axes=(0, None))(x, angle)
+        return jax.vmap(vertical_shear_2d, in_axes=(0, None))(input, angle)
 
     spatial_ndim: int = 2
 
@@ -601,8 +601,8 @@ class VerticalTranslate2D(sk.TreeClass):
     shift: int = sk.field(on_setattr=[IsInstance(int)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: jax.Array) -> jax.Array:
-        return jax.vmap(vertical_translate_2d, in_axes=(0, None))(x, self.shift)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.vmap(vertical_translate_2d, in_axes=(0, None))(input, self.shift)
 
     spatial_ndim: int = 2
 

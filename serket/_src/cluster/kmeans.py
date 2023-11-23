@@ -215,7 +215,7 @@ class KMeans(KmeansBase):
 
     def __call__(
         self,
-        x: jax.Array,
+        input: jax.Array,
         state: KMeansState,
     ) -> tuple[jax.Array, KMeansState]:
         """K-means clustering algorithm.
@@ -241,8 +241,8 @@ class KMeans(KmeansBase):
             A tuple containing the labels and a ``KMeansState``.
         """
         clusters, tol, state = jax.lax.stop_gradient((self.clusters, self.tol, state))
-        state = kmeans(x, state, clusters=clusters, tol=tol)
-        distances = distances_from_centers(x, state.centers)
+        state = kmeans(input, state, clusters=clusters, tol=tol)
+        distances = distances_from_centers(input, state.centers)
         labels = labels_from_distances(distances)
         return labels, state
 
@@ -257,10 +257,10 @@ class EvalKMeans(KmeansBase):
 
     def __call__(
         self,
-        x: jax.Array,
+        input: jax.Array,
         state: KMeansState,
     ) -> tuple[jax.Array, KMeansState]:
-        distances = distances_from_centers(x, state.centers)
+        distances = distances_from_centers(input, state.centers)
         labels = labels_from_distances(distances)
         return labels, state
 
