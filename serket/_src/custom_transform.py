@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import functools as ft
 from inspect import getfullargspec
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 import jax
 
@@ -59,11 +59,8 @@ def tree_state(tree: T, **kwargs) -> T:
 
     Note:
         To define a state initialization rule for a custom layer, use the decorator
-        :func:`.tree_state.def_state` on a function that accepts the layer and
-        keyword arguments. Meaning that the function should have the signature
-        ``func(layer, *, user_kwargs, **rest_kwargs)``. The extra ``**rest_kwargs``
-        is used to allow for additional keyword arguments to be passed to the state
-        initialization rule for different layers.
+        :func:`.tree_state.def_state` on a function that accepts the layer as the
+        first argument, for any additional arguments, use keyword only arguments.
 
         >>> import jax
         >>> import serket as sk
@@ -71,9 +68,7 @@ def tree_state(tree: T, **kwargs) -> T:
         ...    pass
         >>> # state function accept the `layer` and  input array
         >>> @sk.tree_state.def_state(LayerWithState)
-        ... def _(leaf, **kwargs):
-        ...    # pull out some keyword argument
-        ...    input = kwargs["input"]
+        ... def _(leaf, *, input: jax.Array) -> jax.Array:
         ...    return jax.random.normal(jax.random.PRNGKey(0), input.shape)
         >>> sk.tree_state(LayerWithState(), input=jax.numpy.ones((1, 1))).shape
         (1, 1)
@@ -94,9 +89,9 @@ def tree_state(tree: T, **kwargs) -> T:
     # one challenge is that the state initialization rule for a layer
     # may depend only on the layer itself, or may depend on the layer
     # and the input. For example, the state initialization rule for
-    # BatchNorm depends on the layer and sample input, but the state initialization
-    # rule for some RNN cells (e.g. LSTM) does not depend on the input.
-    # This poses a challenge for the user to pass the correct input
+    # ConvRNN Cells depends on the layer and sample input, but the state
+    # initialization rule for some RNN cells (e.g. LSTM) does not depend on the
+    # input. This poses a challenge for the user to pass the correct input
     # to the state initialization rule.
 
     types = tuple(set(tree_state.state_dispatcher.registry) - {object})
@@ -107,50 +102,40 @@ def tree_state(tree: T, **kwargs) -> T:
     def dispatch_func(leaf):
         try:
             return tree_state.state_dispatcher(leaf, **kwargs)
-        # handle error from wrong signature
+
         except TypeError as e:
             # check if the leaf has a state rule
-            mro_sans_object = type(leaf).__mro__[:-1]
-            registry = tree_state.state_dispatcher.registry
 
-            for mro in mro_sans_object:
-                if mro in registry:
-                    func = tree_state.state_dispatcher.registry[mro]
+            for mro in type(leaf).__mro__[:-1]:
+                if mro in (registry := tree_state.state_dispatcher.registry):
+                    func = registry[mro]
                     break
             else:
-                # not registered to `tree_state`
+                # no state rule is registered for this leaf
+                # however type error is raised for other reasons
                 raise type(e)(e)
 
-            # maybe wrong signature
+            # the state rule is registered and the kwargs passed to `tree_state`
+            # check if all necessary kwargs for this state rule are passed
+            state_kwargs = getfullargspec(func).kwonlyargs
+
+            if set(set(state_kwargs)).issubset(set(kwargs)):
+                # the state rule is registered and the kwargs passed to `tree_state`
+                return func(leaf, **{key: kwargs[key] for key in state_kwargs})
+
+            # the state rule is registered and the kwargs passed to `tree_state`
+            # are not a subset of the kwargs needed by the state rule (not found)
             raise type(e)(
-                f"For {type(leaf)=} with the registered state rule signature {sk.tree_str(func)}, "
-                f"The following error occurred:\n{e}\n"
-                f"Pass the correct inputs to the registered state rule as arguments to `tree_state`."
+                f"{type(leaf)=} has a registered state rule {sk.tree_str(func)}."
+                f"\nHowever, the  kwargs = {','.join(set(kwargs)-set(state_kwargs))}"
+                f"are not passed to the state rule.\n{e}"
             )
 
     return jax.tree_map(dispatch_func, tree, is_leaf=is_leaf)
 
 
 tree_state.state_dispatcher = ft.singledispatch(NoState)
-
-
-def def_state(klass: type, func: Callable[..., Any] | None = None):
-    # check if the function pass `**kwargs` before registering
-    def check_func(func: Callable[..., Any]) -> Callable[..., Any]:
-        if getfullargspec(func).varkw is not None:
-            return func
-        raise TypeError(
-            f"Upon registering {klass} to `tree_state`,"
-            f" the function {func} is missing variable keyword argument."
-        )
-
-    if func is None:
-        return lambda F: tree_state.state_dispatcher.register(klass, check_func(F))
-
-    return tree_state.state_dispatcher.register(klass, check_func(func))
-
-
-tree_state.def_state = def_state
+tree_state.def_state = tree_state.state_dispatcher.register
 
 
 def tree_eval(tree):

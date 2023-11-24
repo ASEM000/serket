@@ -1748,23 +1748,23 @@ class ScanRNN(sk.TreeClass):
 
 
 @tree_state.def_state(SimpleRNNCell)
-def _(cell: SimpleRNNCell, **_) -> SimpleRNNState:
+def _(cell: SimpleRNNCell) -> SimpleRNNState:
     return SimpleRNNState(jnp.zeros([cell.hidden_features]))
 
 
 @tree_state.def_state(DenseCell)
-def _(cell: DenseCell, **_) -> DenseState:
+def _(cell: DenseCell) -> DenseState:
     return DenseState(jnp.empty([cell.hidden_features]))
 
 
 @tree_state.def_state(LSTMCell)
-def _(cell: LSTMCell, **_) -> LSTMState:
+def _(cell: LSTMCell) -> LSTMState:
     shape = [cell.hidden_features]
     return LSTMState(jnp.zeros(shape), jnp.zeros(shape))
 
 
 @tree_state.def_state(GRUCell)
-def _(cell: GRUCell, **_) -> GRUState:
+def _(cell: GRUCell) -> GRUState:
     return GRUState(jnp.zeros([cell.hidden_features]))
 
 
@@ -1790,7 +1790,7 @@ def _check_rnn_cell_tree_state_input(cell: RNNCell, input):
 
 
 @tree_state.def_state(ConvLSTMNDCell)
-def _(cell: ConvLSTMNDCell, input, **_) -> ConvLSTMNDState:
+def _(cell: ConvLSTMNDCell, input) -> ConvLSTMNDState:
     input = _check_rnn_cell_tree_state_input(cell, input)
     shape = (cell.hidden_features, *input.shape[1:])
     zeros = jnp.zeros(shape).astype(input.dtype)
@@ -1798,14 +1798,14 @@ def _(cell: ConvLSTMNDCell, input, **_) -> ConvLSTMNDState:
 
 
 @tree_state.def_state(ConvGRUNDCell)
-def _(cell: ConvGRUNDCell, *, input: Any, **_) -> ConvGRUNDState:
+def _(cell: ConvGRUNDCell, *, input: Any) -> ConvGRUNDState:
     input = _check_rnn_cell_tree_state_input(cell, input)
     shape = (cell.hidden_features, *input.shape[1:])
     return ConvGRUNDState(jnp.zeros(shape).astype(input.dtype))
 
 
 @tree_state.def_state(ScanRNN)
-def _(rnn: ScanRNN, input: jax.Array | None = None, **_) -> RNNState:
+def _(rnn: ScanRNN, input: jax.Array | None = None) -> RNNState:
     # the idea here is to combine the state of the forward and backward cells
     # if backward cell exists. to have single state input for `ScanRNN` and
     # single state output not to complicate the ``__call__`` signature on the

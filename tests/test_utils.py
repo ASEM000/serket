@@ -22,7 +22,6 @@ import numpy.testing as npt
 import pytest
 
 import serket as sk
-from serket._src.custom_transform import tree_state
 from serket._src.nn.initialization import resolve_init
 from serket._src.utils import (
     IsInstance,
@@ -35,24 +34,6 @@ from serket._src.utils import (
     validate_axis_shape,
     validate_spatial_nd,
 )
-
-
-def test_tree_state():
-    with pytest.raises(TypeError):
-
-        class T:
-            ...
-
-        @tree_state.def_state(T)
-        def _(x):
-            ...
-
-    with pytest.raises(TypeError):
-
-        class T:
-            ...
-
-        tree_state.def_state(T, lambda x: x)
 
 
 @pytest.mark.parametrize(
