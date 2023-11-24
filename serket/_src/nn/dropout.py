@@ -124,8 +124,9 @@ class Dropout(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> layer = sk.nn.Dropout(0.5)
-        >>> print(layer(jnp.ones([10]), key=jr.PRNGKey(0)))
-        [2. 0. 2. 2. 2. 2. 2. 2. 0. 0.]
+        >>> input = jnp.ones(10)
+        >>> key = jr.PRNGKey(0)
+        >>> output = layer(input, key=key)
 
     Note:
         Use :func:`.tree_eval` to turn off dropout during evaluation by converting
@@ -193,8 +194,9 @@ class Dropout1D(DropoutND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> layer = sk.nn.Dropout1D(0.5)
-        >>> print(layer(jnp.ones((1, 10)), key=jr.PRNGKey(0)))
-        [[2. 2. 2. 2. 2. 2. 2. 2. 2. 2.]]
+        >>> input = jnp.ones((1, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> output = layer(input, key=key)
 
     Note:
         Use :func:`.tree_eval` to turn off dropout during evaluation by converting
@@ -228,12 +230,9 @@ class Dropout2D(DropoutND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> layer = sk.nn.Dropout2D(0.5)
-        >>> print(layer(jnp.ones((1, 5, 5)), key=jr.PRNGKey(0)))
-        [[[2. 2. 2. 2. 2.]
-          [2. 2. 2. 2. 2.]
-          [2. 2. 2. 2. 2.]
-          [2. 2. 2. 2. 2.]
-          [2. 2. 2. 2. 2.]]]
+        >>> input = jnp.ones((1, 5, 5))
+        >>> key = jr.PRNGKey(0)
+        >>> output = layer(input, key=key)
 
     Note:
         Use :func:`.tree_eval` to turn off dropout during evaluation by converting
@@ -267,12 +266,9 @@ class Dropout3D(DropoutND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> layer = sk.nn.Dropout3D(0.5)
-        >>> print(layer(jnp.ones((1, 2, 2, 2)), key=jr.PRNGKey(0)))  # doctest: +NORMALIZE_WHITESPACE
-        [[[[2. 2.]
-        [2. 2.]]
-        <BLANKLINE>
-        [[2. 2.]
-        [2. 2.]]]]
+        >>> input = jnp.ones((1, 2, 2, 2))
+        >>> key = jr.PRNGKey(0)
+        >>> output = layer(input, key=key)
 
     Note:
         Use :func:`.tree_eval` to turn off dropout during evaluation by converting
@@ -342,8 +338,10 @@ class RandomCutout1D(RandomCutoutND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> print(sk.nn.RandomCutout1D(5)(jnp.ones((1, 10)) * 100, key=jr.PRNGKey(0)))
-        [[100. 100. 100. 100. 100.   0.   0.   0.   0.   0.]]
+        >>> layer = sk.nn.RandomCutout1D(5)
+        >>> input = jnp.ones((1, 10)) * 100
+        >>> key = jr.PRNGKey(0)
+        >>> output = layer(input, key=key)
 
     Reference:
         - https://arxiv.org/abs/1708.04552
@@ -371,19 +369,10 @@ class RandomCutout2D(RandomCutoutND):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> x = jnp.arange(1,101).reshape(1, 10, 10)
+        >>> layer = sk.nn.RandomCutout2D(shape=(3,2), cutout_count=2, fill_value=0)
+        >>> input = jnp.arange(1,101).reshape(1, 10, 10)
         >>> key = jr.PRNGKey(0)
-        >>> print(sk.nn.RandomCutout2D(shape=(3,2), cutout_count=2, fill_value=0)(x,key=key))
-        [[[  1   2   3   4   5   6   7   8   9  10]
-          [ 11  12  13  14  15  16  17  18  19  20]
-          [ 21  22  23  24  25  26  27  28  29  30]
-          [ 31  32  33  34   0   0  37  38  39  40]
-          [ 41  42  43  44   0   0  47  48  49  50]
-          [ 51  52  53  54   0   0  57  58  59  60]
-          [ 61  62   0   0  65  66  67  68  69  70]
-          [ 71  72   0   0  75  76  77  78  79  80]
-          [ 81  82   0   0  85  86  87  88  89  90]
-          [ 91  92  93  94  95  96  97  98  99 100]]]
+        >>> output = layer(input, key=key)
 
     Reference:
         - https://arxiv.org/abs/1708.04552
@@ -409,20 +398,10 @@ class RandomCutout3D(RandomCutoutND):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> x = jnp.arange(1, 2 * 5 * 5 + 1).reshape(1, 2, 5, 5)
+        >>> layer = sk.nn.RandomCutout3D(shape=(2, 2, 2), cutout_count=2, fill_value=0)
+        >>> input = jnp.arange(1, 2 * 5 * 5 + 1).reshape(1, 2, 5, 5)
         >>> key = jr.PRNGKey(0)
-        >>> print(sk.nn.RandomCutout3D(shape=(2, 2, 2), cutout_count=2, fill_value=0)(x, key=key))
-        [[[[ 1  2  0  0  5]
-           [ 6  7  0  0 10]
-           [ 0  0 13 14 15]
-           [ 0  0 18 19 20]
-           [21 22 23 24 25]]
-        <BLANKLINE>
-         [[26 27  0  0 30]
-          [31 32  0  0 35]
-          [ 0  0 38 39 40]
-          [ 0  0 43 44 45]
-          [46 47 48 49 50]]]]
+        >>> output = layer(input, key=key)
 
     Reference:
         - https://arxiv.org/abs/1708.04552

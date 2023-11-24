@@ -30,17 +30,20 @@ from serket._src.utils import (
     maybe_lazy_call,
     maybe_lazy_init,
     positive_int_cb,
+    validate_axis_shape,
 )
 
 
 def layer_norm(
     input: jax.Array,
     *,
-    gamma: jax.Array,
-    beta: jax.Array,
+    gamma: jax.Array | None,
+    beta: jax.Array | None,
     eps: float,
-    normalized_shape: int | tuple[int],
+    normalized_shape: tuple[int],
 ) -> jax.Array:
+    assert normalized_shape == input.shape[-len(normalized_shape) :]
+
     dims = tuple(range(len(input.shape) - len(normalized_shape), len(input.shape)))
 
     μ = jnp.mean(input, axis=dims, keepdims=True)
@@ -59,16 +62,16 @@ def layer_norm(
 def group_norm(
     input: jax.Array,
     *,
-    gamma: jax.Array,
-    beta: jax.Array,
+    gamma: jax.Array | None,
+    beta: jax.Array | None,
     eps: float,
     groups: int,
 ) -> jax.Array:
     # split channels into groups
-    xx = input.reshape(groups, -1)
-    μ = jnp.mean(xx, axis=-1, keepdims=True)
-    σ_2 = jnp.var(xx, axis=-1, keepdims=True)
-    x̂ = (xx - μ) * jax.lax.rsqrt((σ_2 + eps))
+    x = input.reshape(groups, -1)
+    μ = jnp.mean(x, axis=-1, keepdims=True)
+    σ_2 = jnp.var(x, axis=-1, keepdims=True)
+    x̂ = (x - μ) * jax.lax.rsqrt((σ_2 + eps))
     x̂ = x̂.reshape(*input.shape)
 
     if gamma is not None:
@@ -124,9 +127,10 @@ class LayerNorm(sk.TreeClass):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.ones((5,10))
-        >>> _, layer = sk.nn.LayerNorm(None).at['__call__'](x)
-        >>> layer(x).shape
+        >>> input = jnp.ones((5,10))
+        >>> lazy_layer = sk.nn.LayerNorm(None)
+        >>> _, material_layer = lazy_layer.at['__call__'](input)
+        >>> material_layer(input).shape
         (5, 10)
 
     Reference:
@@ -207,9 +211,9 @@ class GroupNorm(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> x = jnp.ones((5,10))
-        >>> _, layer = sk.nn.GroupNorm(5, groups=1, key=jr.PRNGKey(0)).at['__call__'](x)
-        >>> layer(x).shape
+        >>> layer = sk.nn.GroupNorm(5, groups=1, key=key)
+        >>> input = jnp.ones((5,10))
+        >>> layer(input).shape
         (5, 10)
 
     Note:
@@ -223,9 +227,10 @@ class GroupNorm(sk.TreeClass):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.ones((5,10))
-        >>> _, layer = sk.nn.GroupNorm(None, groups=5).at['__call__'](x)
-        >>> layer(x).shape
+        >>> lazy_layer = sk.nn.GroupNorm(None, groups=5)
+        >>> input = jnp.ones((5,10))
+        >>> _, material_layer = lazy_layer.at['__call__'](input)
+        >>> material_layer(input).shape
         (5, 10)
 
     Reference:
@@ -253,12 +258,13 @@ class GroupNorm(sk.TreeClass):
 
         # needs more info for checking
         if in_features % groups != 0:
-            raise ValueError(f"{in_features} must be divisible by {groups=}.")
+            raise ValueError(f"{in_features=} must be divisible by {groups=}.")
 
         self.weight = resolve_init(weight_init)(key, (in_features,), dtype)
         self.bias = resolve_init(bias_init)(key, (in_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
+    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         return group_norm(
             input=input,
@@ -290,9 +296,10 @@ class InstanceNorm(GroupNorm):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> x = jnp.ones((5,10))
-        >>> _, layer = sk.nn.InstanceNorm(5, key=jr.PRNGKey(0)).at['__call__'](x)
-        >>> layer(x).shape
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.InstanceNorm(5, key=key)
+        >>> input = jnp.ones((5,10))
+        >>> layer(input).shape
         (5, 10)
 
     Note:
@@ -306,9 +313,12 @@ class InstanceNorm(GroupNorm):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.ones((5,10))
-        >>> _, layer = sk.nn.InstanceNorm(None).at['__call__'](x)
-        >>> layer(x).shape
+        >>> import jax.random as jr
+        >>> key = jr.PRNGKey(0)
+        >>> lazy_layer = sk.nn.InstanceNorm(None, key=key)
+        >>> input = jnp.ones((5,10))
+        >>> _, material_layer = lazy_layer.at['__call__'](input)
+        >>> material_layer(input).shape
         (5, 10)
 
     Reference:
@@ -479,17 +489,6 @@ class BatchNorm(sk.TreeClass):
         >>> x = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
         >>> for xi in x:
         ...    out, state = jax.vmap(net, in_axes=(0, None), out_axes=(0, None))(xi, state)
-        >>> print(state)
-        ThreadedBatchNorm(
-          bn1=BatchNormState(
-            running_mean=[0.01683246 0.01797775 0.01912302 0.02026827 0.02141353],
-            running_var=[0.819393  0.8193929 0.819393  0.819393  0.819393 ]
-          ),
-          bn2=BatchNormState(
-            running_mean=[0.18209304 0.18209311 0.18209308 0.18209308 0.18209304],
-            running_var=[0.9997767  0.99978393 0.99978125 0.99977994 0.99978155]
-          )
-        )
 
     Example:
         Working with :class:`.BatchNorm` without threading the state.
@@ -531,19 +530,9 @@ class BatchNorm(sk.TreeClass):
         ...        return sk.tree_mask(net(x))
         ...    return sk.tree_unmask(forward(x))
         >>> net: UnthreadedBatchNorm = UnthreadedBatchNorm(key=jr.PRNGKey(0))
-        >>> x = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
-        >>> for xi in x:
+        >>> input = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
+        >>> for xi in input:
         ...    out, net = mask_vmap(net, xi)
-        >>> print(net.bn1_state)
-        BatchNormState(
-          running_mean=[0.01683246 0.01797775 0.01912302 0.02026827 0.02141353],
-          running_var=[0.819393  0.8193929 0.819393  0.819393  0.819393 ]
-        )
-        >>> print(net.bn2_state)
-        BatchNormState(
-          running_mean=[0.18209304 0.18209311 0.18209308 0.18209308 0.18209304],
-          running_var=[0.9997767  0.99978393 0.99978125 0.99977994 0.99978155]
-        )
 
     Note:
         :class:`.BatchNorm` supports lazy initialization, meaning that the
@@ -557,10 +546,12 @@ class BatchNorm(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> x = jnp.ones((5,10))
-        >>> _, layer = sk.nn.BatchNorm(None, key=jr.PRNGKey(0)).at['__call__'](x)
-        >>> x, state = jax.vmap(layer)(x)
-        >>> x.shape
+        >>> key = jr.PRNGKey(0)
+        >>> lazy_layer = sk.nn.BatchNorm(None, key=key)
+        >>> input = jnp.ones((5,10))
+        >>> _ , material_layer = lazy_layer.at['__call__'](input)
+        >>> output, state = jax.vmap(material_layer, out_axes=(0, None))(input)
+        >>> output.shape
         (5, 10)
 
     Note:
@@ -661,11 +652,11 @@ class EvalNorm(sk.TreeClass):
         >>> import jax.random as jr
         >>> bn = sk.nn.BatchNorm(10, key=jr.PRNGKey(0))
         >>> state = sk.tree_state(bn)
-        >>> x = jax.random.uniform(jax.random.PRNGKey(0), shape=(5, 10))
-        >>> x, state = jax.vmap(bn, in_axes=(0, None), out_axes=(0, None))(x, state)
+        >>> input = jax.random.uniform(jr.PRNGKey(0), shape=(5, 10))
+        >>> output, state = jax.vmap(bn, in_axes=(0, None), out_axes=(0, None))(x, state)
         >>> # convert to evaluation mode
         >>> bn = sk.tree_eval(bn)
-        >>> x, state = jax.vmap(bn, in_axes=(0, None))(x, state)
+        >>> output, state = jax.vmap(bn, in_axes=(0, None))(input, state)
 
     Note:
         If ``axis_name`` is specified, then ``axis_name`` argument must be passed

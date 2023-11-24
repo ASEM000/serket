@@ -208,8 +208,9 @@ class Upsample1D(UpsampleND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 6).reshape(1, 5)
-        >>> print(sk.nn.Upsample1D(scale=2)(x))
+        >>> layer = sk.nn.Upsample1D(scale=2)
+        >>> input = jnp.arange(1, 6).reshape(1, 5)
+        >>> print(layer(input))
         [[1 1 2 2 3 3 4 4 5 5]]
     """
 
@@ -236,8 +237,9 @@ class Upsample2D(UpsampleND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.Upsample2D(scale=(1, 2))(x))
+        >>> layer = sk.nn.Upsample2D(scale=(1, 2))
+        >>> input = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> print(layer(input))
         [[[ 1  1  2  2  3  3  4  4  5  5]
           [ 6  6  7  7  8  8  9  9 10 10]
           [11 11 12 12 13 13 14 14 15 15]
@@ -268,8 +270,9 @@ class Upsample3D(UpsampleND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 9).reshape(1, 2, 2, 2)
-        >>> print(sk.nn.Upsample3D(scale=(1, 2, 1))(x))
+        >>> layer = sk.nn.Upsample3D(scale=(1, 2, 1))
+        >>> input = jnp.arange(1, 9).reshape(1, 2, 2, 2)
+        >>> print(layer(input))
         [[[[1 2]
           [1 2]
           [3 4]
@@ -312,8 +315,9 @@ class Crop1D(CropND):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> x = jnp.arange(1, 6).reshape(1, 5)
-        >>> print(sk.nn.Crop1D(size=3, start=1)(x))
+        >>> layer = sk.nn.Crop1D(size=3, start=1)
+        >>> input = jnp.arange(1, 6).reshape(1, 5)
+        >>> print(layer(input))
         [[2 3 4]]
     """
 
@@ -334,14 +338,15 @@ class Crop2D(CropND):
         >>> # i.e. start at index 2 along the first axis and index 0 along the second axis
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> x = jnp.arange(1, 26).reshape((1, 5, 5))
-        >>> print(x)
+        >>> layer = sk.nn.Crop2D(size=3, start=(2, 0))
+        >>> input = jnp.arange(1, 26).reshape((1, 5, 5))
+        >>> print(input)
         [[[ 1  2  3  4  5]
           [ 6  7  8  9 10]
           [11 12 13 14 15]
           [16 17 18 19 20]
           [21 22 23 24 25]]]
-        >>> print(sk.nn.Crop2D(size=3, start=(2, 0))(x))
+        >>> print(layer(input))
         [[[11 12 13]
           [16 17 18]
           [21 22 23]]]
@@ -394,8 +399,9 @@ class Pad1D(PadND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 6).reshape(1, 5)
-        >>> print(sk.nn.Pad1D(((1, 2),))(x))
+        >>> layer = sk.nn.Pad1D(((1, 2),))
+        >>> input = jnp.arange(1, 6).reshape(1, 5)
+        >>> print(layer(input))
         [[0 1 2 3 4 5 0 0]]
 
     Reference:
@@ -419,8 +425,9 @@ class Pad2D(PadND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 10).reshape(1, 3, 3)
-        >>> print(sk.nn.Pad2D(((1, 2), (3, 4)))(x))
+        >>> layer = sk.nn.Pad2D(((1, 2), (3, 4)))
+        >>> input = jnp.arange(1, 10).reshape(1, 3, 3)
+        >>> print(layer(input))
         [[[0 0 0 0 0 0 0 0 0 0]
           [0 0 0 1 2 3 0 0 0 0]
           [0 0 0 4 5 6 0 0 0 0]
@@ -447,8 +454,9 @@ class Pad3D(PadND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 9).reshape(1, 2, 2, 2)
-        >>> print(sk.nn.Pad3D(((0, 0), (2, 0), (2, 0)))(x))
+        >>> layer = sk.nn.Pad3D(((0, 0), (2, 0), (2, 0)))
+        >>> input = jnp.arange(1, 9).reshape(1, 2, 2, 2)
+        >>> print(layer(input))
         [[[[0 0 0 0]
           [0 0 0 0]
           [0 0 1 2]
@@ -550,17 +558,18 @@ class Flatten(sk.TreeClass):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> sk.nn.Flatten(0,1)(jnp.ones([1,2,3,4,5])).shape
+        >>> input = jnp.ones([1,2,3,4,5])
+        >>> sk.nn.Flatten(0,1)(input).shape
         (2, 3, 4, 5)
-        >>> sk.nn.Flatten(0,2)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(0,2)(input).shape
         (6, 4, 5)
-        >>> sk.nn.Flatten(1,2)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(1,2)(input).shape
         (1, 6, 4, 5)
-        >>> sk.nn.Flatten(-1,-1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(-1,-1)(input).shape
         (1, 2, 3, 4, 5)
-        >>> sk.nn.Flatten(-2,-1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(-2,-1)(input).shape
         (1, 2, 3, 20)
-        >>> sk.nn.Flatten(-3,-1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(-3,-1)(input).shape
         (1, 2, 60)
     """
 
@@ -582,9 +591,11 @@ class Unflatten(sk.TreeClass):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> sk.nn.Unflatten(0, (1,2,3,4,5))(jnp.ones([120])).shape
+        >>> input = jnp.ones([120])
+        >>> sk.nn.Unflatten(0, (1,2,3,4,5))(input).shape
         (1, 2, 3, 4, 5)
-        >>> sk.nn.Unflatten(2,(2,3))(jnp.ones([1,2,6])).shape
+        >>> input = jnp.ones([1,2,6])
+        >>> sk.nn.Unflatten(2,(2,3))(input).shape
         (1, 2, 2, 3)
     """
 
@@ -861,10 +872,11 @@ class CenterCrop1D(CenterCropND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 13).reshape(1, 12)
-        >>> print(x)
+        >>> layer = sk.nn.CenterCrop1D(4)
+        >>> input = jnp.arange(1, 13).reshape(1, 12)
+        >>> print(input)
         [[ 1  2  3  4  5  6  7  8  9 10 11 12]]
-        >>> print(sk.nn.CenterCrop1D(4)(x))
+        >>> print(layer(input))
         [[5 6 7 8]]
     """
 
@@ -882,8 +894,9 @@ class CenterCrop2D(CenterCropND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 145).reshape(1, 12, 12)
-        >>> print(x)
+        >>> layer = sk.nn.CenterCrop2D(4)
+        >>> input = jnp.arange(1, 145).reshape(1, 12, 12)
+        >>> print(input)
         [[[  1   2   3   4   5   6   7   8   9  10  11  12]
           [ 13  14  15  16  17  18  19  20  21  22  23  24]
           [ 25  26  27  28  29  30  31  32  33  34  35  36]
@@ -896,7 +909,7 @@ class CenterCrop2D(CenterCropND):
           [109 110 111 112 113 114 115 116 117 118 119 120]
           [121 122 123 124 125 126 127 128 129 130 131 132]
           [133 134 135 136 137 138 139 140 141 142 143 144]]]
-        >>> print(sk.nn.CenterCrop2D(4)(x))
+        >>> print(layer(input))
         [[[53 54 55 56]
           [65 66 67 68]
           [77 78 79 80]
