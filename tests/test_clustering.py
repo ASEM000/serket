@@ -33,7 +33,7 @@ def test_kmeans():
     x = jr.uniform(rng, (100, 2))
     sc_ = KMeans(n_clusters=k, tol=1e-5).fit(x)
     layer = sk.cluster.KMeans(k, tol=1e-5)
-    state = sk.tree_state(layer, array=x, key=jr.PRNGKey(0))
+    state = sk.tree_state(layer, input=x, key=jr.PRNGKey(0))
     _, state = layer(x, state)
     npt.assert_allclose(
         jnp.sort(sc_.cluster_centers_, axis=0),
