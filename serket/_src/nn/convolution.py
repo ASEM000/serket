@@ -3776,13 +3776,3 @@ class Conv3DLocal(ConvNDLocal):
     """
 
     spatial_ndim: int = 3
-
-
-@sk.tree_summary.def_type(BaseConvND)
-@sk.tree_summary.def_type(BaseConvNDTranspose)
-def _(layer: BaseConvND) -> str:
-    # Conv2D[32,64,3x3] instead of Conv2D in the summary type column
-    # for in_features=32, out_features=64, kernel_size=3
-    kernel = "x".join(map(str, layer.kernel_size))
-    name = type(layer).__name__
-    return f"{name}[{layer.in_features},{layer.out_features},{kernel}]"
