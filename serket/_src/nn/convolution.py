@@ -680,12 +680,12 @@ class Conv1D(ConvND):
         >>> import jax.random as jr
         >>> layer = sk.nn.Conv1D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5))
+        >>> print(layer(input).shape)
         (2, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5)
 
     Note:
@@ -774,12 +774,12 @@ class Conv2D(ConvND):
         >>> import jax.random as jr
         >>> layer = sk.nn.Conv2D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5, 5))
+        >>> print(layer(input).shape)
         (2, 5, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5, 5)
 
     Note:
@@ -868,12 +868,12 @@ class Conv3D(ConvND):
         >>> import jax.random as jr
         >>> layer = sk.nn.Conv3D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5, 5, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5, 5, 5))
+        >>> print(layer(input).shape)
         (2, 5, 5, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5, 5, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5, 5, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5, 5, 5)
 
     Note:
@@ -996,12 +996,12 @@ class FFTConv1D(FFTConvND):
         >>> import jax.random as jr
         >>> layer = sk.nn.FFTConv1D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5))
+        >>> print(layer(input).shape)
         (2, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5)
 
     Note:
@@ -1090,12 +1090,12 @@ class FFTConv2D(FFTConvND):
         >>> import jax.random as jr
         >>> layer = sk.nn.FFTConv2D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5, 5))
+        >>> print(layer(input).shape)
         (2, 5, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5, 5)
 
     Note:
@@ -1184,12 +1184,12 @@ class FFTConv3D(FFTConvND):
         >>> import jax.random as jr
         >>> layer = sk.nn.FFTConv3D(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5, 5, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5, 5, 5))
+        >>> print(layer(input).shape)
         (2, 5, 5, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5, 5, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5, 5, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5, 5, 5)
 
     Note:
@@ -1363,12 +1363,12 @@ class Conv1DTranspose(ConvNDTranspose):
         >>> import jax.random as jr
         >>> layer = sk.nn.Conv1DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5))
+        >>> print(layer(input).shape)
         (2, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5)
 
     Note:
@@ -1460,12 +1460,12 @@ class Conv2DTranspose(ConvNDTranspose):
         >>> import jax
         >>> layer = sk.nn.Conv2DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5, 5))
+        >>> print(layer(input).shape)
         (2, 5, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5, 5)
 
     Note:
@@ -1558,12 +1558,12 @@ class Conv3DTranspose(ConvNDTranspose):
         >>> import jax.random as jr
         >>> layer = sk.nn.Conv3DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5, 5, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5, 5, 5))
+        >>> print(layer(input).shape)
         (2, 5, 5, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5, 5, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5, 5, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5, 5, 5)
 
     Note:
@@ -1690,12 +1690,12 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
         >>> import jax.random as jr
         >>> layer = sk.nn.FFTConv1DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5))
+        >>> print(layer(input).shape)
         (2, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5)
 
     Note:
@@ -1788,12 +1788,12 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
         >>> import jax.random as jr
         >>> layer = sk.nn.FFTConv2DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5, 5))
+        >>> print(layer(input).shape)
         (2, 5, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5, 5)
 
     Note:
@@ -1886,12 +1886,12 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
         >>> import jax.random as jr
         >>> layer = sk.nn.FFTConv3DTranspose(1, 2, 3, key=jr.PRNGKey(0))
         >>> # single sample
-        >>> x = jnp.ones((1, 5, 5, 5))
-        >>> print(layer(x).shape)
+        >>> input = jnp.ones((1, 5, 5, 5))
+        >>> print(layer(input).shape)
         (2, 5, 5, 5)
         >>> # batch of samples
-        >>> x = jnp.ones((2, 1, 5, 5, 5))
-        >>> print(jax.vmap(layer)(x).shape)
+        >>> input = jnp.ones((2, 1, 5, 5, 5))
+        >>> print(jax.vmap(layer)(input).shape)
         (2, 2, 5, 5, 5)
 
     Note:

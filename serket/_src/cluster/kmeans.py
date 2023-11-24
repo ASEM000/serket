@@ -143,8 +143,8 @@ class KMeans(KmeansBase):
         >>> import serket as sk
         >>> x = jr.uniform(jr.PRNGKey(0), shape=(500, 2))
         >>> layer = sk.cluster.KMeans(clusters=5, tol=1e-6)
-        >>> # state initialization by array and key to initialize the centers
-        >>> state = sk.tree_state(layer, array=x, key=jr.PRNGKey(0))
+        >>> # state initialization by input array and key to initialize the centers
+        >>> state = sk.tree_state(layer, input=x, key=jr.PRNGKey(0))
         >>> labels, state = layer(x, state)
         >>> plt.scatter(x[:, 0], x[:, 1], c=labels[:, 0], cmap="jet_r")  # doctest: +SKIP
         >>> plt.scatter(state.centers[:, 0], state.centers[:, 1], c="r", marker="o", linewidths=4)  # doctest: +SKIP
@@ -162,15 +162,15 @@ class KMeans(KmeansBase):
         >>> import jax.random as jr
         >>> features = 3
         >>> clusters = 4
-        >>> x = jr.uniform(jr.PRNGKey(0), shape=(100, features))
+        >>> k1, k2 = jr.split(jr.PRNGKey(0))
+        >>> input = jr.uniform(k1, shape=(100, features))
         >>> # layer definition
         >>> layer = sk.cluster.KMeans(clusters=clusters, tol=1e-6)
         >>> # state initialization
-        >>> state = sk.tree_state(layer, array=x, key=jr.PRNGKey(0))
-        >>> x, state = layer(x, state)
+        >>> state = sk.tree_state(layer, input=input, key=k2)
+        >>> output, state = layer(input, state)
         >>> eval_layer = sk.tree_eval(layer)
-        >>> y = jr.uniform(jr.PRNGKey(0), shape=(1, features))
-        >>> y, eval_state = eval_layer(y, state)
+        >>> output, eval_state = eval_layer(input, state)
         >>> # centers are not updated
         >>> assert jnp.all(eval_state.centers == state.centers)
 
@@ -193,7 +193,7 @@ class KMeans(KmeansBase):
         ...    layer = sk.cluster.KMeans(clusters=clusters, tol=tol)
         ...    shape = image.shape
         ...    image = image.reshape(-1, 1)
-        ...    state = sk.tree_state(layer, array=image, key=key)
+        ...    state = sk.tree_state(layer, input=image, key=key)
         ...    labels, state = layer(image, state)
         ...    return state.centers[labels].reshape(shape).astype(jnp.uint8)
         >>> fig, axes = plt.subplots(2, 2, figsize=(10, 10))
@@ -234,8 +234,9 @@ class KMeans(KmeansBase):
             >>> import serket as sk
             >>> import jax.random as jr
             >>> key = jr.PRNGKey(0)
+            >>> input = jr.uniform(key, shape=(100, 2))
             >>> layer = sk.cluster.KMeans(clusters=5, tol=1e-6)
-            >>> state = sk.tree_state(layer, array=x, key=key)
+            >>> state = sk.tree_state(layer, input=input, key=key)
 
         Returns:
             A tuple containing the labels and a ``KMeansState``.
@@ -266,9 +267,9 @@ class EvalKMeans(KmeansBase):
 
 
 @tree_state.def_state(KMeans)
-def _(layer: KMeans, *, array: jax.Array, key: jax.Array, **_) -> KMeansState:
-    minval, maxval = array.min(), array.max()
-    shape = (layer.clusters, array.shape[1])
+def _(layer: KMeans, *, input: jax.Array, key: jax.Array, **_) -> KMeansState:
+    minval, maxval = input.min(), input.max()
+    shape = (layer.clusters, input.shape[1])
     centers = jr.uniform(key, minval=minval, maxval=maxval, shape=shape)
     return KMeansState(centers=centers, error=centers + jnp.inf, iters=0)
 
