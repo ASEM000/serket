@@ -75,8 +75,8 @@ class Sequential(sk.TreeClass):
     def __init__(self, *layers):
         self.layers = layers
 
-    def __call__(self, x: jax.Array, *, key: jax.Array | None = None) -> jax.Array:
-        return sequential(key, self.layers, x)
+    def __call__(self, input: jax.Array, *, key: jax.Array | None = None) -> jax.Array:
+        return sequential(key, self.layers, input)
 
     @ft.singledispatchmethod
     def __getitem__(self, key):
@@ -147,8 +147,8 @@ class RandomChoice(sk.TreeClass):
     def __init__(self, *layers):
         self.layers = layers
 
-    def __call__(self, x: jax.Array, *, key: jax.Array):
-        return random_choice(key, self.layers, x)
+    def __call__(self, input: jax.Array, *, key: jax.Array):
+        return random_choice(key, self.layers, input)
 
 
 @tree_eval.def_eval(RandomChoice)

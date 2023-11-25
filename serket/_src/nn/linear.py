@@ -75,7 +75,7 @@ def multilinear(
 
 
 def general_linear(
-    array: jax.Array,
+    input: jax.Array,
     weight: jax.Array,
     bias: jax.Array | None,
     axes: tuple[int, ...],
@@ -93,9 +93,9 @@ def general_linear(
         result_string += alpha[total_axis]
         return f"{array_str},{weight_str}->{result_string}"
 
-    axes = map(lambda i: i if i < 0 else i - array.ndim, axes)
+    axes = map(lambda i: i if i < 0 else i - input.ndim, axes)
     einsum_string = generate_einsum_string(*axes)
-    out = jnp.einsum(einsum_string, array, weight)
+    out = jnp.einsum(einsum_string, input, weight)
     return out if bias is None else (out + bias)
 
 
@@ -118,9 +118,9 @@ class Linear(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> array = jnp.ones((1, 5))
+        >>> input = jnp.ones((1, 5))
         >>> layer = sk.nn.Linear(5, 6, key=jr.PRNGKey(0))
-        >>> layer(array).shape
+        >>> layer(input).shape
         (1, 6)
 
     Example:
@@ -129,10 +129,11 @@ class Linear(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import serket as sk
-        >>> array_1 = jnp.ones((1, 5))
-        >>> array_2 = jnp.ones((1, 6))
-        >>> layer = sk.nn.Linear((5,6), 7, key=jr.PRNGKey(0))
-        >>> layer(array_1, array_2).shape
+        >>> input_1 = jnp.ones((1, 5))  #  5 features
+        >>> input_2 = jnp.ones((1, 6))  #  6 features
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.Linear((5, 6), 7, key=key)
+        >>> layer(input_1, input_2).shape
         (1, 7)
 
     Note:
@@ -148,18 +149,19 @@ class Linear(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> k1, k2 = jr.split(jr.PRNGKey(0))
-        >>> @sk.autoinit
-        ... class Linears(sk.TreeClass):
-        ...    l1: sk.nn.Linear = sk.nn.Linear(None, 32, key=k1)
-        ...    l2: sk.nn.Linear = sk.nn.Linear((32,), 10, key=k2)
+        >>> class Linears(sk.TreeClass):
+        ...    def __init__(self, *, key: jax.Array):
+        ...        k1, k2 = jr.split(key)
+        ...        self.l1 = sk.nn.Linear(None, 32, key=k1)
+        ...        self.l2 = sk.nn.Linear(32, 10, key=k2)
         ...    def __call__(self, x: jax.Array, y: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x, y)))
-        >>> lazy_linears = Linears()
-        >>> x = jnp.ones([100, 28])
-        >>> y = jnp.ones([100, 56])
-        >>> _, material_linears = lazy_linears.at["__call__"](x, y)
-        >>> material_linears.l1.in_features
+        >>> key = jr.PRNGKey(0)
+        >>> lazy_layer = Linears(key=key)
+        >>> input_1 = jnp.ones([100, 28])
+        >>> input_2 = jnp.ones([100, 56])
+        >>> _, material_layer = lazy_layer.at["__call__"](input_1, input_2)
+        >>> material_layer.l1.in_features
         (28, 56)
 
     Note:
@@ -174,8 +176,8 @@ class Linear(sk.TreeClass):
         self,
         in_features: int | tuple[int, ...] | None,
         out_features: int,
-        key: jax.Array,
         *,
+        key: jax.Array,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
@@ -294,15 +296,15 @@ class GeneralLinear(sk.TreeClass):
         self.bias = resolve_init(bias_init)(k2, (self.out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return general_linear(array, self.weight, self.bias, self.in_axes)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return general_linear(input, self.weight, self.bias, self.in_axes)
 
 
 class Identity(sk.TreeClass):
     """Identity layer. Returns the input."""
 
-    def __call__(self, x: jax.Array, **_) -> jax.Array:
-        return x
+    def __call__(self, input: jax.Array, **_) -> jax.Array:
+        return input
 
 
 class Embedding(sk.TreeClass):
@@ -318,10 +320,13 @@ class Embedding(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> # 10 words in the vocabulary, each word is represented by a 3 dimensional vector
-        >>> table = sk.nn.Embedding(10, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> table = sk.nn.Embedding(10, 3, key=key)
         >>> # take the last word in the vocab
-        >>> table(jnp.array([9]))
-        Array([[0.43810904, 0.35078037, 0.13254273]], dtype=float32)
+        >>> input = jnp.array([9])
+        >>> output = table(input)
+        >>> output.shape
+        (1, 3)
     """
 
     def __init__(self, in_features: int, out_features: int, key: jax.Array):
@@ -329,20 +334,20 @@ class Embedding(sk.TreeClass):
         self.out_features = positive_int_cb(out_features)
         self.weight = jr.uniform(key, (self.in_features, self.out_features))
 
-    def __call__(self, x: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array) -> jax.Array:
         """Embeds the input.
 
         Args:
-            x: integer index array of subdtype integer.
+            input: integer index input of subdtype integer.
 
         Returns:
             Embedding of the input.
 
         """
-        if not jnp.issubdtype(x.dtype, jnp.integer):
-            raise TypeError(f"{x.dtype=} is not a subdtype of integer")
+        if not jnp.issubdtype(input.dtype, jnp.integer):
+            raise TypeError(f"{input.dtype=} is not a subdtype of integer")
 
-        return jnp.take(self.weight, x, axis=0)
+        return jnp.take(self.weight, input, axis=0)
 
 
 class FNN(sk.TreeClass):
@@ -360,8 +365,10 @@ class FNN(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> fnn = sk.nn.FNN([10, 5, 2], key=jr.PRNGKey(0))
-        >>> fnn(jnp.ones((3, 10))).shape
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.FNN([10, 5, 2], key=key)
+        >>> input = jnp.ones((3, 10))
+        >>> layer(input).shape
         (3, 2)
 
     Note:
@@ -383,9 +390,10 @@ class FNN(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_fnn = sk.nn.FNN([None, 10, 2, 1], key=jr.PRNGKey(0))
-        >>> _, material_fnn = lazy_fnn.at['__call__'](jnp.ones([1, 10]))
-        >>> material_fnn.linear_0.in_features
+        >>> key = jr.PRNGKey(0)
+        >>> lazy_layer = sk.nn.FNN([None, 10, 2, 1], key=key)
+        >>> _, material_layer = lazy_layer.at['__call__'](jnp.ones([1, 10]))
+        >>> material_layer.linear_0.in_features
         (10,)
     """
 
@@ -400,23 +408,29 @@ class FNN(sk.TreeClass):
         dtype: DType = jnp.float32,
     ):
         keys = jr.split(key, len(layers) - 1)
-        dis, dos = layers[:-1], layers[1:]
         self.act = resolve_activation(act)
-        kis = dict(weight_init=weight_init, bias_init=bias_init, dtype=dtype)
-        layers = (Linear(di, do, key=ki, **kis) for ki, di, do in zip(keys, dis, dos))
-        names = (f"linear_{i}" for i, _ in enumerate(keys))
-        vars(self).update(zip(names, layers))
 
-    def __call__(self, array: jax.Array) -> jax.Array:
+        for i, (di, do, ki) in enumerate(zip(layers[:-1], layers[1:], keys)):
+            layer = Linear(
+                in_features=di,
+                out_features=do,
+                key=ki,
+                weight_init=weight_init,
+                bias_init=bias_init,
+                dtype=dtype,
+            )
+            setattr(self, f"linear_{i}", layer)
+
+    def __call__(self, input: jax.Array) -> jax.Array:
         vs = vars(self)
         *layers, last = [vs[k] for k in vs if k.startswith("linear_")]
         for li in layers:
-            array = self.act(li(array))
-        return last(array)
+            input = self.act(li(input))
+        return last(input)
 
 
 def _scan_linear(
-    array: jax.Array,
+    input: jax.Array,
     weight: Batched[jax.Array],
     bias: Batched[jax.Array] | None,
     act: ActivationFunctionType,
@@ -426,16 +440,16 @@ def _scan_linear(
         def scan_func(x: jax.Array, weight: Batched[jax.Array]):
             return act(x @ weight), None
 
-        array, _ = jax.lax.scan(scan_func, array, weight)
-        return array
+        input, _ = jax.lax.scan(scan_func, input, weight)
+        return input
 
     def scan_func(x: jax.Array, weight_bias: Batched[jax.Array]):
         weight, bias = weight_bias[..., :-1], weight_bias[..., -1]
         return act(x @ weight + bias), None
 
     weight_bias = jnp.concatenate([weight, bias[:, :, None]], axis=-1)
-    array, _ = jax.lax.scan(scan_func, array, weight_bias)
-    return array
+    input, _ = jax.lax.scan(scan_func, input, weight_bias)
+    return input
 
 
 class MLP(sk.TreeClass):
@@ -456,8 +470,10 @@ class MLP(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> mlp = sk.nn.MLP(1, 2, hidden_features=4, num_hidden_layers=2, key=jr.PRNGKey(0))
-        >>> mlp(jnp.ones((3, 1))).shape
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.MLP(1, 2, hidden_features=4, num_hidden_layers=2, key=key)
+        >>> input = jnp.ones((3, 1))
+        >>> layer(input).shape
         (3, 2)
 
     Note:
@@ -480,16 +496,14 @@ class MLP(sk.TreeClass):
         >>> import jax.random as jr
         >>> import serket as sk
         >>> import numpy.testing as npt
-        >>> fnn = sk.nn.FNN([1] + [4] * 100 + [2], key=jr.PRNGKey(0))
-        >>> mlp = sk.nn.MLP(1, 2, hidden_features=4, num_hidden_layers=100, key=jr.PRNGKey(0))
-        >>> x = jnp.ones((100, 1))
-        >>> fnn_jaxpr = jax.make_jaxpr(fnn)(x)
-        >>> mlp_jaxpr = jax.make_jaxpr(mlp)(x)
-        >>> npt.assert_allclose(fnn(x), mlp(x), atol=1e-6)
-        >>> len(fnn_jaxpr.jaxpr.eqns)
-        403
-        >>> len(mlp_jaxpr.jaxpr.eqns)
-        10
+        >>> key = jr.PRNGKey(0)
+        >>> fnn = sk.nn.FNN([1] + [4] * 100 + [2], key=key)
+        >>> mlp = sk.nn.MLP(1, 2, hidden_features=4, num_hidden_layers=100, key=key)
+        >>> input = jnp.ones((100, 1))
+        >>> fnn_jaxpr = jax.make_jaxpr(fnn)(input)
+        >>> mlp_jaxpr = jax.make_jaxpr(mlp)(input)
+        >>> npt.assert_allclose(fnn(input), mlp(input), atol=1e-6)
+        >>> assert len(fnn_jaxpr.jaxpr.eqns) > len(mlp_jaxpr.jaxpr.eqns)
 
     Note:
         :class:`.MLP` supports lazy initialization, meaning that the weights and
@@ -503,9 +517,11 @@ class MLP(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_mlp = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_features=10, key=jr.PRNGKey(0))
-        >>> _, material_mlp = lazy_mlp.at['__call__'](jnp.ones([1, 10]))
-        >>> material_mlp.linear_i.in_features
+        >>> key = jr.PRNGKey(0)
+        >>> lazy_layer = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_features=10, key=key)
+        >>> input = jnp.ones([1, 10])
+        >>> _, material_layer = lazy_layer.at['__call__'](input)
+        >>> material_layer.linear_i.in_features
         (10,)
     """
 
@@ -529,18 +545,17 @@ class MLP(sk.TreeClass):
         self.act = resolve_activation(act)
         kwargs = dict(weight_init=weight_init, bias_init=bias_init, dtype=dtype)
 
-        @jax.vmap
         def batched_linear(key: jax.Array) -> Batched[Linear]:
-            return sk.tree_mask(
-                Linear(hidden_features, hidden_features, key=key, **kwargs)
-            )
+            layer = Linear(hidden_features, hidden_features, key=key, **kwargs)
+            # mask non-jaxtype on return
+            return sk.tree_mask(layer)
 
         self.linear_i = Linear(in_features, hidden_features, key=keys[0], **kwargs)
-        self.linear_h = sk.tree_unmask(batched_linear(keys[1:-1]))
+        self.linear_h = sk.tree_unmask(jax.vmap(batched_linear)(keys[1:-1]))
         self.linear_o = Linear(hidden_features, out_features, key=keys[-1], **kwargs)
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        array = self.act(self.linear_i(array))
+    def __call__(self, input: jax.Array) -> jax.Array:
+        input = self.act(self.linear_i(input))
         weight_h, bias_h = self.linear_h.weight, self.linear_h.bias
-        array = _scan_linear(array, weight_h, bias_h, self.act)
-        return self.linear_o(array)
+        input = _scan_linear(input, weight_h, bias_h, self.act)
+        return self.linear_o(input)

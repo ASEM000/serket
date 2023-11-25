@@ -28,12 +28,12 @@ from serket._src.utils import maybe_lazy_call, maybe_lazy_init
 """Defines attention layers."""
 
 
-def split_heads(array: jax.Array, num_heads: int) -> jax.Array:
-    return array.reshape(*array.shape[:-1], num_heads, -1)
+def split_heads(input: jax.Array, num_heads: int) -> jax.Array:
+    return input.reshape(*input.shape[:-1], num_heads, -1)
 
 
-def merge_heads(array: jax.Array) -> jax.Array:
-    return array.reshape(*array.shape[:-2], -1)
+def merge_heads(input: jax.Array) -> jax.Array:
+    return input.reshape(*input.shape[:-2], -1)
 
 
 def is_lazy_call(instance, *_, **__) -> bool:
@@ -63,9 +63,9 @@ def calculate_attention(
     """Applies multi-head attention to the given inputs.
 
     Args:
-        q_array: Query array. [..., q_length, q_features]
-        k_array: Key array. [..., k_length, k_features]
-        mask: Mask array. [..., num_heads, q_length, kv_length]
+        q_array: Query input. [..., q_length, q_features]
+        k_array: Key input. [..., k_length, k_features]
+        mask: Mask input. [..., num_heads, q_length, kv_length]
         num_heads: Number of attention heads.
         drop_layer: Dropout layer.
         key: Key for the random number generator.
@@ -283,10 +283,10 @@ class MultiHeadAttention(sk.TreeClass):
         """Applies multi-head attention to the given inputs.
 
         Args:
-            q_array: Query array. [..., q_length, q_features]
-            k_array: Key array. [..., kv_length, k_features]
-            v_array: Value array. [..., kv_length, v_features]
-            mask: Mask array. [..., num_heads, q_length, kv_length]
+            q_array: Query input. [..., q_length, q_features]
+            k_array: Key input. [..., kv_length, k_features]
+            v_array: Value input. [..., kv_length, v_features]
+            mask: Mask input. [..., num_heads, q_length, kv_length]
             key: Key for the random number generator used for dropout.
         """
 

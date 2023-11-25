@@ -37,106 +37,106 @@ MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 
 def random_crop_nd(
     key: jax.Array,
-    array: jax.Array,
+    input: jax.Array,
     *,
     crop_size: tuple[int, ...],
 ) -> jax.Array:
     start: tuple[int, ...] = tuple(
-        jr.randint(key, shape=(), minval=0, maxval=array.shape[i] - s)
+        jr.randint(key, shape=(), minval=0, maxval=input.shape[i] - s)
         for i, s in enumerate(crop_size)
     )
-    return jax.lax.dynamic_slice(array, start, crop_size)
+    return jax.lax.dynamic_slice(input, start, crop_size)
 
 
-def center_crop_nd(array: jax.Array, sizes: tuple[int, ...]) -> jax.Array:
-    """Crops an array to the given size at the center."""
-    shapes = array.shape
+def center_crop_nd(input: jax.Array, sizes: tuple[int, ...]) -> jax.Array:
+    """Crops an input to the given size at the center."""
+    shapes = input.shape
     starts = tuple(max(shape // 2 - size // 2, 0) for shape, size in zip(shapes, sizes))
-    return jax.lax.dynamic_slice(array, starts, sizes)
+    return jax.lax.dynamic_slice(input, starts, sizes)
 
 
 def zoom_in_along_axis(
-    array: jax.Array,
+    input: jax.Array,
     factor: float,
     axis: int,
     method: MethodKind = "linear",
 ) -> jax.Array:
     assert factor > 0
-    shape = array.shape
+    shape = input.shape
     shape = list(shape)
     shape[axis] = int(shape[axis] * (1 + factor))
-    return jax.image.resize(array, shape=shape, method=method)
+    return jax.image.resize(input, shape=shape, method=method)
 
 
 def zoom_out_along_axis(
-    array: jax.Array,
+    input: jax.Array,
     factor: float,
     axis: int,
     method: MethodKind = "linear",
 ) -> jax.Array:
     assert factor < 0
-    shape = array.shape
+    shape = input.shape
     shape = list(shape)
     shape[axis] = int(shape[axis] / (1 - factor))
-    return jax.image.resize(array, shape=shape, method=method)
+    return jax.image.resize(input, shape=shape, method=method)
 
 
 def zoom_nd(
-    array: jax.Array,
+    input: jax.Array,
     factor: tuple[int, ...],
     method: MethodKind = "linear",
 ) -> jax.Array:
     for axis, fi in enumerate(factor):
         if fi < 0:
-            shape = array.shape
-            array = zoom_out_along_axis(array, fi, axis, method=method)
-            pad_width = [(0, 0)] * len(array.shape)
-            left = (shape[axis] - array.shape[axis]) // 2
-            right = shape[axis] - array.shape[axis] - left
+            shape = input.shape
+            input = zoom_out_along_axis(input, fi, axis, method=method)
+            pad_width = [(0, 0)] * len(input.shape)
+            left = (shape[axis] - input.shape[axis]) // 2
+            right = shape[axis] - input.shape[axis] - left
             pad_width[axis] = (left, right)
-            array = jnp.pad(array, pad_width=pad_width)
+            input = jnp.pad(input, pad_width=pad_width)
         elif fi > 0:
-            shape = array.shape
-            array = zoom_in_along_axis(array, fi, axis, method=method)
-            array = center_crop_nd(array, shape)
-    return array
+            shape = input.shape
+            input = zoom_in_along_axis(input, fi, axis, method=method)
+            input = center_crop_nd(input, shape)
+    return input
 
 
 def random_zoom_nd(
     key: jax.Array,
-    array: jax.Array,
+    input: jax.Array,
     factor: tuple[int, ...],
     method: MethodKind = "linear",
 ) -> jax.Array:
     for axis, (fi, ki) in enumerate(zip(factor, jr.split(key, len(factor)))):
         if fi < 0:
-            shape = array.shape
-            array = zoom_out_along_axis(array, fi, axis, method=method)
-            pad_width = [(0, 0)] * len(array.shape)
-            max_pad = shape[axis] - array.shape[axis]
+            shape = input.shape
+            input = zoom_out_along_axis(input, fi, axis, method=method)
+            pad_width = [(0, 0)] * len(input.shape)
+            max_pad = shape[axis] - input.shape[axis]
             left = jr.randint(ki, shape=(), minval=0, maxval=max_pad)
             right = max_pad - left
             pad_width[axis] = (left, right)
-            array = jnp.pad(array, pad_width=pad_width)
+            input = jnp.pad(input, pad_width=pad_width)
         elif fi > 0:
-            shape = array.shape
-            array = zoom_in_along_axis(array, fi, axis, method=method)
-            array = random_crop_nd(ki, array, crop_size=shape)
-    return array
+            shape = input.shape
+            input = zoom_in_along_axis(input, fi, axis, method=method)
+            input = random_crop_nd(ki, input, crop_size=shape)
+    return input
 
 
-def flatten(array: jax.Array, start_dim: int, end_dim: int):
+def flatten(input: jax.Array, start_dim: int, end_dim: int):
     # wrapper around jax.lax.collapse
     # with inclusive end_dim and negative indexing support
-    start_dim = start_dim + (0 if start_dim >= 0 else array.ndim)
-    end_dim = end_dim + 1 + (0 if end_dim >= 0 else array.ndim)
-    return jax.lax.collapse(array, start_dim, end_dim)
+    start_dim = start_dim + (0 if start_dim >= 0 else input.ndim)
+    end_dim = end_dim + 1 + (0 if end_dim >= 0 else input.ndim)
+    return jax.lax.collapse(input, start_dim, end_dim)
 
 
-def unflatten(array: jax.Array, dim: int, shape: tuple[int, ...]):
-    in_shape = list(array.shape)
+def unflatten(input: jax.Array, dim: int, shape: tuple[int, ...]):
+    in_shape = list(input.shape)
     out_shape = [*in_shape[:dim], *shape, *in_shape[dim + 1 :]]
-    return jnp.reshape(array, out_shape)
+    return jnp.reshape(input, out_shape)
 
 
 class ResizeND(sk.TreeClass):
@@ -151,9 +151,9 @@ class ResizeND(sk.TreeClass):
         self.antialias = antialias
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array, **k) -> jax.Array:
+    def __call__(self, input: jax.Array, **k) -> jax.Array:
         in_axes = (0, None, None, None)
-        args = (array, self.size, self.method, self.antialias)
+        args = (input, self.size, self.method, self.antialias)
         return jax.vmap(jax.image.resize, in_axes=in_axes)(*args)
 
     @property
@@ -176,10 +176,10 @@ class UpsampleND(sk.TreeClass):
         self.method = method
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array) -> jax.Array:
-        resized_shape = tuple(s * array.shape[i + 1] for i, s in enumerate(self.scale))
+    def __call__(self, input: jax.Array) -> jax.Array:
+        resized_shape = tuple(s * input.shape[i + 1] for i, s in enumerate(self.scale))
         in_axes = (0, None, None)
-        args = (array, resized_shape, self.method)
+        args = (input, resized_shape, self.method)
         return jax.vmap(jax.image.resize, in_axes=in_axes)(*args)
 
     @property
@@ -208,8 +208,9 @@ class Upsample1D(UpsampleND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 6).reshape(1, 5)
-        >>> print(sk.nn.Upsample1D(scale=2)(x))
+        >>> layer = sk.nn.Upsample1D(scale=2)
+        >>> input = jnp.arange(1, 6).reshape(1, 5)
+        >>> print(layer(input))
         [[1 1 2 2 3 3 4 4 5 5]]
     """
 
@@ -236,8 +237,9 @@ class Upsample2D(UpsampleND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.nn.Upsample2D(scale=(1, 2))(x))
+        >>> layer = sk.nn.Upsample2D(scale=(1, 2))
+        >>> input = jnp.arange(1, 26).reshape(1, 5, 5)
+        >>> print(layer(input))
         [[[ 1  1  2  2  3  3  4  4  5  5]
           [ 6  6  7  7  8  8  9  9 10 10]
           [11 11 12 12 13 13 14 14 15 15]
@@ -268,8 +270,9 @@ class Upsample3D(UpsampleND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 9).reshape(1, 2, 2, 2)
-        >>> print(sk.nn.Upsample3D(scale=(1, 2, 1))(x))
+        >>> layer = sk.nn.Upsample3D(scale=(1, 2, 1))
+        >>> input = jnp.arange(1, 9).reshape(1, 2, 2, 2)
+        >>> print(layer(input))
         [[[[1 2]
           [1 2]
           [3 4]
@@ -290,9 +293,9 @@ class CropND(sk.TreeClass):
         self.start = canonicalize(start, self.spatial_ndim, name="start")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array, **k) -> jax.Array:
+    def __call__(self, input: jax.Array, **k) -> jax.Array:
         in_axes = (0, None, None)
-        args = (array, self.start, self.size)
+        args = (input, self.start, self.size)
         return jax.vmap(jax.lax.dynamic_slice, in_axes=in_axes)(*args)
 
     @property
@@ -312,8 +315,9 @@ class Crop1D(CropND):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> x = jnp.arange(1, 6).reshape(1, 5)
-        >>> print(sk.nn.Crop1D(size=3, start=1)(x))
+        >>> layer = sk.nn.Crop1D(size=3, start=1)
+        >>> input = jnp.arange(1, 6).reshape(1, 5)
+        >>> print(layer(input))
         [[2 3 4]]
     """
 
@@ -334,14 +338,15 @@ class Crop2D(CropND):
         >>> # i.e. start at index 2 along the first axis and index 0 along the second axis
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> x = jnp.arange(1, 26).reshape((1, 5, 5))
-        >>> print(x)
+        >>> layer = sk.nn.Crop2D(size=3, start=(2, 0))
+        >>> input = jnp.arange(1, 26).reshape((1, 5, 5))
+        >>> print(input)
         [[[ 1  2  3  4  5]
           [ 6  7  8  9 10]
           [11 12 13 14 15]
           [16 17 18 19 20]
           [21 22 23 24 25]]]
-        >>> print(sk.nn.Crop2D(size=3, start=(2, 0))(x))
+        >>> print(layer(input))
         [[[11 12 13]
           [16 17 18]
           [21 22 23]]]
@@ -370,10 +375,10 @@ class PadND(sk.TreeClass):
         self.value = value
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array) -> jax.Array:
         value = jax.lax.stop_gradient(self.value)
         pad = ft.partial(jnp.pad, pad_width=self.padding, constant_values=value)
-        return jax.vmap(pad)(array)
+        return jax.vmap(pad)(input)
 
     @property
     @abc.abstractmethod
@@ -394,8 +399,9 @@ class Pad1D(PadND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 6).reshape(1, 5)
-        >>> print(sk.nn.Pad1D(((1, 2),))(x))
+        >>> layer = sk.nn.Pad1D(((1, 2),))
+        >>> input = jnp.arange(1, 6).reshape(1, 5)
+        >>> print(layer(input))
         [[0 1 2 3 4 5 0 0]]
 
     Reference:
@@ -419,8 +425,9 @@ class Pad2D(PadND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 10).reshape(1, 3, 3)
-        >>> print(sk.nn.Pad2D(((1, 2), (3, 4)))(x))
+        >>> layer = sk.nn.Pad2D(((1, 2), (3, 4)))
+        >>> input = jnp.arange(1, 10).reshape(1, 3, 3)
+        >>> print(layer(input))
         [[[0 0 0 0 0 0 0 0 0 0]
           [0 0 0 1 2 3 0 0 0 0]
           [0 0 0 4 5 6 0 0 0 0]
@@ -447,8 +454,9 @@ class Pad3D(PadND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 9).reshape(1, 2, 2, 2)
-        >>> print(sk.nn.Pad3D(((0, 0), (2, 0), (2, 0)))(x))
+        >>> layer = sk.nn.Pad3D(((0, 0), (2, 0), (2, 0)))
+        >>> input = jnp.arange(1, 9).reshape(1, 2, 2, 2)
+        >>> print(layer(input))
         [[[[0 0 0 0]
           [0 0 0 0]
           [0 0 1 2]
@@ -538,7 +546,7 @@ class Resize3D(ResizeND):
 
 @sk.autoinit
 class Flatten(sk.TreeClass):
-    """Flatten an array from dim ``start_dim`` to ``end_dim`` (inclusive).
+    """Flatten an input from dim ``start_dim`` to ``end_dim`` (inclusive).
 
     Args:
         start_dim: the first dimension to flatten
@@ -550,30 +558,31 @@ class Flatten(sk.TreeClass):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> sk.nn.Flatten(0,1)(jnp.ones([1,2,3,4,5])).shape
+        >>> input = jnp.ones([1,2,3,4,5])
+        >>> sk.nn.Flatten(0,1)(input).shape
         (2, 3, 4, 5)
-        >>> sk.nn.Flatten(0,2)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(0,2)(input).shape
         (6, 4, 5)
-        >>> sk.nn.Flatten(1,2)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(1,2)(input).shape
         (1, 6, 4, 5)
-        >>> sk.nn.Flatten(-1,-1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(-1,-1)(input).shape
         (1, 2, 3, 4, 5)
-        >>> sk.nn.Flatten(-2,-1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(-2,-1)(input).shape
         (1, 2, 3, 20)
-        >>> sk.nn.Flatten(-3,-1)(jnp.ones([1,2,3,4,5])).shape
+        >>> sk.nn.Flatten(-3,-1)(input).shape
         (1, 2, 60)
     """
 
     start_dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
     end_dim: int = sk.field(default=-1, on_setattr=[IsInstance(int)])
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return flatten(array, self.start_dim, self.end_dim)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return flatten(input, self.start_dim, self.end_dim)
 
 
 @sk.autoinit
 class Unflatten(sk.TreeClass):
-    """Unflatten an array.
+    """Unflatten an input.
 
     Args:
         dim: the dimension to unflatten.
@@ -582,17 +591,19 @@ class Unflatten(sk.TreeClass):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> sk.nn.Unflatten(0, (1,2,3,4,5))(jnp.ones([120])).shape
+        >>> input = jnp.ones([120])
+        >>> sk.nn.Unflatten(0, (1,2,3,4,5))(input).shape
         (1, 2, 3, 4, 5)
-        >>> sk.nn.Unflatten(2,(2,3))(jnp.ones([1,2,6])).shape
+        >>> input = jnp.ones([1,2,6])
+        >>> sk.nn.Unflatten(2,(2,3))(input).shape
         (1, 2, 2, 3)
     """
 
     dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
     shape: tuple = sk.field(default=None, on_setattr=[IsInstance(tuple)])
 
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return unflatten(array, self.dim, self.shape)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return unflatten(input, self.dim, self.shape)
 
 
 class RandomCropND(sk.TreeClass):
@@ -600,9 +611,9 @@ class RandomCropND(sk.TreeClass):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
-        crop_size = [array.shape[0], *self.size]
-        return random_crop_nd(key, array, crop_size=crop_size)
+    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
+        crop_size = [input.shape[0], *self.size]
+        return random_crop_nd(key, input, crop_size=crop_size)
 
     @property
     @abc.abstractmethod
@@ -649,9 +660,9 @@ class ZoomND(sk.TreeClass):
         self.factor = canonicalize(factor, self.spatial_ndim, name="factor")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array) -> jax.Array:
         factor = jax.lax.stop_gradient(self.factor)
-        return jax.vmap(zoom_nd, in_axes=(0, None))(array, factor)
+        return jax.vmap(zoom_nd, in_axes=(0, None))(input, factor)
 
     @property
     @abc.abstractmethod
@@ -737,11 +748,11 @@ class RandomZoom1D(sk.TreeClass):
         self.length_range = length_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2 = jr.split(key, 2)
         low, high = jax.lax.stop_gradient(self.length_range)
         factor = (jr.uniform(k1, minval=low, maxval=high),)
-        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k2, array, factor)
+        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k2, input, factor)
 
     spatial_ndim: int = 1
 
@@ -777,14 +788,14 @@ class RandomZoom2D(sk.TreeClass):
         self.width_range = width_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2, k3 = jr.split(key, 3)
         factors = (self.height_range, self.width_range)
         ((hfl, hfh), (wfl, wfh)) = jax.lax.stop_gradient(factors)
         factor_r = jr.uniform(k1, minval=hfl, maxval=hfh)
         factor_c = jr.uniform(k2, minval=wfl, maxval=wfh)
         factor = (factor_r, factor_c)
-        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k3, array, factor)
+        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k3, input, factor)
 
     spatial_ndim: int = 2
 
@@ -824,7 +835,7 @@ class RandomZoom3D(sk.TreeClass):
         self.depth_range = depth_range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
         k1, k2, k3, k4 = jr.split(key, 4)
         factors = (self.height_range, self.width_range, self.depth_range)
         ((hfl, hfh), (wfl, wfh), (dfl, dfh)) = jax.lax.stop_gradient(factors)
@@ -832,7 +843,7 @@ class RandomZoom3D(sk.TreeClass):
         factor_c = jr.uniform(k2, minval=wfl, maxval=wfh)
         factor_d = jr.uniform(k3, minval=dfl, maxval=dfh)
         factor = (factor_r, factor_c, factor_d)
-        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k4, array, factor)
+        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k4, input, factor)
 
     spatial_ndim: int = 3
 
@@ -842,8 +853,8 @@ class CenterCropND(sk.TreeClass):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, array: jax.Array) -> jax.Array:
-        return jax.vmap(ft.partial(center_crop_nd, sizes=self.size))(array)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return jax.vmap(ft.partial(center_crop_nd, sizes=self.size))(input)
 
     @property
     @abc.abstractmethod
@@ -853,7 +864,7 @@ class CenterCropND(sk.TreeClass):
 
 
 class CenterCrop1D(CenterCropND):
-    """Crops a 1D array to the given size at the center.
+    """Crops a 1D input to the given size at the center.
 
     Args:
         size: The size of the output image. accepts a single int.
@@ -861,10 +872,11 @@ class CenterCrop1D(CenterCropND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 13).reshape(1, 12)
-        >>> print(x)
+        >>> layer = sk.nn.CenterCrop1D(4)
+        >>> input = jnp.arange(1, 13).reshape(1, 12)
+        >>> print(input)
         [[ 1  2  3  4  5  6  7  8  9 10 11 12]]
-        >>> print(sk.nn.CenterCrop1D(4)(x))
+        >>> print(layer(input))
         [[5 6 7 8]]
     """
 
@@ -882,8 +894,9 @@ class CenterCrop2D(CenterCropND):
     Example:
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 145).reshape(1, 12, 12)
-        >>> print(x)
+        >>> layer = sk.nn.CenterCrop2D(4)
+        >>> input = jnp.arange(1, 145).reshape(1, 12, 12)
+        >>> print(input)
         [[[  1   2   3   4   5   6   7   8   9  10  11  12]
           [ 13  14  15  16  17  18  19  20  21  22  23  24]
           [ 25  26  27  28  29  30  31  32  33  34  35  36]
@@ -896,7 +909,7 @@ class CenterCrop2D(CenterCropND):
           [109 110 111 112 113 114 115 116 117 118 119 120]
           [121 122 123 124 125 126 127 128 129 130 131 132]
           [133 134 135 136 137 138 139 140 141 142 143 144]]]
-        >>> print(sk.nn.CenterCrop2D(4)(x))
+        >>> print(layer(input))
         [[[53 54 55 56]
           [65 66 67 68]
           [77 78 79 80]
@@ -907,7 +920,7 @@ class CenterCrop2D(CenterCropND):
 
 
 class CenterCrop3D(CenterCropND):
-    """Crops a 3D array to the given size at the center."""
+    """Crops a 3D input to the given size at the center."""
 
     spatial_ndim: int = 3
 
