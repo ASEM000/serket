@@ -81,6 +81,7 @@ Install from github::
     notebooks/hyperparam
     notebooks/model_surgery
     notebooks/distributed_training
+    notebooks/loss_landscape
     notebooks/common_recipes
 
 
