@@ -98,7 +98,7 @@ from serket._src.nn.dropout import (
     dropout_nd,
     random_cutout_nd,
 )
-from serket._src.nn.linear import FNN, MLP, Embedding, GeneralLinear, Identity, Linear
+from serket._src.nn.linear import MLP, Embedding, Identity, Linear
 from serket._src.nn.normalization import (
     BatchNorm,
     GroupNorm,

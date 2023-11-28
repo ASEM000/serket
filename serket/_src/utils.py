@@ -398,6 +398,10 @@ SimpleLinear(
 """
 
 
+def tuplify(value: T) -> T | tuple[T]:
+    return value if isinstance(value, tuple) else (value,)
+
+
 def maybe_lazy_init(
     func: Callable[P, T],
     is_lazy: Callable[..., bool],
