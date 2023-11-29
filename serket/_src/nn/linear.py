@@ -332,11 +332,11 @@ class MLP(sk.TreeClass):
             return sk.tree_mask(layer)
 
         self.in_linear = Linear(in_features, hidden_features, key=keys[0], **kwargs)
-        self.hidden_linear = sk.tree_unmask(batched_linear(keys[1:-1]))
+        self.mid_linear = sk.tree_unmask(batched_linear(keys[1:-1]))
         self.out_linear = Linear(hidden_features, out_features, key=keys[-1], **kwargs)
 
     def __call__(self, input: jax.Array) -> jax.Array:
         input = self.act(self.in_linear(input))
-        weight_h, bias_h = self.hidden_linear.weight, self.hidden_linear.bias
+        weight_h, bias_h = self.mid_linear.weight, self.mid_linear.bias
         input = scan_linear(input, weight_h, bias_h, self.act)
         return self.out_linear(input)
