@@ -61,11 +61,12 @@ def general_linear(
         axes = sorted(axes)
         total_axis = abs(min(axes))  # get the total number of axes
         alpha = "".join(map(str, range(total_axis + 1)))
-        array_str = "..." + alpha[:total_axis]
-        weight_str = "".join([array_str[axis] for axis in axes]) + alpha[total_axis]
-        result_string = "".join([ai for ai in array_str if ai not in weight_str])
-        result_string += alpha[total_axis]
-        return f"{array_str},{weight_str}->{result_string}"
+        input = "..." + alpha[:total_axis]
+        weight = alpha[total_axis]
+        weight += "".join([input[axis] for axis in axes])
+        out = "".join([ai for ai in input if ai not in weight])
+        out += alpha[total_axis]
+        return f"{input},{weight}->{out}"
 
     axes = map(lambda i: i if i < 0 else i - input.ndim, axes)
     einsum_string = generate_einsum_string(*axes)
@@ -172,7 +173,7 @@ class Linear(sk.TreeClass):
             raise ValueError(f"{len(self.in_axis)=} != {len(self.in_features)=}")
 
         k1, k2 = jr.split(key)
-        weight_shape = (*self.in_features, self.out_features)
+        weight_shape = (out_features, *self.in_features)
         self.weight = resolve_init(weight_init)(k1, weight_shape, dtype)
         self.bias = resolve_init(bias_init)(k2, (self.out_features,), dtype)
 
@@ -214,7 +215,7 @@ class Embedding(sk.TreeClass):
     def __init__(self, in_features: int, out_features: int, key: jax.Array):
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.weight = jr.uniform(key, (self.in_features, self.out_features))
+        self.weight = jr.uniform(key, (self.out_features, self.in_features))
 
     def __call__(self, input: jax.Array) -> jax.Array:
         """Embeds the input.
@@ -228,7 +229,7 @@ class Embedding(sk.TreeClass):
         if not jnp.issubdtype(input.dtype, jnp.integer):
             raise TypeError(f"{input.dtype=} is not a subdtype of integer")
 
-        return self.weight[input]
+        return self.weight.T[input]
 
 
 def scan_linear(
@@ -241,7 +242,7 @@ def scan_linear(
     if bias is None:
 
         def scan_func(x: jax.Array, weight: Batched[jax.Array]):
-            return act(x @ weight), None
+            return act(x @ weight.T), None
 
         input, _ = jax.lax.scan(scan_func, input, weight)
         return input
