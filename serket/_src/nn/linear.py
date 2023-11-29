@@ -74,24 +74,37 @@ def general_linear(
 
 
 def infer_in_features(instance, x, **__) -> tuple[int, ...]:
-    in_axes = getattr(instance, "in_axes", ())
-    return tuple(x.shape[i] for i in tuplify(in_axes))
+    in_axis = getattr(instance, "in_axis", ())
+    return tuple(x.shape[i] for i in tuplify(in_axis))
 
 
 updates = dict(in_features=infer_in_features)
 
 
 class Linear(sk.TreeClass):
-    """Apply a Linear Layer to input at ``in_axes``
+    """Apply a Linear Layer to input.
 
     Args:
-        in_features: number of input features corresponding to in_axes
+        in_features: number of input features corresponding to in_axis
         out_features: number of output features
         key: key to use for initializing the weights.
-        in_axes: axes to apply the linear layer to
+        in_axis: axes to apply the linear layer to. Accepts int or tuple of ints.
+        out_axis: result axis. Defaults to -1.
         weight_init: weight initialization function. Defaults to ``glorot_uniform``.
         bias_init: bias initialization function. Defaults to ``zeros``.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+
+    Example:
+        Apply :class:`.Linear` layer t0 the last dimension of input
+
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> import jax.random as jr
+        >>> input = jnp.ones([1, 2, 3, 4])
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.Linear(4, 5, key=key)
+        >>> layer(input).shape
+        (1, 2, 3, 5)
 
     Example:
         Apply :class:`.Linear` layer to first and second axes of input
@@ -100,13 +113,14 @@ class Linear(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> input = jnp.ones([1, 2, 3, 4])
-        >>> in_features = (1, 2)  # number of input features corresponding to ``in_axes``
+        >>> in_features = (1, 2)  # number of input features corresponding to ``in_axis``
+        >>> in_axis = (0, 1)  # which axes to apply the linear layer to
         >>> out_features = 5
-        >>> in_axes = (0, 1)  # which axes to apply the linear layer to
+        >>> out_axis = 0 # which axis to put the result
         >>> key = jr.PRNGKey(0)
-        >>> layer = sk.nn.Linear(in_features, out_features, in_axes=in_axes, key=key)
+        >>> layer = sk.nn.Linear(in_features, out_features, in_axis=in_axis, out_axis=out_axis, key=key)
         >>> layer(input).shape
-        (3, 4, 5)
+        (5, 3, 4)
 
     Note:
         :class:`.Linear` supports lazy initialization, meaning that the weights and
@@ -122,7 +136,7 @@ class Linear(sk.TreeClass):
         >>> import jax.random as jr
         >>> key = jr.PRNGKey(0)
         >>> input = jnp.ones((10, 5, 4))
-        >>> lazy_linear = sk.nn.Linear(None, 12, in_axes=(0, 2), key=jr.PRNGKey(0))
+        >>> lazy_linear = sk.nn.Linear(None, 12, in_axis=(0, 2), key=key)
         >>> _, material_linear = lazy_linear.at['__call__'](input)
         >>> material_linear.in_features
         (10, 4)
@@ -135,25 +149,27 @@ class Linear(sk.TreeClass):
         out_features: int,
         *,
         key: jax.Array,
-        in_axes: int | tuple[int, ...] = -1,
+        in_axis: int | tuple[int, ...] = -1,
+        out_axis: int = -1,
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
         self.in_features = tuplify(in_features)
         self.out_features = out_features
-        self.in_axes = tuplify(in_axes)
+        self.in_axis = tuplify(in_axis)
+        self.out_axis = out_axis
         self.weight_init = weight_init
         self.bias_init = bias_init
 
         if not (all(isinstance(i, int) for i in self.in_features)):
             raise TypeError(f"Expected tuple of ints for {self.in_features=}")
 
-        if not (all(isinstance(i, int) for i in self.in_axes)):
-            raise TypeError(f"Expected tuple of ints for {self.in_axes=}")
+        if not (all(isinstance(i, int) for i in self.in_axis)):
+            raise TypeError(f"Expected tuple of ints for {self.in_axis=}")
 
-        if len(self.in_axes) != len(self.in_features):
-            raise ValueError(f"{len(self.in_axes)=} != {len(self.in_features)=}")
+        if len(self.in_axis) != len(self.in_features):
+            raise ValueError(f"{len(self.in_axis)=} != {len(self.in_features)=}")
 
         k1, k2 = jr.split(key)
         weight_shape = (*self.in_features, self.out_features)
@@ -162,7 +178,8 @@ class Linear(sk.TreeClass):
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, input: jax.Array) -> jax.Array:
-        return general_linear(input, self.weight, self.bias, self.in_axes)
+        out = general_linear(input, self.weight, self.bias, self.in_axis)
+        return jnp.moveaxis(out, -1, self.out_axis)
 
 
 class Identity(sk.TreeClass):
@@ -207,7 +224,6 @@ class Embedding(sk.TreeClass):
 
         Returns:
             Embedding of the input.
-
         """
         if not jnp.issubdtype(input.dtype, jnp.integer):
             raise TypeError(f"{input.dtype=} is not a subdtype of integer")

@@ -38,47 +38,68 @@ def test_identity():
 def test_general_linear():
     x = jnp.ones([1, 2, 3, 4])
     layer = sk.nn.Linear(
-        in_features=(1, 2), in_axes=(0, 1), out_features=5, key=jax.random.PRNGKey(0)
+        in_features=(1, 2),
+        in_axis=(0, 1),
+        out_features=5,
+        key=jax.random.PRNGKey(0),
     )
     assert layer(x).shape == (3, 4, 5)
 
     x = jnp.ones([1, 2, 3, 4])
     layer = sk.nn.Linear(
-        in_features=(1, 2), in_axes=(0, 1), out_features=5, key=jax.random.PRNGKey(0)
+        in_features=(1, 2),
+        in_axis=(0, 1),
+        out_features=5,
+        key=jax.random.PRNGKey(0),
     )
     assert layer(x).shape == (3, 4, 5)
 
     x = jnp.ones([1, 2, 3, 4])
     layer = sk.nn.Linear(
-        in_features=(1, 2), in_axes=(0, -3), out_features=5, key=jax.random.PRNGKey(0)
+        in_features=(1, 2),
+        in_axis=(0, -3),
+        out_features=5,
+        key=jax.random.PRNGKey(0),
     )
     assert layer(x).shape == (3, 4, 5)
 
     x = jnp.ones([1, 2, 3, 4])
     layer = sk.nn.Linear(
-        in_features=(2, 3), in_axes=(1, -2), out_features=5, key=jax.random.PRNGKey(0)
+        in_features=(2, 3),
+        in_axis=(1, -2),
+        out_features=5,
+        key=jax.random.PRNGKey(0),
     )
     assert layer(x).shape == (1, 4, 5)
 
     with pytest.raises(ValueError):
         sk.nn.Linear(
-            in_features=2, in_axes=(1, -2), out_features=5, key=jax.random.PRNGKey(0)
+            in_features=2,
+            in_axis=(1, -2),
+            out_features=5,
+            key=jax.random.PRNGKey(0),
         )
 
     with pytest.raises(ValueError):
         sk.nn.Linear(
-            in_features=(2, 3), in_axes=2, out_features=5, key=jax.random.PRNGKey(0)
+            in_features=(2, 3),
+            in_axis=2,
+            out_features=5,
+            key=jax.random.PRNGKey(0),
         )
 
     with pytest.raises(ValueError):
         sk.nn.Linear(
-            in_features=(1,), in_axes=(0, -3), out_features=5, key=jax.random.PRNGKey(0)
+            in_features=(1,),
+            in_axis=(0, -3),
+            out_features=5,
+            key=jax.random.PRNGKey(0),
         )
 
     with pytest.raises(TypeError):
         sk.nn.Linear(
             in_features=(1, "s"),
-            in_axes=(0, -3),
+            in_axis=(0, -3),
             out_features=5,
             key=jax.random.PRNGKey(0),
         )
@@ -86,7 +107,7 @@ def test_general_linear():
     with pytest.raises(TypeError):
         sk.nn.Linear(
             in_features=(1, 2),
-            in_axes=(0, "s"),
+            in_axis=(0, "s"),
             out_features=3,
             key=jax.random.PRNGKey(0),
         )
