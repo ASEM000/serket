@@ -138,7 +138,7 @@ def test_mlp():
     )
 
     layer = layer.at["in_linear"]["weight"].set(w1.T)
-    layer = layer.at["hidden_linear"]["weight"].set(w2.T[None])
+    layer = layer.at["mid_linear"]["weight"].set(w2.T[None])
     layer = layer.at["out_linear"]["weight"].set(w3.T)
 
     npt.assert_allclose(layer(x), y)
