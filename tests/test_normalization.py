@@ -281,7 +281,7 @@ def test_weight_norm_wrapper():
         ],
     )
     linear = sk.nn.Linear(2, 4, key=jax.random.PRNGKey(0))
-    linear = linear.at["weight"].set(sk.nn.weight_norm(weight))
+    linear = linear.at["weight"].set(sk.nn.weight_norm(weight).T)
     true = jnp.array([[-0.51219565, 1.1655288, 0.19189113, -0.7554708]])
     pred = linear(jnp.ones((1, 2)))
     npt.assert_allclose(true, pred, atol=1e-5)

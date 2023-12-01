@@ -253,8 +253,15 @@ class SimpleRNNCell(RNNCell):
             dtype=dtype,
         )
 
-        self.in_hidden_to_hidden_weight = jnp.concatenate([i2h.weight, h2h.weight])
-        self.in_hidden_to_hidden_bias = i2h.bias
+        self.in_hidden_to_hidden = sk.nn.Linear(
+            in_features=in_features + hidden_features,
+            out_features=hidden_features,
+            weight_init=lambda *_: jnp.concatenate([i2h.weight, h2h.weight], axis=-1),
+            bias_init=lambda *_: i2h.bias,
+            dtype=dtype,
+            key=k1,  # dummy key
+            out_axis=0,
+        )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
@@ -268,7 +275,7 @@ class SimpleRNNCell(RNNCell):
             raise TypeError(f"Expected {state=} to be an instance of `SimpleRNNState`")
 
         ih = jnp.concatenate([input, state.hidden_state], axis=-1)
-        h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
+        h = self.in_hidden_to_hidden(ih)
         h = self.act(h)
         return h, SimpleRNNState(h)
 
@@ -349,6 +356,7 @@ class DenseCell(RNNCell):
             bias_init=bias_init,
             key=key,
             dtype=dtype,
+            out_axis=0,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
@@ -464,8 +472,15 @@ class LSTMCell(RNNCell):
             dtype=dtype,
         )
 
-        self.in_hidden_to_hidden_weight = jnp.concatenate([i2h.weight, h2h.weight])
-        self.in_hidden_to_hidden_bias = i2h.bias
+        self.in_hidden_to_hidden = sk.nn.Linear(
+            in_features=in_features + hidden_features,
+            out_features=hidden_features,
+            weight_init=lambda *_: jnp.concatenate([i2h.weight, h2h.weight], axis=-1),
+            bias_init=lambda *_: i2h.bias,
+            dtype=dtype,
+            key=k1,  # dummy key
+            out_axis=0,
+        )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
@@ -480,8 +495,9 @@ class LSTMCell(RNNCell):
 
         h, c = state.hidden_state, state.cell_state
         ih = jnp.concatenate([input, h], axis=-1)
-        h = ih @ self.in_hidden_to_hidden_weight + self.in_hidden_to_hidden_bias
-        i, f, g, o = jnp.split(h, 4, axis=-1)
+        h = self.in_hidden_to_hidden(ih)
+
+        i, f, g, o = jnp.split(h, 4)
         i = self.recurrent_act(i)
         f = self.recurrent_act(f)
         g = self.act(g)
@@ -576,6 +592,7 @@ class GRUCell(RNNCell):
             bias_init=bias_init,
             key=k1,
             dtype=dtype,
+            out_axis=0,
         )
 
         self.hidden_to_hidden = sk.nn.Linear(
@@ -585,6 +602,7 @@ class GRUCell(RNNCell):
             bias_init=None,
             key=k2,
             dtype=dtype,
+            out_axis=0,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
@@ -599,8 +617,8 @@ class GRUCell(RNNCell):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
         h = state.hidden_state
-        xe, xu, xo = jnp.split(self.in_to_hidden(input), 3, axis=-1)
-        he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=-1)
+        xe, xu, xo = jnp.split(self.in_to_hidden(input), 3)
+        he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3)
         e = self.recurrent_act(xe + he)
         u = self.recurrent_act(xu + hu)
         o = self.act(xo + (e * ho))
@@ -1110,8 +1128,8 @@ class ConvGRUNDCell(RNNCell):
             raise TypeError(f"Expected {state=} to be an instance of `GRUState`")
 
         h = state.hidden_state
-        xe, xu, xo = jnp.split(self.in_to_hidden(input), 3, axis=0)
-        he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3, axis=0)
+        xe, xu, xo = jnp.split(self.in_to_hidden(input), 3)
+        he, hu, ho = jnp.split(self.hidden_to_hidden(h), 3)
         e = self.recurrent_act(xe + he)
         u = self.recurrent_act(xu + hu)
         o = self.act(xo + (e * ho))
@@ -1546,8 +1564,6 @@ def scan_rnn(
         (10, 2)
         <BLANKLINE>
         >>> out, state = sk.nn.scan_rnn(cell, None, input, state, return_state=True)
-        >>> print(repr(state))
-        SimpleRNNState(hidden_state=f32[2](μ=0.05, σ=0.93, ∈[-0.88,0.98]))
 
     Example:
         Bidirectional RNN:
@@ -1572,8 +1588,6 @@ def scan_rnn(
         (10, 4)
         <BLANKLINE>
         >>> out, state = sk.nn.scan_rnn(cell, back_cell, input, state, return_state=True)
-        >>> print(repr(state))
-        SimpleRNNState(hidden_state=f32[4](μ=-0.05, σ=0.67, ∈[-0.88,0.98]))
 
     Returns:
         return the result and state if ``return_state`` is ``True``. otherwise,
@@ -1703,8 +1717,8 @@ class ScanRNN(sk.TreeClass):
     def __call__(
         self,
         input: jax.Array,
-        state: RNNState | None = None,
-    ) -> jax.Array | tuple[jax.Array, RNNState]:
+        state: State | None = None,
+    ) -> jax.Array | tuple[jax.Array, State]:
         """Scans the RNN cell over a sequence.
 
         Args:

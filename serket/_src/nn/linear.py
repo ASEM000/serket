@@ -52,25 +52,23 @@ def general_linear(
     input: jax.Array,
     weight: jax.Array,
     bias: jax.Array | None,
-    axes: tuple[int, ...],
+    in_axis: tuple[int, ...],
+    out_axis: int,
 ) -> jax.Array:
-    """Apply a linear layer to input at axes defined by ``axes``"""
+    in_axis = sorted([axis if axis >= 0 else axis + input.ndim for axis in in_axis])
+    lhs = "".join(str(axis) for axis in range(input.ndim))  # 0, 1, 2, 3
+    rhs = "F" + "".join(str(axis) for axis in in_axis)  # F, 1, 2, 3
+    out = "".join(str(axis) for axis in range(input.ndim) if axis not in in_axis)
+    out_axis = out_axis if out_axis >= 0 else out_axis + len(out) + 1
+    out = out[:out_axis] + "F" + out[out_axis:]
+    result = jnp.einsum(f"{lhs},{rhs}->{out}", input, weight)
 
-    # ensure negative axes
-    def generate_einsum_string(*axes: tuple[int, ...]) -> str:
-        axes = sorted(axes)
-        total_axis = abs(min(axes))  # get the total number of axes
-        alpha = "".join(map(str, range(total_axis + 1)))
-        array_str = "..." + alpha[:total_axis]
-        weight_str = "".join([array_str[axis] for axis in axes]) + alpha[total_axis]
-        result_string = "".join([ai for ai in array_str if ai not in weight_str])
-        result_string += alpha[total_axis]
-        return f"{array_str},{weight_str}->{result_string}"
-
-    axes = map(lambda i: i if i < 0 else i - input.ndim, axes)
-    einsum_string = generate_einsum_string(*axes)
-    out = jnp.einsum(einsum_string, input, weight)
-    return out if bias is None else (out + bias)
+    if bias is None:
+        return result
+    broadcast_shape = list(range(result.ndim))
+    del broadcast_shape[out_axis]
+    bias = jnp.expand_dims(bias, axis=broadcast_shape)
+    return result + bias
 
 
 def infer_in_features(instance, x, **__) -> tuple[int, ...]:
@@ -172,14 +170,19 @@ class Linear(sk.TreeClass):
             raise ValueError(f"{len(self.in_axis)=} != {len(self.in_features)=}")
 
         k1, k2 = jr.split(key)
-        weight_shape = (*self.in_features, self.out_features)
+        weight_shape = (out_features, *self.in_features)
         self.weight = resolve_init(weight_init)(k1, weight_shape, dtype)
         self.bias = resolve_init(bias_init)(k2, (self.out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, input: jax.Array) -> jax.Array:
-        out = general_linear(input, self.weight, self.bias, self.in_axis)
-        return jnp.moveaxis(out, -1, self.out_axis)
+        return general_linear(
+            input=input,
+            weight=self.weight,
+            bias=self.bias,
+            in_axis=self.in_axis,
+            out_axis=self.out_axis,
+        )
 
 
 class Identity(sk.TreeClass):
@@ -214,7 +217,7 @@ class Embedding(sk.TreeClass):
     def __init__(self, in_features: int, out_features: int, key: jax.Array):
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.weight = jr.uniform(key, (self.in_features, self.out_features))
+        self.weight = jr.uniform(key, (self.out_features, self.in_features))
 
     def __call__(self, input: jax.Array) -> jax.Array:
         """Embeds the input.
@@ -228,7 +231,7 @@ class Embedding(sk.TreeClass):
         if not jnp.issubdtype(input.dtype, jnp.integer):
             raise TypeError(f"{input.dtype=} is not a subdtype of integer")
 
-        return self.weight[input]
+        return self.weight.T[input]
 
 
 def scan_linear(
@@ -241,7 +244,7 @@ def scan_linear(
     if bias is None:
 
         def scan_func(x: jax.Array, weight: Batched[jax.Array]):
-            return act(x @ weight), None
+            return act(x @ weight.T), None
 
         input, _ = jax.lax.scan(scan_func, input, weight)
         return input
@@ -331,11 +334,11 @@ class MLP(sk.TreeClass):
             return sk.tree_mask(layer)
 
         self.in_linear = Linear(in_features, hidden_features, key=keys[0], **kwargs)
-        self.hidden_linear = sk.tree_unmask(batched_linear(keys[1:-1]))
+        self.mid_linear = sk.tree_unmask(batched_linear(keys[1:-1]))
         self.out_linear = Linear(hidden_features, out_features, key=keys[-1], **kwargs)
 
     def __call__(self, input: jax.Array) -> jax.Array:
         input = self.act(self.in_linear(input))
-        weight_h, bias_h = self.hidden_linear.weight, self.hidden_linear.bias
+        weight_h, bias_h = self.mid_linear.weight, self.mid_linear.bias
         input = scan_linear(input, weight_h, bias_h, self.act)
         return self.out_linear(input)
