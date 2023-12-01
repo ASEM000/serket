@@ -1200,7 +1200,15 @@ def test_lazy_conv_local():
 
 
 @pytest.mark.parametrize(
-    "sk_layer,keras_layer,kernel_size,strides,padding,dilation,ndim",
+    (
+        "sk_layer",
+        "keras_layer",
+        "kernel_size",
+        "strides",
+        "padding",
+        "dilation",
+        "ndim",
+    ),
     [
         *product(
             [sk.nn.Conv1D, sk.nn.FFTConv1D],

@@ -145,10 +145,8 @@ from serket._src.nn.recurrent import (
     FFTConvLSTM3DCell,
     GRUCell,
     LSTMCell,
-    RNNCell,
-    ScanRNN,
     SimpleRNNCell,
-    scan_rnn,
+    scan_cell,
 )
 from serket._src.nn.reshape import (
     CenterCrop1D,
@@ -316,10 +314,8 @@ __all__ = [
     "FFTConvLSTM3DCell",
     "GRUCell",
     "LSTMCell",
-    "RNNCell",
-    "ScanRNN",
     "SimpleRNNCell",
-    "scan_rnn",
+    "scan_cell",
     # reshape
     "CenterCrop1D",
     "CenterCrop2D",
