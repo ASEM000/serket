@@ -1717,8 +1717,8 @@ class ScanRNN(sk.TreeClass):
     def __call__(
         self,
         input: jax.Array,
-        state: RNNState | None = None,
-    ) -> jax.Array | tuple[jax.Array, RNNState]:
+        state: State | None = None,
+    ) -> jax.Array | tuple[jax.Array, State]:
         """Scans the RNN cell over a sequence.
 
         Args:
