@@ -61,19 +61,7 @@ def general_linear(
     out = "".join(str(axis) for axis in range(input.ndim) if axis not in in_axis)
     out_axis = out_axis if out_axis >= 0 else out_axis + len(out) + 1
     out = out[:out_axis] + "F" + out[out_axis:]
-
-    try:
-        einsum = f"{lhs},{rhs}->{out}"
-        result = jnp.einsum(einsum, input, weight)
-    except ValueError as error:
-        raise ValueError(
-            f"{input.shape=}\n"
-            f"{weight.shape=}\n"
-            f"{einsum=}\n"
-            f"{in_axis=}\n"
-            f"{out_axis=}\n"
-            f"{error=}"
-        )
+    result = jnp.einsum(f"{lhs},{rhs}->{out}", input, weight)
 
     if bias is None:
         return result
