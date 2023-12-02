@@ -258,7 +258,7 @@ def scan_linear(
 
     def scan_func(x: jax.Array, weight_bias: Batched[jax.Array]):
         weight, bias = weight_bias[..., :-1], weight_bias[..., -1]
-        return act(x @ weight + bias), None
+        return act(x @ weight.T + bias), None
 
     weight_bias = jnp.concatenate([weight, bias[:, :, None]], axis=-1)
     output, _ = jax.lax.scan(scan_func, input, weight_bias)
