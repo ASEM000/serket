@@ -250,15 +250,15 @@ def scan_linear(
     # reduce the ``jaxpr`` size by using ``scan``
     if bias is None:
 
-        def scan_func(x: jax.Array, weight: Batched[jax.Array]):
-            return act(x @ weight.T), None
+        def scan_func(input: jax.Array, weight: Batched[jax.Array]):
+            return act(input @ weight.T), None
 
-        input, _ = jax.lax.scan(scan_func, input, weight)
-        return input
+        output, _ = jax.lax.scan(scan_func, input, weight)
+        return output
 
-    def scan_func(x: jax.Array, weight_bias: Batched[jax.Array]):
+    def scan_func(input: jax.Array, weight_bias: Batched[jax.Array]):
         weight, bias = weight_bias[..., :-1], weight_bias[..., -1]
-        return act(x @ weight.T + bias), None
+        return act(input @ weight.T + bias), None
 
     weight_bias = jnp.concatenate([weight, bias[:, :, None]], axis=-1)
     output, _ = jax.lax.scan(scan_func, input, weight_bias)
@@ -271,9 +271,9 @@ class MLP(sk.TreeClass):
     Args:
         in_features: Number of input features.
         out_features: Number of output features.
-        key: Random number generator key.
         hidden_features: Number of hidden units in each hidden layer.
         num_hidden_layers: Number of hidden layers including the output layer.
+        key: Random number generator key.
         act: Activation function. Defaults to ``tanh``.
         weight_init: Weight initialization function. Defaults to ``glorot_uniform``.
         bias_init: Bias initialization function. Defaults to ``zeros``.
@@ -317,16 +317,28 @@ class MLP(sk.TreeClass):
     Note:
         :class:`.MLP` uses ``jax.lax.scan`` to reduce the ``jaxpr`` size.
         Leading to faster compilation times and smaller ``jaxpr`` size.
+
+        >>> import serket as sk
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> # 10 hidden layers
+        >>> mlp1 = sk.nn.MLP(1, 2, 5, 10, key=jax.random.PRNGKey(0))
+        >>> # 50 hidden layers
+        >>> mlp2 = sk.nn.MLP(1, 2, 5, 50, key=jax.random.PRNGKey(0))
+        >>> jaxpr1 = jax.make_jaxpr(mlp1)(jnp.ones([10, 1]))
+        >>> jaxpr2 = jax.make_jaxpr(mlp2)(jnp.ones([10, 1]))
+        >>> # same number of equations irrespective of the number of hidden layers
+        >>> assert len(jaxpr1.jaxpr.eqns) == len(jaxpr2.jaxpr.eqns)
     """
 
     def __init__(
         self,
         in_features: int,
         out_features: int,
-        *,
-        key: jax.Array,
         hidden_features: int,
         num_hidden_layers: int,
+        *,
+        key: jax.Array,
         act: ActivationType = "tanh",
         weight_init: InitType = "glorot_uniform",
         bias_init: InitType = "zeros",

@@ -1385,7 +1385,12 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
     convolution_layer = FFTConv3D
 
 
-def scan_cell(cell, in_axis=0, out_axis=0, reverse=False):
+def scan_cell(
+    cell,
+    in_axis: int = 0,
+    out_axis: int = 0,
+    reverse: bool = False,
+) -> Callable[[jax.Array, S], tuple[jax.Array, S]]:
     """Scan am RNN cell over a sequence.
 
     Args:
@@ -1420,21 +1425,53 @@ def scan_cell(cell, in_axis=0, out_axis=0, reverse=False):
         >>> k1, k2 = jr.split(jr.PRNGKey(0))
         >>> cell1 = sk.nn.SimpleRNNCell(1, 2, key=k1)
         >>> cell2 = sk.nn.SimpleRNNCell(1, 2, key=k2)
-        >>> state1 = sk.tree_state(cell1)
-        >>> state2 = sk.tree_state(cell2)
+        >>> state1, state2 = sk.tree_state((cell1, cell2))
         >>> input = jnp.ones([10, 1])
         >>> output1, state1 = sk.nn.scan_cell(cell1)(input, state1)
         >>> output2, state2 = sk.nn.scan_cell(cell2, reverse=True)(input, state2)
         >>> output = jnp.concatenate((output1, output2), axis=1)
         >>> print(output.shape)
         (10, 4)
+
+    Example:
+        Combining multiple RNN cells:
+
+        >>> import serket as sk
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import jax.random as jr
+        >>> import numpy.testing as npt
+        >>> k1, k2 = jr.split(jr.PRNGKey(0))
+        >>> cell1 = sk.nn.LSTMCell(1, 2, bias_init=None, key=k1)
+        >>> cell2 = sk.nn.LSTMCell(2, 1, bias_init=None, key=k2)
+        >>> def cell(input, state):
+        ...     state1, state2 = state
+        ...     output, state1 = cell1(input, state1)
+        ...     output, state2 = cell2(output, state2)
+        ...     return output, (state1, state2)
+        >>> state = sk.tree_state((cell1, cell2))
+        >>> input = jnp.ones([2, 1])
+        >>> output1, state = sk.nn.scan_cell(cell)(input, state)
+        <BLANKLINE>
+        >>> # This is equivalent to:
+        >>> state1, state2 = sk.tree_state((cell1, cell2))
+        >>> output2 = jnp.zeros([2, 1])
+        >>> # first step
+        >>> output, state1 = cell1(input[0], state1)
+        >>> output, state2 = cell2(output, state2)
+        >>> output2 = output2.at[0].set(output)
+        >>> # second step
+        >>> output, state1 = cell1(input[1], state1)
+        >>> output, state2 = cell2(output, state2)
+        >>> output2 = output2.at[1].set(output)
+        >>> npt.assert_allclose(output1, output2, atol=1e-6)
     """
 
-    def scan_func(state, input):
+    def scan_func(state: S, input: jax.Array) -> tuple[S, jax.Array]:
         output, state = cell(input, state)
         return state, output
 
-    def wrapper(input: T, state: S) -> tuple[T, S]:
+    def wrapper(input: jax.Array, state: S) -> tuple[jax.Array, S]:
         # push the scan axis to the front
         input = jnp.moveaxis(input, in_axis, 0)
         state, output = jax.lax.scan(scan_func, state, input, reverse=reverse)
