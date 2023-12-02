@@ -3,8 +3,6 @@ Recurrent
 
 .. currentmodule:: serket.nn
 
-.. autoclass:: RNNCell
-
 .. autoclass:: LSTMCell
 .. autoclass:: GRUCell
 .. autoclass:: SimpleRNNCell
@@ -24,7 +22,4 @@ Recurrent
 .. autoclass:: FFTConvGRU2DCell
 .. autoclass:: FFTConvGRU3DCell
 
-.. autoclass:: ScanRNN
-
-
-.. autofunction:: scan_rnn
+.. autofunction:: scan_cell

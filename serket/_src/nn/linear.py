@@ -61,12 +61,19 @@ def general_linear(
     out = "".join(str(axis) for axis in range(input.ndim) if axis not in in_axis)
     out_axis = out_axis if out_axis >= 0 else out_axis + len(out) + 1
     out = out[:out_axis] + "F" + out[out_axis:]
-    result = jnp.einsum(f"{lhs},{rhs}->{out}", input, weight)
+
+    try:
+        einsum = f"{lhs},{rhs}->{out}"
+        result = jnp.einsum(einsum, input, weight)
+    except ValueError as error:
+        raise ValueError(f"{einsum=}\n{input.shape=}\n{weight.shape=}\n{error=}")
 
     if bias is None:
         return result
-    broadcast_shape = list(range(result.ndim))
-    del broadcast_shape[out_axis]
+
+    with jax.ensure_compile_time_eval():
+        broadcast_shape = list(range(result.ndim))
+        del broadcast_shape[out_axis]
     bias = jnp.expand_dims(bias, axis=broadcast_shape)
     return result + bias
 
@@ -306,6 +313,10 @@ class MLP(sk.TreeClass):
         >>> _, material_layer = lazy_layer.at['__call__'](input)
         >>> material_layer.in_linear.in_features
         (10,)
+
+    Note:
+        :class:`.MLP` uses ``jax.lax.scan`` to reduce the ``jaxpr`` size.
+        Leading to faster compilation times and smaller ``jaxpr`` size.
     """
 
     def __init__(
