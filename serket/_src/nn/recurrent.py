@@ -20,7 +20,8 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from typing_extensions import Any, Callable, ParamSpec, TypeVar
+from typing_extensions import ParamSpec
+from typing import Callable, Any, TypeVar
 
 import serket as sk
 from serket._src.custom_transform import tree_state
