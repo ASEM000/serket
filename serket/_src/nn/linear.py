@@ -70,8 +70,10 @@ def general_linear(
 
     if bias is None:
         return result
-    broadcast_shape = list(range(result.ndim))
-    del broadcast_shape[out_axis]
+
+    with jax.ensure_compile_time_eval():
+        broadcast_shape = list(range(result.ndim))
+        del broadcast_shape[out_axis]
     bias = jnp.expand_dims(bias, axis=broadcast_shape)
     return result + bias
 

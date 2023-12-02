@@ -131,8 +131,10 @@ def test_bilstm():
         .set(bb)
     )
 
-    output1, _ = sk.nn.scan_cell(forward_cell)(input, sk.tree_state(forward_cell))
-    output2, _ = sk.nn.scan_cell(backward_cell,reverse=True)(input, sk.tree_state(backward_cell))
+    state1 = sk.tree_state(forward_cell)
+    output1, _ = sk.nn.scan_cell(forward_cell)(input, state1)
+    state2 = sk.tree_state(backward_cell)
+    output2, _ = sk.nn.scan_cell(backward_cell, reverse=True)(input, state2)
     serket_output = jnp.concatenate([output1, output2], axis=1)
 
     npt.assert_allclose(keras_output[0], serket_output, atol=1e-6)
@@ -212,6 +214,6 @@ def test_dense_cell():
     )
     input = jnp.ones([10, 10])
     state = sk.tree_state(cell)
-    output, _  = sk.nn.scan_cell(cell)(input, state)
+    output, _ = sk.nn.scan_cell(cell)(input, state)
     # 1x10 @ 10x10 => 1x10
     npt.assert_allclose(output[-1], jnp.ones([10]) * 10.0)
