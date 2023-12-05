@@ -71,6 +71,7 @@ Install from github::
     
     train_examples
     interoperability
+    common_recipes
     notebooks/evaluation
     notebooks/mixed_precision
     notebooks/checkpointing
@@ -82,8 +83,6 @@ Install from github::
     notebooks/model_surgery
     notebooks/distributed_training
     notebooks/loss_landscape
-    notebooks/common_recipes
-
 
 .. currentmodule:: serket
     
