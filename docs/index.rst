@@ -69,20 +69,11 @@ Install from github::
     :caption: 📖 Guides
     :maxdepth: 1
     
-    train_examples
+    training_guides
+    core_guides
+    other_guides
     interoperability
     common_recipes
-    notebooks/evaluation
-    notebooks/mixed_precision
-    notebooks/checkpointing
-    notebooks/subset_training
-    notebooks/optimlib
-    notebooks/augmentations
-    notebooks/deep_ensembles
-    notebooks/hyperparam
-    notebooks/model_surgery
-    notebooks/distributed_training
-    notebooks/loss_landscape
 
 .. currentmodule:: serket
     
