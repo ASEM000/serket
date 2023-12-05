@@ -1,9 +1,9 @@
-🚆  Training examples
+🚆  Training guides
 ----------------------
 
 
 .. toctree::
-    :caption: Training examples
+    :caption: Training guides
     :maxdepth: 1
 
     notebooks/train_mnist
