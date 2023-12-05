@@ -207,9 +207,9 @@ class Rotate2D(sk.TreeClass):
         self.angle = angle
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
+    def __call__(self, image: CHWArray) -> CHWArray:
         angle = jax.lax.stop_gradient(self.angle)
-        return jax.vmap(rotate_2d, in_axes=(0, None))(x, angle)
+        return jax.vmap(rotate_2d, in_axes=(0, None))(image, angle)
 
     spatial_ndim: int = 2
 
@@ -260,9 +260,9 @@ class RandomRotate2D(sk.TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
-        return jax.vmap(random_rotate_2d, in_axes=(None, 0, None))(key, x, range)
+        return jax.vmap(random_rotate_2d, in_axes=(None, 0, None))(key, image, range)
 
     spatial_ndim: int = 2
 
@@ -291,9 +291,9 @@ class HorizontalShear2D(sk.TreeClass):
         self.angle = angle
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
+    def __call__(self, image: CHWArray) -> CHWArray:
         angle = jax.lax.stop_gradient(self.angle)
-        return jax.vmap(horizontal_shear_2d, in_axes=(0, None))(x, angle)
+        return jax.vmap(horizontal_shear_2d, in_axes=(0, None))(image, angle)
 
     spatial_ndim: int = 2
 
@@ -344,10 +344,10 @@ class RandomHorizontalShear2D(sk.TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         angle = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
-        return jax.vmap(random_horizontal_shear_2d, in_axes=in_axes)(key, x, angle)
+        return jax.vmap(random_horizontal_shear_2d, in_axes=in_axes)(key, image, angle)
 
     spatial_ndim: int = 2
 
@@ -376,9 +376,9 @@ class VerticalShear2D(sk.TreeClass):
         self.angle = angle
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, input: jax.Array) -> jax.Array:
+    def __call__(self, image: jax.Array) -> jax.Array:
         angle = jax.lax.stop_gradient(self.angle)
-        return jax.vmap(vertical_shear_2d, in_axes=(0, None))(input, angle)
+        return jax.vmap(vertical_shear_2d, in_axes=(0, None))(image, angle)
 
     spatial_ndim: int = 2
 
@@ -429,10 +429,10 @@ class RandomVerticalShear2D(sk.TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         angle = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
-        return jax.vmap(random_vertical_shear_2d, in_axes=in_axes)(key, x, angle)
+        return jax.vmap(random_vertical_shear_2d, in_axes=in_axes)(key, image, angle)
 
     spatial_ndim: int = 2
 
@@ -461,88 +461,16 @@ class RandomPerspective2D(sk.TreeClass):
           [ 5  6  7  8]
           [ 9 10 11 12]
           [13 14 15 16]]]
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> import jax
-        >>> x, y = jnp.meshgrid(jnp.linspace(-1, 1, 30), jnp.linspace(-1, 1, 30))
-        >>> d = jnp.sqrt(x**2 + y**2)
-        >>> mask = d < 1
-        >>> print(mask.astype(int))
-        [[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0]
-         [0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0]
-         [0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0]
-         [0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0]
-         [0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0]
-         [0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0]
-         [0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0]
-         [0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0]
-         [0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0]
-         [0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0]
-         [0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0]
-         [0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0]
-         [0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]]
-        >>> layer = sk.image.RandomPerspective2D(100)
-        >>> key = jax.random.PRNGKey(10)
-        >>> out = layer(mask[None], key=key)[0]
-        >>> print(out.astype(int))
-        [[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0]
-         [0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0]
-         [0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0]
-         [0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0]
-         [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0]
-         [0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]]
     """
 
     def __init__(self, scale: float = 1.0):
         self.scale = scale
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         scale = jax.lax.stop_gradient(self.scale)
-        return jax.vmap(random_perspective_2d, in_axes=(None, 0, None))(key, x, scale)
+        args = (key, image, scale)
+        return jax.vmap(random_perspective_2d, in_axes=(None, 0, None))(*args)
 
     spatial_ndim: int = 2
 
@@ -571,8 +499,8 @@ class HorizontalTranslate2D(sk.TreeClass):
     shift: int = sk.field(on_setattr=[IsInstance(int)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
-        return jax.vmap(horizontal_translate_2d, in_axes=(0, None))(x, self.shift)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        return jax.vmap(horizontal_translate_2d, in_axes=(0, None))(image, self.shift)
 
     spatial_ndim: int = 2
 
@@ -601,8 +529,8 @@ class VerticalTranslate2D(sk.TreeClass):
     shift: int = sk.field(on_setattr=[IsInstance(int)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, input: jax.Array) -> jax.Array:
-        return jax.vmap(vertical_translate_2d, in_axes=(0, None))(input, self.shift)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        return jax.vmap(vertical_translate_2d, in_axes=(0, None))(image, self.shift)
 
     spatial_ndim: int = 2
 
@@ -639,8 +567,8 @@ class RandomHorizontalTranslate2D(sk.TreeClass):
     """
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
-        return jax.vmap(random_horizontal_translate_2d, in_axes=(None, 0))(key, x)
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+        return jax.vmap(random_horizontal_translate_2d, in_axes=(None, 0))(key, image)
 
     spatial_ndim: int = 2
 
@@ -678,8 +606,8 @@ class RandomVerticalTranslate2D(sk.TreeClass):
     """
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
-        return jax.vmap(random_vertical_translate_2d, in_axes=(None, 0))(key, x)
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+        return jax.vmap(random_vertical_translate_2d, in_axes=(None, 0))(key, image)
 
     spatial_ndim: int = 2
 
@@ -708,8 +636,8 @@ class HorizontalFlip2D(sk.TreeClass):
     """
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
-        return jax.vmap(lambda x: jnp.flip(x, axis=1))(x)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        return jax.vmap(lambda x: jnp.flip(x, axis=1))(image)
 
     spatial_ndim: int = 2
 
@@ -743,10 +671,10 @@ class RandomHorizontalFlip2D(sk.TreeClass):
     rate: float = sk.field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         rate = jax.lax.stop_gradient(self.rate)
         prop = jax.random.bernoulli(key, rate)
-        return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=1))(x), x)
+        return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=1))(image), image)
 
     spatial_ndim: int = 2
 
@@ -775,8 +703,8 @@ class VerticalFlip2D(sk.TreeClass):
     """
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray) -> CHWArray:
-        return jax.vmap(lambda x: jnp.flip(x, axis=0))(x)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        return jax.vmap(lambda x: jnp.flip(x, axis=0))(image)
 
     spatial_ndim: int = 2
 
@@ -810,10 +738,10 @@ class RandomVerticalFlip2D(sk.TreeClass):
     rate: float = sk.field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
 
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, x: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         rate = jax.lax.stop_gradient(self.rate)
         prop = jax.random.bernoulli(key, rate)
-        return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=0))(x), x)
+        return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=0))(image), image)
 
     spatial_ndim: int = 2
 
