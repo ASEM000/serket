@@ -552,7 +552,7 @@ def infer_in_features(instance, x, *_, **__) -> int:
 updates = dict(in_features=infer_in_features)
 
 
-class BaseConvND(sk.TreeClass):
+class ConvND(sk.TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -588,14 +588,6 @@ class BaseConvND(sk.TreeClass):
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
         self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the convolutional layer."""
-        ...
-
-
-class ConvND(BaseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -617,7 +609,7 @@ class ConvND(BaseConvND):
             strides=self.strides,
         )
 
-        return conv_nd(
+        return type(self).conv_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -627,6 +619,17 @@ class ConvND(BaseConvND):
             groups=self.groups,
             mask=mask,
         )
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolutional layer."""
+        ...
+
+    @property
+    @abc.abstractmethod
+    def conv_op(self):
+        ...
 
 
 class Conv1D(ConvND):
@@ -721,6 +724,7 @@ class Conv1D(ConvND):
     """
 
     spatial_ndim: int = 1
+    conv_op = conv_nd
 
 
 class Conv2D(ConvND):
@@ -815,6 +819,7 @@ class Conv2D(ConvND):
     """
 
     spatial_ndim: int = 2
+    conv_op = conv_nd
 
 
 class Conv3D(ConvND):
@@ -909,43 +914,10 @@ class Conv3D(ConvND):
     """
 
     spatial_ndim: int = 3
+    conv_op = conv_nd
 
 
-class FFTConvND(BaseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
-        """Apply the layer.
-
-        Args:
-            input: input array. shape is ``(in_features, spatial size)``. spatial size
-                is length for 1D convolution, height, width for 2D convolution and
-                height, width, depth for 3D convolution.
-            mask: a binary mask multiplied with the convolutional kernel. shape is
-                ``(out_features, in_features // groups, kernel size)``. set to ``None``
-                to not use a mask.
-        """
-        padding = delayed_canonicalize_padding(
-            in_dim=input.shape[1:],
-            padding=self.padding,
-            kernel_size=self.kernel_size,
-            strides=self.strides,
-        )
-
-        return fft_conv_nd(
-            input=input,
-            weight=self.weight,
-            bias=self.bias,
-            strides=self.strides,
-            padding=padding,
-            dilation=self.dilation,
-            groups=self.groups,
-            mask=mask,
-        )
-
-
-class FFTConv1D(FFTConvND):
+class FFTConv1D(ConvND):
     """1D Convolutional layer.
 
     Args:
@@ -1037,9 +1009,10 @@ class FFTConv1D(FFTConvND):
     """
 
     spatial_ndim: int = 1
+    conv_op = fft_conv_nd
 
 
-class FFTConv2D(FFTConvND):
+class FFTConv2D(ConvND):
     """2D FFT Convolutional layer.
 
     Args:
@@ -1131,9 +1104,10 @@ class FFTConv2D(FFTConvND):
     """
 
     spatial_ndim: int = 2
+    conv_op = fft_conv_nd
 
 
-class FFTConv3D(FFTConvND):
+class FFTConv3D(ConvND):
     """3D FFT Convolutional layer.
 
     Args:
@@ -1225,9 +1199,10 @@ class FFTConv3D(FFTConvND):
     """
 
     spatial_ndim: int = 3
+    conv_op = fft_conv_nd
 
 
-class BaseConvNDTranspose(sk.TreeClass):
+class ConvNDTranspose(sk.TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -1266,14 +1241,6 @@ class BaseConvNDTranspose(sk.TreeClass):
         bias_shape = (out_features, *(1,) * self.spatial_ndim)
         self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the convolutional layer."""
-        ...
-
-
-class ConvNDTranspose(BaseConvNDTranspose):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -1296,7 +1263,7 @@ class ConvNDTranspose(BaseConvNDTranspose):
             strides=self.strides,
         )
 
-        return conv_nd_transpose(
+        return type(self).conv_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -1306,6 +1273,17 @@ class ConvNDTranspose(BaseConvNDTranspose):
             out_padding=self.out_padding,
             mask=mask,
         )
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolutional layer."""
+        ...
+
+    @property
+    @abc.abstractmethod
+    def conv_op(self):
+        ...
 
 
 class Conv1DTranspose(ConvNDTranspose):
@@ -1404,6 +1382,7 @@ class Conv1DTranspose(ConvNDTranspose):
     """
 
     spatial_ndim: int = 1
+    conv_op = conv_nd_transpose
 
 
 class Conv2DTranspose(ConvNDTranspose):
@@ -1501,6 +1480,7 @@ class Conv2DTranspose(ConvNDTranspose):
     """
 
     spatial_ndim: int = 2
+    conv_op = conv_nd_transpose
 
 
 class Conv3DTranspose(ConvNDTranspose):
@@ -1599,43 +1579,10 @@ class Conv3DTranspose(ConvNDTranspose):
     """
 
     spatial_ndim: int = 3
+    conv_op = conv_nd_transpose
 
 
-class FFTConvNDTranspose(BaseConvNDTranspose):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
-        """Apply the layer.
-
-        Args:
-            input: input array. shape is ``(in_features, spatial size)``. spatial size
-                is length for 1D convolution, height, width for 2D convolution and
-                height, width, depth for 3D convolution.
-            mask: a binary mask multiplied with the convolutional kernel. shape is
-                ``(out_features, in_features // groups, kernel size)``. set to ``None``
-                to not use a mask.
-        """
-        padding = delayed_canonicalize_padding(
-            in_dim=input.shape[1:],
-            padding=self.padding,
-            kernel_size=self.kernel_size,
-            strides=self.strides,
-        )
-
-        return fft_conv_nd_transpose(
-            input=input,
-            weight=self.weight,
-            bias=self.bias,
-            strides=self.strides,
-            padding=padding,
-            dilation=self.dilation,
-            out_padding=self.out_padding,
-            mask=mask,
-        )
-
-
-class FFTConv1DTranspose(FFTConvNDTranspose):
+class FFTConv1DTranspose(ConvNDTranspose):
     """1D FFT Convolution transpose layer.
 
     Args:
@@ -1731,9 +1678,10 @@ class FFTConv1DTranspose(FFTConvNDTranspose):
     """
 
     spatial_ndim: int = 1
+    conv_op = fft_conv_nd_transpose
 
 
-class FFTConv2DTranspose(FFTConvNDTranspose):
+class FFTConv2DTranspose(ConvNDTranspose):
     """2D FFT Convolution transpose layer.
 
     Args:
@@ -1829,9 +1777,10 @@ class FFTConv2DTranspose(FFTConvNDTranspose):
     """
 
     spatial_ndim: int = 2
+    conv_op = fft_conv_nd_transpose
 
 
-class FFTConv3DTranspose(FFTConvNDTranspose):
+class FFTConv3DTranspose(ConvNDTranspose):
     """3D FFT Convolution transpose layer.
 
     Args:
@@ -1927,9 +1876,10 @@ class FFTConv3DTranspose(FFTConvNDTranspose):
     """
 
     spatial_ndim: int = 3
+    conv_op = fft_conv_nd_transpose
 
 
-class BaseDepthwiseConvND(sk.TreeClass):
+class DepthwiseConvND(sk.TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -1958,14 +1908,6 @@ class BaseDepthwiseConvND(sk.TreeClass):
         bias_shape = (depth_multiplier * in_features, *(1,) * self.spatial_ndim)
         self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the convolutional layer."""
-        ...
-
-
-class DepthwiseConvND(BaseDepthwiseConvND):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -1987,7 +1929,7 @@ class DepthwiseConvND(BaseDepthwiseConvND):
             strides=self.strides,
         )
 
-        return depthwise_conv_nd(
+        return type(self).conv_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -1995,6 +1937,17 @@ class DepthwiseConvND(BaseDepthwiseConvND):
             padding=padding,
             mask=mask,
         )
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        """Number of spatial dimensions of the convolutional layer."""
+        ...
+
+    @property
+    @abc.abstractmethod
+    def conv_op(self):
+        ...
 
 
 class DepthwiseConv1D(DepthwiseConvND):
@@ -2076,6 +2029,7 @@ class DepthwiseConv1D(DepthwiseConvND):
     """
 
     spatial_ndim: int = 1
+    conv_op = depthwise_conv_nd
 
 
 class DepthwiseConv2D(DepthwiseConvND):
@@ -2157,6 +2111,7 @@ class DepthwiseConv2D(DepthwiseConvND):
     """
 
     spatial_ndim: int = 2
+    conv_op = depthwise_conv_nd
 
 
 class DepthwiseConv3D(DepthwiseConvND):
@@ -2238,41 +2193,10 @@ class DepthwiseConv3D(DepthwiseConvND):
     """
 
     spatial_ndim: int = 3
+    conv_op = depthwise_conv_nd
 
 
-class DepthwiseFFTConvND(BaseDepthwiseConvND):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
-    def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
-        """Apply the layer.
-
-        Args:
-            input: input array. shape is ``(in_features, spatial size)``. spatial size
-                is length for 1D convolution, height, width for 2D convolution and
-                height, width, depth for 3D convolution.
-            mask: a binary mask multiplied with the convolutional kernel. shape is
-                ``(depth_multiplier * in_features, 1, *self.kernel_size)``. set to ``None``
-                to not use a mask.
-        """
-        padding = delayed_canonicalize_padding(
-            in_dim=input.shape[1:],
-            padding=self.padding,
-            kernel_size=self.kernel_size,
-            strides=self.strides,
-        )
-
-        return depthwise_fft_conv_nd(
-            input=input,
-            weight=self.weight,
-            bias=self.bias,
-            strides=self.strides,
-            padding=padding,
-            mask=mask,
-        )
-
-
-class DepthwiseFFTConv1D(DepthwiseFFTConvND):
+class DepthwiseFFTConv1D(DepthwiseConvND):
     """1D Depthwise FFT convolution layer.
 
     Args:
@@ -2351,9 +2275,10 @@ class DepthwiseFFTConv1D(DepthwiseFFTConvND):
     """
 
     spatial_ndim: int = 1
+    conv_op = depthwise_fft_conv_nd
 
 
-class DepthwiseFFTConv2D(DepthwiseFFTConvND):
+class DepthwiseFFTConv2D(DepthwiseConvND):
     """2D Depthwise convolution layer.
 
     Args:
@@ -2432,9 +2357,10 @@ class DepthwiseFFTConv2D(DepthwiseFFTConvND):
     """
 
     spatial_ndim: int = 2
+    conv_op = depthwise_fft_conv_nd
 
 
-class DepthwiseFFTConv3D(DepthwiseFFTConvND):
+class DepthwiseFFTConv3D(DepthwiseConvND):
     """3D Depthwise FFT convolution layer.
 
     Args:
@@ -2512,9 +2438,10 @@ class DepthwiseFFTConv3D(DepthwiseFFTConvND):
     """
 
     spatial_ndim: int = 3
+    conv_op = depthwise_fft_conv_nd
 
 
-class SeparableConvNDBase(sk.TreeClass):
+class SeparableConvND(sk.TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -2553,13 +2480,6 @@ class SeparableConvNDBase(sk.TreeClass):
         args = (key, bias_shape, dtype)
         self.pointwise_bias = resolve_init(self.pointwise_bias_init)(*args)
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
-
-
-class SeparableConvND(SeparableConvNDBase):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
@@ -2595,7 +2515,7 @@ class SeparableConvND(SeparableConvNDBase):
             strides=self.strides,
         )
 
-        return separable_conv_nd(
+        return type(self).conv_op(
             input=input,
             depthwise_weight=self.depthwise_weight,
             pointwise_weight=self.pointwise_weight,
@@ -2606,6 +2526,16 @@ class SeparableConvND(SeparableConvNDBase):
             depthwise_mask=depthwise_mask,
             pointwise_mask=pointwise_mask,
         )
+
+    @property
+    @abc.abstractmethod
+    def spatial_ndim(self) -> int:
+        ...
+
+    @property
+    @abc.abstractmethod
+    def conv_op(self):
+        ...
 
 
 class SeparableConv1D(SeparableConvND):
@@ -2694,6 +2624,7 @@ class SeparableConv1D(SeparableConvND):
     """
 
     spatial_ndim: int = 1
+    conv_op = separable_conv_nd
 
 
 class SeparableConv2D(SeparableConvND):
@@ -2782,6 +2713,7 @@ class SeparableConv2D(SeparableConvND):
     """
 
     spatial_ndim: int = 2
+    conv_op = separable_conv_nd
 
 
 class SeparableConv3D(SeparableConvND):
@@ -2870,58 +2802,10 @@ class SeparableConv3D(SeparableConvND):
     """
 
     spatial_ndim: int = 3
+    conv_op = separable_conv_nd
 
 
-class SeparableFFTConvND(SeparableConvNDBase):
-    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    def __call__(
-        self,
-        input: jax.Array,
-        depthwise_mask: Weight | None = None,
-        pointwise_mask: Weight | None = None,
-    ) -> jax.Array:
-        """Apply the layer.
-
-        Args:
-            input: input array. shape is ``(in_features, spatial size)``. spatial size
-                is length for 1D convolution, height, width for 2D convolution and
-                height, width, depth for 3D convolution.
-            depthwise_mask: a binary mask multiplied with the depthwise convolutional
-                kernel. shape is ``(depth_multiplier * in_features, 1, *self.kernel_size)``.
-                set to ``None`` to not use a mask.
-            pointwise_mask: a binary mask multiplied with the pointwise convolutional
-                kernel. shape is ``(out_features, depth_multiplier * in_features, 1, *self.kernel_size)``.
-                set to ``None`` to not use a mask.
-        """
-
-        depthwise_padding = delayed_canonicalize_padding(
-            in_dim=input.shape[1:],
-            padding=self.padding,
-            kernel_size=self.kernel_size,
-            strides=self.strides,
-        )
-
-        pointwise_padding = delayed_canonicalize_padding(
-            in_dim=input.shape[1:],
-            padding=self.padding,
-            kernel_size=canonicalize(1, self.spatial_ndim),
-            strides=self.strides,
-        )
-
-        return separable_fft_conv_nd(
-            input=input,
-            depthwise_weight=self.depthwise_weight,
-            pointwise_weight=self.pointwise_weight,
-            pointwise_bias=self.pointwise_bias,
-            strides=self.strides,
-            depthwise_padding=depthwise_padding,
-            pointwise_padding=pointwise_padding,
-            depthwise_mask=depthwise_mask,
-            pointwise_mask=pointwise_mask,
-        )
-
-
-class SeparableFFTConv1D(SeparableFFTConvND):
+class SeparableFFTConv1D(SeparableConvND):
     """1D Separable FFT convolution layer.
 
     Separable convolution is a depthwise convolution followed by a pointwise
@@ -3007,6 +2891,7 @@ class SeparableFFTConv1D(SeparableFFTConvND):
     """
 
     spatial_ndim: int = 1
+    conv_op = separable_fft_conv_nd
 
 
 class SeparableFFTConv2D(SeparableConvND):
@@ -3095,6 +2980,7 @@ class SeparableFFTConv2D(SeparableConvND):
     """
 
     spatial_ndim: int = 2
+    conv_op = separable_fft_conv_nd
 
 
 class SeparableFFTConv3D(SeparableConvND):
@@ -3183,6 +3069,7 @@ class SeparableFFTConv3D(SeparableConvND):
     """
 
     spatial_ndim: int = 3
+    conv_op = separable_fft_conv_nd
 
 
 class SpectralConvND(sk.TreeClass):
@@ -3209,12 +3096,22 @@ class SpectralConvND(sk.TreeClass):
     @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
     @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
     def __call__(self, input: jax.Array) -> jax.Array:
-        return spectral_conv_nd(input, self.weight_r, self.weight_i, self.modes)
+        return type(self).conv_op(
+            input=input,
+            weight_r=self.weight_r,
+            weight_i=self.weight_i,
+            modes=self.modes,
+        )
 
     @property
     @abc.abstractmethod
     def spatial_ndim(self) -> int:
-        return ...
+        ...
+
+    @property
+    @abc.abstractmethod
+    def conv_op(self):
+        ...
 
 
 class SpectralConv1D(SpectralConvND):
@@ -3273,6 +3170,7 @@ class SpectralConv1D(SpectralConvND):
     """
 
     spatial_ndim: int = 1
+    conv_op = spectral_conv_nd
 
 
 class SpectralConv2D(SpectralConvND):
@@ -3332,6 +3230,7 @@ class SpectralConv2D(SpectralConvND):
     """
 
     spatial_ndim: int = 2
+    conv_op = spectral_conv_nd
 
 
 class SpectralConv3D(SpectralConvND):
@@ -3391,6 +3290,7 @@ class SpectralConv3D(SpectralConvND):
     """
 
     spatial_ndim: int = 3
+    conv_op = spectral_conv_nd
 
 
 def is_lazy_call(instance, *_, **__) -> bool:
@@ -3493,7 +3393,7 @@ class ConvNDLocal(sk.TreeClass):
                 ``(out_features, in_features * prod(kernel_size), *out_size)``
                 use ``None`` for no mask.
         """
-        return local_conv_nd(
+        return type(self).conv_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -3508,6 +3408,11 @@ class ConvNDLocal(sk.TreeClass):
     @abc.abstractmethod
     def spatial_ndim(self) -> int:
         """Number of spatial dimensions of the convolutional layer."""
+        ...
+
+    @property
+    @abc.abstractmethod
+    def conv_op(self):
         ...
 
 
@@ -3598,6 +3503,7 @@ class Conv1DLocal(ConvNDLocal):
     """
 
     spatial_ndim: int = 1
+    conv_op = local_conv_nd
 
 
 class Conv2DLocal(ConvNDLocal):
@@ -3687,6 +3593,7 @@ class Conv2DLocal(ConvNDLocal):
     """
 
     spatial_ndim: int = 2
+    conv_op = local_conv_nd
 
 
 class Conv3DLocal(ConvNDLocal):
@@ -3776,3 +3683,4 @@ class Conv3DLocal(ConvNDLocal):
     """
 
     spatial_ndim: int = 3
+    conv_op = local_conv_nd

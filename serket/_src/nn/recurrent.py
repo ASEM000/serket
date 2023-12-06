@@ -16,12 +16,12 @@ from __future__ import annotations
 
 import abc
 import functools as ft
+from typing import Any, Callable, TypeVar
 
 import jax
 import jax.numpy as jnp
 import jax.random as jr
 from typing_extensions import ParamSpec
-from typing import Callable, Any, TypeVar
 
 import serket as sk
 from serket._src.custom_transform import tree_state
@@ -573,7 +573,7 @@ class ConvLSTMNDCell(sk.TreeClass):
         self.act = resolve_activation(act)
         self.recurrent_act = resolve_activation(recurrent_act)
 
-        self.in_to_hidden = self.convolution_layer(
+        self.in_to_hidden = self.conv_layer(
             in_features,
             hidden_features * 4,
             kernel_size,
@@ -586,7 +586,7 @@ class ConvLSTMNDCell(sk.TreeClass):
             dtype=dtype,
         )
 
-        self.hidden_to_hidden = self.convolution_layer(
+        self.hidden_to_hidden = self.conv_layer(
             hidden_features,
             hidden_features * 4,
             kernel_size,
@@ -623,7 +623,7 @@ class ConvLSTMNDCell(sk.TreeClass):
 
     @property
     @abc.abstractmethod
-    def convolution_layer(self):
+    def conv_layer(self):
         ...
 
     @property
@@ -686,7 +686,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
     """
 
     spatial_ndim: int = 1
-    convolution_layer = Conv1D
+    conv_layer = Conv1D
 
 
 class FFTConvLSTM1DCell(ConvLSTMNDCell):
@@ -743,7 +743,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
     """
 
     spatial_ndim: int = 1
-    convolution_layer = FFTConv1D
+    conv_layer = FFTConv1D
 
 
 class ConvLSTM2DCell(ConvLSTMNDCell):
@@ -800,7 +800,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
     """
 
     spatial_ndim: int = 2
-    convolution_layer = Conv2D
+    conv_layer = Conv2D
 
 
 class FFTConvLSTM2DCell(ConvLSTMNDCell):
@@ -857,7 +857,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
     """
 
     spatial_ndim: int = 2
-    convolution_layer = FFTConv2D
+    conv_layer = FFTConv2D
 
 
 class ConvLSTM3DCell(ConvLSTMNDCell):
@@ -914,7 +914,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
     """
 
     spatial_ndim: int = 3
-    convolution_layer = Conv3D
+    conv_layer = Conv3D
 
 
 class FFTConvLSTM3DCell(ConvLSTMNDCell):
@@ -971,7 +971,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
     """
 
     spatial_ndim: int = 3
-    convolution_layer = FFTConv3D
+    conv_layer = FFTConv3D
 
 
 class ConvGRUNDState(RNNState):
@@ -1004,7 +1004,7 @@ class ConvGRUNDCell(sk.TreeClass):
         self.act = resolve_activation(act)
         self.recurrent_act = resolve_activation(recurrent_act)
 
-        self.in_to_hidden = self.convolution_layer(
+        self.in_to_hidden = self.conv_layer(
             in_features,
             hidden_features * 3,
             kernel_size,
@@ -1017,7 +1017,7 @@ class ConvGRUNDCell(sk.TreeClass):
             dtype=dtype,
         )
 
-        self.hidden_to_hidden = self.convolution_layer(
+        self.hidden_to_hidden = self.conv_layer(
             hidden_features,
             hidden_features * 3,
             kernel_size,
@@ -1052,7 +1052,7 @@ class ConvGRUNDCell(sk.TreeClass):
 
     @property
     @abc.abstractmethod
-    def convolution_layer(self):
+    def conv_layer(self):
         ...
 
     @property
@@ -1112,7 +1112,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
     """
 
     spatial_ndim: int = 1
-    convolution_layer = Conv1D
+    conv_layer = Conv1D
 
 
 class FFTConvGRU1DCell(ConvGRUNDCell):
@@ -1166,7 +1166,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
     """
 
     spatial_ndim: int = 1
-    convolution_layer = FFTConv1D
+    conv_layer = FFTConv1D
 
 
 class ConvGRU2DCell(ConvGRUNDCell):
@@ -1220,7 +1220,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
     """
 
     spatial_ndim: int = 2
-    convolution_layer = Conv2D
+    conv_layer = Conv2D
 
 
 class FFTConvGRU2DCell(ConvGRUNDCell):
@@ -1274,7 +1274,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
     """
 
     spatial_ndim: int = 2
-    convolution_layer = FFTConv2D
+    conv_layer = FFTConv2D
 
 
 class ConvGRU3DCell(ConvGRUNDCell):
@@ -1328,7 +1328,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
     """
 
     spatial_ndim: int = 3
-    convolution_layer = Conv3D
+    conv_layer = Conv3D
 
 
 class FFTConvGRU3DCell(ConvGRUNDCell):
@@ -1382,7 +1382,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
     """
 
     spatial_ndim: int = 3
-    convolution_layer = FFTConv3D
+    conv_layer = FFTConv3D
 
 
 def scan_cell(
