@@ -11,3 +11,4 @@
     notebooks/loss_landscape
     notebooks/augmentations
     notebooks/deep_ensembles
+    notebooks/custom_convolutions
