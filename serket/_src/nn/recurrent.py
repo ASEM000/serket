@@ -43,8 +43,8 @@ from serket._src.utils import (
     maybe_lazy_call,
     maybe_lazy_init,
     positive_int_cb,
-    validate_axis_shape,
-    validate_spatial_nd,
+    validate_in_features_shape,
+    validate_spatial_ndim,
 )
 
 P = ParamSpec("P")
@@ -178,8 +178,8 @@ class SimpleRNNCell(sk.TreeClass):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(
         self,
         input: jax.Array,
@@ -274,8 +274,8 @@ class DenseCell(sk.TreeClass):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(
         self,
         input: jax.Array,
@@ -397,8 +397,8 @@ class LSTMCell(sk.TreeClass):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(
         self,
         input: jax.Array,
@@ -520,8 +520,8 @@ class GRUCell(sk.TreeClass):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(
         self,
         input: jax.Array,
@@ -600,8 +600,8 @@ class ConvLSTMNDCell(sk.TreeClass):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(
         self,
         input: jax.Array,
@@ -1031,8 +1031,8 @@ class ConvGRUNDCell(sk.TreeClass):
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(
         self,
         input: jax.Array,

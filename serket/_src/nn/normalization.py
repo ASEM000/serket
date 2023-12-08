@@ -30,7 +30,7 @@ from serket._src.utils import (
     maybe_lazy_call,
     maybe_lazy_init,
     positive_int_cb,
-    validate_axis_shape,
+    validate_in_features_shape,
 )
 
 
@@ -265,7 +265,7 @@ class GroupNorm(sk.TreeClass):
         self.bias = resolve_init(bias_init)(key, (in_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         return group_norm(
             input=input,

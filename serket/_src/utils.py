@@ -262,32 +262,27 @@ def recursive_getattr(obj, attr: Sequence[str]):
     )
 
 
-def validate_spatial_nd(
-    func: Callable[P, T],
-    attribute_name: str,
-    argnum: int = 0,
-) -> Callable[P, T]:
+def validate_spatial_ndim(func: Callable[P, T], argnum: int = 0) -> Callable[P, T]:
     """Decorator to validate spatial input shape."""
-    attribute_list: Sequence[str] = attribute_name.split(".")
 
     @ft.wraps(func)
     def wrapper(self, *args, **kwargs):
-        array = args[argnum]
-        spatial_ndim = recursive_getattr(self, attribute_list)
+        input = args[argnum]
+        spatial_ndim = self.spatial_ndim
 
-        if array.ndim != spatial_ndim + 1:
+        if input.ndim != spatial_ndim + 1:
             spatial = ", ".join(("rows", "cols", "depths")[:spatial_ndim])
             name = type(self).__name__
             raise ValueError(
                 f"Dimesion mismatch error in inputs of {name}\n"
                 f"Input should satisfy:\n"
-                f"  - {(spatial_ndim + 1) = } dimension, but got {array.ndim = }.\n"
-                f"  - shape of (in_features, {spatial}), but got {array.shape = }.\n"
+                f"  - {(spatial_ndim + 1) = } dimension, but got {input.ndim = }.\n"
+                f"  - shape of (in_features, {spatial}), but got {input.shape = }.\n"
                 + (
                     # maybe the user apply the layer on a batched input
                     "The input should be unbatched (no batch dimension).\n"
                     "To apply on batched input, use `jax.vmap(...)(input)`."
-                    if array.ndim == spatial_ndim + 2
+                    if input.ndim == spatial_ndim + 2
                     else ""
                 )
             )
@@ -296,26 +291,22 @@ def validate_spatial_nd(
     return wrapper
 
 
-def validate_axis_shape(
-    func: Callable[P, T],
-    *,
-    attribute_name: str,
-    axis: int = 0,
-) -> Callable[P, T]:
+def validate_in_features_shape(func: Callable[P, T], axis: int) -> Callable[P, T]:
     """Decorator to validate input features."""
-    attribute_list = attribute_name.split(".")
 
-    def check_axis_shape(x, in_features: int, axis: int) -> None:
-        if x.shape[axis] != in_features:
-            raise ValueError(f"Specified {in_features=}, got {x.shape[axis]=}.")
-        return x
+    def check_axis_shape(input, in_features: int, axis: int) -> None:
+        if input.shape[axis] != in_features:
+            raise ValueError(f"Specified {in_features=}, got {input.shape[axis]=}.")
+        return input
 
     @ft.wraps(func)
     def wrapper(self, array, *a, **k):
-        check_axis_shape(array, recursive_getattr(self, attribute_list), axis)
+        check_axis_shape(array, self.in_features, axis)
         return func(self, array, *a, **k)
 
     return wrapper
+
+
 
 
 @ft.lru_cache(maxsize=128)
@@ -455,19 +446,19 @@ def maybe_lazy_init(
 
 LAZY_CALL_ERROR = """\
 Cannot call ``{func_name}`` directly on a lazy layer.
-use ``layer.at['{func_name}'](...)`` instead to return a tuple of:
+use ``layer.at["{func_name}"](...)`` instead to return a tuple of:
     - Layer output.
     - Materialized layer.
 
 Example:
     >>> layer = {class_name}(...)
-    >>> layer(x)  # this will raise an error
+    >>> layer(input)  # this will raise an error
     ...
     
     Instead use the following pattern:
 
-    >>> layer_output, material_layer = layer.at['{func_name}'](x)
-    >>> material_layer(x)
+    >>> layer_output, material_layer = layer.at["{func_name}"](input)
+    >>> material_layer(input)
     ...
 """
 

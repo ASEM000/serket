@@ -25,7 +25,13 @@ import serket as sk
 from serket._src.custom_transform import tree_eval
 from serket._src.image.color import hsv_to_rgb_3d, rgb_to_hsv_3d
 from serket._src.nn.linear import Identity
-from serket._src.utils import CHWArray, HWArray, IsInstance, Range, validate_spatial_nd
+from serket._src.utils import (
+    CHWArray,
+    HWArray,
+    IsInstance,
+    Range,
+    validate_spatial_ndim,
+)
 
 
 def pixel_shuffle_3d(array: CHWArray, upscale_factor: tuple[int, int]) -> CHWArray:
@@ -252,7 +258,7 @@ class PixelShuffle2D(sk.TreeClass):
 
         self.upscale_factor = (upscale_factor, upscale_factor)
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, array: CHWArray) -> CHWArray:
         return pixel_shuffle_3d(array, self.upscale_factor)
 
@@ -275,7 +281,7 @@ class AdjustContrast2D(sk.TreeClass):
 
     factor: float = 1.0
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         factor = jax.lax.stop_gradient(self.factor)
         return jax.vmap(adjust_contrast_2d, in_axes=(0, None))(image, factor)
@@ -307,7 +313,7 @@ class RandomContrast2D(sk.TreeClass):
 
         self.range = range
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
@@ -338,7 +344,7 @@ class AdjustBrightness2D(sk.TreeClass):
 
     factor: float = sk.field(on_setattr=[IsInstance(float), Range(0, 1)])
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         factor = jax.lax.stop_gradient(self.factor)
         return jax.vmap(adjust_brightness_2d, in_axes=(0, None))(image, factor)
@@ -360,7 +366,7 @@ class RandomBrightness2D(sk.TreeClass):
 
     range: tuple[float, float] = sk.field(on_setattr=[IsInstance(tuple)])
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
@@ -397,7 +403,7 @@ class Pixelate2D(sk.TreeClass):
             raise ValueError(f"{scale=} must be a positive int")
         self.scale = scale
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(pixelate_2d, in_axes=(0, None))(image, self.scale)
 
@@ -434,7 +440,7 @@ class Solarize2D(sk.TreeClass):
     threshold: float
     max_val: float = 1.0
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         threshold, max_val = jax.lax.stop_gradient((self.threshold, self.max_val))
         in_axes = (0, None, None)
@@ -488,7 +494,7 @@ class Posterize2D(sk.TreeClass):
 
     bits: int = sk.field(on_setattr=[IsInstance(int), Range(1, 8)])
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(posterize_2d, in_axes=(0, None))(image, self.bits)
 
@@ -541,7 +547,7 @@ class RandomJigSaw2D(sk.TreeClass):
 
     tiles: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         """Mixes up tiles of an image.
 
@@ -579,7 +585,7 @@ class AdjustLog2D(sk.TreeClass):
         self.gain = gain
         self.inv = inv
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, array: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
         gain = jax.lax.stop_gradient(self.gain)
@@ -614,7 +620,7 @@ class AdjustSigmoid2D(sk.TreeClass):
         self.gain = gain
         self.inv = inv
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None, None)
         cutoff, gain = jax.lax.stop_gradient((self.cutoff, self.gain))
@@ -637,7 +643,7 @@ class AdjustHue2D(sk.TreeClass):
     def __init__(self, factor: float):
         self.factor = factor
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         factor = jax.lax.stop_gradient(self.factor)
         return adjust_hue_3d(image, factor)
@@ -660,7 +666,7 @@ class RandomHue2D(sk.TreeClass):
     def __init__(self, range: tuple[float, float]):
         self.range = range
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         return random_hue_3d(key, image, range)
@@ -681,7 +687,7 @@ class AdjustSaturation2D(sk.TreeClass):
     def __init__(self, factor: float):
         self.factor = factor
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         factor = jax.lax.stop_gradient(self.factor)
         return adust_saturation_3d(image, factor)
@@ -704,7 +710,7 @@ class RandomSaturation2D(sk.TreeClass):
     def __init__(self, range: tuple[float, float]):
         self.range = range
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         return random_saturation_3d(key, image, range)
@@ -743,8 +749,8 @@ class FourierDomainAdapt2D(sk.TreeClass):
     def __init__(self, beta: float):
         self.beta = beta
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim", argnum=0)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim", argnum=1)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_spatial_ndim, argnum=1)
     def __call__(self, image: CHWArray, target: CHWArray) -> CHWArray:
         """Fourier Domain Adaptation
 

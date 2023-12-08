@@ -24,7 +24,13 @@ from jax.scipy.ndimage import map_coordinates
 import serket as sk
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
-from serket._src.utils import CHWArray, HWArray, IsInstance, Range, validate_spatial_nd
+from serket._src.utils import (
+    CHWArray,
+    HWArray,
+    IsInstance,
+    Range,
+    validate_spatial_ndim,
+)
 
 
 def affine_2d(array: HWArray, matrix: HWArray) -> HWArray:
@@ -206,7 +212,7 @@ class Rotate2D(sk.TreeClass):
     def __init__(self, angle: float):
         self.angle = angle
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         angle = jax.lax.stop_gradient(self.angle)
         return jax.vmap(rotate_2d, in_axes=(0, None))(image, angle)
@@ -259,7 +265,7 @@ class RandomRotate2D(sk.TreeClass):
 
         self.range = range
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         range = jax.lax.stop_gradient(self.range)
         return jax.vmap(random_rotate_2d, in_axes=(None, 0, None))(key, image, range)
@@ -290,7 +296,7 @@ class HorizontalShear2D(sk.TreeClass):
     def __init__(self, angle: float):
         self.angle = angle
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         angle = jax.lax.stop_gradient(self.angle)
         return jax.vmap(horizontal_shear_2d, in_axes=(0, None))(image, angle)
@@ -343,7 +349,7 @@ class RandomHorizontalShear2D(sk.TreeClass):
             raise ValueError(f"`{range=}` must be a tuple of 2 floats")
         self.range = range
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         angle = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
@@ -375,7 +381,7 @@ class VerticalShear2D(sk.TreeClass):
     def __init__(self, angle: float):
         self.angle = angle
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: jax.Array) -> jax.Array:
         angle = jax.lax.stop_gradient(self.angle)
         return jax.vmap(vertical_shear_2d, in_axes=(0, None))(image, angle)
@@ -428,7 +434,7 @@ class RandomVerticalShear2D(sk.TreeClass):
             raise ValueError(f"`{range=}` must be a tuple of 2 floats")
         self.range = range
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         angle = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
@@ -466,7 +472,7 @@ class RandomPerspective2D(sk.TreeClass):
     def __init__(self, scale: float = 1.0):
         self.scale = scale
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         scale = jax.lax.stop_gradient(self.scale)
         args = (key, image, scale)
@@ -498,7 +504,7 @@ class HorizontalTranslate2D(sk.TreeClass):
 
     shift: int = sk.field(on_setattr=[IsInstance(int)])
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(horizontal_translate_2d, in_axes=(0, None))(image, self.shift)
 
@@ -528,7 +534,7 @@ class VerticalTranslate2D(sk.TreeClass):
 
     shift: int = sk.field(on_setattr=[IsInstance(int)])
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(vertical_translate_2d, in_axes=(0, None))(image, self.shift)
 
@@ -566,7 +572,7 @@ class RandomHorizontalTranslate2D(sk.TreeClass):
           [24 25  0  0  0]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         return jax.vmap(random_horizontal_translate_2d, in_axes=(None, 0))(key, image)
 
@@ -605,7 +611,7 @@ class RandomVerticalTranslate2D(sk.TreeClass):
           [ 0  0  0  0  0]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         return jax.vmap(random_vertical_translate_2d, in_axes=(None, 0))(key, image)
 
@@ -635,7 +641,7 @@ class HorizontalFlip2D(sk.TreeClass):
         - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(lambda x: jnp.flip(x, axis=1))(image)
 
@@ -670,7 +676,7 @@ class RandomHorizontalFlip2D(sk.TreeClass):
 
     rate: float = sk.field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         rate = jax.lax.stop_gradient(self.rate)
         prop = jax.random.bernoulli(key, rate)
@@ -702,7 +708,7 @@ class VerticalFlip2D(sk.TreeClass):
         - https://github.com/deepmind/dm_pix/blob/master/dm_pix/_src/augment.py
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(lambda x: jnp.flip(x, axis=0))(image)
 
@@ -737,7 +743,7 @@ class RandomVerticalFlip2D(sk.TreeClass):
 
     rate: float = sk.field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         rate = jax.lax.stop_gradient(self.rate)
         prop = jax.random.bernoulli(key, rate)
@@ -760,7 +766,7 @@ class WaveTransform2D(sk.TreeClass):
         self.length = length
         self.amplitude = amplitude
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
         length, amplitude = jax.lax.stop_gradient((self.length, self.amplitude))
@@ -791,7 +797,7 @@ class RandomWaveTransform2D(sk.TreeClass):
         self.length_range = length_range
         self.amplitude_range = amplitude_range
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         in_axes = (None, 0, None, None)
         L, A = jax.lax.stop_gradient((self.length_range, self.amplitude_range))

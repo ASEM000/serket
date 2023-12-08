@@ -30,7 +30,7 @@ from serket._src.utils import (
     canonicalize,
     kernel_map,
     positive_int_cb,
-    validate_spatial_nd,
+    validate_spatial_ndim,
 )
 
 
@@ -167,8 +167,8 @@ class DropoutND(sk.TreeClass):
         on_getattr=[jax.lax.stop_gradient_p.bind],
     )
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    def __call__(self, input: jax.Array, *, key):
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
         """Drop some elements of the input array.
 
         Args:
@@ -302,7 +302,7 @@ class RandomCutoutND(sk.TreeClass):
         self.cutout_count = positive_int_cb(cutout_count)
         self.fill_value = fill_value
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
         """Drop some elements of the input array.
 
@@ -311,11 +311,9 @@ class RandomCutoutND(sk.TreeClass):
             key: random number generator key
         """
         fill_value = jax.lax.stop_gradient(self.fill_value)
-
-        def cutout(x):
-            return random_cutout_nd(key, x, self.shape, self.cutout_count, fill_value)
-
-        return jax.vmap(cutout)(input)
+        in_axes = (None, 0, None, None, None)
+        args = (key, input, self.shape, self.cutout_count, fill_value)
+        return jax.vmap(random_cutout_nd, in_axes=in_axes)(*args)
 
     @property
     @abc.abstractmethod

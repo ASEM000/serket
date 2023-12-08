@@ -42,8 +42,8 @@ from serket._src.utils import (
     maybe_lazy_call,
     maybe_lazy_init,
     positive_int_cb,
-    validate_axis_shape,
-    validate_spatial_nd,
+    validate_in_features_shape,
+    validate_spatial_ndim,
 )
 
 Weight = Annotated[jax.Array, "OI..."]
@@ -589,8 +589,8 @@ class ConvND(sk.TreeClass):
         self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
@@ -1242,8 +1242,8 @@ class ConvNDTranspose(sk.TreeClass):
         self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
@@ -1909,8 +1909,8 @@ class DepthwiseConvND(sk.TreeClass):
         self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 
@@ -2481,8 +2481,8 @@ class SeparableConvND(sk.TreeClass):
         self.pointwise_bias = resolve_init(self.pointwise_bias_init)(*args)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(
         self,
         input: jax.Array,
@@ -3093,8 +3093,8 @@ class SpectralConvND(sk.TreeClass):
         self.weight_i = scale * jr.normal(k2, weight_shape).astype(dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         return type(self).conv_op(
             input=input,
@@ -3380,8 +3380,8 @@ class ConvNDLocal(sk.TreeClass):
         self.bias = resolve_init(self.bias_init)(key, bias_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
-    @ft.partial(validate_axis_shape, attribute_name="in_features", axis=0)
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    @ft.partial(validate_in_features_shape, axis=0)
     def __call__(self, input: jax.Array, mask: Weight | None = None) -> jax.Array:
         """Apply the layer.
 

@@ -30,7 +30,7 @@ from serket._src.utils import (
     canonicalize,
     delayed_canonicalize_padding,
     kernel_map,
-    validate_spatial_nd,
+    validate_spatial_ndim,
 )
 
 
@@ -152,7 +152,7 @@ class MaxPoolND(sk.TreeClass):
         self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=input.shape,
@@ -240,7 +240,7 @@ class AvgPoolND(sk.TreeClass):
         self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=input.shape,
@@ -312,7 +312,7 @@ class LPPoolND(sk.TreeClass):
         self.strides = canonicalize(strides, self.spatial_ndim, name="strides")
         self.padding = padding
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         padding = delayed_canonicalize_padding(
             in_dim=input.shape,
@@ -374,7 +374,7 @@ class GlobalAvgPoolND(sk.TreeClass):
     def __init__(self, keepdims: bool = True):
         self.keepdims = keepdims
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
         return jnp.mean(input, axis=axes, keepdims=self.keepdims)
@@ -419,7 +419,7 @@ class GlobalMaxPoolND(sk.TreeClass):
     def __init__(self, keepdims: bool = True):
         self.keepdims = keepdims
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
         return jnp.max(input, axis=axes, keepdims=self.keepdims)
@@ -468,7 +468,7 @@ class AdaptiveAvgPoolND(sk.TreeClass):
             name="output_size",
         )
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         return adaptive_avg_pool_nd(input, self.output_size)
 
@@ -516,7 +516,7 @@ class AdaptiveMaxPoolND(sk.TreeClass):
             name="output_size",
         )
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array) -> jax.Array:
         return adaptive_max_pool_nd(input, self.output_size)
 
