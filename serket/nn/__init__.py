@@ -101,9 +101,15 @@ from serket._src.nn.dropout import (
 from serket._src.nn.linear import MLP, Embedding, Identity, Linear
 from serket._src.nn.normalization import (
     BatchNorm,
+    EvalBatchNorm,
     GroupNorm,
     InstanceNorm,
     LayerNorm,
+    batch_norm,
+    eval_batch_norm,
+    group_norm,
+    instance_norm,
+    layer_norm,
     weight_norm,
 )
 from serket._src.nn.pooling import (
@@ -272,9 +278,15 @@ __all__ = [
     "Linear",
     # norms
     "BatchNorm",
+    "EvalBatchNorm",
     "GroupNorm",
     "InstanceNorm",
     "LayerNorm",
+    "batch_norm",
+    "eval_batch_norm",
+    "group_norm",
+    "instance_norm",
+    "layer_norm",
     "weight_norm",
     # pooling
     "AdaptiveAvgPool1D",

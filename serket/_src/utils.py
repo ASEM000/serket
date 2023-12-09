@@ -307,8 +307,6 @@ def validate_in_features_shape(func: Callable[P, T], axis: int) -> Callable[P, T
     return wrapper
 
 
-
-
 @ft.lru_cache(maxsize=128)
 def get_params(func: MethodType) -> tuple[inspect.Parameter, ...]:
     """Get the arguments of func."""
@@ -457,8 +455,8 @@ Example:
     
     Instead use the following pattern:
 
-    >>> layer_output, material_layer = layer.at["{func_name}"](input)
-    >>> material_layer(input)
+    >>> layer_output, material = layer.at["{func_name}"](input)
+    >>> material(input)
     ...
 """
 
@@ -643,3 +641,13 @@ def kernel_map(
         return result.reshape(*output_shape, *result.shape[1:])
 
     return single_call_wrapper
+
+
+def frozen_field(**kwargs):
+    """Freeze a field after setting it and unfreeze it before getting it."""
+    # this is useful for setting a field that is not a jax-type
+    # to allow the class to be passed across jax-boundaries]
+    return sk.field(
+        on_getattr=[*kwargs.pop("on_getattr", []), sk.unfreeze],
+        on_setattr=[*kwargs.pop("on_setattr", []), sk.freeze],
+    )

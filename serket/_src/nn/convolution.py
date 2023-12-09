@@ -711,12 +711,12 @@ class Conv1D(ConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     Reference:
@@ -806,12 +806,12 @@ class Conv2D(ConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     Reference:
@@ -901,12 +901,12 @@ class Conv3D(ConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     Reference:
@@ -996,12 +996,12 @@ class FFTConv1D(ConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     References:
@@ -1091,12 +1091,12 @@ class FFTConv2D(ConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     References:
@@ -1186,12 +1186,12 @@ class FFTConv3D(ConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     References:
@@ -1369,12 +1369,12 @@ class Conv1DTranspose(ConvNDTranspose):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     Reference:
@@ -1467,12 +1467,12 @@ class Conv2DTranspose(ConvNDTranspose):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     Reference:
@@ -1566,12 +1566,12 @@ class Conv3DTranspose(ConvNDTranspose):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     Reference:
@@ -1665,12 +1665,12 @@ class FFTConv1DTranspose(ConvNDTranspose):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     References:
@@ -1764,12 +1764,12 @@ class FFTConv2DTranspose(ConvNDTranspose):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     References:
@@ -1863,12 +1863,12 @@ class FFTConv3DTranspose(ConvNDTranspose):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     References:
@@ -2015,12 +2015,12 @@ class DepthwiseConv1D(DepthwiseConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 5
 
     Reference:
@@ -2097,12 +2097,12 @@ class DepthwiseConv2D(DepthwiseConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 5
 
     Reference:
@@ -2179,12 +2179,12 @@ class DepthwiseConv3D(DepthwiseConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 5
 
     Reference:
@@ -2261,12 +2261,12 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 5
 
     References:
@@ -2343,12 +2343,12 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 5
 
     References:
@@ -2425,12 +2425,12 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 5
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2614,9 +2614,9 @@ class SeparableConv1D(SeparableConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
+        >>> lazy = CNN()
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2703,9 +2703,9 @@ class SeparableConv2D(SeparableConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
+        >>> lazy = CNN()
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2792,9 +2792,9 @@ class SeparableConv3D(SeparableConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
+        >>> lazy = CNN()
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2881,9 +2881,9 @@ class SeparableFFTConv1D(SeparableConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
+        >>> lazy = CNN()
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2970,9 +2970,9 @@ class SeparableFFTConv2D(SeparableConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
+        >>> lazy = CNN()
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -3059,9 +3059,9 @@ class SeparableFFTConv3D(SeparableConvND):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
+        >>> lazy = CNN()
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -3489,12 +3489,12 @@ class Conv1DLocal(ConvNDLocal):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     Reference:
@@ -3579,12 +3579,12 @@ class Conv2DLocal(ConvNDLocal):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     Reference:
@@ -3669,12 +3669,12 @@ class Conv3DLocal(ConvNDLocal):
         ...    def __call__(self, x: jax.Array) -> jax.Array:
         ...        return self.l2(jax.nn.relu(self.l1(x)))
         >>> # lazy initialization
-        >>> lazy_cnn = CNN()
-        >>> print(lazy_cnn.l1.in_features, lazy_cnn.l2.in_features)
+        >>> lazy = CNN()
+        >>> print(lazy.l1.in_features, lazy.l2.in_features)
         None None
         >>> # materialize the layer
-        >>> _, material_cnn = lazy_cnn.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material_cnn.l1.in_features, material_cnn.l2.in_features)
+        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> print(material.l1.in_features, material.l2.in_features)
         5 12
 
     Reference:
