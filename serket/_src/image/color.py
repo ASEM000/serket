@@ -22,7 +22,7 @@ import jax
 import jax.numpy as jnp
 
 import serket as sk
-from serket._src.utils import CHWArray, validate_spatial_nd
+from serket._src.utils import CHWArray, validate_spatial_ndim
 
 
 def rgb_to_grayscale(image: CHWArray, weights: jax.Array | None = None) -> CHWArray:
@@ -71,7 +71,7 @@ class RGBToGrayscale2D(sk.TreeClass):
     def __init__(self, weights: jax.Array | None = None):
         self.weights = weights
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return rgb_to_grayscale(image, self.weights)
 
@@ -141,7 +141,7 @@ class GrayscaleToRGB2D(sk.TreeClass):
         (3, 5, 5)
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return grayscale_to_rgb(image)
 
@@ -166,7 +166,7 @@ class RGBToHSV2D(sk.TreeClass):
         - https://kornia.readthedocs.io/en/latest/_modules/kornia/color/hsv.html
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return rgb_to_hsv_3d(image)
 
@@ -189,7 +189,7 @@ class HSVToRGB2D(sk.TreeClass):
         - https://kornia.readthedocs.io/en/latest/_modules/kornia/color/hsv.html
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return hsv_to_rgb_3d(image)
 

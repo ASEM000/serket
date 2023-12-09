@@ -55,18 +55,17 @@ def general_linear(
     in_axis: tuple[int, ...],
     out_axis: int,
 ) -> jax.Array:
+    in_axis_shape = tuple(input.shape[i] for i in in_axis)
+    features_shape = weight.shape[1:]
+    assert in_axis_shape == features_shape, f"{in_axis_shape=} != {features_shape=}"
+
     in_axis = sorted([axis if axis >= 0 else axis + input.ndim for axis in in_axis])
     lhs = "".join(str(axis) for axis in range(input.ndim))  # 0, 1, 2, 3
     rhs = "F" + "".join(str(axis) for axis in in_axis)  # F, 1, 2, 3
     out = "".join(str(axis) for axis in range(input.ndim) if axis not in in_axis)
     out_axis = out_axis if out_axis >= 0 else out_axis + len(out) + 1
     out = out[:out_axis] + "F" + out[out_axis:]
-
-    try:
-        einsum = f"{lhs},{rhs}->{out}"
-        result = jnp.einsum(einsum, input, weight)
-    except ValueError as error:
-        raise ValueError(f"{einsum=}\n{input.shape=}\n{weight.shape=}\n{error=}")
+    result = jnp.einsum(f"{lhs},{rhs}->{out}", input, weight)
 
     if bias is None:
         return result
@@ -183,6 +182,7 @@ class Linear(sk.TreeClass):
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, input: jax.Array) -> jax.Array:
+        """Apply a linear transformation to the input."""
         return general_linear(
             input=input,
             weight=self.weight,
@@ -248,6 +248,7 @@ def scan_linear(
     act: ActivationFunctionType,
 ) -> jax.Array:
     # reduce the ``jaxpr`` size by using ``scan``
+    # for the intermediate layers in MLP. can lower the compilation time
     if bias is None:
 
         def scan_func(input: jax.Array, weight: Batched[jax.Array]):

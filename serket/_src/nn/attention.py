@@ -20,19 +20,21 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 from typing_extensions import Annotated
-
+from typing import Callable
 import serket as sk
-from serket._src.nn.initialization import InitType
+from serket._src.nn.initialization import DType, InitType
 from serket._src.utils import maybe_lazy_call, maybe_lazy_init
 
 """Defines attention layers."""
 
 
 def split_heads(input: jax.Array, num_heads: int) -> jax.Array:
+    """Splits the last dimension of the input into multiple heads."""
     return input.reshape(*input.shape[:-1], num_heads, -1)
 
 
 def merge_heads(input: jax.Array) -> jax.Array:
+    """Merges the last two dimensions of the input."""
     return input.reshape(*input.shape[:-2], -1)
 
 
@@ -45,34 +47,34 @@ def is_lazy_init(_, num_heads, q_features, *__, **___) -> bool:
 
 
 attention_updates = dict(
-    q_features=lambda _, q_array, *__, **___: q_array.shape[-1],
-    k_features=lambda _, __, k_array, *___, **____: k_array.shape[-1],
-    v_features=lambda _, __, ___, v_array, *____, **_____: v_array.shape[-1],
+    q_features=lambda _1, q_input, *_2, **_3: q_input.shape[-1],
+    k_features=lambda _1, _2, k_input, *_3, **_4: k_input.shape[-1],
+    v_features=lambda _1, _2, _3, v_input, *_4, **__5: v_input.shape[-1],
 )
 
 
-def calculate_attention(
+def dot_product_attention(
     q_heads: jax.Array,
     k_heads: jax.Array,
     v_heads: jax.Array,
-    mask: jax.Array,
     num_heads: int,
-    drop_layer: sk.nn.Dropout,
-    key: jax.Array,
+    mask: jax.Array | None,
+    drop_func: Callable[[jax.Array], jax.Array],
 ) -> jax.Array:
     """Applies multi-head attention to the given inputs.
 
     Args:
-        q_array: Query input. [..., q_length, q_features]
-        k_array: Key input. [..., k_length, k_features]
-        mask: Mask input. [..., num_heads, q_length, kv_length]
+        q_input: Query input. [..., q_length, q_features]
+        k_input: Key input. [..., k_length, k_features]
+        v_input: Value input. [..., v_length, v_features]
+        mask: Mask input. [..., num_heads, q_length, kv_length]. Use ``None``
+            for no masking.
         num_heads: Number of attention heads.
-        drop_layer: Dropout layer.
-        key: Key for the random number generator.
+        drop_func: Dropout function. Takes a single input and returns a single output.
+            Use ``lambda input: input`` for no dropout.
 
     Reference:
-        - https://github.com/keras-team/keras/blob/v2.13.1/keras/layers/attention/multi_head_attention.py
-        - https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/attention.py
+        - https://keras.io/api/layers/attention_layers/multi_head_attention/
         - https://flax.readthedocs.io/en/latest/_modules/flax/linen/attention.html
     """
     k_depth = k_heads.shape[-1]
@@ -86,13 +88,12 @@ def calculate_attention(
     logits = jnp.einsum("...qhd,...khd->...hqk", q_heads, k_heads)
     logits /= jnp.sqrt(k_depth // num_heads)
 
-    # handle mask
     min_num = jnp.finfo(logits.dtype).min
-    logits = jnp.where(mask, logits, min_num) if mask is not None else logits
+    logits = logits if mask is None else jnp.where(mask, logits, min_num)
 
     attention_weight = jax.nn.softmax(logits)
     attention = jnp.einsum("...hqk,...khd->...qhd", attention_weight, v_heads)
-    return merge_heads(drop_layer(attention, key=key))
+    return merge_heads(drop_func(attention))
 
 
 class MultiHeadAttention(sk.TreeClass):
@@ -115,15 +116,19 @@ class MultiHeadAttention(sk.TreeClass):
         q_weight_init: Initializer for the query weight. Defaults to ``glorot_uniform``.
         q_bias_init: Initializer for the query bias. Defaults to zeros. use
             ``None`` to disable bias.
+        q_dtype: Data type for the query. Defaults to ``jnp.float32``.
         k_weight_init: Initializer for the key weight. Defaults to ``glorot_uniform``.
         k_bias_init: Initializer for the key bias. Defaults to zeros. use
             ``None`` to disable bias.
+        k_dtype: Data type for the key. Defaults to ``jnp.float32``.
         v_weight_init: Initializer for the value weight. Defaults to ``glorot_uniform``.
         v_bias_init: Initializer for the value bias. Defaults to zeros. use
             ``None`` to disable bias.
+        v_dtype: Data type for the value. Defaults to ``jnp.float32``.
         out_weight_init: Initializer for the output weight. Defaults to ``glorot_uniform``.
         out_bias_init: Initializer for the output bias. Defaults to zeros. use
             ``None`` to disable bias.
+        out_dtype: Data type for the output. Defaults to ``jnp.float32``.
         drop_rate: Dropout rate. defaults to 0.0.
         drop_broadcast: Whether to broadcast the dropout mask across the batch
             dimension and the heads dimension. Defaults to False.
@@ -139,18 +144,18 @@ class MultiHeadAttention(sk.TreeClass):
         >>> v_features = 6
         >>> q_length = 4
         >>> kv_length = 2
-        >>> mask = jr.uniform(jr.PRNGKey(2), (batch, num_heads, q_length, kv_length))
+        >>> mask = jr.uniform(jr.PRNGKey(0), (batch, num_heads, q_length, kv_length))
         >>> mask = (mask > 0.5).astype(jnp.float32)
-        >>> q = jr.uniform(jr.PRNGKey(0), (batch, q_length, q_features))
-        >>> k = jr.uniform(jr.PRNGKey(1), (batch, kv_length, k_features))
-        >>> v = jr.uniform(jr.PRNGKey(2), (batch, kv_length, v_features))
+        >>> q = jr.uniform(jr.PRNGKey(1), (batch, q_length, q_features))
+        >>> k = jr.uniform(jr.PRNGKey(2), (batch, kv_length, k_features))
+        >>> v = jr.uniform(jr.PRNGKey(3), (batch, kv_length, v_features))
         >>> layer = sk.nn.MultiHeadAttention(
         ...    num_heads,
         ...    q_features,
         ...    k_features,
         ...    v_features,
         ...    drop_rate=0.0,
-        ...    key=jr.PRNGKey(0),
+        ...    key=jr.PRNGKey(4),
         ... )
         >>> print(layer(q, k, v, mask=mask, key=jr.PRNGKey(0)).shape)
         (3, 4, 4)
@@ -182,14 +187,14 @@ class MultiHeadAttention(sk.TreeClass):
         >>> q = jr.uniform(jr.PRNGKey(0), (3, 2, 6))
         >>> k = jr.uniform(jr.PRNGKey(1), (3, 2, 6))
         >>> v = jr.uniform(jr.PRNGKey(2), (3, 2, 6))
-        >>> lazy_layer = sk.nn.MultiHeadAttention(2, None, key=jr.PRNGKey(0))
-        >>> _, material_layer = lazy_layer.at["__call__"](q, k, v, key=jr.PRNGKey(0))
-        >>> material_layer(q, k, v, key=jr.PRNGKey(0)).shape
+        >>> key = jr.PRNGKey(0)
+        >>> lazy_layer = sk.nn.MultiHeadAttention(2, None, key=key)
+        >>> _, material_layer = lazy_layer.at["__call__"](q, k, v, key=key)
+        >>> material_layer(q, k, v, key=key).shape
         (3, 2, 6)
 
     Reference:
-        - https://github.com/keras-team/keras/blob/v2.13.1/keras/layers/attention/multi_head_attention.py
-        - https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/attention.py
+        - https://keras.io/api/layers/attention_layers/multi_head_attention/
         - https://flax.readthedocs.io/en/latest/_modules/flax/linen/attention.html
         - https://arxiv.org/abs/1706.03762
     """
@@ -206,12 +211,16 @@ class MultiHeadAttention(sk.TreeClass):
         key: jax.Array,
         q_weight_init: InitType = "glorot_uniform",
         q_bias_init: InitType = "zeros",
+        q_dtype: DType = jnp.float32,
         k_weight_init: InitType = "glorot_uniform",
         k_bias_init: InitType = "zeros",
+        k_dtype: DType = jnp.float32,
         v_weight_init: InitType = "glorot_uniform",
         v_bias_init: InitType = "zeros",
+        v_dtype: DType = jnp.float32,
         out_weight_init: InitType = "glorot_uniform",
         out_bias_init: InitType = "zeros",
+        out_dtype: DType = jnp.float32,
         drop_rate: float = 0.0,
         drop_broadcast: bool = False,
     ):
@@ -235,14 +244,16 @@ class MultiHeadAttention(sk.TreeClass):
         qkey, kkey, vkey, okey = jr.split(key, 4)
 
         self.num_heads = num_heads
-        drop_axes = (-1, -2) if drop_broadcast else None
-        self.dropout = sk.nn.Dropout(drop_rate, drop_axes)
+        # while dropout == 0.0 is a no-op, still instantiate a dropout layer
+        # because .at[drop_rate] can be used to change the dropout rate later on.
+        self.dropout = sk.nn.Dropout(drop_rate, (-1, -2) if drop_broadcast else None)
 
         self.q_projection = sk.nn.Linear(
             in_features=q_features,
             out_features=head_features * num_heads,
             weight_init=q_weight_init,
             bias_init=q_bias_init,
+            dtype=q_dtype,
             key=qkey,
         )
 
@@ -251,6 +262,7 @@ class MultiHeadAttention(sk.TreeClass):
             out_features=head_features * num_heads,
             weight_init=k_weight_init,
             bias_init=k_bias_init,
+            dtype=k_dtype,
             key=kkey,
         )
 
@@ -259,6 +271,7 @@ class MultiHeadAttention(sk.TreeClass):
             out_features=head_features * num_heads,
             weight_init=v_weight_init,
             bias_init=v_bias_init,
+            dtype=v_dtype,
             key=vkey,
         )
 
@@ -267,44 +280,54 @@ class MultiHeadAttention(sk.TreeClass):
             out_features=out_features,
             weight_init=out_weight_init,
             bias_init=out_bias_init,
+            dtype=out_dtype,
             key=okey,
         )
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=attention_updates)
     def __call__(
         self,
-        q_array: Annotated[jax.Array, "..., q_length, q_features"],
-        k_array: Annotated[jax.Array, "..., kv_length, k_features"],
-        v_array: Annotated[jax.Array, "..., kv_length, v_features"],
+        q_input: Annotated[jax.Array, "..., q_length, q_features"],
+        k_input: Annotated[jax.Array, "..., kv_length, k_features"],
+        v_input: Annotated[jax.Array, "..., kv_length, v_features"],
         mask: Annotated[jax.Array, "..., num_heads, q_length, kv_length"] | None = None,
         *,
-        key: jax.Array,
+        key: jax.Array | None = None,
     ) -> Annotated[jax.Array, "..., q_length, out_features"]:
         """Applies multi-head attention to the given inputs.
 
         Args:
-            q_array: Query input. [..., q_length, q_features]
-            k_array: Key input. [..., kv_length, k_features]
-            v_array: Value input. [..., kv_length, v_features]
-            mask: Mask input. [..., num_heads, q_length, kv_length]
+            q_input: Query input. [..., q_length, q_features]
+            k_input: Key input. [..., kv_length, k_features]
+            v_input: Value input. [..., kv_length, v_features]
+            mask: Mask input. [..., num_heads, q_length, kv_length] Defaults to ``None``.
+                for no masking.
             key: Key for the random number generator used for dropout.
+                Defaults to ``None`` for no dropout.
         """
 
         # [..., q_length, q_features] -> [..., q_length, head_features*num_heads]
-        q_heads = self.q_projection(q_array)
+        q_heads = self.q_projection(q_input)
         # [..., k_length, k_features] -> [..., k_length, head_features*num_heads]
-        k_heads = self.k_projection(k_array)
+        k_heads = self.k_projection(k_input)
         # [..., v_length, v_features] -> [..., v_length, head_features*num_heads]
-        v_heads = self.v_projection(v_array)
+        v_heads = self.v_projection(v_input)
 
-        attention = calculate_attention(
+        attention = type(self).attention_op(
             q_heads=q_heads,
             k_heads=k_heads,
             v_heads=v_heads,
-            mask=mask,
             num_heads=self.num_heads,
-            drop_layer=self.dropout,
-            key=key,
+            mask=mask,
+            # note that if `tree_eval` is used, self.dropout is converted to an
+            # identity function, so the `key` argument is ignored.
+            # one pro of this approach is that `Identity` will be displayed in
+            # the repr of the layer to make it clear that dropout is disabled.
+            # another pro is that no need to thread the ``training`` flag through
+            # the layer.
+            drop_func=lambda input: self.dropout(input, key=key),
         )
 
         return self.out_projection(attention)
+
+    attention_op = dot_product_attention

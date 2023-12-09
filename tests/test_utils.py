@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools as ft
-from typing import Any
 
 import jax
 import jax.random as jr
@@ -31,8 +29,6 @@ from serket._src.utils import (
     positive_int_cb,
     resolve_string_padding,
     resolve_tuple_padding,
-    validate_axis_shape,
-    validate_spatial_nd,
 )
 
 
@@ -136,36 +132,6 @@ def test_scalar_like_error():
 def test_positive_int_cb_error():
     with pytest.raises(ValueError):
         positive_int_cb(1.0)
-
-
-def test_validate_spatial_nd_error():
-    with pytest.raises(ValueError):
-
-        class T:
-            @ft.partial(validate_spatial_nd, attribute_name="ndim")
-            def __call__(self, x) -> Any:
-                return x
-
-            @property
-            def ndim(self):
-                return 1
-
-        T()(jax.numpy.ones([5]))
-
-
-def test_validate_axis_shape_error():
-    with pytest.raises(ValueError):
-
-        class T:
-            @ft.partial(validate_axis_shape, attribute_name="in_dim")
-            def __call__(self, x) -> Any:
-                return x
-
-            @property
-            def in_dim(self):
-                return 1
-
-        T()(jax.numpy.ones([5, 5]))
 
 
 def test_lazy_call():

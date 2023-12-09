@@ -33,7 +33,7 @@ from serket._src.utils import (
     generate_conv_dim_numbers,
     kernel_map,
     resolve_string_padding,
-    validate_spatial_nd,
+    validate_spatial_ndim,
 )
 
 # For filters that have fft implementation, the pattern is to inherit from
@@ -793,7 +793,7 @@ class AvgBlur2D(BaseAvgBlur2D):
           [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None)
         args = (image, self.kernel_size)
@@ -821,7 +821,7 @@ class FFTAvgBlur2D(BaseAvgBlur2D):
           [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None)
         args = (image, self.kernel_size)
@@ -863,7 +863,7 @@ class GaussianBlur2D(BaseGaussianBlur2D):
           [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
         sigma = jax.lax.stop_gradient(self.sigma)
@@ -893,7 +893,7 @@ class FFTGaussianBlur2D(BaseGaussianBlur2D):
           [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
         sigma = jax.lax.stop_gradient(self.sigma)
@@ -923,7 +923,7 @@ class UnsharpMask2D(BaseGaussianBlur2D):
           [1.4730237 1.2740686 1.2740686 1.2740686 1.4730237]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
         sigma = jax.lax.stop_gradient(self.sigma)
@@ -953,7 +953,7 @@ class FFTUnsharpMask2D(BaseGaussianBlur2D):
           [1.4730237 1.2740686 1.2740686 1.2740686 1.4730237]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
         sigma = jax.lax.stop_gradient(self.sigma)
@@ -989,7 +989,7 @@ class BoxBlur2D(BoxBlur2DBase):
           [0.40000004 0.53333336 0.6666667  0.53333336 0.40000004]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None)
         args = (image, self.kernel_size)
@@ -1017,7 +1017,7 @@ class FFTBoxBlur2D(BoxBlur2DBase):
           [0.40000004 0.53333336 0.6666667  0.53333336 0.40000004]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None)
         args = (image, self.kernel_size)
@@ -1055,7 +1055,7 @@ class Laplacian2D(Laplacian2DBase):
         The laplacian considers all the neighbors of a pixel.
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None)
         args = (image, self.kernel_size)
@@ -1086,7 +1086,7 @@ class FFTLaplacian2D(Laplacian2DBase):
         The laplacian considers all the neighbors of a pixel.
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None)
         args = (image, self.kernel_size)
@@ -1130,7 +1130,7 @@ class MotionBlur2D(MotionBlur2DBase):
           [ 6.472714  10.020969  10.770187   9.100007 ]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None, None)
         angle, direction = jax.lax.stop_gradient((self.angle, self.direction))
@@ -1160,7 +1160,7 @@ class FFTMotionBlur2D(MotionBlur2DBase):
           [ 6.472714  10.020969  10.770187   9.100007 ]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, array: CHWArray) -> CHWArray:
         in_axes = (0, None, None, None)
         angle, direction = jax.lax.stop_gradient((self.angle, self.direction))
@@ -1197,7 +1197,7 @@ class MedianBlur2D(sk.TreeClass):
     def __init__(self, kernel_size: int | tuple[int, int]):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None)
         args = (image, self.kernel_size)
@@ -1231,7 +1231,7 @@ class Sobel2D(Sobel2DBase):
           [78.24321 , 68.26419 , 72.249565, 76.23647 , 89.27486 ]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(sobel_2d)(image)
 
@@ -1254,7 +1254,7 @@ class FFTSobel2D(Sobel2DBase):
           [78.24321 , 68.26419 , 72.249565, 76.23647 , 89.27486 ]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(fft_sobel_2d)(image)
 
@@ -1300,7 +1300,7 @@ class ElasticTransform2D(ElasticTransform2DBase):
           [21.        21.659977  21.43855   21.138866  22.583244 ]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         in_axes = (None, 0, None, None, None)
         args = (image, self.kernel_size, self.sigma, self.alpha)
@@ -1334,7 +1334,7 @@ class FFTElasticTransform2D(ElasticTransform2DBase):
           [21.        21.659977  21.43855   21.138866  22.583244 ]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
         in_axes = (None, 0, None, None, None)
         args = (image, self.kernel_size, self.sigma, self.alpha)
@@ -1375,7 +1375,7 @@ class BilateralBlur2D(sk.TreeClass):
         self.sigma_space = canonicalize(sigma_space, ndim=2, name="sigma_space")
         self.sigma_color = sigma_color
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None, None)
         args = (self.kernel_size, self.sigma_space, self.sigma_color)
@@ -1419,7 +1419,7 @@ class JointBilateralBlur2D(sk.TreeClass):
         self.sigma_space = canonicalize(sigma_space, ndim=2, name="sigma_space")
         self.sigma_color = sigma_color
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, guide: CHWArray) -> CHWArray:
         """Apply joint bilateral blur to a channel-first image.
 
@@ -1466,7 +1466,7 @@ class BlurPool2D(BlurPool2DBase):
           [11.0625 16.     12.9375]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
         args = (image, self.kernel_size, self.strides)
@@ -1493,7 +1493,7 @@ class FFTBlurPool2D(BlurPool2DBase):
           [11.0625 16.     12.9375]]]
     """
 
-    @ft.partial(validate_spatial_nd, attribute_name="spatial_ndim")
+    @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
         args = (image, self.kernel_size, self.strides)
