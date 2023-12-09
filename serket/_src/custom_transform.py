@@ -96,8 +96,8 @@ def tree_state(tree: T, **kwargs) -> T:
 
     types = tuple(set(tree_state.state_dispatcher.registry) - {object})
 
-    def is_leaf(x: Any) -> bool:
-        return isinstance(x, types)
+    def is_leaf(node: Any) -> bool:
+        return isinstance(node, types)
 
     def dispatch_func(leaf):
         try:
@@ -199,8 +199,8 @@ def tree_eval(tree):
 
     types = tuple(set(tree_eval.eval_dispatcher.registry) - {object})
 
-    def is_leaf(x: Any) -> bool:
-        return isinstance(x, types)
+    def is_leaf(node: Any) -> bool:
+        return isinstance(node, types)
 
     return jax.tree_map(tree_eval.eval_dispatcher, tree, is_leaf=is_leaf)
 
