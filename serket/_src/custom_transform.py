@@ -142,7 +142,7 @@ def tree_eval(tree):
     """Modify tree layers to disable any trainning related behavior.
 
     For example, :class:`nn.Dropout` layer is replaced by an :class:`nn.Identity` layer
-    and :class:`nn.BatchNorm` layer is replaced by :class:`nn.EvalNorm` layer when
+    and :class:`nn.BatchNorm` layer is replaced by :class:`.EvalBatchNorm` layer when
     evaluating the tree.
 
     :func:`.tree_eval` objective is to provide a simple and consistent way to
@@ -174,24 +174,24 @@ def tree_eval(tree):
         >>> import serket as sk
         >>> import jax
         >>> class AddOne(sk.TreeClass):
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return x + 1
-        >>> x = jax.numpy.ones([3, 3])
+        ...    def __call__(self, input: jax.Array) -> jax.Array:
+        ...        return input + 1
+        >>> input = jax.numpy.ones([3, 3])
         >>> add_one = AddOne()
-        >>> print(add_one(x))  # add one to each element
+        >>> print(add_one(input))  # add one to each element
         [[2. 2. 2.]
          [2. 2. 2.]
          [2. 2. 2.]]
         <BLANKLINE>
         >>> class AddOneEval(sk.TreeClass):
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return x  # no-op
+        ...    def __call__(self, input: jax.Array) -> jax.Array:
+        ...        return input  # no-op
         <BLANKLINE>
         >>> # register `AddOne` to be replaced by `AddOneEval` in evaluation mode
         >>> @sk.tree_eval.def_eval(AddOne)
         ... def _(_: AddOne) -> AddOneEval:
         ...    return AddOneEval()
-        >>> print(sk.tree_eval(add_one)(x))
+        >>> print(sk.tree_eval(add_one)(input))
         [[1. 1. 1.]
          [1. 1. 1.]
          [1. 1. 1.]]

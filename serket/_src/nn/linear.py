@@ -141,7 +141,7 @@ class Linear(sk.TreeClass):
         >>> key = jr.PRNGKey(0)
         >>> input = jnp.ones((10, 5, 4))
         >>> lazy_linear = sk.nn.Linear(None, 12, in_axis=(0, 2), key=key)
-        >>> _, material_linear = lazy_linear.at['__call__'](input)
+        >>> _, material_linear = lazy_linear.at["__call__"](input)
         >>> material_linear.in_features
         (10, 4)
     """
@@ -309,10 +309,10 @@ class MLP(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> key = jr.PRNGKey(0)
-        >>> lazy_layer = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_features=10, key=key)
+        >>> lazy = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_features=10, key=key)
         >>> input = jnp.ones([1, 10])
-        >>> _, material_layer = lazy_layer.at['__call__'](input)
-        >>> material_layer.in_linear.in_features
+        >>> _, material = lazy.at["__call__"](input)
+        >>> material.in_linear.in_features
         (10,)
 
     Note:

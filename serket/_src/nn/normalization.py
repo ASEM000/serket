@@ -30,70 +30,101 @@ from serket._src.utils import (
     maybe_lazy_call,
     maybe_lazy_init,
     positive_int_cb,
+    tuplify,
     validate_in_features_shape,
 )
 
 
 def layer_norm(
     input: jax.Array,
-    *,
-    gamma: jax.Array | None,
-    beta: jax.Array | None,
-    eps: float,
-    normalized_shape: tuple[int],
+    weight: jax.Array | None,
+    bias: jax.Array | None,
+    normalized_shape: tuple[int, ...],
+    eps: float | None = None,
 ) -> jax.Array:
+    """Layer Normalization
+
+    Normalizes the input by scaling and shifting to have zero mean and unit variance
+    over the last ``len(normalized_shape)`` dimensions.
+
+    Args:
+        input: the input to be normalized.
+        weight: the scale. if None, the scale is not trainable.
+        bias: the shift. if None, the shift is not trainable.
+        normalized_shape: the shape of the input to be normalized. Accepts a tuple
+            of integers to denote the shape of the input to be normalized.
+            The last ``len(normalized_shape)`` dimensions will be normalized.
+        eps: a value added to the denominator for numerical stability. defaults to
+            ``jnp.finfo(input.dtype).eps`` if ``None`` is passed.
+    """
     assert normalized_shape == input.shape[-len(normalized_shape) :]
-
-    dims = tuple(range(len(input.shape) - len(normalized_shape), len(input.shape)))
-
-    μ = jnp.mean(input, axis=dims, keepdims=True)
-    σ_2 = jnp.var(input, axis=dims, keepdims=True)
-    x̂ = (input - μ) * jax.lax.rsqrt((σ_2 + eps))
-
-    if gamma is not None:
-        x̂ = x̂ * gamma
-
-    if beta is not None:
-        x̂ = x̂ + beta
-
-    return x̂
+    axes = tuple(range(len(input.shape) - len(normalized_shape), len(input.shape)))
+    eps = jnp.finfo(input.dtype).eps if eps is None else eps
+    μ = jnp.mean(input, axis=axes, keepdims=True)
+    σ_2 = jnp.var(input, axis=axes, keepdims=True)
+    output = (input - μ) * jax.lax.rsqrt((σ_2 + eps))
+    output = output if weight is None else output * weight
+    output = output if bias is None else output + bias
+    return output
 
 
 def group_norm(
     input: jax.Array,
-    *,
-    gamma: jax.Array | None,
-    beta: jax.Array | None,
+    weight: jax.Array | None,
+    bias: jax.Array | None,
     eps: float,
     groups: int,
 ) -> jax.Array:
+    """Group Normalization
+
+    Args:
+        input: the input to be normalized.
+        weight: the scale. if None, the scale is not trainable.
+        bias: the shift. if None, the shift is not trainable.
+        eps: a value added to the denominator for numerical stability.
+        groups: number of groups to separate the features into.
+    """
     # split channels into groups
-    x = input.reshape(groups, -1)
-    μ = jnp.mean(x, axis=-1, keepdims=True)
-    σ_2 = jnp.var(x, axis=-1, keepdims=True)
-    x̂ = (x - μ) * jax.lax.rsqrt((σ_2 + eps))
-    x̂ = x̂.reshape(*input.shape)
-
-    if gamma is not None:
-        gamma = jnp.expand_dims(gamma, axis=range(1, input.ndim))
-        x̂ *= gamma
-
-    if beta is not None:
-        beta = jnp.expand_dims(beta, axis=range(1, input.ndim))
-        x̂ += beta
-    return x̂
+    shape = input.shape
+    axes = tuple(range(1, input.ndim))
+    input = input.reshape(groups, -1)
+    # calculate mean and variance over each group
+    μ = jnp.mean(input, axis=-1, keepdims=True)
+    σ_2 = jnp.var(input, axis=-1, keepdims=True)
+    output = (input - μ) * jax.lax.rsqrt((σ_2 + eps))
+    output = output.reshape(*shape)
+    output = output if weight is None else output * jnp.expand_dims(weight, axis=axes)
+    output = output if bias is None else output + jnp.expand_dims(bias, axis=axes)
+    return output
 
 
-def is_lazy_call(instance, *_, **__) -> bool:
+def instance_norm(
+    input: jax.Array,
+    weight: jax.Array | None,
+    bias: jax.Array | None,
+    eps: float,
+) -> jax.Array:
+    """Instance Normalization
+
+    Args:
+        input: the input to be normalized.
+        weight: the scale. if None, the scale is not trainable.
+        bias: the shift. if None, the shift is not trainable.
+        eps: a value added to the denominator for numerical stability.
+    """
+    return group_norm(input, weight, bias, eps, groups=input.shape[0])
+
+
+def is_lazy_call(instance, *_1, **_2) -> bool:
     return instance.normalized_shape is None
 
 
-def is_lazy_init(_, normalized_shape, *__, **___) -> bool:
+def is_lazy_init(_1, normalized_shape, *_2, **_3) -> bool:
     return normalized_shape is None
 
 
-def infer_normalized_shape(instance, x, *_, **__) -> int:
-    return x.shape
+def infer_normalized_shape(_1, input, *_2, **_3) -> int:
+    return input.shape
 
 
 updates = dict(normalized_shape=infer_normalized_shape)
@@ -108,13 +139,27 @@ class LayerNorm(sk.TreeClass):
 
     Args:
         normalized_shape: the shape of the input to be normalized.
-        key: a random key for initialization.
-        eps: a value added to the denominator for numerical stability.
+        key: a random key for initialization of the scale and shift.
         weight_init: a function to initialize the scale. Defaults to ones.
-            if None, the scale is not trainable.
+            if ``None``, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
-            if None, the shift is not trainable.
+            if ``None``, the shift is not trainable.
         dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        eps: a value added to the denominator for numerical stability.
+
+    Example:
+        >>> import serket as sk
+        >>> import jax.random as jr
+        >>> import jax.numpy as jnp
+        >>> import numpy.testing as npt
+        >>> C, H, W = 4, 5, 6
+        >>> k1, k2 = jr.split(jr.PRNGKey(0), 2)
+        >>> input = jr.uniform(k1, shape=(C, H, W))
+        >>> layer = sk.nn.LayerNorm((H, W), key=k2)
+        >>> output = layer(input)
+        >>> mean = jnp.mean(input, axis=(1, 2), keepdims=True)
+        >>> var = jnp.var(input, axis=(1, 2), keepdims=True)
+        >>> npt.assert_allclose((input - mean) / jnp.sqrt(var + 1e-5), output, atol=1e-5)
 
     Note:
         :class:`.LayerNorm` supports lazy initialization, meaning that the
@@ -128,9 +173,9 @@ class LayerNorm(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> input = jnp.ones((5,10))
-        >>> lazy_layer = sk.nn.LayerNorm(None)
-        >>> _, material_layer = lazy_layer.at['__call__'](input)
-        >>> material_layer(input).shape
+        >>> lazy = sk.nn.LayerNorm(None)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> material(input).shape
         (5, 10)
 
     Reference:
@@ -146,31 +191,26 @@ class LayerNorm(sk.TreeClass):
         normalized_shape: int | tuple[int, ...] | None,
         *,
         key: jax.Array,
-        eps: float = 1e-5,
         weight_init: InitType = "ones",
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
+        eps: float = 1e-5,
     ):
-        self.normalized_shape = (
-            normalized_shape
-            if isinstance(normalized_shape, tuple)
-            else (normalized_shape,)
-        )
+        self.normalized_shape = tuplify(normalized_shape)
         self.eps = eps
         self.weight_init = weight_init
         self.bias_init = bias_init
-
-        self.gamma = resolve_init(weight_init)(key, self.normalized_shape, dtype)
-        self.beta = resolve_init(bias_init)(key, self.normalized_shape, dtype)
+        self.weight = resolve_init(weight_init)(key, self.normalized_shape, dtype)
+        self.bias = resolve_init(bias_init)(key, self.normalized_shape, dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, input: jax.Array) -> jax.Array:
         return layer_norm(
             input=input,
-            gamma=self.gamma,
-            beta=self.beta,
-            eps=self.eps,
+            weight=self.weight,
+            bias=self.bias,
             normalized_shape=self.normalized_shape,
+            eps=self.eps,
         )
 
 
@@ -228,10 +268,10 @@ class GroupNorm(sk.TreeClass):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> lazy_layer = sk.nn.GroupNorm(None, groups=5)
+        >>> lazy = sk.nn.GroupNorm(None, groups=5)
         >>> input = jnp.ones((5,10))
-        >>> _, material_layer = lazy_layer.at['__call__'](input)
-        >>> material_layer(input).shape
+        >>> _, material = lazy.at["__call__"](input)
+        >>> material(input).shape
         (5, 10)
 
     Reference:
@@ -269,14 +309,14 @@ class GroupNorm(sk.TreeClass):
     def __call__(self, input: jax.Array) -> jax.Array:
         return group_norm(
             input=input,
-            gamma=self.weight,
-            beta=self.bias,
+            weight=self.weight,
+            bias=self.bias,
             eps=self.eps,
             groups=self.groups,
         )
 
 
-class InstanceNorm(GroupNorm):
+class InstanceNorm(sk.TreeClass):
     """Instance Normalization
 
     .. image:: ../_static/norm_figure.png
@@ -316,10 +356,10 @@ class InstanceNorm(GroupNorm):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> key = jr.PRNGKey(0)
-        >>> lazy_layer = sk.nn.InstanceNorm(None, key=key)
+        >>> lazy = sk.nn.InstanceNorm(None, key=key)
         >>> input = jnp.ones((5,10))
-        >>> _, material_layer = lazy_layer.at['__call__'](input)
-        >>> material_layer(input).shape
+        >>> _, material = lazy.at["__call__"](input)
+        >>> material(input).shape
         (5, 10)
 
     Reference:
@@ -327,10 +367,12 @@ class InstanceNorm(GroupNorm):
         - https://openaccess.thecvf.com/content_ECCV_2018/html/Yuxin_Wu_Group_Normalization_ECCV_2018_paper.html
     """
 
+    eps: float = sk.field(on_setattr=[Range(0), ScalarLike()])
+
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
-        in_features: int,
+        in_features,
         *,
         key: jax.Array,
         eps: float = 1e-5,
@@ -338,33 +380,72 @@ class InstanceNorm(GroupNorm):
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        super().__init__(
-            in_features=in_features,
-            key=key,
-            groups=in_features,
-            eps=eps,
-            weight_init=weight_init,
-            bias_init=bias_init,
-            dtype=dtype,
+        self.in_features = positive_int_cb(in_features)
+        self.eps = eps
+        self.weight = resolve_init(weight_init)(key, (in_features,), dtype)
+        self.bias = resolve_init(bias_init)(key, (in_features,), dtype)
+
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
+    @ft.partial(validate_in_features_shape, axis=0)
+    def __call__(self, input: jax.Array) -> jax.Array:
+        return instance_norm(
+            input=input,
+            weight=self.weight,
+            bias=self.bias,
+            eps=self.eps,
         )
+
+
+# batch norm is possibly the most complicated layer in serket
+# this is because it combines a state and a custom vmap behavior
+# for state, per serket design, two layers are needed: one for always training
+# and one for evaluation. The other aspect is the custom vmap behavior which
+# is needed to have access to the batch dimension for the running mean and var
+# computation.
 
 
 @sk.autoinit
 class BatchNormState(sk.TreeClass):
+    # use primitive `bind` on jax array instead of `stop_gradient` to avoid `tree_map`
     running_mean: jax.Array = sk.field(on_getattr=[jax.lax.stop_gradient_p.bind])
     running_var: jax.Array = sk.field(on_getattr=[jax.lax.stop_gradient_p.bind])
 
 
-def batchnorm(
+def batch_norm(
     input: jax.Array,
-    state: BatchNormState,
+    running_mean: jax.Array,
+    running_var: jax.Array,
     momentum: float = 0.1,
     eps: float = 1e-3,
-    gamma: jax.Array = None,
-    beta: jax.Array = None,
+    weight: jax.Array = None,
+    bias: jax.Array = None,
     axis: int = 1,
     axis_name: str | None = None,
-):
+) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Batch Normalization
+
+    Computes:
+        - ``output = (input - batch_mean) / sqrt(batch_var + eps)``
+        - ``running_mean = momentum * running_mean + (1 - momentum) * batch_mean``
+        - ``running_var = momentum * running_var + (1 - momentum) * batch_var``
+
+    Args:
+        input: the input to be normalized.
+        running_mean: the running mean of the input.
+        running_var: the running variance of the input.
+        momentum: the value used for the ``running_mean`` and ``running_var``
+            computation. must be a number between ``0`` and ``1``.
+        eps: a value added to the denominator for numerical stability.
+        weight: the scale. if None, the scale is not trainable.
+        bias: the shift. if None, the shift is not trainable.
+        axis: the axis that should be normalized. Defaults to 1.
+        axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
+
+    Returns:
+        - ``normalized_input``
+        - ``running_mean``
+        - ``running_var``
+    """
     broadcast_shape = [1] * input.ndim
     broadcast_shape[axis] = input.shape[axis]
     axes = list(range(input.ndim))
@@ -378,43 +459,59 @@ def batchnorm(
     if axis_name is not None:
         batch_var = jax.lax.pmean(batch_var, axis_name)
     output = (input - batch_mean) / jnp.sqrt(batch_var + eps)
-    run_mean = momentum * state.running_mean + (1 - momentum) * jnp.squeeze(batch_mean)
-    run_var = momentum * state.running_var + (1 - momentum) * jnp.squeeze(batch_var)
-
-    state = BatchNormState(run_mean, run_var)
-    if gamma is not None:
-        output *= jnp.reshape(gamma, broadcast_shape)
-    if beta is not None:
-        output += jnp.reshape(beta, broadcast_shape)
-    return output, state
+    running_mean = momentum * running_mean + (1 - momentum) * jnp.squeeze(batch_mean)
+    running_var = momentum * running_var + (1 - momentum) * jnp.squeeze(batch_var)
+    output = output if weight is None else output * jnp.reshape(weight, broadcast_shape)
+    output = output if bias is None else output + jnp.reshape(bias, broadcast_shape)
+    return output, running_mean, running_var
 
 
-def evalnorm(
+def eval_batch_norm(
     input: jax.Array,
-    state: BatchNormState,
+    running_mean: jax.Array,
+    running_var: jax.Array,
     momentum: float = 0.1,
     eps: float = 1e-3,
-    gamma: jax.Array = None,
-    beta: jax.Array = None,
+    weight: jax.Array = None,
+    bias: jax.Array = None,
     axis: int = 1,
     axis_name: str | None = None,
-):
+) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Batch Normalization Evaluation Step
+
+    Computes:
+        - ``output = (input - running_mean) / sqrt(running_var + eps)``
+
+    Args:
+        input: the input to be normalized.
+        running_mean: the running mean of the input.
+        running_var: the running variance of the input.
+        momentum: the value used for the ``running_mean`` and ``running_var``
+            computation. must be a number between ``0`` and ``1``.
+        eps: a value added to the denominator for numerical stability.
+        weight: the scale. if None, the scale is not trainable.
+        bias: the shift. if None, the shift is not trainable.
+        axis: the axis that should be normalized. Defaults to 1.
+        axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
+
+    Returns:
+        - ``normalized_input``
+        - ``running_mean``
+        - ``running_var``
+    """
+    del momentum, axis_name
     broadcast_shape = [1] * input.ndim
     broadcast_shape[axis] = input.shape[axis]
-    run_mean, run_var = state.running_mean, state.running_var
-    run_mean = jnp.reshape(run_mean, broadcast_shape)
-    run_var = jnp.reshape(run_var, broadcast_shape)
-    output = (input - run_mean) * jax.lax.rsqrt(run_var + eps)
-
-    if gamma is not None:
-        output *= jnp.reshape(gamma, broadcast_shape)
-    if beta is not None:
-        output += jnp.reshape(beta, broadcast_shape)
-    return output, state
+    running_mean = jnp.reshape(running_mean, broadcast_shape)
+    running_var = jnp.reshape(running_var, broadcast_shape)
+    output = (input - running_mean) * jax.lax.rsqrt(running_var + eps)
+    output = output if weight is None else output * jnp.reshape(weight, broadcast_shape)
+    output = output if bias is None else output + jnp.reshape(bias, broadcast_shape)
+    return output, running_mean, running_var
 
 
-def infer_in_features(instance, x, *_, **__) -> int:
-    return x.shape[instance.axis]
+def infer_in_features(instance, input, *_, **__) -> int:
+    return input.shape[instance.axis]
 
 
 updates = dict(in_features=infer_in_features)
@@ -436,9 +533,7 @@ class BatchNorm(sk.TreeClass):
         - ``running_mean = momentum * running_mean + (1 - momentum) * batch_mean``
         - ``running_var = momentum * running_var + (1 - momentum) * batch_var``
 
-    For evaluation, use :func:`.tree_eval` to convert the layer to
-    :class:`nn.EvalNorm`.
-
+    For evaluation, use :func:`.tree_eval` to convert the layer to :class:`.EvalBatchNorm`.
 
     Args:
         in_features: the shape of the input to be normalized.
@@ -548,11 +643,11 @@ class BatchNorm(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> key = jr.PRNGKey(0)
-        >>> lazy_layer = sk.nn.BatchNorm(None, key=key)
+        >>> lazy = sk.nn.BatchNorm(None, key=key)
         >>> input = jnp.ones((5,10))
-        >>> _ , material_layer = lazy_layer.at["__call__"](input, None)
-        >>> state = sk.tree_state(material_layer)
-        >>> output, state = jax.vmap(material_layer, in_axes=(0, None), out_axes=(0, None))(input, state)
+        >>> _ , material = lazy.at["__call__"](input, None)
+        >>> state = sk.tree_state(material)
+        >>> output, state = jax.vmap(material, in_axes=(0, None), out_axes=(0, None))(input, state)
         >>> output.shape
         (5, 10)
 
@@ -591,32 +686,39 @@ class BatchNorm(sk.TreeClass):
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(
-        self, input: jax.Array, state: BatchNormState
+        self,
+        input: jax.Array,
+        state: BatchNormState,
     ) -> tuple[jax.Array, BatchNormState]:
-        batchnorm_impl = custom_vmap(lambda x, state: (x, state))
+        # simplify the call signature to avoid forcing the user to
+        # to use a long `in_axes` and `out_axes` argument
+        batch_norm_impl = custom_vmap(lambda input, state: (input, state))
         momentum, eps = jax.lax.stop_gradient((self.momentum, self.eps))
 
-        @batchnorm_impl.def_vmap
+        @batch_norm_impl.def_vmap
         def _(_, batch_tree, input: jax.Array, state: BatchNormState):
-            output = batchnorm(
+            output, running_mean, running_var = batch_norm(
                 input=input,
-                state=state,
+                running_mean=state.running_mean,
+                running_var=state.running_var,
                 momentum=momentum,
                 eps=eps,
-                gamma=self.weight,
-                beta=self.bias,
+                weight=self.weight,
+                bias=self.bias,
                 axis=self.axis,
                 axis_name=self.axis_name,
             )
-            return output, tuple(batch_tree)
 
-        return batchnorm_impl(input, state)
+            state = BatchNormState(running_mean, running_var)
+            return (output, state), tuple(batch_tree)
+
+        return batch_norm_impl(input, state)
 
 
-class EvalNorm(sk.TreeClass):
+class EvalBatchNorm(sk.TreeClass):
     """Applies normalization evlaution step over batched inputs`
 
-    This layer intended to be the evaluation step of :class:`nn.BatchNorm`.
+    This layer intended to be the evaluation step of :class:`.BatchNorm`.
     and to be used with ``jax.vmap``. It will be a no-op when unbatched.
 
     .. warning::
@@ -692,58 +794,57 @@ class EvalNorm(sk.TreeClass):
     def __call__(
         self,
         input: jax.Array,
-        state: BatchNormState | None = None,
+        state: BatchNormState,
     ) -> tuple[jax.Array, BatchNormState]:
-        state = sk.tree_state(self) if state is None else state
-        evalnorm_impl = custom_vmap(lambda x, state: (x, state))
+        # simplify the call signature to avoid forcing the user to
+        # to use a long `in_axes` and `out_axes` argument
+        eval_norm_impl = custom_vmap(lambda x, state: (x, state))
         eps = jax.lax.stop_gradient(self.eps)
 
-        @evalnorm_impl.def_vmap
+        @eval_norm_impl.def_vmap
         def _(_, batch_tree, input: jax.Array, state: BatchNormState):
-            output = evalnorm(
+            output, running_mean, running_var = eval_batch_norm(
                 input=input,
-                state=state,
+                running_mean=state.running_mean,
+                running_var=state.running_var,
                 momentum=0.0,
                 eps=eps,
-                gamma=self.weight,
-                beta=self.bias,
+                weight=self.weight,
+                bias=self.bias,
                 axis=self.axis,
                 axis_name=self.axis_name,
             )
-            return output, tuple(batch_tree)
+            state = BatchNormState(running_mean, running_var)
+            return (output, state), tuple(batch_tree)
 
-        return evalnorm_impl(input, state)
+        return eval_norm_impl(input, state)
 
 
 @tree_eval.def_eval(BatchNorm)
-def _(batchnorm: BatchNorm) -> EvalNorm:
-    return EvalNorm(
-        in_features=batchnorm.in_features,
-        momentum=batchnorm.momentum,  # ignored
-        eps=batchnorm.eps,
-        weight_init=lambda *_: batchnorm.weight,
-        bias_init=None if batchnorm.bias is None else lambda *_: batchnorm.bias,
-        axis=batchnorm.axis,
-        axis_name=batchnorm.axis_name,
+def _(batch_norm: BatchNorm) -> EvalBatchNorm:
+    return EvalBatchNorm(
+        in_features=batch_norm.in_features,
+        momentum=batch_norm.momentum,  # ignored
+        eps=batch_norm.eps,
+        weight_init=lambda *_: batch_norm.weight,
+        bias_init=None if batch_norm.bias is None else lambda *_: batch_norm.bias,
+        axis=batch_norm.axis,
+        axis_name=batch_norm.axis_name,
         key=None,
     )
 
 
 @tree_state.def_state(BatchNorm)
-def _(batchnorm: BatchNorm) -> BatchNormState:
-    running_mean = jnp.zeros([batchnorm.in_features])
-    running_var = jnp.ones([batchnorm.in_features])
+def _(batch_norm: BatchNorm) -> BatchNormState:
+    running_mean = jnp.zeros([batch_norm.in_features])
+    running_var = jnp.ones([batch_norm.in_features])
     return BatchNormState(running_mean, running_var)
 
 
 T = TypeVar("T")
 
 
-def weight_norm(
-    leaf: T,
-    axis: int | None = -1,
-    eps: float = 1e-12,
-) -> T:
+def weight_norm(leaf: T, axis: int | None = -1, eps: float = 1e-12) -> T:
     """Apply L2 weight normalization to an input.
 
     Args:

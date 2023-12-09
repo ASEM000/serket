@@ -15,12 +15,13 @@
 from __future__ import annotations
 
 import functools as ft
+from typing import Callable
 
 import jax
 import jax.numpy as jnp
 import jax.random as jr
 from typing_extensions import Annotated
-from typing import Callable
+
 import serket as sk
 from serket._src.nn.initialization import DType, InitType
 from serket._src.utils import maybe_lazy_call, maybe_lazy_init
@@ -188,9 +189,9 @@ class MultiHeadAttention(sk.TreeClass):
         >>> k = jr.uniform(jr.PRNGKey(1), (3, 2, 6))
         >>> v = jr.uniform(jr.PRNGKey(2), (3, 2, 6))
         >>> key = jr.PRNGKey(0)
-        >>> lazy_layer = sk.nn.MultiHeadAttention(2, None, key=key)
-        >>> _, material_layer = lazy_layer.at["__call__"](q, k, v, key=key)
-        >>> material_layer(q, k, v, key=key).shape
+        >>> lazy = sk.nn.MultiHeadAttention(2, None, key=key)
+        >>> _, material = lazy.at["__call__"](q, k, v, key=key)
+        >>> material(q, k, v, key=key).shape
         (3, 2, 6)
 
     Reference:

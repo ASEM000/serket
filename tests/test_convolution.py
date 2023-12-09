@@ -1178,11 +1178,11 @@ def test_groups_error():
     ],
 )
 def test_lazy_conv(layer, array, expected_shape):
-    lazy_layer = layer(None, 1, 3, key=jax.random.PRNGKey(0))
-    value, material_layer = lazy_layer.at["__call__"](array)
+    lazy = layer(None, 1, 3, key=jax.random.PRNGKey(0))
+    value, material = lazy.at["__call__"](array)
 
     assert value.shape == expected_shape
-    assert material_layer.in_features == 10
+    assert material.in_features == 10
 
 
 def test_lazy_conv_local():
