@@ -641,13 +641,3 @@ def kernel_map(
         return result.reshape(*output_shape, *result.shape[1:])
 
     return single_call_wrapper
-
-
-def frozen_field(**kwargs):
-    """Freeze a field after setting it and unfreeze it before getting it."""
-    # this is useful for setting a field that is not a jax-type
-    # to allow the class to be passed across jax-boundaries]
-    return sk.field(
-        on_getattr=[*kwargs.pop("on_getattr", []), sk.unfreeze],
-        on_setattr=[*kwargs.pop("on_setattr", []), sk.freeze],
-    )
