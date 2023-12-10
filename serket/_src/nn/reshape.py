@@ -118,11 +118,11 @@ def extract_patches(
         >>> patches = sk.nn.extract_patches(input, kernel_size, strides, padding)
         >>> print(patches.shape)
         (15, 3, 3)
-        >>> print(patches(input)[0])
+        >>> print(patches[0])
         [[0 0 0]
          [0 0 1]
          [0 3 4]]
-        >>> print(patches(input)[1])
+        >>> print(patches[1])
         [[0 0 0]
          [0 1 2]
          [3 4 5]]
