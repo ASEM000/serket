@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import abc
 import functools as ft
 
 import jax
@@ -35,10 +36,6 @@ from serket._src.utils import (
     resolve_string_padding,
     validate_spatial_ndim,
 )
-
-# For filters that have fft implementation, the pattern is to inherit from
-# a base class that creates the kernel and then the child class implements the
-# specific implementation of the filter, either fft or direct convolution.
 
 
 def filter_2d(
@@ -769,7 +766,18 @@ class BaseAvgBlur2D(sk.TreeClass):
     def __init__(self, kernel_size: int | tuple[int, int]):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
 
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        in_axes = (0, None)
+        args = (image, self.kernel_size)
+        return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
+
     spatial_ndim: int = 2
+
+    @property
+    @abc.abstractmethod
+    def filter_op(self):
+        ...
 
 
 class AvgBlur2D(BaseAvgBlur2D):
@@ -793,11 +801,7 @@ class AvgBlur2D(BaseAvgBlur2D):
           [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None)
-        args = (image, self.kernel_size)
-        return jax.vmap(avg_blur_2d, in_axes=in_axes)(*args)
+    filter_op = avg_blur_2d
 
 
 class FFTAvgBlur2D(BaseAvgBlur2D):
@@ -821,11 +825,7 @@ class FFTAvgBlur2D(BaseAvgBlur2D):
           [0.44444448 0.6666667  0.6666667  0.6666667  0.44444448]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None)
-        args = (image, self.kernel_size)
-        return jax.vmap(fft_avg_blur_2d, in_axes=in_axes)(*args)
+    filter_op = fft_avg_blur_2d
 
 
 class BaseGaussianBlur2D(sk.TreeClass):
@@ -839,6 +839,18 @@ class BaseGaussianBlur2D(sk.TreeClass):
         self.sigma = canonicalize(sigma, ndim=2, name="sigma")
 
     spatial_ndim: int = 2
+
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        in_axes = (0, None, None)
+        sigma = jax.lax.stop_gradient(self.sigma)
+        args = (image, self.kernel_size, sigma)
+        return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
+
+    @property
+    @abc.abstractmethod
+    def filter_op(self):
+        ...
 
 
 class GaussianBlur2D(BaseGaussianBlur2D):
@@ -863,12 +875,7 @@ class GaussianBlur2D(BaseGaussianBlur2D):
           [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        sigma = jax.lax.stop_gradient(self.sigma)
-        args = (image, self.kernel_size, sigma)
-        return jax.vmap(gaussian_blur_2d, in_axes=in_axes)(*args)
+    filter_op = gaussian_blur_2d
 
 
 class FFTGaussianBlur2D(BaseGaussianBlur2D):
@@ -893,12 +900,7 @@ class FFTGaussianBlur2D(BaseGaussianBlur2D):
           [0.5269764 0.7259314 0.7259314 0.7259314 0.5269764]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        sigma = jax.lax.stop_gradient(self.sigma)
-        args = (image, self.kernel_size, sigma)
-        return jax.vmap(fft_gaussian_blur_2d, in_axes=in_axes)(*args)
+    filter_op = fft_gaussian_blur_2d
 
 
 class UnsharpMask2D(BaseGaussianBlur2D):
@@ -923,12 +925,7 @@ class UnsharpMask2D(BaseGaussianBlur2D):
           [1.4730237 1.2740686 1.2740686 1.2740686 1.4730237]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        sigma = jax.lax.stop_gradient(self.sigma)
-        args = (image, self.kernel_size, sigma)
-        return jax.vmap(unsharp_mask_2d, in_axes=in_axes)(*args)
+    filter_op = unsharp_mask_2d
 
 
 class FFTUnsharpMask2D(BaseGaussianBlur2D):
@@ -953,19 +950,25 @@ class FFTUnsharpMask2D(BaseGaussianBlur2D):
           [1.4730237 1.2740686 1.2740686 1.2740686 1.4730237]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        sigma = jax.lax.stop_gradient(self.sigma)
-        args = (image, self.kernel_size, sigma)
-        return jax.vmap(fft_unsharp_mask_2d, in_axes=in_axes)(*args)
+    filter_op = fft_unsharp_mask_2d
 
 
 class BoxBlur2DBase(sk.TreeClass):
     def __init__(self, kernel_size: int | tuple[int, int]):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
 
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        in_axes = (0, None)
+        args = (image, self.kernel_size)
+        return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
+
     spatial_ndim: int = 2
+
+    @property
+    @abc.abstractmethod
+    def filter_op(self):
+        ...
 
 
 class BoxBlur2D(BoxBlur2DBase):
@@ -989,11 +992,7 @@ class BoxBlur2D(BoxBlur2DBase):
           [0.40000004 0.53333336 0.6666667  0.53333336 0.40000004]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None)
-        args = (image, self.kernel_size)
-        return jax.vmap(box_blur_2d, in_axes=in_axes)(*args)
+    filter_op = box_blur_2d
 
 
 class FFTBoxBlur2D(BoxBlur2DBase):
@@ -1017,18 +1016,25 @@ class FFTBoxBlur2D(BoxBlur2DBase):
           [0.40000004 0.53333336 0.6666667  0.53333336 0.40000004]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None)
-        args = (image, self.kernel_size)
-        return jax.vmap(box_blur_2d, in_axes=in_axes)(*args)
+    filter_op = fft_box_blur_2d
 
 
 class Laplacian2DBase(sk.TreeClass):
     def __init__(self, kernel_size: int | tuple[int, int]):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
 
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        in_axes = (0, None)
+        args = (image, self.kernel_size)
+        return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
+
     spatial_ndim: int = 2
+
+    @property
+    @abc.abstractmethod
+    def filter_op(self):
+        ...
 
 
 class Laplacian2D(Laplacian2DBase):
@@ -1055,11 +1061,7 @@ class Laplacian2D(Laplacian2DBase):
         The laplacian considers all the neighbors of a pixel.
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None)
-        args = (image, self.kernel_size)
-        return jax.vmap(laplacian_2d, in_axes=in_axes)(*args)
+    filter_op = laplacian_2d
 
 
 class FFTLaplacian2D(Laplacian2DBase):
@@ -1086,11 +1088,7 @@ class FFTLaplacian2D(Laplacian2DBase):
         The laplacian considers all the neighbors of a pixel.
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None)
-        args = (image, self.kernel_size)
-        return jax.vmap(fft_laplacian_2d, in_axes=in_axes)(*args)
+    filter_op = fft_laplacian_2d
 
 
 class MotionBlur2DBase(sk.TreeClass):
@@ -1105,7 +1103,19 @@ class MotionBlur2DBase(sk.TreeClass):
         self.angle = angle
         self.direction = direction
 
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        in_axes = (0, None, None, None)
+        angle, direction = jax.lax.stop_gradient((self.angle, self.direction))
+        args = (image, self.kernel_size, angle, direction)
+        return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
+
     spatial_ndim: int = 2
+
+    @property
+    @abc.abstractmethod
+    def filter_op(self):
+        ...
 
 
 class MotionBlur2D(MotionBlur2DBase):
@@ -1130,12 +1140,7 @@ class MotionBlur2D(MotionBlur2DBase):
           [ 6.472714  10.020969  10.770187   9.100007 ]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None, None, None)
-        angle, direction = jax.lax.stop_gradient((self.angle, self.direction))
-        args = (image, self.kernel_size, angle, direction)
-        return jax.vmap(motion_blur_2d, in_axes=in_axes)(*args)
+    filter_op = motion_blur_2d
 
 
 class FFTMotionBlur2D(MotionBlur2DBase):
@@ -1160,12 +1165,7 @@ class FFTMotionBlur2D(MotionBlur2DBase):
           [ 6.472714  10.020969  10.770187   9.100007 ]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, array: CHWArray) -> CHWArray:
-        in_axes = (0, None, None, None)
-        angle, direction = jax.lax.stop_gradient((self.angle, self.direction))
-        args = (array, self.kernel_size, angle, direction)
-        return jax.vmap(fft_motion_blur_2d, in_axes=in_axes)(*args)
+    filter_op = fft_motion_blur_2d
 
 
 class MedianBlur2D(sk.TreeClass):
@@ -1209,6 +1209,15 @@ class MedianBlur2D(sk.TreeClass):
 class Sobel2DBase(sk.TreeClass):
     spatial_ndim: int = 2
 
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        return jax.vmap(type(self).filter_op)(image)
+
+    @property
+    @abc.abstractmethod
+    def filter_op(self):
+        ...
+
 
 class Sobel2D(Sobel2DBase):
     """Apply Sobel filter to a channel-first image.
@@ -1231,9 +1240,7 @@ class Sobel2D(Sobel2DBase):
           [78.24321 , 68.26419 , 72.249565, 76.23647 , 89.27486 ]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        return jax.vmap(sobel_2d)(image)
+    filter_op = sobel_2d
 
 
 class FFTSobel2D(Sobel2DBase):
@@ -1254,9 +1261,7 @@ class FFTSobel2D(Sobel2DBase):
           [78.24321 , 68.26419 , 72.249565, 76.23647 , 89.27486 ]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        return jax.vmap(fft_sobel_2d)(image)
+    filter_op = fft_sobel_2d
 
 
 class ElasticTransform2DBase(sk.TreeClass):
@@ -1269,6 +1274,17 @@ class ElasticTransform2DBase(sk.TreeClass):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
         self.alpha = canonicalize(alpha, ndim=2, name="alpha")
         self.sigma = canonicalize(sigma, ndim=2, name="sigma")
+
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+        in_axes = (None, 0, None, None, None)
+        args = (image, self.kernel_size, self.sigma, self.alpha)
+        return jax.vmap(type(self).filter_op, in_axes=in_axes)(key, *args)
+
+    @property
+    @abc.abstractmethod
+    def filter_op(self):
+        ...
 
     spatial_ndim: int = 2
 
@@ -1300,11 +1316,7 @@ class ElasticTransform2D(ElasticTransform2DBase):
           [21.        21.659977  21.43855   21.138866  22.583244 ]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
-        in_axes = (None, 0, None, None, None)
-        args = (image, self.kernel_size, self.sigma, self.alpha)
-        return jax.vmap(elastic_transform_2d, in_axes=in_axes)(key, *args)
+    filter_op = elastic_transform_2d
 
 
 class FFTElasticTransform2D(ElasticTransform2DBase):
@@ -1334,11 +1346,7 @@ class FFTElasticTransform2D(ElasticTransform2DBase):
           [21.        21.659977  21.43855   21.138866  22.583244 ]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
-        in_axes = (None, 0, None, None, None)
-        args = (image, self.kernel_size, self.sigma, self.alpha)
-        return jax.vmap(fft_elastic_transform_2d, in_axes=in_axes)(key, *args)
+    filter_op = fft_elastic_transform_2d
 
 
 class BilateralBlur2D(sk.TreeClass):
@@ -1443,6 +1451,17 @@ class BlurPool2DBase(sk.TreeClass):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
         self.strides = canonicalize(strides, ndim=2, name="strides")
 
+    @ft.partial(validate_spatial_ndim, argnum=0)
+    def __call__(self, image: CHWArray) -> CHWArray:
+        in_axes = (0, None, None)
+        args = (image, self.kernel_size, self.strides)
+        return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
+
+    @property
+    @abc.abstractmethod
+    def filter_op(self):
+        ...
+
     spatial_ndim: int = 2
 
 
@@ -1466,11 +1485,7 @@ class BlurPool2D(BlurPool2DBase):
           [11.0625 16.     12.9375]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        args = (image, self.kernel_size, self.strides)
-        return jax.vmap(blur_pool_2d, in_axes=in_axes)(*args)
+    filter_op = blur_pool_2d
 
 
 class FFTBlurPool2D(BlurPool2DBase):
@@ -1493,8 +1508,4 @@ class FFTBlurPool2D(BlurPool2DBase):
           [11.0625 16.     12.9375]]]
     """
 
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        args = (image, self.kernel_size, self.strides)
-        return jax.vmap(fft_blur_pool_2d, in_axes=in_axes)(*args)
+    filter_op = fft_blur_pool_2d
