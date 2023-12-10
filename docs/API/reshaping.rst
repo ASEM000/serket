@@ -17,3 +17,4 @@ Reshaping
 .. autofunction:: center_crop_nd
 .. autofunction:: extract_patches
 .. autofunction:: random_crop_nd
+.. autofunction:: upsample_nd

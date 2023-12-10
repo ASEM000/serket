@@ -167,6 +167,7 @@ from serket._src.nn.reshape import (
     center_crop_nd,
     extract_patches,
     random_crop_nd,
+    upsample_nd,
 )
 
 __all__ = [
@@ -327,4 +328,5 @@ __all__ = [
     "center_crop_nd",
     "extract_patches",
     "random_crop_nd",
+    "upsample_nd",
 ]
