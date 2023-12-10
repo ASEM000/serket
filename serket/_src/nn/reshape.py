@@ -19,16 +19,18 @@ import functools as ft
 from typing import Literal
 
 import jax
-import jax.numpy as jnp
 import jax.random as jr
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
 from serket._src.utils import (
-    IsInstance,
+    KernelSizeType,
+    PaddingType,
+    StridesType,
     canonicalize,
     delayed_canonicalize_padding,
+    kernel_map,
     validate_spatial_ndim,
 )
 
@@ -38,9 +40,15 @@ MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 def random_crop_nd(
     key: jax.Array,
     input: jax.Array,
-    *,
     crop_size: tuple[int, ...],
 ) -> jax.Array:
+    """Crops an input to the given size at a random starts along each axis.
+
+    Args:
+        key: random key.
+        input: input array.
+        crop_size: size of the crop along each axis.Accepts a tuple of int.
+    """
     start: tuple[int, ...] = tuple(
         jr.randint(key, shape=(), minval=0, maxval=input.shape[i] - s)
         for i, s in enumerate(crop_size)
@@ -49,118 +57,122 @@ def random_crop_nd(
 
 
 def center_crop_nd(input: jax.Array, sizes: tuple[int, ...]) -> jax.Array:
-    """Crops an input to the given size at the center."""
+    """Crops an input to the given size at the center.
+
+    Args:
+        input: input array.
+        sizes: size of the crop along each axis.Accepts a tuple of int.
+    """
     shapes = input.shape
     starts = tuple(max(shape // 2 - size // 2, 0) for shape, size in zip(shapes, sizes))
     return jax.lax.dynamic_slice(input, starts, sizes)
 
 
-def zoom_in_along_axis(
+def extract_patches(
     input: jax.Array,
-    factor: float,
-    axis: int,
-    method: MethodKind = "linear",
-) -> jax.Array:
-    assert factor > 0
-    shape = input.shape
-    shape = list(shape)
-    shape[axis] = int(shape[axis] * (1 + factor))
-    return jax.image.resize(input, shape=shape, method=method)
+    kernel_size: KernelSizeType,
+    strides: StridesType = 1,
+    padding: PaddingType = "same",
+):
+    """Extract patches from an input array
+
+    Args:
+        input: input array
+        kernel_size: Size of the convolutional kernel. accepts:
+
+            - single integer for same kernel size in all dimensions.
+            - sequence of integers for different kernel sizes in each dimension.
+
+        strides: stride of the convolution. Defaults to 1. accepts:
+
+            - single integer for same stride in all dimensions.
+            - sequence of integers for different strides in each dimension.
+
+        padding: Padding of the input before convolution. Default ``same``. accepts:
+
+            - single integer for same padding in all dimensions.
+            - tuple of integers for different padding in each dimension.
+            - tuple of a tuple of two integers for before and after padding in
+              each dimension.
+            - ``same``/``SAME`` for padding such that the output has the same shape
+              as the input.
+            - ``valid``/``VALID`` for no padding.
+
+    Returns:
+        A patches of the input array stacked along the first dimension.
+
+    Example:
+
+        >>> import serket as sk
+        >>> import jax.numpy as jnp
+        >>> input = jnp.arange(15).reshape(5, 3)
+        >>> print(input)
+        [[ 0  1  2]
+         [ 3  4  5]
+         [ 6  7  8]
+         [ 9 10 11]
+         [12 13 14]]
+        >>> kernel_size = 3
+        >>> strides = 1
+        >>> padding = "same"
+        >>> patches = sk.nn.extract_patches(input, kernel_size, strides, padding)
+        >>> print(patches.shape)
+        (15, 3, 3)
+        >>> print(patches[0])
+        [[0 0 0]
+         [0 0 1]
+         [0 3 4]]
+        >>> print(patches[1])
+        [[0 0 0]
+         [0 1 2]
+         [3 4 5]]
+    """
+    # this function is performing faster than the `jax` version
+    # on colab and m1 cpu but it does not support dilation
+    kernel_size = canonicalize(kernel_size, input.ndim)
+    strides = canonicalize(strides, input.ndim)
+    padding = delayed_canonicalize_padding(
+        in_dim=input.shape,
+        padding=padding,
+        kernel_size=kernel_size,
+        strides=strides,
+    )
+    patch_func = kernel_map(
+        # the function simply returns the view of the input
+        func=lambda view: view,
+        shape=input.shape,
+        kernel_size=kernel_size,
+        strides=strides,
+        padding=padding,
+    )
+    # stack along the first dimension
+    return patch_func(input).reshape(-1, *kernel_size)
 
 
-def zoom_out_along_axis(
+def upsample_nd(
     input: jax.Array,
-    factor: float,
-    axis: int,
-    method: MethodKind = "linear",
+    scale: int | tuple[int, ...],
+    method: MethodKind = "nearest",
 ) -> jax.Array:
-    assert factor < 0
-    shape = input.shape
-    shape = list(shape)
-    shape[axis] = int(shape[axis] / (1 - factor))
-    return jax.image.resize(input, shape=shape, method=method)
+    """Upsample a 1D input to a given size using a given interpolation method.
 
+    Args:
+        input: input array.
+        scale: the scale of the output. accetps a tuple of int denoting the scale
+            multiplier along each axis.
+        method: Interpolation method defaults to ``nearest``. choices are:
 
-def zoom_nd(
-    input: jax.Array,
-    factor: tuple[int, ...],
-    method: MethodKind = "linear",
-) -> jax.Array:
-    for axis, fi in enumerate(factor):
-        if fi < 0:
-            shape = input.shape
-            input = zoom_out_along_axis(input, fi, axis, method=method)
-            pad_width = [(0, 0)] * len(input.shape)
-            left = (shape[axis] - input.shape[axis]) // 2
-            right = shape[axis] - input.shape[axis] - left
-            pad_width[axis] = (left, right)
-            input = jnp.pad(input, pad_width=pad_width)
-        elif fi > 0:
-            shape = input.shape
-            input = zoom_in_along_axis(input, fi, axis, method=method)
-            input = center_crop_nd(input, shape)
-    return input
-
-
-def random_zoom_nd(
-    key: jax.Array,
-    input: jax.Array,
-    factor: tuple[int, ...],
-    method: MethodKind = "linear",
-) -> jax.Array:
-    for axis, (fi, ki) in enumerate(zip(factor, jr.split(key, len(factor)))):
-        if fi < 0:
-            shape = input.shape
-            input = zoom_out_along_axis(input, fi, axis, method=method)
-            pad_width = [(0, 0)] * len(input.shape)
-            max_pad = shape[axis] - input.shape[axis]
-            left = jr.randint(ki, shape=(), minval=0, maxval=max_pad)
-            right = max_pad - left
-            pad_width[axis] = (left, right)
-            input = jnp.pad(input, pad_width=pad_width)
-        elif fi > 0:
-            shape = input.shape
-            input = zoom_in_along_axis(input, fi, axis, method=method)
-            input = random_crop_nd(ki, input, crop_size=shape)
-    return input
-
-
-def flatten(input: jax.Array, start_dim: int, end_dim: int):
-    # wrapper around jax.lax.collapse
-    # with inclusive end_dim and negative indexing support
-    start_dim = start_dim + (0 if start_dim >= 0 else input.ndim)
-    end_dim = end_dim + 1 + (0 if end_dim >= 0 else input.ndim)
-    return jax.lax.collapse(input, start_dim, end_dim)
-
-
-def unflatten(input: jax.Array, dim: int, shape: tuple[int, ...]):
-    in_shape = list(input.shape)
-    out_shape = [*in_shape[:dim], *shape, *in_shape[dim + 1 :]]
-    return jnp.reshape(input, out_shape)
-
-
-class ResizeND(sk.TreeClass):
-    def __init__(
-        self,
-        size: int | tuple[int, ...],
-        method: MethodKind = "nearest",
-        antialias: bool = True,
-    ):
-        self.size = canonicalize(size, self.spatial_ndim, name="size")
-        self.method = method
-        self.antialias = antialias
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, input: jax.Array, **k) -> jax.Array:
-        in_axes = (0, None, None, None)
-        args = (input, self.size, self.method, self.antialias)
-        return jax.vmap(jax.image.resize, in_axes=in_axes)(*args)
-
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the image."""
-        ...
+            - ``nearest``: Nearest neighbor interpolation. The values of antialias
+              and precision are ignored.
+            - ``linear``, ``bilinear``, ``trilinear``, ``triangle``: Linear interpolation.
+              If ``antialias`` is True, uses a triangular filter when downsampling.
+            - ``cubic``, ``bicubic``, ``tricubic``: Cubic interpolation, using
+              the keys cubic kernel.
+            - ``lanczos3``: Lanczos resampling, using a kernel of radius 3.
+            - ``lanczos5``: Lanczos resampling, using a kernel of radius 5.
+    """
+    resized_shape = tuple(s * input.shape[i] for i, s in enumerate(scale))
+    return jax.image.resize(input, resized_shape, method)
 
 
 class UpsampleND(sk.TreeClass):
@@ -177,10 +189,9 @@ class UpsampleND(sk.TreeClass):
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array) -> jax.Array:
-        resized_shape = tuple(s * input.shape[i + 1] for i, s in enumerate(self.scale))
         in_axes = (0, None, None)
-        args = (input, resized_shape, self.method)
-        return jax.vmap(jax.image.resize, in_axes=in_axes)(*args)
+        args = (input, self.scale, self.method)
+        return jax.vmap(upsample_nd, in_axes=in_axes)(*args)
 
     @property
     @abc.abstractmethod
@@ -287,332 +298,13 @@ class Upsample3D(UpsampleND):
     spatial_ndim: int = 3
 
 
-class CropND(sk.TreeClass):
-    def __init__(self, size: int | tuple[int, ...], start: int | tuple[int, ...]):
-        self.size = canonicalize(size, self.spatial_ndim, name="size")
-        self.start = canonicalize(start, self.spatial_ndim, name="start")
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, input: jax.Array, **k) -> jax.Array:
-        in_axes = (0, None, None)
-        args = (input, self.start, self.size)
-        return jax.vmap(jax.lax.dynamic_slice, in_axes=in_axes)(*args)
-
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
-
-
-class Crop1D(CropND):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
-
-    Args:
-        size: size of the slice, either a single int or a tuple of int.
-        start: start of the slice, either a single int or a tuple of int.
-
-    Example:
-        >>> import jax
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> layer = sk.nn.Crop1D(size=3, start=1)
-        >>> input = jnp.arange(1, 6).reshape(1, 5)
-        >>> print(layer(input))
-        [[2 3 4]]
-    """
-
-    spatial_ndim: int = 1
-
-
-class Crop2D(CropND):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
-
-    Args:
-        size: size of the slice, either a single int or a tuple of two ints
-            for size along each axis.
-        start: start of the slice, either a single int or a tuple of two ints
-            for start along each axis.
-
-    Example:
-        >>> # start = (2, 0) and size = (3, 3)
-        >>> # i.e. start at index 2 along the first axis and index 0 along the second axis
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> layer = sk.nn.Crop2D(size=3, start=(2, 0))
-        >>> input = jnp.arange(1, 26).reshape((1, 5, 5))
-        >>> print(input)
-        [[[ 1  2  3  4  5]
-          [ 6  7  8  9 10]
-          [11 12 13 14 15]
-          [16 17 18 19 20]
-          [21 22 23 24 25]]]
-        >>> print(layer(input))
-        [[[11 12 13]
-          [16 17 18]
-          [21 22 23]]]
-    """
-
-    spatial_ndim: int = 2
-
-
-class Crop3D(CropND):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` to the second dimension of the input.
-
-    Args:
-        size: size of the slice, either a single int or a tuple of three ints
-            for size along each axis.
-        start: start of the slice, either a single int or a tuple of three
-            ints for start along each axis.
-    """
-
-    spatial_ndim: int = 3
-
-
-class PadND(sk.TreeClass):
-    def __init__(self, padding: int | tuple[int, int], value: float = 0.0):
-        kernel_size = ((1,),) * self.spatial_ndim
-        self.padding = delayed_canonicalize_padding(None, padding, kernel_size, None)
-        self.value = value
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, input: jax.Array) -> jax.Array:
-        value = jax.lax.stop_gradient(self.value)
-        pad = ft.partial(jnp.pad, pad_width=self.padding, constant_values=value)
-        return jax.vmap(pad)(input)
-
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the image."""
-        ...
-
-
-class Pad1D(PadND):
-    """Pad a 1D tensor.
-
-    Args:
-        padding: padding to apply to each side of the input. accepts a single int
-            or a tuple of tuple of two ints for padding along each axis. e.g.
-            ``((1, 2),)`` for padding of 1 on the left and 2 on the right.
-        value: value to pad with. Defaults to 0.0.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> layer = sk.nn.Pad1D(((1, 2),))
-        >>> input = jnp.arange(1, 6).reshape(1, 5)
-        >>> print(layer(input))
-        [[0 1 2 3 4 5 0 0]]
-
-    Reference:
-        - https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding1D
-    """
-
-    spatial_ndim: int = 1
-
-
-class Pad2D(PadND):
-    """Pad a 2D tensor.
-
-    Args:
-        padding: padding to apply to each side of the input. accepts a single int
-            or a tuple of two tuples of two ints for padding along each axis. e.g.
-            ``((1, 2), (3, 4))`` for padding of 1 on the left and 2 on the right
-            along the and 3 on the top and 4 on the bottom.
-        value: value to pad with. Defaults to 0.0.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> layer = sk.nn.Pad2D(((1, 2), (3, 4)))
-        >>> input = jnp.arange(1, 10).reshape(1, 3, 3)
-        >>> print(layer(input))
-        [[[0 0 0 0 0 0 0 0 0 0]
-          [0 0 0 1 2 3 0 0 0 0]
-          [0 0 0 4 5 6 0 0 0 0]
-          [0 0 0 7 8 9 0 0 0 0]
-          [0 0 0 0 0 0 0 0 0 0]
-          [0 0 0 0 0 0 0 0 0 0]]]
-
-    Reference:
-        - https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding2D
-    """
-
-    spatial_ndim: int = 2
-
-
-class Pad3D(PadND):
-    """Pad a 3D tensor.
-
-    Args:
-        padding: padding to apply to each side of the input. accepts a single int
-            or a tuple of three tuples of two ints for padding along each axis.
-        value: value to pad with. Defaults to 0.0.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> layer = sk.nn.Pad3D(((0, 0), (2, 0), (2, 0)))
-        >>> input = jnp.arange(1, 9).reshape(1, 2, 2, 2)
-        >>> print(layer(input))
-        [[[[0 0 0 0]
-          [0 0 0 0]
-          [0 0 1 2]
-          [0 0 3 4]]
-        <BLANKLINE>
-         [[0 0 0 0]
-         [0 0 0 0]
-         [0 0 5 6]
-         [0 0 7 8]]]]
-
-    Reference:
-        - https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.pad.html
-        - https://www.tensorflow.org/api_docs/python/tf/keras/layers/ZeroPadding3D
-    """
-
-    spatial_ndim: int = 3
-
-
-class Resize1D(ResizeND):
-    """Resize 1D to a given size using a given interpolation method.
-
-    Args:
-        size: the size of the output. if size is None, the output size is
-            calculated as input size * scale
-        method: Interpolation method defaults to ``nearest``. choices are:
-
-            - ``nearest``: Nearest neighbor interpolation. The values of antialias
-              and precision are ignored.
-            - ``linear``, ``bilinear``, ``trilinear``, ``triangle``: Linear interpolation.
-              If ``antialias`` is True, uses a triangular filter when downsampling.
-            - ``cubic``, ``bicubic``, ``tricubic``: Cubic interpolation, using
-              the keys cubic kernel.
-            - ``lanczos3``: Lanczos resampling, using a kernel of radius 3.
-            - ``lanczos5``: Lanczos resampling, using a kernel of radius 5.
-
-        antialias: whether to use antialiasing. Defaults to True.
-    """
-
-    spatial_ndim: int = 1
-
-
-class Resize2D(ResizeND):
-    """Resize 2D input to a given size using a given interpolation method.
-
-    Args:
-        size: the size of the output. if size is None, the output size is
-            calculated as input size * scale
-        method: Interpolation method defaults to ``nearest``. choices are:
-
-            - ``nearest``: Nearest neighbor interpolation. The values of antialias
-              and precision are ignored.
-            - ``linear``, ``bilinear``, ``trilinear``, ``triangle``: Linear interpolation.
-              If ``antialias`` is True, uses a triangular filter when downsampling.
-            - ``cubic``, ``bicubic``, ``tricubic``: Cubic interpolation, using
-              the keys cubic kernel.
-            - ``lanczos3``: Lanczos resampling, using a kernel of radius 3.
-            - ``lanczos5``: Lanczos resampling, using a kernel of radius 5.
-
-        antialias: whether to use antialiasing. Defaults to True.
-    """
-
-    spatial_ndim: int = 2
-
-
-class Resize3D(ResizeND):
-    """Resize 3D input to a given size using a given interpolation method.
-
-    Args:
-        size: the size of the output. if size is None, the output size is
-            calculated as input size * scale
-        method: Interpolation method defaults to ``nearest``. choices are:
-
-            - ``nearest``: Nearest neighbor interpolation. The values of antialias
-              and precision are ignored.
-            - ``linear``, ``bilinear``, ``trilinear``, ``triangle``: Linear interpolation.
-              If ``antialias`` is True, uses a triangular filter when downsampling.
-            - ``cubic``, ``bicubic``, ``tricubic``: Cubic interpolation, using
-              the keys cubic kernel.
-            - ``lanczos3``: Lanczos resampling, using a kernel of radius 3.
-            - ``lanczos5``: Lanczos resampling, using a kernel of radius 5.
-
-        antialias: whether to use antialiasing. Defaults to True.
-    """
-
-    spatial_ndim: int = 3
-
-
-@sk.autoinit
-class Flatten(sk.TreeClass):
-    """Flatten an input from dim ``start_dim`` to ``end_dim`` (inclusive).
-
-    Args:
-        start_dim: the first dimension to flatten
-        end_dim: the last dimension to flatten (inclusive)
-
-    Returns:
-        a function that flattens a ``jax.Array``
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> input = jnp.ones([1,2,3,4,5])
-        >>> sk.nn.Flatten(0,1)(input).shape
-        (2, 3, 4, 5)
-        >>> sk.nn.Flatten(0,2)(input).shape
-        (6, 4, 5)
-        >>> sk.nn.Flatten(1,2)(input).shape
-        (1, 6, 4, 5)
-        >>> sk.nn.Flatten(-1,-1)(input).shape
-        (1, 2, 3, 4, 5)
-        >>> sk.nn.Flatten(-2,-1)(input).shape
-        (1, 2, 3, 20)
-        >>> sk.nn.Flatten(-3,-1)(input).shape
-        (1, 2, 60)
-    """
-
-    start_dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
-    end_dim: int = sk.field(default=-1, on_setattr=[IsInstance(int)])
-
-    def __call__(self, input: jax.Array) -> jax.Array:
-        return flatten(input, self.start_dim, self.end_dim)
-
-
-@sk.autoinit
-class Unflatten(sk.TreeClass):
-    """Unflatten an input.
-
-    Args:
-        dim: the dimension to unflatten.
-        shape: the shape to unflatten to. accepts a tuple of ints.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> input = jnp.ones([120])
-        >>> sk.nn.Unflatten(0, (1,2,3,4,5))(input).shape
-        (1, 2, 3, 4, 5)
-        >>> input = jnp.ones([1,2,6])
-        >>> sk.nn.Unflatten(2,(2,3))(input).shape
-        (1, 2, 2, 3)
-    """
-
-    dim: int = sk.field(default=0, on_setattr=[IsInstance(int)])
-    shape: tuple = sk.field(default=None, on_setattr=[IsInstance(tuple)])
-
-    def __call__(self, input: jax.Array) -> jax.Array:
-        return unflatten(input, self.dim, self.shape)
-
-
 class RandomCropND(sk.TreeClass):
     def __init__(self, size: int | tuple[int, ...]):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
-        crop_size = [input.shape[0], *self.size]
+        crop_size = (input.shape[0], *self.size)
         return random_crop_nd(key, input, crop_size=crop_size)
 
     @property
@@ -623,7 +315,7 @@ class RandomCropND(sk.TreeClass):
 
 
 class RandomCrop1D(RandomCropND):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` with a random start along each axis
+    """Crop a 1D input to the given size at a random start.
 
     Args:
         size: size of the slice, either a single int or a tuple of int. accepted
@@ -634,7 +326,7 @@ class RandomCrop1D(RandomCropND):
 
 
 class RandomCrop2D(RandomCropND):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` with a random start along each axis
+    """Crop a 2D input to the given size at a random start.
 
     Args:
         size: size of the slice in each axis. accepted values are either a single int
@@ -645,205 +337,12 @@ class RandomCrop2D(RandomCropND):
 
 
 class RandomCrop3D(RandomCropND):
-    """Applies ``jax.lax.dynamic_slice_in_dim`` with a random start along each axis
+    """Crop a 3D input to the given size at a random start.
 
     Args:
         size: size of the slice in each axis. accepted values are either a single int
             or a tuple of three ints denoting the size along each axis.
     """
-
-    spatial_ndim: int = 3
-
-
-class ZoomND(sk.TreeClass):
-    def __init__(self, factor: float | tuple[float, ...]):
-        self.factor = canonicalize(factor, self.spatial_ndim, name="factor")
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, input: jax.Array) -> jax.Array:
-        factor = jax.lax.stop_gradient(self.factor)
-        return jax.vmap(zoom_nd, in_axes=(0, None))(input, factor)
-
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
-
-
-class Zoom1D(ZoomND):
-    """Zoom a 1D spatial tensor.
-
-    Zooming in is equivalent to resizing the tensor to a larger size followed
-    by center cropping. Zooming out is equivalent to resizing the tensor to a
-    smaller size followed by equal padding on both sides. Zooming in is defined
-    by positive values of ``factor`` and zooming out is defined by negative
-    values of ``factor``.
-
-    Args:
-        factor: zoom factor. accepts a single float or a tuple of float denoting
-            the zoom factor along each axis. if positive, zoom in, if negative,
-            zoom out, if 0, no zoom.
-    """
-
-    spatial_ndim: int = 1
-
-
-class Zoom2D(ZoomND):
-    """Zoom a 2D spatial tensor.
-
-    .. image:: ../_static/zoom2d.png
-
-    Zooming in is equivalent to resizing the tensor to a larger size followed
-    by center cropping. Zooming out is equivalent to resizing the tensor to a
-    smaller size followed by equal padding on both sides. Zooming in is defined
-    by positive values of ``factor`` and zooming out is defined by negative
-    values of ``factor``.
-
-
-    Args:
-        factor: zoom factor. accepts a single float or a tuple of float denoting
-            the zoom factor along each axis. if positive, zoom in, if negative,
-            zoom out, if 0, no zoom.
-    """
-
-    spatial_ndim: int = 2
-
-
-class Zoom3D(ZoomND):
-    """Zoom a 3D spatial tensor.
-
-    Zooming in is equivalent to resizing the tensor to a larger size followed
-    by center cropping. Zooming out is equivalent to resizing the tensor to a
-    smaller size followed by equal padding on both sides. Zooming in is defined
-    by positive values of ``factor`` and zooming out is defined by negative
-    values of ``factor``.
-
-
-    Args:
-        factor: zoom factor. accepts a single float or a tuple of float denoting
-            the zoom factor along each axis. if positive, zoom in, if negative,
-            zoom out, if 0, no zoom.
-    """
-
-    spatial_ndim: int = 3
-
-
-class RandomZoom1D(sk.TreeClass):
-    """Randomly zoom a 1D spatial tensor.
-
-    Random zooming in is equivalent to resizing the tensor to a larger size
-    followed by random cropping. Zooming out is equivalent to resizing the tensor
-    to a smaller size followed by random padding. Zooming in is defined
-    by positive values of ``factor`` and zooming out is defined by negative
-    values of ``factor``.
-
-    Args:
-        length_range: a tuple of two floats denoting the range of the zoom factor.
-    """
-
-    def __init__(self, length_range: tuple[int, int] = (0.0, 1.0)):
-        if not (isinstance(length_range, tuple) and len(length_range) == 2):
-            raise ValueError("`length_range` must be a tuple of length 2")
-
-        self.length_range = length_range
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
-        k1, k2 = jr.split(key, 2)
-        low, high = jax.lax.stop_gradient(self.length_range)
-        factor = (jr.uniform(k1, minval=low, maxval=high),)
-        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k2, input, factor)
-
-    spatial_ndim: int = 1
-
-
-class RandomZoom2D(sk.TreeClass):
-    """Randomly zoom a 2D spatial tensor.
-
-    .. image:: ../_static/zoom2d.png
-
-    Random zooming in is equivalent to resizing the tensor to a larger size
-    followed by random cropping. Zooming out is equivalent to resizing the tensor
-    to a smaller size followed by random padding. Zooming in is defined
-    by positive values of ``factor`` and zooming out is defined by negative
-    values of ``factor``.
-
-    Args:
-        height_range: a tuple of two floats denoting the range of the zoom factor.
-        width_range: a tuple of two floats denoting the range of the zoom factor.
-    """
-
-    def __init__(
-        self,
-        height_range: tuple[float, float] = (0.0, 1.0),
-        width_range: tuple[float, float] = (0.0, 1.0),
-    ):
-        if not (isinstance(height_range, tuple) and len(height_range) == 2):
-            raise ValueError("`height_range` must be a tuple of length 2")
-
-        if not (isinstance(width_range, tuple) and len(width_range) == 2):
-            raise ValueError("`width_range` must be a tuple of length 2")
-
-        self.height_range = height_range
-        self.width_range = width_range
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
-        k1, k2, k3 = jr.split(key, 3)
-        factors = (self.height_range, self.width_range)
-        ((hfl, hfh), (wfl, wfh)) = jax.lax.stop_gradient(factors)
-        factor_r = jr.uniform(k1, minval=hfl, maxval=hfh)
-        factor_c = jr.uniform(k2, minval=wfl, maxval=wfh)
-        factor = (factor_r, factor_c)
-        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k3, input, factor)
-
-    spatial_ndim: int = 2
-
-
-class RandomZoom3D(sk.TreeClass):
-    """Randomly zoom a 3D spatial tensor.
-
-    Random zooming in is equivalent to resizing the tensor to a larger size
-    followed by random cropping. Zooming out is equivalent to resizing the tensor
-    to a smaller size followed by random padding. Zooming in is defined
-    by positive values of ``factor`` and zooming out is defined by negative
-    values of ``factor``.
-
-    Args:
-        height_range: a tuple of two floats denoting the range of the zoom factor.
-        width_range: a tuple of two floats denoting the range of the zoom factor.
-        depth_range: a tuple of two floats denoting the range of the zoom factor.
-    """
-
-    def __init__(
-        self,
-        height_range: tuple[float, float] = (0.0, 1.0),
-        width_range: tuple[float, float] = (0.0, 1.0),
-        depth_range: tuple[float, float] = (0.0, 1.0),
-    ):
-        if not (isinstance(height_range, tuple) and len(height_range) == 2):
-            raise ValueError("`height_range` must be a tuple of length 2")
-
-        if not (isinstance(width_range, tuple) and len(width_range) == 2):
-            raise ValueError("`width_range` must be a tuple of length 2")
-
-        if not (isinstance(depth_range, tuple) and len(depth_range) == 2):
-            raise ValueError("`depth_range` must be a tuple of length 2")
-
-        self.height_range = height_range
-        self.width_range = width_range
-        self.depth_range = depth_range
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
-        k1, k2, k3, k4 = jr.split(key, 4)
-        factors = (self.height_range, self.width_range, self.depth_range)
-        ((hfl, hfh), (wfl, wfh), (dfl, dfh)) = jax.lax.stop_gradient(factors)
-        factor_r = jr.uniform(k1, minval=hfl, maxval=hfh)
-        factor_c = jr.uniform(k2, minval=wfl, maxval=wfh)
-        factor_d = jr.uniform(k3, minval=dfl, maxval=dfh)
-        factor = (factor_r, factor_c, factor_d)
-        return jax.vmap(random_zoom_nd, in_axes=(None, 0, None))(k4, input, factor)
 
     spatial_ndim: int = 3
 
@@ -928,8 +427,5 @@ class CenterCrop3D(CenterCropND):
 @tree_eval.def_eval(RandomCrop1D)
 @tree_eval.def_eval(RandomCrop2D)
 @tree_eval.def_eval(RandomCrop3D)
-@tree_eval.def_eval(RandomZoom1D)
-@tree_eval.def_eval(RandomZoom2D)
-@tree_eval.def_eval(RandomZoom3D)
 def _(_) -> Identity:
     return Identity()
