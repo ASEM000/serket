@@ -172,8 +172,10 @@ class LayerNorm(sk.TreeClass):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
+        >>> import jax.random as jr
         >>> input = jnp.ones((5,10))
-        >>> lazy = sk.nn.LayerNorm(None)
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.LayerNorm(None, key=key)
         >>> _, material = lazy.at["__call__"](input)
         >>> material(input).shape
         (5, 10)
@@ -268,7 +270,9 @@ class GroupNorm(sk.TreeClass):
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
-        >>> lazy = sk.nn.GroupNorm(None, groups=5)
+        >>> import jax.random as jr
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.GroupNorm(None, groups=5, key=key)
         >>> input = jnp.ones((5,10))
         >>> _, material = lazy.at["__call__"](input)
         >>> material(input).shape

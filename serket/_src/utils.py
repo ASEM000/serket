@@ -419,15 +419,35 @@ def maybe_lazy_init(
 
         kwargs = dict()
 
-        for i, p in enumerate(get_params(func)[1:]):
-            if p.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
-                kwargs[p.name] = a[i] if len(a) > i else k.get(p.name, p.default)
-            elif p.kind is inspect.Parameter.KEYWORD_ONLY:
-                kwargs[p.name] = k.get(p.name, p.default)
+        for index, param in enumerate(get_params(func)[1:]):
+            # skip the first argument which is ``self``
+            # the rest of the arguments are the input arguments
+            if param.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
+                # fetch from the positional arguments
+                # or the keyword arguments or the default value if exists
+                if len(a) > index:
+                    # fetch from the positional arguments
+                    kwargs[param.name] = a[index]
+                elif param.name in k:
+                    # fetch from the keyword arguments
+                    kwargs[param.name] = k[param.name]
+                elif param.default is not inspect.Parameter.empty:
+                    # fetch from the default value if exists
+                    kwargs[param.name] = param.default
+
+            elif param.kind is inspect.Parameter.KEYWORD_ONLY:
+                # fetch from the keyword arguments
+                # or the default value
+                if param.name in k:
+                    kwargs[param.name] = k[param.name]
+                elif param.default is not inspect.Parameter.empty:
+                    # fetch from the default value if exists
+                    kwargs[param.name] = param.default
+
             else:
                 # dont support positional only arguments, etc.
                 # not to complicate things
-                raise NotImplementedError(f"{p.kind=}")
+                raise NotImplementedError(f"{param.kind=}")
 
         for key, value in kwargs.items():
             # set the attribute to the instance
