@@ -140,9 +140,9 @@ class Linear(sk.TreeClass):
         >>> import jax.random as jr
         >>> key = jr.PRNGKey(0)
         >>> input = jnp.ones((10, 5, 4))
-        >>> lazy_linear = sk.nn.Linear(None, 12, in_axis=(0, 2), key=key)
-        >>> _, material_linear = lazy_linear.at["__call__"](input)
-        >>> material_linear.in_features
+        >>> lazy = sk.nn.Linear(None, 12, in_axis=(0, 2), key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> material.in_features
         (10, 4)
     """
 
