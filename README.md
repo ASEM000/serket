@@ -34,7 +34,7 @@ pip install git+https://github.com/ASEM000/serket
 ## Documentation
 - [Documentation](https://serket.readthedocs.io/)
 - [Train MNIST, UNet, ConvLSTM, PINN, ...](https://serket.readthedocs.io/training_guides.html)
-- [Model surgery, Parallelistm, Mixed precision, ...](https://serket.readthedocs.io/core_guides.html)
+- [Model surgery, Parallelism, Mixed precision, ...](https://serket.readthedocs.io/core_guides.html)
 - [Optimizers, Augmentation composition, ...](https://serket.readthedocs.io/other_guides.html)
 - [Interoperability with keras, tensorflow, ...](https://serket.readthedocs.io/interoperability.html)
 
