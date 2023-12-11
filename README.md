@@ -28,14 +28,18 @@ pip install git+https://github.com/ASEM000/serket
 
 ## 📖 Description and motivation<a id="Description"></a>
 
-- `serket` aims to be the most intuitive and easy-to-use machine learning library in `JAX`.
+- `serket` aims to be the most intuitive and easy-to-use machine learning library in `jax`.
 - `serket` is fully transparent to `jax` transformation (e.g. `vmap`,`grad`,`jit`,...).
 
-### 🏃 Quick example<a id="QuickExample"></a>
+## Documentation
+- [Documentation](https://serket.readthedocs.io/)
+- [Train MNIST, UNet, ConvLSTM, PINN, ...](https://serket.readthedocs.io/training_guides.html)
+- [Model surgery, Parallelistm, Mixed precision, ...](https://serket.readthedocs.io/core_guides.html)
+- [Optimizers, Augmentation composition, ...](https://serket.readthedocs.io/other_guides.html)
+- [Interoperability with keras, tensorflow, ...](https://serket.readthedocs.io/interoperability.html)
 
-See [🧠 `serket` mental model](https://serket.readthedocs.io/en/latest/notebooks/mental_model.html) and for examples, see [Training MNIST](https://serket.readthedocs.io/en/latest/notebooks/train_mnist.html)
-or [Training Bidirectional-LSTM](https://serket.readthedocs.io/en/latest/notebooks/train_bilstm.html)
-or [Training PINN](https://serket.readthedocs.io/en/latest/notebooks/train_pinn_burgers.html#) or [Image augmentation pipelines](https://serket.readthedocs.io/en/latest/notebooks/augmentations.html)
+
+## 🏃 Quick example<a id="QuickExample"></a>
 
 ```python
 import jax, jax.numpy as jnp
@@ -86,8 +90,7 @@ net = sk.tree_unmask(net)
 | Attention         | - `MultiHeadAttention`                                                                                                                                                                                                                                                                                                    |
 | Convolution       | - `{FFT,_}Conv{1D,2D,3D}` <br> - `{FFT,_}Conv{1D,2D,3D}Transpose` <br> - `Depthwise{FFT,_}Conv{1D,2D,3D}` <br> - `Separable{FFT,_}Conv{1D,2D,3D}` <br> - `Conv{1D,2D,3D}Local` <br> - `SpectralConv{1D,2D,3D}`                                                                                                            |
 | Dropout           | - `Dropout`<br> - `Dropout{1D,2D,3D}` <br> - `RandomCutout{1D,2D,3D}`                                                                                                                                                                                                                                                     |
-| Linear            | - `Linear`, `GeneralLinear`, `Identity`                                                                                                                                                                                                                                                                                   |
-| Densely connected | - `FNN` , <br> - `MLP` _compile time_ optimized                                                                                                                                                                                                                                                                           |
+| Linear            | - `Linear`, `MLP`, `Identity`                                                                                                                                                                                                                                                                                   |                                                                                                                                                                                                                                                            |
 | Normalization     | - `{Layer,Instance,Group,Batch}Norm`                                                                                                                                                                                                                                                                                      |
 | Pooling           | - `{Avg,Max,LP}Pool{1D,2D,3D}` <br> - `Global{Avg,Max}Pool{1D,2D,3D}` <br> - `Adaptive{Avg,Max}Pool{1D,2D,3D}`                                                                                                                                                                                                            |
 | Reshaping         | - `Upsample{1D,2D,3D}` <br> - `{Random,Center}Crop{1D,2D,3D}` `                                                                                                                                                                                                                                                           |
