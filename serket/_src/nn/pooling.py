@@ -46,7 +46,7 @@ def pool_nd(
 
     Args:
         reducer: reducer function. Takes an input and returns a single value
-        input: channeled input of shape (channels, *spatial_dims)
+        input: channeled input of shape (channels, spatial_dims)
         kernel_size: size of the kernel. accepts tuple of ints for each spatial dimension
         strides: strides of the kernel. accepts tuple of ints for each spatial dimension
         padding: padding of the kernel. accepts tuple of tuples of two ints for
@@ -84,6 +84,27 @@ def max_pool_nd(
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
 ) -> jax.Array:
+    """Max pooling operation
+
+    Args:
+        input: channeled input of shape (channels, spatial_dims)
+        kernel_size: size of the kernel. accepts tuple of ints for each spatial dimension
+        strides: strides of the kernel. accepts tuple of ints for each spatial dimension
+        padding: padding of the kernel. accepts tuple of tuples of two ints for
+            each spatial dimension for each side of the input
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> kernel_size = (3, 3)
+        >>> strides = (2, 2)
+        >>> input = jnp.ones((2, 25, 25))
+        >>> padding = ((1, 1), (1, 1)) # pad 1 on each side of the spatial dimensions
+        >>> output = sk.nn.max_pool_nd(input, kernel_size, strides, padding)
+        >>> print(output.shape)
+        (2, 13, 13)
+    """
     return pool_nd(max_op, -jnp.inf, input, kernel_size, strides, padding)
 
 
@@ -93,6 +114,27 @@ def avg_pool_nd(
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
 ) -> jax.Array:
+    """Average pooling operation
+
+    Args:
+        input: channeled input of shape (channels, spatial_dims)
+        kernel_size: size of the kernel. accepts tuple of ints for each spatial dimension
+        strides: strides of the kernel. accepts tuple of ints for each spatial dimension
+        padding: padding of the kernel. accepts tuple of tuples of two ints for
+            each spatial dimension for each side of the input
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> kernel_size = (3, 3)
+        >>> strides = (2, 2)
+        >>> input = jnp.ones((2, 25, 25))
+        >>> padding = ((1, 1), (1, 1)) # pad 1 on each side of the spatial dimensions
+        >>> output = sk.nn.avg_pool_nd(input, kernel_size, strides, padding)
+        >>> print(output.shape)
+        (2, 13, 13)
+    """
     return pool_nd(jnp.mean, 0, input, kernel_size, strides, padding)
 
 
@@ -103,8 +145,32 @@ def lp_pool_nd(
     strides: tuple[int, ...],
     padding: tuple[tuple[int, int], ...],
 ) -> jax.Array:
-    def reducer(x):
-        return jnp.sum(x**norm_type) ** (1 / norm_type)
+    """Lp pooling operation
+
+    Args:
+        input: channeled input of shape (channels, *spatial_dims)
+        norm_type: norm type as a float
+        kernel_size: size of the kernel. accepts tuple of ints for each spatial dimension
+        strides: strides of the kernel. accepts tuple of ints for each spatial dimension
+        padding: padding of the kernel. accepts tuple of tuples of two ints for
+            each spatial dimension for each side of the input
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> kernel_size = (3, 3)
+        >>> strides = (2, 2)
+        >>> input = jnp.ones((2, 25, 25))
+        >>> norm_type = 2
+        >>> padding = ((1, 1), (1, 1)) # pad 1 on each side of the spatial dimensions
+        >>> output = sk.nn.lp_pool_nd(input, norm_type, kernel_size, strides, padding)
+        >>> print(output.shape)
+        (2, 13, 13)
+    """
+
+    def reducer(input: jax.Array) -> jax.Array:
+        return jnp.sum(input**norm_type) ** (1 / norm_type)
 
     return pool_nd(reducer, 0, input, kernel_size, strides, padding)
 
@@ -112,28 +178,64 @@ def lp_pool_nd(
 def adaptive_pool_nd(
     reducer: Callable[[jax.Array], jax.Array],
     input: jax.Array,
-    outdim: tuple[int, ...],
+    out_dim: tuple[int, ...],
 ) -> jax.Array:
-    indim = input.shape[1:]
-    strides = tuple(i // o for i, o in zip(indim, outdim))
-    kernel_size = tuple(i - (o - 1) * s for i, o, s in zip(indim, outdim, strides))
+    in_dim = input.shape[1:]
+    strides = tuple(i // o for i, o in zip(in_dim, out_dim))
+    kernel_size = tuple(i - (o - 1) * s for i, o, s in zip(in_dim, out_dim, strides))
 
     @jax.vmap
     @ft.partial(
         kernel_map,
-        shape=indim,
+        shape=in_dim,
         kernel_size=kernel_size,
         strides=strides,
-        padding=((0, 0),) * len(indim),
+        padding=((0, 0),) * len(in_dim),
     )
-    def reducer_map(x):
-        return reducer(x)
+    def reducer_map(input: jax.Array) -> jax.Array:
+        return reducer(input)
 
     return reducer_map(input)
 
 
-adaptive_avg_pool_nd = ft.partial(adaptive_pool_nd, jnp.mean)
-adaptive_max_pool_nd = ft.partial(adaptive_pool_nd, jnp.max)
+def adaptive_avg_pool_nd(input: jax.Array, out_dim: tuple[int, ...]) -> jax.Array:
+    """Adaptive average pooling operation
+
+    Args:
+        input: channeled input of shape (channels, spatial_dims)
+        out_dim: output dimension. accepts tuple of ints for each spatial dimension
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> input = jnp.ones((2, 25, 25))
+        >>> out_dim = (13, 13)
+        >>> output = sk.nn.adaptive_avg_pool_nd(input, out_dim)
+        >>> print(output.shape)
+        (2, 13, 13)
+    """
+    return adaptive_pool_nd(jnp.mean, input, out_dim)
+
+
+def adaptive_max_pool_nd(input: jax.Array, out_dim: tuple[int, ...]) -> jax.Array:
+    """Adaptive max pooling operation
+
+    Args:
+        input: channeled input of shape (channels, spatial_dims)
+        out_dim: output dimension. accepts tuple of ints for each spatial dimension
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> input = jnp.ones((2, 25, 25))
+        >>> out_dim = (13, 13)
+        >>> output = sk.nn.adaptive_max_pool_nd(input, out_dim)
+        >>> print(output.shape)
+        (2, 13, 13)
+    """
+    return adaptive_pool_nd(max_op, input, out_dim)
 
 
 class MaxPoolND(sk.TreeClass):
@@ -161,7 +263,12 @@ class MaxPoolND(sk.TreeClass):
             padding=self.padding,
         )
 
-        return max_pool_nd(input, self.kernel_size, self.strides, padding)
+        return max_pool_nd(
+            input=input,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+            padding=padding,
+        )
 
     @property
     @abc.abstractmethod
@@ -249,7 +356,12 @@ class AvgPoolND(sk.TreeClass):
             padding=self.padding,
         )
 
-        return avg_pool_nd(input, self.kernel_size, self.strides, padding)
+        return avg_pool_nd(
+            input=input,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+            padding=padding,
+        )
 
     @property
     @abc.abstractmethod
@@ -322,7 +434,11 @@ class LPPoolND(sk.TreeClass):
         )
 
         return lp_pool_nd(
-            input, self.norm_type, self.kernel_size, self.strides, padding
+            input=input,
+            norm_type=self.norm_type,
+            kernel_size=self.kernel_size,
+            strides=self.strides,
+            padding=padding,
         )
 
     @property
