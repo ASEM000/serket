@@ -472,9 +472,9 @@ def spectral_conv_nd(
 
     Args:
         input: input array. shape is ``(in_features, spatial size)``.
-        weight_r: real convolutional kernel. shape is ``(2 ** (dim-1), out_features, in_features, kernel size)``.
+        weight_r: real convolutional kernel. shape is ``(2 ** (dim-1), out_features, in_features, modes)``.
             where dim is the number of spatial dimensions.
-        weight_i: convolutional kernel. shape is ``(2 ** (dim-1), out_features, in_features, kernel size)``.
+        weight_i: convolutional kernel. shape is ``(2 ** (dim-1), out_features, in_features, modes)``.
             where dim is the number of spatial dimensions.
         modes: number of modes included in the fft representation of the input.
     """
@@ -681,7 +681,8 @@ class Conv1D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.Conv1D(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.Conv1D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5))
         >>> print(layer(input).shape)
@@ -704,20 +705,12 @@ class Conv1D(ConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.Conv1D = sk.nn.Conv1D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.Conv1D = sk.nn.Conv1D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.Conv1D(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -776,7 +769,8 @@ class Conv2D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.Conv2D(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.Conv2D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5))
         >>> print(layer(input).shape)
@@ -799,20 +793,12 @@ class Conv2D(ConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.Conv2D = sk.nn.Conv2D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.Conv2D = sk.nn.Conv2D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.Conv2D(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -871,7 +857,8 @@ class Conv3D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.Conv3D(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.Conv3D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5, 5))
         >>> print(layer(input).shape)
@@ -894,20 +881,12 @@ class Conv3D(ConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.Conv3D = sk.nn.Conv3D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.Conv3D = sk.nn.Conv3D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.Conv3D(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -966,7 +945,8 @@ class FFTConv1D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.FFTConv1D(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.FFTConv1D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5))
         >>> print(layer(input).shape)
@@ -989,20 +969,12 @@ class FFTConv1D(ConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.FFTConv1D = sk.nn.FFTConv1D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.FFTConv1D = sk.nn.FFTConv1D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.FFTConv1D(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1061,7 +1033,8 @@ class FFTConv2D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.FFTConv2D(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.FFTConv2D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5))
         >>> print(layer(input).shape)
@@ -1084,20 +1057,12 @@ class FFTConv2D(ConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.FFTConv2D = sk.nn.FFTConv2D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.FFTConv2D = sk.nn.FFTConv2D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.FFTConv2D(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1156,7 +1121,8 @@ class FFTConv3D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.FFTConv3D(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.FFTConv3D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5, 5))
         >>> print(layer(input).shape)
@@ -1179,20 +1145,12 @@ class FFTConv3D(ConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.FFTConv3D = sk.nn.FFTConv3D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.FFTConv3D = sk.nn.FFTConv3D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.FFTConv3D(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1339,7 +1297,8 @@ class Conv1DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.Conv1DTranspose(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.Conv1DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5))
         >>> print(layer(input).shape)
@@ -1362,20 +1321,12 @@ class Conv1DTranspose(ConvNDTranspose):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.Conv1DTranspose = sk.nn.Conv1DTranspose(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.Conv1DTranspose = sk.nn.Conv1DTranspose(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.Conv1DTranspose(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1437,7 +1388,8 @@ class Conv2DTranspose(ConvNDTranspose):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> layer = sk.nn.Conv2DTranspose(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.Conv2DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5))
         >>> print(layer(input).shape)
@@ -1460,20 +1412,12 @@ class Conv2DTranspose(ConvNDTranspose):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.Conv2DTranspose = sk.nn.Conv2DTranspose(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.Conv2DTranspose = sk.nn.Conv2DTranspose(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.Conv2DTranspose(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1536,7 +1480,8 @@ class Conv3DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.Conv3DTranspose(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.Conv3DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5, 5))
         >>> print(layer(input).shape)
@@ -1559,20 +1504,12 @@ class Conv3DTranspose(ConvNDTranspose):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.Conv3DTranspose = sk.nn.Conv3DTranspose(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.Conv3DTranspose = sk.nn.Conv3DTranspose(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.Conv3DTranspose(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1635,7 +1572,8 @@ class FFTConv1DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.FFTConv1DTranspose(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.FFTConv1DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5))
         >>> print(layer(input).shape)
@@ -1658,20 +1596,12 @@ class FFTConv1DTranspose(ConvNDTranspose):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.FFTConv1DTranspose = sk.nn.FFTConv1DTranspose(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.FFTConv1DTranspose = sk.nn.FFTConv1DTranspose(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.FFTConv1DTranspose(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1734,7 +1664,8 @@ class FFTConv2DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.FFTConv2DTranspose(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.FFTConv2DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5))
         >>> print(layer(input).shape)
@@ -1757,20 +1688,12 @@ class FFTConv2DTranspose(ConvNDTranspose):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.FFTConv2DTranspose = sk.nn.FFTConv2DTranspose(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.FFTConv2DTranspose = sk.nn.FFTConv2DTranspose(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.FFTConv2DTranspose(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1833,7 +1756,8 @@ class FFTConv3DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> layer = sk.nn.FFTConv3DTranspose(1, 2, 3, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> layer = sk.nn.FFTConv3DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5, 5))
         >>> print(layer(input).shape)
@@ -1856,20 +1780,12 @@ class FFTConv3DTranspose(ConvNDTranspose):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.FFTConv3DTranspose = sk.nn.FFTConv3DTranspose(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.FFTConv3DTranspose = sk.nn.FFTConv3DTranspose(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.FFTConv3DTranspose(None, 12, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -1991,7 +1907,8 @@ class DepthwiseConv1D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.DepthwiseConv1D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.DepthwiseConv1D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
 
@@ -2008,20 +1925,12 @@ class DepthwiseConv1D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.DepthwiseConv1D = sk.nn.DepthwiseConv1D(None, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.DepthwiseConv1D = sk.nn.DepthwiseConv1D(None, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 5
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.DepthwiseConv1D(None, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2073,7 +1982,8 @@ class DepthwiseConv2D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.DepthwiseConv2D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.DepthwiseConv2D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
 
@@ -2090,20 +2000,12 @@ class DepthwiseConv2D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.DepthwiseConv2D = sk.nn.DepthwiseConv2D(None, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.DepthwiseConv2D = sk.nn.DepthwiseConv2D(None, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 5
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.DepthwiseConv2D(None, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2155,7 +2057,8 @@ class DepthwiseConv3D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.DepthwiseConv3D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.DepthwiseConv3D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
 
@@ -2172,20 +2075,12 @@ class DepthwiseConv3D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.DepthwiseConv3D = sk.nn.DepthwiseConv3D(None, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.DepthwiseConv3D = sk.nn.DepthwiseConv3D(None, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 5
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.DepthwiseConv3D(None, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2237,7 +2132,8 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.DepthwiseFFTConv1D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.DepthwiseFFTConv1D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
 
@@ -2254,20 +2150,12 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.DepthwiseFFTConv1D = sk.nn.DepthwiseFFTConv1D(None, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.DepthwiseFFTConv1D = sk.nn.DepthwiseFFTConv1D(None, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 5
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.DepthwiseFFTConv1D(None, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2319,7 +2207,8 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.DepthwiseFFTConv2D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.DepthwiseFFTConv2D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
 
@@ -2336,20 +2225,12 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.DepthwiseFFTConv2D = sk.nn.DepthwiseFFTConv2D(None, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.DepthwiseFFTConv2D = sk.nn.DepthwiseFFTConv2D(None, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 5
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.DepthwiseFFTConv2D(None, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2401,7 +2282,8 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.DepthwiseFFTConv3D(3, 3, depth_multiplier=2, strides=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.DepthwiseFFTConv3D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
 
@@ -2418,21 +2300,14 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.DepthwiseFFTConv3D = sk.nn.DepthwiseFFTConv3D(None, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.DepthwiseFFTConv3D = sk.nn.DepthwiseFFTConv3D(None, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 5
-    References:
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.DepthwiseFFTConv3D(None, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
+
+    Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
         - https://github.com/google/flax/blob/main/flax/linen/linear.py
     """
@@ -2590,7 +2465,8 @@ class SeparableConv1D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.SeparableConv1D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.SeparableConv1D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
@@ -2607,16 +2483,12 @@ class SeparableConv1D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.SeparableConv1D = sk.nn.SeparableConv1D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.SeparableConv1D = sk.nn.SeparableConv1D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.SeparableConv1D(None, 2, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2679,7 +2551,8 @@ class SeparableConv2D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.SeparableConv2D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.SeparableConv2D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
@@ -2696,16 +2569,12 @@ class SeparableConv2D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.SeparableConv2D = sk.nn.SeparableConv2D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.SeparableConv2D = sk.nn.SeparableConv2D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.SeparableConv2D(None, 2, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2768,7 +2637,8 @@ class SeparableConv3D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.SeparableConv3D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.SeparableConv3D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
@@ -2785,16 +2655,12 @@ class SeparableConv3D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.SeparableConv3D = sk.nn.SeparableConv3D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.SeparableConv3D = sk.nn.SeparableConv3D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.SeparableConv3D(None, 2, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2857,7 +2723,8 @@ class SeparableFFTConv1D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.SeparableFFTConv1D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.SeparableFFTConv1D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
@@ -2874,16 +2741,12 @@ class SeparableFFTConv1D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.SeparableFFTConv1D = sk.nn.SeparableFFTConv1D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.SeparableFFTConv1D = sk.nn.SeparableFFTConv1D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.SeparableFFTConv1D(None, 2, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -2946,7 +2809,8 @@ class SeparableFFTConv2D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.SeparableFFTConv2D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.SeparableFFTConv2D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
@@ -2963,16 +2827,12 @@ class SeparableFFTConv2D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.SeparableFFTConv2D = sk.nn.SeparableFFTConv2D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.SeparableFFTConv2D = sk.nn.SeparableFFTConv2D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.SeparableFFTConv2D(None, 2, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -3035,7 +2895,8 @@ class SeparableFFTConv3D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.SeparableFFTConv3D(3, 3, 3, depth_multiplier=2, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.SeparableFFTConv3D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
@@ -3052,16 +2913,12 @@ class SeparableFFTConv3D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.SeparableFFTConv3D = sk.nn.SeparableFFTConv3D(None, 12, 3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.SeparableFFTConv3D = sk.nn.SeparableFFTConv3D(None, 1, 3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.SeparableFFTConv3D(None, 2, 3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     References:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -3137,7 +2994,8 @@ class SpectralConv1D(SpectralConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.SpectralConv1D(3, 3, modes=1, key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.SpectralConv1D(3, 3, modes=1, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
@@ -3153,15 +3011,12 @@ class SpectralConv1D(SpectralConvND):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> @sk.autoinit
-        ... class Net(sk.TreeClass):
-        ...    l1: sk.nn.SpectralConv1D = sk.nn.SpectralConv1D(None, 3, modes=3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.SpectralConv1D = sk.nn.SpectralConv1D(3, 1, modes=3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jnp.sin(self.l1(x)))
-        >>> lazy_net = Net()
-        >>> _, material_net = lazy_net.at["__call__"](jnp.ones((5, 10)))
-        >>> material_net.l1.in_features
+        >>> import jax
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.SpectralConv1D(None, 2, modes=3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
         5
 
     Reference:
@@ -3193,6 +3048,15 @@ class SpectralConv2D(SpectralConvND):
         key: key to use for initializing the weights.
         dtype: dtype of the weights. defaults to ``jax.numpy.float32``
 
+    Example:
+        >>> import jax.numpy as jnp
+        >>> import serket as sk
+        >>> import jax.random as jr
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.SpectralConv2D(3, 3, modes=(1, 2), key=key)
+        >>> l1(jnp.ones((3, 32 ,32))).shape
+        (3, 32, 32)
+
     Note:
         :class:`.SpectralConv2D` supports lazy initialization, meaning that the weights and
         biases are not initialized until the first call to the layer. This is
@@ -3205,24 +3069,13 @@ class SpectralConv2D(SpectralConvND):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> @sk.autoinit
-        ... class Net(sk.TreeClass):
-        ...    l1: sk.nn.SpectralConv2D = sk.nn.SpectralConv2D(None, 3, modes=3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.SpectralConv2D = sk.nn.SpectralConv2D(3, 1, modes=3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jnp.sin(self.l1(x)))
-        >>> lazy_net = Net()
-        >>> _, material_net = lazy_net.at["__call__"](jnp.ones((5, 10, 10)))
-        >>> material_net.l1.in_features
+        >>> import jax
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.SpectralConv2D(None, 2, modes=3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
         5
-
-    Example:
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> import jax.random as jr
-        >>> l1 = sk.nn.SpectralConv2D(3, 3, modes=(1, 2), key=jr.PRNGKey(0))
-        >>> l1(jnp.ones((3, 32 ,32))).shape
-        (3, 32, 32)
 
     Reference:
         - https://zongyi-li.github.io/blog/2020/fourier-pde/
@@ -3257,7 +3110,8 @@ class SpectralConv3D(SpectralConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.SpectralConv3D(3, 3, modes=(1, 2, 2), key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.SpectralConv3D(3, 3, modes=(1, 2, 2), key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
@@ -3273,15 +3127,12 @@ class SpectralConv3D(SpectralConvND):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> @sk.autoinit
-        ... class Net(sk.TreeClass):
-        ...    l1: sk.nn.SpectralConv3D = sk.nn.SpectralConv3D(None, 3, modes=3, key=jr.PRNGKey(1))
-        ...    l2: sk.nn.SpectralConv3D = sk.nn.SpectralConv3D(3, 1, modes=3, key=jr.PRNGKey(2))
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jnp.sin(self.l1(x)))
-        >>> lazy_net = Net()
-        >>> _, material_net = lazy_net.at["__call__"](jnp.ones((5, 10, 10, 10)))
-        >>> material_net.l1.in_features
+        >>> import jax
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.SpectralConv3D(None, 2, modes=3, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
         5
 
     Reference:
@@ -3464,7 +3315,8 @@ class Conv1DLocal(ConvNDLocal):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.Conv1DLocal(3, 3, 3, in_size=(32,), key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.Conv1DLocal(3, 3, 3, in_size=(32,), key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
 
@@ -3481,21 +3333,12 @@ class Conv1DLocal(ConvNDLocal):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> k1, k2 = jr.split(jr.PRNGKey(0))
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.Conv1DLocal = sk.nn.Conv1DLocal(None, 12, 3, in_size=None, key=k1)
-        ...    l2: sk.nn.Conv1DLocal = sk.nn.Conv1DLocal(None, 5, 3, in_size=None, key=k2)
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.Conv1DLocal(None, 3, 3, in_size=None, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -3554,7 +3397,8 @@ class Conv2DLocal(ConvNDLocal):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.Conv2DLocal(3, 3, 3, in_size=(32, 32), key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.Conv2DLocal(3, 3, 3, in_size=(32, 32), key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
 
@@ -3571,21 +3415,12 @@ class Conv2DLocal(ConvNDLocal):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> k1, k2 = jr.split(jr.PRNGKey(0))
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.Conv2DLocal = sk.nn.Conv2DLocal(None, 12, 3, in_size=None, key=k1)
-        ...    l2: sk.nn.Conv2DLocal = sk.nn.Conv2DLocal(None, 5, 3, in_size=None, key=k2)
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.Conv2DLocal(None, 3, 3, in_size=None, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
@@ -3644,7 +3479,8 @@ class Conv3DLocal(ConvNDLocal):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> l1 = sk.nn.Conv3DLocal(3, 3, 3, in_size=(32, 32, 32), key=jr.PRNGKey(0))
+        >>> key = jr.PRNGKey(0)
+        >>> l1 = sk.nn.Conv3DLocal(3, 3, 3, in_size=(32, 32, 32), key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
 
@@ -3661,21 +3497,12 @@ class Conv3DLocal(ConvNDLocal):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import jax
-        >>> k1, k2 = jr.split(jr.PRNGKey(0))
-        >>> @sk.autoinit
-        ... class CNN(sk.TreeClass):
-        ...    l1: sk.nn.Conv3DLocal = sk.nn.Conv3DLocal(None, 12, 3, in_size=None, key=k1)
-        ...    l2: sk.nn.Conv3DLocal = sk.nn.Conv3DLocal(None, 5, 3, in_size=None, key=k2)
-        ...    def __call__(self, x: jax.Array) -> jax.Array:
-        ...        return self.l2(jax.nn.relu(self.l1(x)))
-        >>> # lazy initialization
-        >>> lazy = CNN()
-        >>> print(lazy.l1.in_features, lazy.l2.in_features)
-        None None
-        >>> # materialize the layer
-        >>> _, material = lazy.at["__call__"](jnp.ones((5, 2, 2, 2)))
-        >>> print(material.l1.in_features, material.l2.in_features)
-        5 12
+        >>> input = jnp.ones((5, 10, 10, 10))
+        >>> key = jr.PRNGKey(0)
+        >>> lazy = sk.nn.Conv3DLocal(None, 3, 3, in_size=None, key=key)
+        >>> _, material = lazy.at["__call__"](input)
+        >>> print(material.in_features)
+        5
 
     Reference:
         - https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv.html
