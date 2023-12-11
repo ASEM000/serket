@@ -24,3 +24,9 @@ Pooling
 .. autoclass:: AdaptiveMaxPool1D
 .. autoclass:: AdaptiveMaxPool2D
 .. autoclass:: AdaptiveMaxPool3D
+
+.. autofunction:: adaptive_avg_pool_nd
+.. autofunction:: adaptive_max_pool_nd
+.. autofunction:: avg_pool_nd
+.. autofunction:: lp_pool_nd
+.. autofunction:: max_pool_nd

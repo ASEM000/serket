@@ -134,6 +134,11 @@ from serket._src.nn.pooling import (
     MaxPool1D,
     MaxPool2D,
     MaxPool3D,
+    adaptive_avg_pool_nd,
+    adaptive_max_pool_nd,
+    avg_pool_nd,
+    lp_pool_nd,
+    max_pool_nd,
 )
 from serket._src.nn.recurrent import (
     ConvGRU1DCell,
@@ -297,6 +302,11 @@ __all__ = [
     "MaxPool1D",
     "MaxPool2D",
     "MaxPool3D",
+    "adaptive_avg_pool_nd",
+    "adaptive_max_pool_nd",
+    "avg_pool_nd",
+    "lp_pool_nd",
+    "max_pool_nd",
     # rnn
     "ConvGRU1DCell",
     "ConvGRU2DCell",

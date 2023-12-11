@@ -370,14 +370,14 @@ libraries like ``pytorch`` and ``tensorflow``.
 ...    def __call__(self, x):
 ...        return x
 <BLANKLINE>
->>> simple_lazy_linear = SimpleLinear(None, 1)
+>>> simple_lazy = SimpleLinear(None, 1)
 >>> x = jnp.ones([10, 2])  # last dimension is the in_features of the layer
->>> print(repr(simple_lazy_linear))
+>>> print(repr(simple_lazy))
 SimpleLinear(in_features=None, out_features=1)
 <BLANKLINE>
->>> _, material_linear = simple_lazy_linear.at["__call__"](x)
+>>> _, material = simple_lazy.at["__call__"](x)
 <BLANKLINE>
->>> print(repr(material_linear))
+>>> print(repr(material))
 SimpleLinear(
     in_features=2, 
     out_features=1, 
@@ -475,7 +475,7 @@ Example:
     
     Instead use the following pattern:
 
-    >>> layer_output, material = layer.at["{func_name}"](input)
+    >>> output, material = layer.at["{func_name}"](input)
     >>> material(input)
     ...
 """
