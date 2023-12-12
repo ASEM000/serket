@@ -773,11 +773,7 @@ class BaseAvgBlur2D(sk.TreeClass):
         return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
 
     spatial_ndim: int = 2
-
-    @property
-    @abc.abstractmethod
-    def filter_op(self):
-        ...
+    filter_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class AvgBlur2D(BaseAvgBlur2D):
@@ -838,8 +834,6 @@ class BaseGaussianBlur2D(sk.TreeClass):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
         self.sigma = canonicalize(sigma, ndim=2, name="sigma")
 
-    spatial_ndim: int = 2
-
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         in_axes = (0, None, None)
@@ -847,10 +841,8 @@ class BaseGaussianBlur2D(sk.TreeClass):
         args = (image, self.kernel_size, sigma)
         return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
 
-    @property
-    @abc.abstractmethod
-    def filter_op(self):
-        ...
+    spatial_ndim: int = 2
+    filter_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class GaussianBlur2D(BaseGaussianBlur2D):
@@ -964,11 +956,7 @@ class BoxBlur2DBase(sk.TreeClass):
         return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
 
     spatial_ndim: int = 2
-
-    @property
-    @abc.abstractmethod
-    def filter_op(self):
-        ...
+    filter_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class BoxBlur2D(BoxBlur2DBase):
@@ -1030,11 +1018,7 @@ class Laplacian2DBase(sk.TreeClass):
         return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
 
     spatial_ndim: int = 2
-
-    @property
-    @abc.abstractmethod
-    def filter_op(self):
-        ...
+    filter_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class Laplacian2D(Laplacian2DBase):
@@ -1111,11 +1095,7 @@ class MotionBlur2DBase(sk.TreeClass):
         return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
 
     spatial_ndim: int = 2
-
-    @property
-    @abc.abstractmethod
-    def filter_op(self):
-        ...
+    filter_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class MotionBlur2D(MotionBlur2DBase):
@@ -1207,16 +1187,12 @@ class MedianBlur2D(sk.TreeClass):
 
 
 class Sobel2DBase(sk.TreeClass):
-    spatial_ndim: int = 2
-
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(type(self).filter_op)(image)
 
-    @property
-    @abc.abstractmethod
-    def filter_op(self):
-        ...
+    spatial_ndim: int = 2
+    filter_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class Sobel2D(Sobel2DBase):
@@ -1281,11 +1257,7 @@ class ElasticTransform2DBase(sk.TreeClass):
         args = (image, self.kernel_size, self.sigma, self.alpha)
         return jax.vmap(type(self).filter_op, in_axes=in_axes)(key, *args)
 
-    @property
-    @abc.abstractmethod
-    def filter_op(self):
-        ...
-
+    filter_op = property(abc.abstractmethod(lambda _: ...))
     spatial_ndim: int = 2
 
 
@@ -1457,12 +1429,8 @@ class BlurPool2DBase(sk.TreeClass):
         args = (image, self.kernel_size, self.strides)
         return jax.vmap(type(self).filter_op, in_axes=in_axes)(*args)
 
-    @property
-    @abc.abstractmethod
-    def filter_op(self):
-        ...
-
     spatial_ndim: int = 2
+    filter_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class BlurPool2D(BlurPool2DBase):

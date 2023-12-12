@@ -626,10 +626,7 @@ class ConvLSTMNDCell(sk.TreeClass):
     def conv_layer(self):
         ...
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class ConvLSTM1DCell(ConvLSTMNDCell):
@@ -1055,10 +1052,7 @@ class ConvGRUNDCell(sk.TreeClass):
     def conv_layer(self):
         ...
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class ConvGRU1DCell(ConvGRUNDCell):

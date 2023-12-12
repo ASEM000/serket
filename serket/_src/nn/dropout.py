@@ -164,7 +164,7 @@ class DropoutND(sk.TreeClass):
     drop_rate: float = sk.field(
         default=0.5,
         on_setattr=[IsInstance(float), Range(0, 1)],
-        on_getattr=[jax.lax.stop_gradient_p.bind],
+        on_getattr=[jax.lax.stop_gradient],
     )
 
     @ft.partial(validate_spatial_ndim, argnum=0)
@@ -315,10 +315,7 @@ class RandomCutoutND(sk.TreeClass):
         args = (key, input, self.shape, self.cutout_count, fill_value)
         return jax.vmap(random_cutout_nd, in_axes=in_axes)(*args)
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class RandomCutout1D(RandomCutoutND):

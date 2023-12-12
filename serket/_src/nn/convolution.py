@@ -620,16 +620,8 @@ class ConvND(sk.TreeClass):
             mask=mask,
         )
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the convolutional layer."""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def conv_op(self):
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
+    conv_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class Conv1D(ConvND):
@@ -1232,16 +1224,8 @@ class ConvNDTranspose(sk.TreeClass):
             mask=mask,
         )
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the convolutional layer."""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def conv_op(self):
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
+    conv_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class Conv1DTranspose(ConvNDTranspose):
@@ -1854,16 +1838,8 @@ class DepthwiseConvND(sk.TreeClass):
             mask=mask,
         )
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the convolutional layer."""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def conv_op(self):
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
+    conv_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class DepthwiseConv1D(DepthwiseConvND):
@@ -2402,15 +2378,8 @@ class SeparableConvND(sk.TreeClass):
             pointwise_mask=pointwise_mask,
         )
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
-
-    @property
-    @abc.abstractmethod
-    def conv_op(self):
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
+    conv_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class SeparableConv1D(SeparableConvND):
@@ -2960,15 +2929,8 @@ class SpectralConvND(sk.TreeClass):
             modes=self.modes,
         )
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
-
-    @property
-    @abc.abstractmethod
-    def conv_op(self):
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
+    conv_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class SpectralConv1D(SpectralConvND):
@@ -3255,16 +3217,8 @@ class ConvNDLocal(sk.TreeClass):
             mask=mask,
         )
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        """Number of spatial dimensions of the convolutional layer."""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def conv_op(self):
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
+    conv_op = property(abc.abstractmethod(lambda _: ...))
 
 
 class Conv1DLocal(ConvNDLocal):

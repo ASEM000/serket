@@ -148,7 +148,7 @@ def lp_pool_nd(
     """Lp pooling operation
 
     Args:
-        input: channeled input of shape (channels, *spatial_dims)
+        input: channeled input of shape (channels, spatial_dims)
         norm_type: norm type as a float
         kernel_size: size of the kernel. accepts tuple of ints for each spatial dimension
         strides: strides of the kernel. accepts tuple of ints for each spatial dimension
@@ -270,10 +270,7 @@ class MaxPoolND(sk.TreeClass):
             padding=padding,
         )
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class MaxPool1D(MaxPoolND):
@@ -363,10 +360,7 @@ class AvgPoolND(sk.TreeClass):
             padding=padding,
         )
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class AvgPool1D(AvgPoolND):
@@ -441,10 +435,7 @@ class LPPoolND(sk.TreeClass):
             padding=padding,
         )
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class LPPool1D(LPPoolND):
@@ -495,10 +486,7 @@ class GlobalAvgPoolND(sk.TreeClass):
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
         return jnp.mean(input, axis=axes, keepdims=self.keepdims)
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class GlobalAvgPool1D(GlobalAvgPoolND):
@@ -540,10 +528,7 @@ class GlobalMaxPoolND(sk.TreeClass):
         axes = tuple(range(1, self.spatial_ndim + 1))  # reduce spatial dimensions
         return jnp.max(input, axis=axes, keepdims=self.keepdims)
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class GlobalMaxPool1D(GlobalMaxPoolND):
@@ -588,10 +573,7 @@ class AdaptiveAvgPoolND(sk.TreeClass):
     def __call__(self, input: jax.Array) -> jax.Array:
         return adaptive_avg_pool_nd(input, self.output_size)
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class AdaptiveAvgPool1D(AdaptiveAvgPoolND):
@@ -636,10 +618,7 @@ class AdaptiveMaxPoolND(sk.TreeClass):
     def __call__(self, input: jax.Array) -> jax.Array:
         return adaptive_max_pool_nd(input, self.output_size)
 
-    @property
-    @abc.abstractmethod
-    def spatial_ndim(self) -> int:
-        ...
+    spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
 
 class AdaptiveMaxPool1D(AdaptiveMaxPoolND):

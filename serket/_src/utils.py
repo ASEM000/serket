@@ -201,8 +201,6 @@ def canonicalize(value, ndim, name: str | None = None):
 
 @sk.autoinit
 class Range(sk.TreeClass):
-    """Check if the input is in the range [min_val, max_val]."""
-
     min_val: float = -float("inf")
     max_val: float = float("inf")
     min_inclusive: bool = True
@@ -220,14 +218,12 @@ class Range(sk.TreeClass):
 
 @sk.autoinit
 class IsInstance(sk.TreeClass):
-    """Check if the input is an instance of expected_type."""
-
-    predicted_type: type | Sequence[type]
+    klass: type | Sequence[type]
 
     def __call__(self, value: Any):
-        if isinstance(value, self.predicted_type):
+        if isinstance(value, self.klass):
             return value
-        raise TypeError(f"Expected {self.predicted_type}, got {type(value).__name__}")
+        raise TypeError(f"Expected {self.klass}, got {type(value).__name__}")
 
 
 class ScalarLike(sk.TreeClass):
@@ -401,6 +397,8 @@ def maybe_lazy_init(
     be used later when the instance is re-initialized using ``maybe_lazy_call``
     decorator. ``maybe_lazy_call`` assumes that the input arguments are stored
     in the instance attribute and can be retrieved using ``vars(instance)``.
+    Meaning that upon re-initialization, ``obj.__init__(**vars(obj))`` will
+    re-initialize the instance with the same input arguments.
 
     Args:
         func: The ``__init__`` method of a class.
@@ -411,22 +409,23 @@ def maybe_lazy_init(
         The decorated ``__init__`` method.
     """
 
-    @ft.wraps(func)
     def inner(instance, *a, **k):
         if not is_lazy(instance, *a, **k):
             # continue with the original initialization
             return func(instance, *a, **k)
 
-        kwargs = dict()
+        # store the input arguments to the instance
+        # until the instance is re-initialized (materialized)
+        # then use the stored arguments to re-initialize the instance
+        kwargs: dict[str, Any] = dict()
 
         for index, param in enumerate(get_params(func)[1:]):
-            # skip the first argument which is ``self``
-            # the rest of the arguments are the input arguments
+            # skip the self argument
             if param.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
                 # fetch from the positional arguments
                 # or the keyword arguments or the default value if exists
                 if len(a) > index:
-                    # fetch from the positional arguments
+                    # fetch from the positional arguments if available
                     kwargs[param.name] = a[index]
                 elif param.name in k:
                     # fetch from the keyword arguments
@@ -439,11 +438,11 @@ def maybe_lazy_init(
                 # fetch from the keyword arguments
                 # or the default value
                 if param.name in k:
+                    # fetch from the keyword arguments if exists
                     kwargs[param.name] = k[param.name]
                 elif param.default is not inspect.Parameter.empty:
                     # fetch from the default value if exists
                     kwargs[param.name] = param.default
-
             else:
                 # dont support positional only arguments, etc.
                 # not to complicate things
@@ -459,7 +458,7 @@ def maybe_lazy_init(
         # and move to the next call
         return None
 
-    return inner
+    return ft.wraps(func)(inner)
 
 
 LAZY_CALL_ERROR = """\
@@ -517,7 +516,6 @@ def maybe_lazy_call(
             for key in kwargs:
                 # clear the instance information (i.e. the initial input arguments)
                 # use ``delattr`` to raise an error if the instance is immutable
-                # should raise an error if the instance is immutable
                 # which is marking the instance as lazy and immutable
                 delattr(instance, key)
         except AttributeError:

@@ -6,10 +6,11 @@
 
 [**Installation**](#Installation)
 |[**Description**](#Description)
+|[**Documentation**](#Documentation)
 |[**Quick Example**](#QuickExample)
 
 ![Tests](https://github.com/ASEM000/serket/actions/workflows/tests.yml/badge.svg)
-![pyver](https://img.shields.io/badge/python-3.8%203.9%203.10%203.11-blue)
+![pyver](https://img.shields.io/badge/python-3.9%203.9%203.10%203.12-blue)
 ![codestyle](https://img.shields.io/badge/codestyle-black-black)
 [![codecov](https://codecov.io/gh/ASEM000/serket/branch/main/graph/badge.svg?token=C6NXOK9EVS)](https://codecov.io/gh/ASEM000/serket)
 [![Documentation Status](https://readthedocs.org/projects/serket/badge/?version=latest)](https://serket.readthedocs.io/?badge=latest)
@@ -31,12 +32,12 @@ pip install git+https://github.com/ASEM000/serket
 - `serket` aims to be the most intuitive and easy-to-use machine learning library in `jax`.
 - `serket` is fully transparent to `jax` transformation (e.g. `vmap`,`grad`,`jit`,...).
 
-## Documentation
-- [Documentation](https://serket.readthedocs.io/)
-- [Train MNIST, UNet, ConvLSTM, PINN, ...](https://serket.readthedocs.io/training_guides.html)
-- [Model surgery, Parallelism, Mixed precision, ...](https://serket.readthedocs.io/core_guides.html)
-- [Optimizers, Augmentation composition, ...](https://serket.readthedocs.io/other_guides.html)
-- [Interoperability with keras, tensorflow, ...](https://serket.readthedocs.io/interoperability.html)
+## 📙 Documentation <a id="Documentation"></a>
+- [Full documentation](https://serket.readthedocs.io/)
+- [Train MNIST, UNet, ConvLSTM, PINN](https://serket.readthedocs.io/training_guides.html)
+- [Model surgery, Parallelism, Mixed precision](https://serket.readthedocs.io/core_guides.html)
+- [Optimizers, Augmentation composition](https://serket.readthedocs.io/other_guides.html)
+- [Interoperability with keras, tensorflow](https://serket.readthedocs.io/interoperability.html)
 
 
 ## 🏃 Quick example<a id="QuickExample"></a>
