@@ -132,7 +132,8 @@ class Linear(sk.TreeClass):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` to call the layer with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import jax
         >>> import jax.numpy as jnp
@@ -141,7 +142,7 @@ class Linear(sk.TreeClass):
         >>> key = jr.PRNGKey(0)
         >>> input = jnp.ones((10, 5, 4))
         >>> lazy = sk.nn.Linear(None, 12, in_axis=(0, 2), key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> material.in_features
         (10, 4)
     """
@@ -302,8 +303,8 @@ class MLP(sk.TreeClass):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -311,7 +312,7 @@ class MLP(sk.TreeClass):
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_features=10, key=key)
         >>> input = jnp.ones([1, 10])
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> material.in_linear.in_features
         (10,)
 

@@ -463,7 +463,7 @@ def maybe_lazy_init(
 
 LAZY_CALL_ERROR = """\
 Cannot call ``{func_name}`` directly on a lazy layer.
-use ``layer.at["{func_name}"](...)`` instead to return a tuple of:
+use ``value_and_tree(lambda layer: layer{func_name}(...))(layer)`` instead to return a tuple of:
     - Layer output.
     - Materialized layer.
 
@@ -474,7 +474,7 @@ Example:
     
     Instead use the following pattern:
 
-    >>> output, material = layer.at["{func_name}"](input)
+    >>> output, material = value_and_tree(lambda layer: layer{func_name}(input))(layer)
     >>> material(input)
     ...
 """
@@ -521,6 +521,7 @@ def maybe_lazy_call(
         except AttributeError:
             # the instance is lazy and immutable
             func_name = func.__name__
+            func_name = "" if func_name == "__call__" else f".{func_name}"
             class_name = type(instance).__name__
             kwargs = dict(func_name=func_name, class_name=class_name)
             raise RuntimeError(LAZY_CALL_ERROR.format(**kwargs))
