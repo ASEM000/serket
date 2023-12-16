@@ -167,8 +167,8 @@ class LayerNorm(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``normalized_shape`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -176,7 +176,7 @@ class LayerNorm(sk.TreeClass):
         >>> input = jnp.ones((5,10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.LayerNorm(None, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> material(input).shape
         (5, 10)
 
@@ -265,8 +265,8 @@ class GroupNorm(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -274,7 +274,7 @@ class GroupNorm(sk.TreeClass):
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.GroupNorm(None, groups=5, key=key)
         >>> input = jnp.ones((5,10))
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> material(input).shape
         (5, 10)
 
@@ -353,8 +353,8 @@ class InstanceNorm(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -362,7 +362,7 @@ class InstanceNorm(sk.TreeClass):
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.InstanceNorm(None, key=key)
         >>> input = jnp.ones((5,10))
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> material(input).shape
         (5, 10)
 
@@ -611,23 +611,22 @@ class BatchNorm(sk.TreeClass):
         ...        self.bn1_state = sk.tree_state(self.bn1)
         ...        self.bn2 = sk.nn.BatchNorm(5, axis=-1, key=k2)
         ...        self.bn2_state = sk.tree_state(self.bn2)
-        ...    def _call(self, input):
+        ...    def __call__(self, input):
         ...        # this method will raise `AttributeError` if used directly
         ...        # because this method mutates the state
-        ...        # instead, use `at["_call"]` to call this method to
-        ...        # return the output and updated state in a functional manner
+        ...        # instead, use `value_and_tree` to call the layer and return
+        ...        # the output and updated state in a functional manner
         ...        input, self.bn1_state = self.bn1(input, self.bn1_state)
         ...        input = input + 1.0
         ...        input, self.bn2_state = self.bn2(input, self.bn2_state)
         ...        return input
-        ...    def __call__(self, input):
-        ...        return self.at["_call"](input)
         >>> # define a function to mask and unmask the net across `vmap`
-        >>> # this is necessary because `vmap` needs the output to be of inexact
+        >>> # this is necessary because `vmap` needs the output to be of `jaxtype`
         >>> def mask_vmap(net, input):
         ...    @ft.partial(jax.vmap, out_axes=(0, None))
         ...    def forward(input):
-        ...        return sk.tree_mask(net(input))
+        ...        output, new_net = sk.value_and_tree(lambda net: net(input))(net)
+        ...        return output, sk.tree_mask(new_net)
         ...    return sk.tree_unmask(forward(input))
         >>> net: UnthreadedBatchNorm = UnthreadedBatchNorm(key=jr.PRNGKey(0))
         >>> inputs = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
@@ -640,8 +639,8 @@ class BatchNorm(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -649,7 +648,7 @@ class BatchNorm(sk.TreeClass):
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.BatchNorm(None, key=key)
         >>> input = jnp.ones((5,10))
-        >>> _ , material = lazy.at["__call__"](input, None)
+        >>> _ , material = sk.value_and_tree(lambda lazy: lazy(input, None))(lazy)
         >>> state = sk.tree_state(material)
         >>> output, state = jax.vmap(material, in_axes=(0, None), out_axes=(0, None))(input, state)
         >>> output.shape

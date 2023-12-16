@@ -15,7 +15,7 @@ keywords = [
   "functional-programming",
   "machine-learning",
 ]
-dependencies = ["sepes>=0.11.1"]
+dependencies = ["sepes>=0.11.3"]
 
 classifiers = [
   "Development Status :: 5 - Production/Stable",

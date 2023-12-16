@@ -18,6 +18,7 @@ from sepes import (
     BaseKey,
     Partial,
     TreeClass,
+    at,
     autoinit,
     bcmap,
     field,
@@ -27,6 +28,7 @@ from sepes import (
     is_nondiff,
     is_tree_equal,
     leafwise,
+    partial,
     tree_diagram,
     tree_graph,
     tree_mask,
@@ -36,6 +38,7 @@ from sepes import (
     tree_summary,
     tree_unmask,
     unfreeze,
+    value_and_tree,
 )
 
 from serket._src.containers import RandomChoice, Sequential
@@ -66,12 +69,15 @@ __all__ = [
     "unfreeze",
     "tree_unmask",
     "tree_mask",
+    "value_and_tree",
     # indexing utils
     "AtIndexer",
+    "at",
     "BaseKey",
     # tree utils
     "bcmap",
     "Partial",
+    "partial",
     "leafwise",
     # serket
     "cluster",

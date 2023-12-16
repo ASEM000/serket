@@ -112,17 +112,17 @@ class SimpleRNNCell(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.SimpleRNNCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.SimpleRNNCell(None, 20, key=jr.PRNGKey(0))
         >>> input = jnp.ones(10) # 10 features
-        >>> state = sk.tree_state(lazy_cell)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> state = sk.tree_state(lazy)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (20,)
 
@@ -232,17 +232,17 @@ class DenseCell(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.DenseCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.DenseCell(None, 20, key=jr.PRNGKey(0))
         >>> input = jnp.ones(10) # 10 features
-        >>> state = sk.tree_state(lazy_cell)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> state = sk.tree_state(lazy)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (20,)
     """
@@ -328,17 +328,17 @@ class LSTMCell(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.LSTMCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.LSTMCell(None, 20, key=jr.PRNGKey(0))
         >>> input = jnp.ones(10) # 10 features
-        >>> state = sk.tree_state(lazy_cell)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> state = sk.tree_state(lazy)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (20,)
 
@@ -460,17 +460,17 @@ class GRUCell(sk.TreeClass):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.GRUCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.GRUCell(None, 20, key=jr.PRNGKey(0))
         >>> input = jnp.ones(10) # 10 features
-        >>> state = sk.tree_state(lazy_cell)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> state = sk.tree_state(lazy)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (20,)
 
@@ -664,17 +664,17 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.ConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(lazy_cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> state = sk.tree_state(lazy, input=input)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4)
 
@@ -721,17 +721,17 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.FFTConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4)
 
@@ -778,17 +778,17 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.ConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
-        >>> state = sk.tree_state(lazy_cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> state = sk.tree_state(lazy, input=input)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4)
 
@@ -835,17 +835,17 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.FFTConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(lazy_cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> state = sk.tree_state(lazy, input=input)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4)
 
@@ -892,17 +892,17 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.ConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4, 4)
 
@@ -949,17 +949,17 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.FFTConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4, 4)
 
@@ -1090,17 +1090,17 @@ class ConvGRU1DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.ConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4)
     """
@@ -1144,17 +1144,17 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.FFTConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4)
     """
@@ -1198,17 +1198,17 @@ class ConvGRU2DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.ConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4)
     """
@@ -1252,17 +1252,17 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.FFTConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4)
     """
@@ -1306,17 +1306,17 @@ class ConvGRU3DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.ConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # time, in_features, spatial dimensions
-        >>> state = sk.tree_state(lazy_cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> state = sk.tree_state(lazy, input=input)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4, 4)
     """
@@ -1360,17 +1360,17 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy_cell = sk.nn.FFTConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
-        >>> _, material_cell = lazy_cell.at["__call__"](input, state)
-        >>> output, state = material_cell(input, state)
+        >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
+        >>> output, state = material(input, state)
         >>> state.hidden_state.shape
         (2, 4, 4, 4)
     """

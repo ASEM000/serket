@@ -690,8 +690,8 @@ class Conv1D(ConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -700,7 +700,7 @@ class Conv1D(ConvND):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.Conv1D(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -778,8 +778,8 @@ class Conv2D(ConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -788,7 +788,7 @@ class Conv2D(ConvND):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.Conv2D(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -866,8 +866,8 @@ class Conv3D(ConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -876,7 +876,7 @@ class Conv3D(ConvND):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.Conv3D(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -954,8 +954,8 @@ class FFTConv1D(ConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -964,7 +964,7 @@ class FFTConv1D(ConvND):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.FFTConv1D(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1042,8 +1042,8 @@ class FFTConv2D(ConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1052,7 +1052,7 @@ class FFTConv2D(ConvND):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.FFTConv2D(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1130,8 +1130,8 @@ class FFTConv3D(ConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1140,7 +1140,7 @@ class FFTConv3D(ConvND):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.FFTConv3D(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1298,8 +1298,8 @@ class Conv1DTranspose(ConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1308,7 +1308,7 @@ class Conv1DTranspose(ConvNDTranspose):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.Conv1DTranspose(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1389,8 +1389,8 @@ class Conv2DTranspose(ConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1399,7 +1399,7 @@ class Conv2DTranspose(ConvNDTranspose):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.Conv2DTranspose(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1481,8 +1481,8 @@ class Conv3DTranspose(ConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1491,7 +1491,7 @@ class Conv3DTranspose(ConvNDTranspose):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.Conv3DTranspose(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1573,8 +1573,8 @@ class FFTConv1DTranspose(ConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1583,7 +1583,7 @@ class FFTConv1DTranspose(ConvNDTranspose):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.FFTConv1DTranspose(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1665,8 +1665,8 @@ class FFTConv2DTranspose(ConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1675,7 +1675,7 @@ class FFTConv2DTranspose(ConvNDTranspose):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.FFTConv2DTranspose(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1757,8 +1757,8 @@ class FFTConv3DTranspose(ConvNDTranspose):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1767,7 +1767,7 @@ class FFTConv3DTranspose(ConvNDTranspose):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.FFTConv3DTranspose(None, 12, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1894,8 +1894,8 @@ class DepthwiseConv1D(DepthwiseConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1904,7 +1904,7 @@ class DepthwiseConv1D(DepthwiseConvND):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.DepthwiseConv1D(None, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -1969,8 +1969,8 @@ class DepthwiseConv2D(DepthwiseConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -1979,7 +1979,7 @@ class DepthwiseConv2D(DepthwiseConvND):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.DepthwiseConv2D(None, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2044,8 +2044,8 @@ class DepthwiseConv3D(DepthwiseConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2054,7 +2054,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.DepthwiseConv3D(None, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2119,8 +2119,8 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2129,7 +2129,7 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.DepthwiseFFTConv1D(None, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2194,8 +2194,8 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2204,7 +2204,7 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.DepthwiseFFTConv2D(None, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2269,8 +2269,8 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
         This is useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2279,7 +2279,7 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.DepthwiseFFTConv3D(None, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2445,8 +2445,8 @@ class SeparableConv1D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2455,7 +2455,7 @@ class SeparableConv1D(SeparableConvND):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.SeparableConv1D(None, 2, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2531,8 +2531,8 @@ class SeparableConv2D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2541,7 +2541,7 @@ class SeparableConv2D(SeparableConvND):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.SeparableConv2D(None, 2, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2617,8 +2617,8 @@ class SeparableConv3D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2627,7 +2627,7 @@ class SeparableConv3D(SeparableConvND):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.SeparableConv3D(None, 2, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2703,8 +2703,8 @@ class SeparableFFTConv1D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2713,7 +2713,7 @@ class SeparableFFTConv1D(SeparableConvND):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.SeparableFFTConv1D(None, 2, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2789,8 +2789,8 @@ class SeparableFFTConv2D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2799,7 +2799,7 @@ class SeparableFFTConv2D(SeparableConvND):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.SeparableFFTConv2D(None, 2, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2875,8 +2875,8 @@ class SeparableFFTConv3D(SeparableConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2885,7 +2885,7 @@ class SeparableFFTConv3D(SeparableConvND):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.SeparableFFTConv3D(None, 2, 3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -2967,8 +2967,8 @@ class SpectralConv1D(SpectralConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -2977,7 +2977,7 @@ class SpectralConv1D(SpectralConvND):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.SpectralConv1D(None, 2, modes=3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -3025,8 +3025,8 @@ class SpectralConv2D(SpectralConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -3035,7 +3035,7 @@ class SpectralConv2D(SpectralConvND):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.SpectralConv2D(None, 2, modes=3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -3083,8 +3083,8 @@ class SpectralConv3D(SpectralConvND):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -3093,7 +3093,7 @@ class SpectralConv3D(SpectralConvND):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.SpectralConv3D(None, 2, modes=3, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -3280,8 +3280,8 @@ class Conv1DLocal(ConvNDLocal):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -3290,7 +3290,7 @@ class Conv1DLocal(ConvNDLocal):
         >>> input = jnp.ones((5, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.Conv1DLocal(None, 3, 3, in_size=None, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -3362,8 +3362,8 @@ class Conv2DLocal(ConvNDLocal):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -3372,7 +3372,7 @@ class Conv2DLocal(ConvNDLocal):
         >>> input = jnp.ones((5, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.Conv2DLocal(None, 3, 3, in_size=None, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 
@@ -3444,8 +3444,8 @@ class Conv3DLocal(ConvNDLocal):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``in_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer and return the method
+        output and the material layer.
 
         >>> import serket as sk
         >>> import jax.numpy as jnp
@@ -3454,7 +3454,7 @@ class Conv3DLocal(ConvNDLocal):
         >>> input = jnp.ones((5, 10, 10, 10))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.Conv3DLocal(None, 3, 3, in_size=None, key=key)
-        >>> _, material = lazy.at["__call__"](input)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
         5
 

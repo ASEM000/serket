@@ -180,8 +180,7 @@ class MultiHeadAttention(sk.TreeClass):
         useful when the input shape is not known at initialization time.
 
         To use lazy initialization, pass ``None`` as the ``q_features`` argument
-        and use the ``.at["__call__"]`` attribute to call the layer
-        with an input of known shape.
+        and use :func:`.value_and_tree` to call the layer with an input of known shape.
 
         >>> import jax.random as jr
         >>> import serket as sk
@@ -190,7 +189,7 @@ class MultiHeadAttention(sk.TreeClass):
         >>> v = jr.uniform(jr.PRNGKey(2), (3, 2, 6))
         >>> key = jr.PRNGKey(0)
         >>> lazy = sk.nn.MultiHeadAttention(2, None, key=key)
-        >>> _, material = lazy.at["__call__"](q, k, v, key=key)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(q, k, v, key=key))(lazy)
         >>> material(q, k, v, key=key).shape
         (3, 2, 6)
 
