@@ -147,18 +147,19 @@ class MultiHeadAttention(sk.TreeClass):
         >>> kv_length = 2
         >>> mask = jr.uniform(jr.PRNGKey(0), (batch, num_heads, q_length, kv_length))
         >>> mask = (mask > 0.5).astype(jnp.float32)
-        >>> q = jr.uniform(jr.PRNGKey(1), (batch, q_length, q_features))
-        >>> k = jr.uniform(jr.PRNGKey(2), (batch, kv_length, k_features))
-        >>> v = jr.uniform(jr.PRNGKey(3), (batch, kv_length, v_features))
+        >>> k1, k2, k3, k4 = jr.split(jr.PRNGKey(0), 4)
+        >>> q = jr.uniform(k1, (batch, q_length, q_features))
+        >>> k = jr.uniform(k2, (batch, kv_length, k_features))
+        >>> v = jr.uniform(k3, (batch, kv_length, v_features))
         >>> layer = sk.nn.MultiHeadAttention(
         ...    num_heads,
         ...    q_features,
         ...    k_features,
         ...    v_features,
         ...    drop_rate=0.0,
-        ...    key=jr.PRNGKey(4),
+        ...    key=k4,
         ... )
-        >>> print(layer(q, k, v, mask=mask, key=jr.PRNGKey(0)).shape)
+        >>> print(layer(q, k, v, mask=mask, key=jr.PRNGKey(1)).shape)
         (3, 4, 4)
 
     Note:
@@ -184,13 +185,13 @@ class MultiHeadAttention(sk.TreeClass):
 
         >>> import jax.random as jr
         >>> import serket as sk
-        >>> q = jr.uniform(jr.PRNGKey(0), (3, 2, 6))
-        >>> k = jr.uniform(jr.PRNGKey(1), (3, 2, 6))
-        >>> v = jr.uniform(jr.PRNGKey(2), (3, 2, 6))
-        >>> key = jr.PRNGKey(0)
-        >>> lazy = sk.nn.MultiHeadAttention(2, None, key=key)
-        >>> _, material = sk.value_and_tree(lambda lazy: lazy(q, k, v, key=key))(lazy)
-        >>> material(q, k, v, key=key).shape
+        >>> k1, k2, k3, k4, k5 = jr.split(jr.PRNGKey(0), 5)
+        >>> q = jr.uniform(k1, (3, 2, 6))
+        >>> k = jr.uniform(k2, (3, 2, 6))
+        >>> v = jr.uniform(k3, (3, 2, 6))
+        >>> lazy = sk.nn.MultiHeadAttention(2, None, key=k4)
+        >>> _, material = sk.value_and_tree(lambda lazy: lazy(q, k, v, key=k4))(lazy)
+        >>> material(q, k, v, key=k5).shape
         (3, 2, 6)
 
     Reference:

@@ -49,7 +49,6 @@ from serket._src.utils import (
 Weight = Annotated[jax.Array, "OI..."]
 
 
-@ft.partial(jax.jit, static_argnums=(2, 3, 4, 5), inline=True)
 def fft_conv_general_dilated(
     lhs: jax.Array,
     rhs: jax.Array,

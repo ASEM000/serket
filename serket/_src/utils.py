@@ -309,7 +309,7 @@ def get_params(func: MethodType) -> tuple[inspect.Parameter, ...]:
     return tuple(inspect.signature(func).parameters.values())
 
 
-# TODO: maybe expose this as a public API
+# Maybe expose this as a public API
 # Handling lazy layers
 """
 Creating a _lazy_ ``Linear`` layer example:
@@ -329,32 +329,67 @@ or a materialized layer without changing the code. This is useful to
 translate code from both explicit and implicit shaped layer found in 
 libraries like ``pytorch`` and ``tensorflow``.
 
+As quick sketch how this work is in the following example:
+
+>>> import jax
+>>> class Lazy:
+...     def __init__(self, dim_size: int | None):
+...         # let dim size be the array size
+...         # and if we dont have the array size
+...         # we can set it to None to be inferred later
+...         self.dim_size = dim_size
+...     def __call__(self, x):
+...         return x * self.dim_size
+>>> def maybe_lazy_init(func):
+...     def wrapper(self, dim_size):
+...         if input is not None:
+...             return func(self, dim_size)
+...         # we do not execute the init function
+...         # because its lazy
+...         return None
+...     return wrapper
+>>> def maybe_lazy_call(func):
+...     def wrapper(self, x):
+...         if self.dim_size is not None:
+...             return func(self, x)
+...         # the input is lazy , so we do infer the dim size
+...         # here. because `TreeClass` is immutable we need to
+...         # return a new instance of the class with the updated
+...         # dim size, but here we are just updating the dim size
+...         # of the current instance that is not immutable
+...         self.dim_size = x.size
+...         return func(self, x)
+...     return wrapper
+>>> # now lets decorate our lazy class
+>>> Lazy.__init__ = maybe_lazy_init(Lazy.__init__)
+>>> Lazy.__call__ = maybe_lazy_call(Lazy.__call__)
+>>> print(Lazy(2)(jax.numpy.ones([2])))
+>>> print(Lazy(None)(jax.numpy.ones([2])))
+
+
+Now lets create a lazy ``Linear`` layer using ``serket``:
+
 >>> import functools as ft
 >>> import serket as sk
 >>> import jax.numpy as jnp
 >>> from serket._src.utils import maybe_lazy_call, maybe_lazy_init
-<BLANKLINE>
 >>> def is_lazy_init(self, in_features, out_features):
 ...    # we need to define how to tell if the layer is lazy
 ...    # based on the inputs
 ...    return in_features is None  # or anything else really
-<BLANKLINE>
 >>> def is_lazy_call(self, x):
 ...    # we need to define how to tell if the layer is lazy
 ...    # at the call time
 ...    # replicating the lazy init condition
 ...    return getattr(self, "in_features", False) is None
-<BLANKLINE>
 >>> def infer_in_features(self, x):
 ...    # we need to define how to infer the in_features
 ...    # based on the inputs at call time
 ...    # for linear layers, we can infer the in_features as the last dimension
 ...    return x.shape[-1]
-<BLANKLINE>
 >>> # lastly we need to assign this function to a dictionary that has the name
 >>> # of the feature we want to infer
 >>> updates = dict(in_features=infer_in_features)
-<BLANKLINE>
 >>> class SimpleLinear(sk.TreeClass):
 ...    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
 ...    def __init__(self, in_features, out_features):
@@ -365,20 +400,17 @@ libraries like ``pytorch`` and ``tensorflow``.
 >>>    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
 ...    def __call__(self, x):
 ...        return x
-<BLANKLINE>
 >>> simple_lazy = SimpleLinear(None, 1)
 >>> x = jnp.ones([10, 2])  # last dimension is the in_features of the layer
 >>> print(repr(simple_lazy))
 SimpleLinear(in_features=None, out_features=1)
-<BLANKLINE>
->>> _, material = simple_lazy.at["__call__"](x)
-<BLANKLINE>
+>>> _, material = sk.value_and_tree(lambda layer: layer(x))(simple_lazy)
 >>> print(repr(material))
 SimpleLinear(
-    in_features=2, 
-    out_features=1, 
-    weight=f32[2,1](μ=1.00, σ=0.00, ∈[1.00,1.00]), 
-    bias=f32[1](μ=0.00, σ=0.00, ∈[0.00,0.00])
+  in_features=2, 
+  out_features=1, 
+  weight=f32[2,1](μ=1.00, σ=0.00, ∈[1.00,1.00]), 
+  bias=f32[1](μ=0.00, σ=0.00, ∈[0.00,0.00])
 )
 """
 
@@ -527,6 +559,8 @@ def maybe_lazy_call(
             raise RuntimeError(LAZY_CALL_ERROR.format(**kwargs))
 
         # re-initialize the instance with the resolved arguments
+        # this will only works under `value_and_tree` that allows
+        # the instance to be mutable with it's context after being copied first
         getattr(type(instance), "__init__")(instance, **kwargs)
         # call the decorated function
         return func(instance, *a, **k)

@@ -25,7 +25,7 @@ from serket._src.custom_transform import tree_eval
 
 
 @ft.singledispatch
-def sequential(key: jax.Array, _, __):
+def sequential(key: jax.Array, _1, _2):
     raise TypeError(f"Invalid {type(key)=}")
 
 
@@ -73,6 +73,7 @@ class Sequential(sk.TreeClass):
     """
 
     def __init__(self, *layers):
+        # use var args to enforce tuple type to maintain immutability
         self.layers = layers
 
     def __call__(self, input: jax.Array, *, key: jax.Array | None = None) -> jax.Array:
