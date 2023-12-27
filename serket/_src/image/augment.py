@@ -23,7 +23,7 @@ import jax.random as jr
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
-from serket._src.image.color import hsv_to_rgb_3d, rgb_to_hsv_3d
+from serket._src.image.color import hsv_to_rgb, rgb_to_hsv
 from serket._src.nn.linear import Identity
 from serket._src.utils import (
     CHWArray,
@@ -188,18 +188,18 @@ def adjust_log_2d(image: HWArray, gain: float = 1, inv: bool = False) -> HWArray
 
 
 def adjust_hue_3d(image: CHWArray, factor: float) -> CHWArray:
-    h, s, v = rgb_to_hsv_3d(image)
+    h, s, v = rgb_to_hsv(image)
     divisor = 2 * jnp.pi
     h = jnp.fmod(h + factor, divisor)
     out = jnp.stack([h, s, v], axis=0)
-    return hsv_to_rgb_3d(out)
+    return hsv_to_rgb(out)
 
 
 def adust_saturation_3d(image: CHWArray, factor: float) -> CHWArray:
-    h, s, v = rgb_to_hsv_3d(image)
+    h, s, v = rgb_to_hsv(image)
     s = jnp.clip(s * factor, 0.0, 1.0)
     out = jnp.stack([h, s, v], axis=0)
-    return hsv_to_rgb_3d(out)
+    return hsv_to_rgb(out)
 
 
 def random_hue_3d(

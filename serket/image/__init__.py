@@ -35,6 +35,10 @@ from serket._src.image.color import (
     HSVToRGB2D,
     RGBToGrayscale2D,
     RGBToHSV2D,
+    grayscale_to_rgb,
+    hsv_to_rgb,
+    rgb_to_grayscale,
+    rgb_to_hsv,
 )
 from serket._src.image.filter import (
     AvgBlur2D,
@@ -189,4 +193,8 @@ __all__ = [
     "HSVToRGB2D",
     "RGBToGrayscale2D",
     "RGBToHSV2D",
+    "grayscale_to_rgb",
+    "hsv_to_rgb",
+    "rgb_to_grayscale",
+    "rgb_to_hsv",
 ]
