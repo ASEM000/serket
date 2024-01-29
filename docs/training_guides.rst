@@ -12,3 +12,4 @@
     notebooks/train_fourier_features_network
     notebooks/train_convlstm
     notebooks/train_unet
+    notebooks/train_transformer
