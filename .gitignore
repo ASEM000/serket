@@ -17,3 +17,4 @@ serket/experimental/test_conv.py
 docs/_build
 fft_intro.ipynb
 lenna.png
+docs/notebooks/transformer_weights.pickle

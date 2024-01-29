@@ -225,7 +225,7 @@ class Embedding(sk.TreeClass):
     def __init__(self, in_features: int, out_features: int, key: jax.Array):
         self.in_features = positive_int_cb(in_features)
         self.out_features = positive_int_cb(out_features)
-        self.weight = jr.uniform(key, (self.out_features, self.in_features))
+        self.weight = jr.normal(key, (self.out_features, self.in_features))
 
     def __call__(self, input: jax.Array) -> jax.Array:
         """Embeds the input.
