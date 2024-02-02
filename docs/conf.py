@@ -101,10 +101,10 @@ html_theme_options = {
     "pygment_dark_style": "github-dark-high-contrast",
     "path_to_docs": "docs",
     "repository_branch": "main",
-    "launch_buttons": {
-        "notebook_interface": "jupyterlab",
-        "colab_url": "https://colab.research.google.com/",
-    },
+    # "launch_buttons": {
+    #     "notebook_interface": "jupyterlab",
+    #     "colab_url": "https://colab.research.google.com/",
+    # },
 }
 
 html_css_files = ["custom.css"]
@@ -148,3 +148,13 @@ nbsphinx_timeout = 180
 # Tell sphinx-autodoc-typehints to generate stub parameter annotations including
 # types, even if the parameters aren't explicitly documented.
 always_document_param_types = True
+
+nbsphinx_prolog = r"""
+{% set docname = 'docs/' + env.doc2path(env.docname, base=None) %}
+.. only:: html
+    .. role:: raw-html(raw)
+        :format: html
+    .. nbinfo::
+        Open in colab:
+        :raw-html:`<a href="https://colab.research.google.com/github/asem000/serket/blob/main/{{ docname }}"><img alt="Open in colab" src="https://colab.research.google.com/assets/colab-badge.svg" style="vertical-align:text-bottom"></a>`
+"""
