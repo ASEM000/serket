@@ -13,7 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-import functools as ft
 from collections.abc import Callable as ABCCallable
 from typing import Any, Callable, Literal, Tuple, Union, get_args
 
@@ -21,6 +20,8 @@ import jax
 import jax.nn.initializers as ji
 import jax.tree_util as jtu
 import numpy as np
+
+from serket._src.utils import single_dispatch
 
 InitLiteral = Literal[
     "he_normal",
@@ -63,12 +64,12 @@ inits: list[InitFuncType] = [
 init_map: dict[str, InitType] = dict(zip(get_args(InitLiteral), inits))
 
 
-@ft.singledispatch
+@single_dispatch(argnum=0)
 def resolve_init(init):
     raise TypeError(f"Unknown type {type(init)}")
 
 
-@resolve_init.register(str)
+@resolve_init.def_type(str)
 def _(init: str):
     try:
         return jtu.Partial(jax.tree_map(lambda x: x, init_map[init]))
@@ -76,12 +77,12 @@ def _(init: str):
         raise ValueError(f"Unknown {init=}, available init: {list(init_map)}")
 
 
-@resolve_init.register(type(None))
+@resolve_init.def_type(type(None))
 def _(init: None):
     return jtu.Partial(lambda key, shape, dtype=None: None)
 
 
-@resolve_init.register(ABCCallable)
+@resolve_init.def_type(ABCCallable)
 def _(init: Callable):
     return jtu.Partial(init)
 

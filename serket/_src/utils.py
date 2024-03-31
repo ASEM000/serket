@@ -694,3 +694,26 @@ def kernel_map(
         return result.reshape(*output_shape, *result.shape[1:])
 
     return single_call_wrapper
+
+
+def single_dispatch(argnum: int = 0):
+    """Single dispatch with argnum"""
+
+    def decorator(func):
+        dispatcher = ft.singledispatch(func)
+
+        @ft.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                klass = type(args[argnum])
+            except IndexError:
+                argname = get_params(func)[argnum].name
+                klass = type(kwargs[argname])
+            return dispatcher.dispatch(klass)(*args, **kwargs)
+
+        wrapper.def_type = dispatcher.register
+        wrapper.registry = dispatcher.registry
+        ft.update_wrapper(wrapper, func)
+        return wrapper
+
+    return decorator

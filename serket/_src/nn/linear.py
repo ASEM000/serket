@@ -55,17 +55,18 @@ def general_linear(
     in_axis: tuple[int, ...],
     out_axis: int,
 ) -> jax.Array:
-    in_axis_shape = tuple(input.shape[i] for i in in_axis)
-    features_shape = weight.shape[1:]
-    assert in_axis_shape == features_shape, f"{in_axis_shape=} != {features_shape=}"
-
-    in_axis = sorted([axis if axis >= 0 else axis + input.ndim for axis in in_axis])
+    in_axis = [axis if axis >= 0 else axis + input.ndim for axis in in_axis]
     lhs = "".join(str(axis) for axis in range(input.ndim))  # 0, 1, 2, 3
     rhs = "F" + "".join(str(axis) for axis in in_axis)  # F, 1, 2, 3
     out = "".join(str(axis) for axis in range(input.ndim) if axis not in in_axis)
     out_axis = out_axis if out_axis >= 0 else out_axis + len(out) + 1
     out = out[:out_axis] + "F" + out[out_axis:]
-    result = jnp.einsum(f"{lhs},{rhs}->{out}", input, weight)
+
+    try:
+        einsum_pattern = f"{lhs},{rhs}->{out}"
+        result = jnp.einsum(einsum_pattern, input, weight)
+    except ValueError as e:
+        raise type(e)(f"{einsum_pattern=}", e)
 
     if bias is None:
         return result
@@ -160,9 +161,20 @@ class Linear(sk.TreeClass):
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        self.in_features = tuplify(in_features)
+
+        in_features = tuplify(in_features)
+        in_axis = tuplify(in_axis)
+
+        if len(in_axis) != len(in_features):
+            raise ValueError(f"{len(in_axis)=} != {len(in_features)=}")
+
+        # arrange the in_features by the in_axis
+        compare = lambda ik: in_axis[ik[0]]
+        _, in_features = zip(*sorted(enumerate(in_features), key=compare))
+
+        self.in_features = in_features
         self.out_features = out_features
-        self.in_axis = tuplify(in_axis)
+        self.in_axis = sorted(in_axis)
         self.out_axis = out_axis
         self.weight_init = weight_init
         self.bias_init = bias_init
@@ -173,11 +185,9 @@ class Linear(sk.TreeClass):
         if not (all(isinstance(i, int) for i in self.in_axis)):
             raise TypeError(f"Expected tuple of ints for {self.in_axis=}")
 
-        if len(self.in_axis) != len(self.in_features):
-            raise ValueError(f"{len(self.in_axis)=} != {len(self.in_features)=}")
-
         k1, k2 = jr.split(key)
-        weight_shape = (out_features, *self.in_features)
+
+        weight_shape = (out_features, *in_features)
         self.weight = resolve_init(weight_init)(k1, weight_shape, dtype)
         self.bias = resolve_init(bias_init)(k2, (self.out_features,), dtype)
 

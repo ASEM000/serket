@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import functools as ft
 from typing import Callable, Literal, TypeVar, Union, get_args
 
 import jax
@@ -22,7 +21,7 @@ import jax.numpy as jnp
 from jax import lax
 
 import serket as sk
-from serket._src.utils import IsInstance, Range, ScalarLike
+from serket._src.utils import IsInstance, Range, ScalarLike, single_dispatch
 
 T = TypeVar("T")
 
@@ -521,12 +520,12 @@ ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 act_map = dict(zip(get_args(ActivationLiteral), acts))
 
 
-@ft.singledispatch
+@single_dispatch(argnum=0)
 def resolve_activation(act: T) -> T:
     return act
 
 
-@resolve_activation.register(str)
+@resolve_activation.def_type(str)
 def _(act: str):
     try:
         return jax.tree_map(lambda x: x, act_map[act])

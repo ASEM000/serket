@@ -16,13 +16,13 @@
 
 from __future__ import annotations
 
-import functools as ft
 from inspect import getfullargspec
 from typing import Any, TypeVar
 
 import jax
 
 import serket as sk
+from serket._src.utils import single_dispatch
 
 T = TypeVar("T")
 
@@ -94,20 +94,20 @@ def tree_state(tree: T, **kwargs) -> T:
     # input. This poses a challenge for the user to pass the correct input
     # to the state initialization rule.
 
-    types = tuple(set(tree_state.state_dispatcher.registry) - {object})
+    types = tuple(set(tree_state.dispatcher.registry) - {object})
 
     def is_leaf(node: Any) -> bool:
         return isinstance(node, types)
 
     def dispatch_func(leaf):
         try:
-            return tree_state.state_dispatcher(leaf, **kwargs)
+            return tree_state.dispatcher(leaf, **kwargs)
 
         except TypeError as e:
             # check if the leaf has a state rule
 
             for mro in type(leaf).__mro__[:-1]:
-                if mro in (registry := tree_state.state_dispatcher.registry):
+                if mro in (registry := tree_state.dispatcher.registry):
                     func = registry[mro]
                     break
             else:
@@ -134,8 +134,8 @@ def tree_state(tree: T, **kwargs) -> T:
     return jax.tree_map(dispatch_func, tree, is_leaf=is_leaf)
 
 
-tree_state.state_dispatcher = ft.singledispatch(NoState)
-tree_state.def_state = tree_state.state_dispatcher.register
+tree_state.dispatcher = single_dispatch(argnum=0)(NoState)
+tree_state.def_state = tree_state.dispatcher.def_type
 
 
 def tree_eval(tree):
@@ -197,13 +197,13 @@ def tree_eval(tree):
          [1. 1. 1.]]
     """
 
-    types = tuple(set(tree_eval.eval_dispatcher.registry) - {object})
+    types = tuple(set(tree_eval.dispatcher.registry) - {object})
 
     def is_leaf(node: Any) -> bool:
         return isinstance(node, types)
 
-    return jax.tree_map(tree_eval.eval_dispatcher, tree, is_leaf=is_leaf)
+    return jax.tree_map(tree_eval.dispatcher, tree, is_leaf=is_leaf)
 
 
-tree_eval.eval_dispatcher = ft.singledispatch(lambda x: x)
-tree_eval.def_eval = tree_eval.eval_dispatcher.register
+tree_eval.dispatcher = single_dispatch(argnum=0)(lambda x: x)
+tree_eval.def_eval = tree_eval.dispatcher.def_type
