@@ -25,7 +25,6 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt install graphviz graphviz-dev
           sudo apt install -y pandoc
           python -m pip install --upgrade pip
           pip install .
