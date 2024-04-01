@@ -63,8 +63,8 @@ def pool_nd(
         padding=padding,
         padding_mode=inital_value,
     )
-    def reducer_map(x):
-        return reducer(x)
+    def reducer_map(view):
+        return reducer(view)
 
     return reducer_map(input)
 
@@ -192,8 +192,8 @@ def adaptive_pool_nd(
         strides=strides,
         padding=((0, 0),) * len(in_dim),
     )
-    def reducer_map(input: jax.Array) -> jax.Array:
-        return reducer(input)
+    def reducer_map(view: jax.Array) -> jax.Array:
+        return reducer(view)
 
     return reducer_map(input)
 
