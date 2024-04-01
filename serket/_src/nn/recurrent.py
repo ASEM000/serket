@@ -76,8 +76,7 @@ class RNNState(sk.TreeClass):
     hidden_state: jax.Array
 
 
-class SimpleRNNState(RNNState):
-    ...
+class SimpleRNNState(RNNState): ...
 
 
 class SimpleRNNCell(sk.TreeClass):
@@ -196,11 +195,10 @@ class SimpleRNNCell(sk.TreeClass):
     spatial_ndim: int = 0
 
 
-class DenseState(RNNState):
-    ...
+class DenseState(RNNState): ...
 
 
-class DenseCell(sk.TreeClass):
+class LinearCell(sk.TreeClass):
     """No hidden state cell that applies a dense(Linear+activation) layer to the input
 
     Args:
@@ -218,7 +216,7 @@ class DenseCell(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> # 10-dimensional input, 20-dimensional hidden state
-        >>> cell = sk.nn.DenseCell(10, 20, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.LinearCell(10, 20, key=jr.PRNGKey(0))
         >>> # 20-dimensional hidden state
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(cell)
@@ -227,7 +225,7 @@ class DenseCell(sk.TreeClass):
         (20,)
 
     Note:
-        :class:`.DenseCell` supports lazy initialization, meaning that the
+        :class:`.LinearCell` supports lazy initialization, meaning that the
         weights and biases are not initialized until the first call to the layer.
         This is useful when the input shape is not known at initialization time.
 
@@ -238,7 +236,7 @@ class DenseCell(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.DenseCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.LinearCell(None, 20, key=jr.PRNGKey(0))
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(lazy)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -423,8 +421,7 @@ class LSTMCell(sk.TreeClass):
     spatial_ndim: int = 0
 
 
-class GRUState(RNNState):
-    ...
+class GRUState(RNNState): ...
 
 
 class GRUCell(sk.TreeClass):
@@ -623,8 +620,7 @@ class ConvLSTMNDCell(sk.TreeClass):
 
     @property
     @abc.abstractmethod
-    def conv_layer(self):
-        ...
+    def conv_layer(self): ...
 
     spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
@@ -971,8 +967,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
     conv_layer = FFTConv3D
 
 
-class ConvGRUNDState(RNNState):
-    ...
+class ConvGRUNDState(RNNState): ...
 
 
 class ConvGRUNDCell(sk.TreeClass):
@@ -1049,8 +1044,7 @@ class ConvGRUNDCell(sk.TreeClass):
 
     @property
     @abc.abstractmethod
-    def conv_layer(self):
-        ...
+    def conv_layer(self): ...
 
     spatial_ndim = property(abc.abstractmethod(lambda _: ...))
 
@@ -1484,8 +1478,8 @@ def _(cell: SimpleRNNCell) -> SimpleRNNState:
     return SimpleRNNState(jnp.zeros([cell.hidden_features]))
 
 
-@tree_state.def_state(DenseCell)
-def _(cell: DenseCell) -> DenseState:
+@tree_state.def_state(LinearCell)
+def _(cell: LinearCell) -> DenseState:
     return DenseState(jnp.empty([cell.hidden_features]))
 
 
