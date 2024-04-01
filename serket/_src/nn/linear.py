@@ -179,7 +179,9 @@ class Linear(sk.TreeClass):
             raise ValueError(f"{len(in_axis)=} != {len(in_features)=}")
 
         # arrange the in_features by the in_axis
-        compare = lambda ik: in_axis[ik[0]]
+        def compare(ik):
+            return in_axis[ik[0]]
+
         _, in_features = zip(*sorted(enumerate(in_features), key=compare))
 
         self.in_features = in_features
@@ -204,13 +206,15 @@ class Linear(sk.TreeClass):
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, input: jax.Array) -> jax.Array:
         """Apply a linear transformation to the input."""
-        return linear(
+        return self.linear_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
             in_axis=self.in_axis,
             out_axis=self.out_axis,
         )
+
+    linear_op = staticmethod(linear)
 
 
 class Identity(sk.TreeClass):

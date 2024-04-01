@@ -33,7 +33,6 @@ from sepes import (
 
 from serket._src.containers import RandomChoice, Sequential
 from serket._src.custom_transform import tree_eval, tree_state
-from serket._src.nn.activation import def_act_entry
 
 from . import cluster, image, nn
 
@@ -65,7 +64,6 @@ __all__ = [
     "image",
     "tree_eval",
     "tree_state",
-    "def_act_entry",
     # containers
     "Sequential",
     "RandomChoice",

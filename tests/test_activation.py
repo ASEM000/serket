@@ -23,10 +23,6 @@ from serket._src.nn.activation import (
     ELU,
     GELU,
     GLU,
-    AdaptiveLeakyReLU,
-    AdaptiveReLU,
-    AdaptiveSigmoid,
-    AdaptiveTanh,
     CeLU,
     HardShrink,
     HardSigmoid,
@@ -41,7 +37,6 @@ from serket._src.nn.activation import (
     ReLU6,
     SeLU,
     Sigmoid,
-    Snake,
     SoftPlus,
     SoftShrink,
     SoftSign,
@@ -50,7 +45,6 @@ from serket._src.nn.activation import (
     Tanh,
     TanhShrink,
     ThresholdedReLU,
-    def_act_entry,
     resolve_activation,
 )
 
@@ -61,60 +55,6 @@ def test_thresholded_relu():
     expected = jnp.array([0, 0, 1])
     actual = ThresholdedReLU(theta)(x)
     npt.assert_allclose(actual, expected)
-
-
-def test_AdaptiveReLU():
-    npt.assert_allclose(
-        AdaptiveReLU(1.0)(jnp.array([1.0, 2.0, 3.0])), jnp.array([1.0, 2.0, 3.0])
-    )
-    npt.assert_allclose(
-        AdaptiveReLU(0.0)(jnp.array([1.0, 2.0, 3.0])), jnp.array([0.0, 0.0, 0.0])
-    )
-    npt.assert_allclose(
-        AdaptiveReLU(0.5)(jnp.array([1.0, 2.0, 3.0])), jnp.array([0.5, 1.0, 1.5])
-    )
-
-
-def test_AdaptiveLeakyReLU():
-    npt.assert_allclose(
-        AdaptiveLeakyReLU(0.0, 1.0)(jnp.array([1.0, 2.0, 3.0])),
-        jnp.array([0, 0, 0]),
-    )
-    npt.assert_allclose(
-        AdaptiveLeakyReLU(0.0, 0.5)(jnp.array([1.0, 2.0, 3.0])),
-        jnp.array([0, 0, 0]),
-    )
-    npt.assert_allclose(
-        AdaptiveLeakyReLU(1.0, 0.0)(jnp.array([1.0, 2.0, 3.0])), jnp.array([1, 2, 3])
-    )
-    npt.assert_allclose(
-        AdaptiveLeakyReLU(1.0, 0.5)(jnp.array([1.0, 2.0, 3.0])),
-        jnp.array([1, 2, 3]),
-    )
-
-
-def test_AdaptiveSigmoid():
-    npt.assert_allclose(
-        AdaptiveSigmoid(1.0)(jnp.array([1.0, 2.0, 3.0])),
-        jnp.array([0.7310586, 0.880797, 0.95257413]),
-    )
-    npt.assert_allclose(
-        AdaptiveSigmoid(0.0)(jnp.array([1.0, 2.0, 3.0])), jnp.array([0.5, 0.5, 0.5])
-    )
-
-
-def test_AdaptiveTanh():
-    npt.assert_allclose(
-        AdaptiveTanh(1.0)(jnp.array([1.0, 2.0, 3.0])),
-        jnp.array([0.7615942, 0.9640276, 0.9950547]),
-    )
-    npt.assert_allclose(
-        AdaptiveTanh(0.0)(jnp.array([1.0, 2.0, 3.0])), jnp.array([0, 0, 0])
-    )
-    npt.assert_allclose(
-        AdaptiveTanh(0.5)(jnp.array([1.0, 2.0, 3.0])),
-        jnp.array([0.46211714, 0.7615942, 0.9051482]),
-    )
 
 
 def test_prelu():
@@ -285,13 +225,6 @@ def test_mish():
     npt.assert_allclose(actual, expected, atol=1e-4)
 
 
-def test_snake():
-    x = jnp.array([-1.0, 0, 1])
-    expected = jnp.array([-0.29192656, 0.0, 1.7080734])
-    actual = Snake()(x)
-    npt.assert_allclose(actual, expected, atol=1e-4)
-
-
 def test_square_plus():
     x = jnp.array([-1.0, 0, 1])
     expected = 0.5 * (x + jnp.sqrt(x**2 + 4))
@@ -304,13 +237,6 @@ def test_resolving():
         resolve_activation("nonexistent")
 
 
-def test_def_act_entry():
-    def_act_entry("id", lambda x: x)
-
-    with pytest.raises(ValueError):
-        # duplicate entry
-        def_act_entry("id", lambda x: x)
-
-    with pytest.raises(TypeError):
-        # non-callable
-        def_act_entry("one", 1)
+def test_invalid_act_sig():
+    with pytest.raises(AssertionError):
+        resolve_activation(lambda x, y: x)

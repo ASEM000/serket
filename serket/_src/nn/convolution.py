@@ -100,9 +100,7 @@ def fft_conv_general_dilated(
     if lhs.shape[-1] % 2 != 0:
         lhs = jnp.pad(lhs, tuple([(0, 0)] * (lhs.ndim - 1) + [(0, 1)]))
 
-    kernel_pad = tuple(
-        (0, lhs.shape[i] - rhs.shape[i]) for i in range(2, spatial_ndim + 2)
-    )
+    kernel_pad = ((0, lhs.shape[i] - rhs.shape[i]) for i in range(2, spatial_ndim + 2))
     rhs = pad(rhs, ((0, 0), (0, 0), *kernel_pad))
 
     x_fft = jnp.fft.rfftn(lhs, axes=range(2, spatial_ndim + 2))

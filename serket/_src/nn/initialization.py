@@ -78,7 +78,7 @@ def _(init: str):
 
 
 @resolve_init.def_type(type(None))
-def _(init: None):
+def _(init):
     return jtu.Partial(lambda key, shape, dtype=None: None)
 
 
