@@ -608,7 +608,7 @@ class ConvND(sk.TreeClass):
             strides=self.strides,
         )
 
-        return type(self).conv_op(
+        return self.conv_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -620,7 +620,7 @@ class ConvND(sk.TreeClass):
         )
 
     spatial_ndim = property(abc.abstractmethod(lambda _: ...))
-    conv_op = property(abc.abstractmethod(lambda _: ...))
+    conv_op = staticmethod(abc.abstractmethod(lambda _: ...))
 
 
 class Conv1D(ConvND):
@@ -708,7 +708,7 @@ class Conv1D(ConvND):
     """
 
     spatial_ndim: int = 1
-    conv_op = conv_nd
+    conv_op = staticmethod(conv_nd)
 
 
 class Conv2D(ConvND):
@@ -796,7 +796,7 @@ class Conv2D(ConvND):
     """
 
     spatial_ndim: int = 2
-    conv_op = conv_nd
+    conv_op = staticmethod(conv_nd)
 
 
 class Conv3D(ConvND):
@@ -884,7 +884,7 @@ class Conv3D(ConvND):
     """
 
     spatial_ndim: int = 3
-    conv_op = conv_nd
+    conv_op = staticmethod(conv_nd)
 
 
 class FFTConv1D(ConvND):
@@ -972,7 +972,7 @@ class FFTConv1D(ConvND):
     """
 
     spatial_ndim: int = 1
-    conv_op = fft_conv_nd
+    conv_op = staticmethod(fft_conv_nd)
 
 
 class FFTConv2D(ConvND):
@@ -1060,7 +1060,7 @@ class FFTConv2D(ConvND):
     """
 
     spatial_ndim: int = 2
-    conv_op = fft_conv_nd
+    conv_op = staticmethod(fft_conv_nd)
 
 
 class FFTConv3D(ConvND):
@@ -1148,7 +1148,7 @@ class FFTConv3D(ConvND):
     """
 
     spatial_ndim: int = 3
-    conv_op = fft_conv_nd
+    conv_op = staticmethod(fft_conv_nd)
 
 
 class ConvNDTranspose(sk.TreeClass):
@@ -1212,7 +1212,7 @@ class ConvNDTranspose(sk.TreeClass):
             strides=self.strides,
         )
 
-        return type(self).conv_op(
+        return self.conv_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -1224,7 +1224,7 @@ class ConvNDTranspose(sk.TreeClass):
         )
 
     spatial_ndim = property(abc.abstractmethod(lambda _: ...))
-    conv_op = property(abc.abstractmethod(lambda _: ...))
+    conv_op = staticmethod(abc.abstractmethod(lambda _: ...))
 
 
 class Conv1DTranspose(ConvNDTranspose):
@@ -1316,7 +1316,7 @@ class Conv1DTranspose(ConvNDTranspose):
     """
 
     spatial_ndim: int = 1
-    conv_op = conv_nd_transpose
+    conv_op = staticmethod(conv_nd_transpose)
 
 
 class Conv2DTranspose(ConvNDTranspose):
@@ -1407,7 +1407,7 @@ class Conv2DTranspose(ConvNDTranspose):
     """
 
     spatial_ndim: int = 2
-    conv_op = conv_nd_transpose
+    conv_op = staticmethod(conv_nd_transpose)
 
 
 class Conv3DTranspose(ConvNDTranspose):
@@ -1499,7 +1499,7 @@ class Conv3DTranspose(ConvNDTranspose):
     """
 
     spatial_ndim: int = 3
-    conv_op = conv_nd_transpose
+    conv_op = staticmethod(conv_nd_transpose)
 
 
 class FFTConv1DTranspose(ConvNDTranspose):
@@ -1591,7 +1591,7 @@ class FFTConv1DTranspose(ConvNDTranspose):
     """
 
     spatial_ndim: int = 1
-    conv_op = fft_conv_nd_transpose
+    conv_op = staticmethod(fft_conv_nd_transpose)
 
 
 class FFTConv2DTranspose(ConvNDTranspose):
@@ -1683,7 +1683,7 @@ class FFTConv2DTranspose(ConvNDTranspose):
     """
 
     spatial_ndim: int = 2
-    conv_op = fft_conv_nd_transpose
+    conv_op = staticmethod(fft_conv_nd_transpose)
 
 
 class FFTConv3DTranspose(ConvNDTranspose):
@@ -1775,7 +1775,7 @@ class FFTConv3DTranspose(ConvNDTranspose):
     """
 
     spatial_ndim: int = 3
-    conv_op = fft_conv_nd_transpose
+    conv_op = staticmethod(fft_conv_nd_transpose)
 
 
 class DepthwiseConvND(sk.TreeClass):
@@ -1828,7 +1828,7 @@ class DepthwiseConvND(sk.TreeClass):
             strides=self.strides,
         )
 
-        return type(self).conv_op(
+        return self.conv_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -1838,7 +1838,7 @@ class DepthwiseConvND(sk.TreeClass):
         )
 
     spatial_ndim = property(abc.abstractmethod(lambda _: ...))
-    conv_op = property(abc.abstractmethod(lambda _: ...))
+    conv_op = staticmethod(abc.abstractmethod(lambda _: ...))
 
 
 class DepthwiseConv1D(DepthwiseConvND):
@@ -1913,7 +1913,7 @@ class DepthwiseConv1D(DepthwiseConvND):
     """
 
     spatial_ndim: int = 1
-    conv_op = depthwise_conv_nd
+    conv_op = staticmethod(depthwise_conv_nd)
 
 
 class DepthwiseConv2D(DepthwiseConvND):
@@ -1988,7 +1988,7 @@ class DepthwiseConv2D(DepthwiseConvND):
     """
 
     spatial_ndim: int = 2
-    conv_op = depthwise_conv_nd
+    conv_op = staticmethod(depthwise_conv_nd)
 
 
 class DepthwiseConv3D(DepthwiseConvND):
@@ -2063,7 +2063,7 @@ class DepthwiseConv3D(DepthwiseConvND):
     """
 
     spatial_ndim: int = 3
-    conv_op = depthwise_conv_nd
+    conv_op = staticmethod(depthwise_conv_nd)
 
 
 class DepthwiseFFTConv1D(DepthwiseConvND):
@@ -2138,7 +2138,7 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
     """
 
     spatial_ndim: int = 1
-    conv_op = depthwise_fft_conv_nd
+    conv_op = staticmethod(depthwise_fft_conv_nd)
 
 
 class DepthwiseFFTConv2D(DepthwiseConvND):
@@ -2213,7 +2213,7 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
     """
 
     spatial_ndim: int = 2
-    conv_op = depthwise_fft_conv_nd
+    conv_op = staticmethod(depthwise_fft_conv_nd)
 
 
 class DepthwiseFFTConv3D(DepthwiseConvND):
@@ -2288,7 +2288,7 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
     """
 
     spatial_ndim: int = 3
-    conv_op = depthwise_fft_conv_nd
+    conv_op = staticmethod(depthwise_fft_conv_nd)
 
 
 class SeparableConvND(sk.TreeClass):
@@ -2365,7 +2365,7 @@ class SeparableConvND(sk.TreeClass):
             strides=self.strides,
         )
 
-        return type(self).conv_op(
+        return self.conv_op(
             input=input,
             depthwise_weight=self.depthwise_weight,
             pointwise_weight=self.pointwise_weight,
@@ -2378,7 +2378,7 @@ class SeparableConvND(sk.TreeClass):
         )
 
     spatial_ndim = property(abc.abstractmethod(lambda _: ...))
-    conv_op = property(abc.abstractmethod(lambda _: ...))
+    conv_op = staticmethod(abc.abstractmethod(lambda _: ...))
 
 
 class SeparableConv1D(SeparableConvND):
@@ -2464,7 +2464,7 @@ class SeparableConv1D(SeparableConvND):
     """
 
     spatial_ndim: int = 1
-    conv_op = separable_conv_nd
+    conv_op = staticmethod(separable_conv_nd)
 
 
 class SeparableConv2D(SeparableConvND):
@@ -2550,7 +2550,7 @@ class SeparableConv2D(SeparableConvND):
     """
 
     spatial_ndim: int = 2
-    conv_op = separable_conv_nd
+    conv_op = staticmethod(separable_conv_nd)
 
 
 class SeparableConv3D(SeparableConvND):
@@ -2636,7 +2636,7 @@ class SeparableConv3D(SeparableConvND):
     """
 
     spatial_ndim: int = 3
-    conv_op = separable_conv_nd
+    conv_op = staticmethod(separable_conv_nd)
 
 
 class SeparableFFTConv1D(SeparableConvND):
@@ -2722,7 +2722,7 @@ class SeparableFFTConv1D(SeparableConvND):
     """
 
     spatial_ndim: int = 1
-    conv_op = separable_fft_conv_nd
+    conv_op = staticmethod(separable_fft_conv_nd)
 
 
 class SeparableFFTConv2D(SeparableConvND):
@@ -2808,7 +2808,7 @@ class SeparableFFTConv2D(SeparableConvND):
     """
 
     spatial_ndim: int = 2
-    conv_op = separable_fft_conv_nd
+    conv_op = staticmethod(separable_fft_conv_nd)
 
 
 class SeparableFFTConv3D(SeparableConvND):
@@ -2894,7 +2894,7 @@ class SeparableFFTConv3D(SeparableConvND):
     """
 
     spatial_ndim: int = 3
-    conv_op = separable_fft_conv_nd
+    conv_op = staticmethod(separable_fft_conv_nd)
 
 
 class SpectralConvND(sk.TreeClass):
@@ -2921,7 +2921,7 @@ class SpectralConvND(sk.TreeClass):
     @ft.partial(validate_spatial_ndim, argnum=0)
     @ft.partial(validate_in_features_shape, axis=0)
     def __call__(self, input: jax.Array) -> jax.Array:
-        return type(self).conv_op(
+        return self.conv_op(
             input=input,
             weight_r=self.weight_r,
             weight_i=self.weight_i,
@@ -2929,7 +2929,7 @@ class SpectralConvND(sk.TreeClass):
         )
 
     spatial_ndim = property(abc.abstractmethod(lambda _: ...))
-    conv_op = property(abc.abstractmethod(lambda _: ...))
+    conv_op = staticmethod(abc.abstractmethod(lambda _: ...))
 
 
 class SpectralConv1D(SpectralConvND):
@@ -2986,7 +2986,7 @@ class SpectralConv1D(SpectralConvND):
     """
 
     spatial_ndim: int = 1
-    conv_op = spectral_conv_nd
+    conv_op = staticmethod(spectral_conv_nd)
 
 
 class SpectralConv2D(SpectralConvND):
@@ -3044,7 +3044,7 @@ class SpectralConv2D(SpectralConvND):
     """
 
     spatial_ndim: int = 2
-    conv_op = spectral_conv_nd
+    conv_op = staticmethod(spectral_conv_nd)
 
 
 class SpectralConv3D(SpectralConvND):
@@ -3102,7 +3102,7 @@ class SpectralConv3D(SpectralConvND):
     """
 
     spatial_ndim: int = 3
-    conv_op = spectral_conv_nd
+    conv_op = staticmethod(spectral_conv_nd)
 
 
 def is_lazy_call(instance, *_, **__) -> bool:
@@ -3205,7 +3205,7 @@ class ConvNDLocal(sk.TreeClass):
                 ``(out_features, in_features * prod(kernel_size), *out_size)``
                 use ``None`` for no mask.
         """
-        return type(self).conv_op(
+        return self.conv_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
@@ -3217,7 +3217,7 @@ class ConvNDLocal(sk.TreeClass):
         )
 
     spatial_ndim = property(abc.abstractmethod(lambda _: ...))
-    conv_op = property(abc.abstractmethod(lambda _: ...))
+    conv_op = staticmethod(abc.abstractmethod(lambda _: ...))
 
 
 class Conv1DLocal(ConvNDLocal):
@@ -3299,7 +3299,7 @@ class Conv1DLocal(ConvNDLocal):
     """
 
     spatial_ndim: int = 1
-    conv_op = local_conv_nd
+    conv_op = staticmethod(local_conv_nd)
 
 
 class Conv2DLocal(ConvNDLocal):
@@ -3381,7 +3381,7 @@ class Conv2DLocal(ConvNDLocal):
     """
 
     spatial_ndim: int = 2
-    conv_op = local_conv_nd
+    conv_op = staticmethod(local_conv_nd)
 
 
 class Conv3DLocal(ConvNDLocal):
@@ -3463,4 +3463,4 @@ class Conv3DLocal(ConvNDLocal):
     """
 
     spatial_ndim: int = 3
-    conv_op = local_conv_nd
+    conv_op = staticmethod(local_conv_nd)
