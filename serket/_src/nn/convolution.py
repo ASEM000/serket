@@ -20,7 +20,7 @@ import abc
 import functools as ft
 import operator as op
 from itertools import product
-from typing import Any, Sequence
+from typing import Sequence
 
 import jax
 import jax.numpy as jnp
@@ -42,7 +42,6 @@ from serket._src.utils import (
     maybe_lazy_call,
     maybe_lazy_init,
     positive_int_cb,
-    single_dispatch,
     validate_in_features_shape,
     validate_spatial_ndim,
 )

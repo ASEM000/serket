@@ -28,13 +28,7 @@ from serket._src.nn.activation import (
     resolve_activation,
 )
 from serket._src.nn.initialization import DType, InitType, resolve_init
-from serket._src.utils import (
-    maybe_lazy_call,
-    maybe_lazy_init,
-    positive_int_cb,
-    single_dispatch,
-    tuplify,
-)
+from serket._src.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb, tuplify
 
 T = TypeVar("T")
 PyTree = Any
