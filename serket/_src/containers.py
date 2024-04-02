@@ -22,20 +22,21 @@ import jax.random as jr
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
+from serket._src.utils import single_dispatch
 
 
-@ft.singledispatch
+@single_dispatch(argnum=0)
 def sequential(key: jax.Array, _1, _2):
     raise TypeError(f"Invalid {type(key)=}")
 
 
-@sequential.register(type(None))
+@sequential.def_type(type(None))
 def _(key: None, layers: Sequence[Callable[..., Any]], array: Any):
     del key  # no key is supplied then no random number generation is needed
     return ft.reduce(lambda x, layer: layer(x), layers, array)
 
 
-@sequential.register(jax.Array)
+@sequential.def_type(jax.Array)
 def _(key: jax.Array, layers: Sequence[Callable[..., Any]], array: Any):
     """Applies a sequence of layers to an array.
 
@@ -79,16 +80,16 @@ class Sequential(sk.TreeClass):
     def __call__(self, input: jax.Array, *, key: jax.Array | None = None) -> jax.Array:
         return sequential(key, self.layers, input)
 
-    @ft.singledispatchmethod
+    @single_dispatch(argnum=1)
     def __getitem__(self, key):
         raise TypeError(f"Invalid index type: {type(key)}")
 
-    @__getitem__.register(slice)
+    @__getitem__.def_type(slice)
     def _(self, key: slice):
         # return a new Sequential object with the sliced layers
         return type(self)(*self.layers[key])
 
-    @__getitem__.register(int)
+    @__getitem__.def_type(int)
     def _(self, key: int):
         return self.layers[key]
 
@@ -100,6 +101,12 @@ class Sequential(sk.TreeClass):
 
     def __reversed__(self):
         return reversed(self.layers)
+
+
+@sk.tree_summary.def_type(Sequential)
+def _(node):
+    types = [type(x).__name__ for x in node]
+    return f"{type(node).__name__}[{','.join(types)}]"
 
 
 def random_choice(key: jax.Array, layers: tuple[Callable[..., Any], ...], array: Any):

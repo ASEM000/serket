@@ -2,10 +2,6 @@ Activations
 ---------------------------------
 .. currentmodule:: serket.nn
     
-.. autoclass:: AdaptiveLeakyReLU
-.. autoclass:: AdaptiveReLU
-.. autoclass:: AdaptiveSigmoid
-.. autoclass:: AdaptiveTanh
 .. autoclass:: CeLU
 .. autoclass:: ELU
 .. autoclass:: GELU
@@ -28,7 +24,6 @@ Activations
 .. autoclass:: SoftSign
 .. autoclass:: SquarePlus
 .. autoclass:: Swish
-.. autoclass:: Snake
 .. autoclass:: Tanh
 .. autoclass:: TanhShrink
 .. autoclass:: ThresholdedReLU

@@ -13,7 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-import functools as ft
 from collections.abc import Callable as ABCCallable
 from typing import Any, Callable, Literal, Tuple, Union, get_args
 
@@ -21,6 +20,8 @@ import jax
 import jax.nn.initializers as ji
 import jax.tree_util as jtu
 import numpy as np
+
+from serket._src.utils import single_dispatch
 
 InitLiteral = Literal[
     "he_normal",
@@ -63,12 +64,12 @@ inits: list[InitFuncType] = [
 init_map: dict[str, InitType] = dict(zip(get_args(InitLiteral), inits))
 
 
-@ft.singledispatch
+@single_dispatch(argnum=0)
 def resolve_init(init):
     raise TypeError(f"Unknown type {type(init)}")
 
 
-@resolve_init.register(str)
+@resolve_init.def_type(str)
 def _(init: str):
     try:
         return jtu.Partial(jax.tree_map(lambda x: x, init_map[init]))
@@ -76,48 +77,11 @@ def _(init: str):
         raise ValueError(f"Unknown {init=}, available init: {list(init_map)}")
 
 
-@resolve_init.register(type(None))
-def _(init: None):
+@resolve_init.def_type(type(None))
+def _(init):
     return jtu.Partial(lambda key, shape, dtype=None: None)
 
 
-@resolve_init.register(ABCCallable)
+@resolve_init.def_type(ABCCallable)
 def _(init: Callable):
     return jtu.Partial(init)
-
-
-def def_init_entry(key: str, init_func: InitFuncType) -> None:
-    """Register a custom initialization function key for use in ``serket`` layers.
-
-    Args:
-        key: The key to register the function under.
-        init_func: The function to register. must take three arguments: a key,
-            a shape, and a dtype, and return an array of the given shape and dtype.
-
-    Note:
-        By design initialization function can be passed directly to ``serket`` layers
-        without registration. This function is useful if you want to
-        represent initialization functions as a string in a configuration file.
-
-    Example:
-        >>> import jax
-        >>> import jax.numpy as jnp
-        >>> import serket as sk
-        >>> import jax.random as jr
-        >>> import math
-        >>> def my_init_func(key, shape, dtype=jnp.float32):
-        ...     return jnp.arange(math.prod(shape), dtype=dtype).reshape(shape)
-        >>> sk.def_init_entry("my_init", my_init_func)
-    """
-    import inspect
-
-    signature = inspect.signature(init_func)
-
-    if key in init_map:
-        raise ValueError(f"`init_key` {key=} already registered")
-
-    if len(signature.parameters) != 3:
-        # verify its a three argument function
-        raise ValueError(f"`init_func` {len(signature.parameters)=} != 3")
-
-    init_map[key] = init_func

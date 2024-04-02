@@ -6,7 +6,7 @@ Recurrent
 .. autoclass:: LSTMCell
 .. autoclass:: GRUCell
 .. autoclass:: SimpleRNNCell
-.. autoclass:: DenseCell
+.. autoclass:: LinearCell
 
 .. autoclass:: ConvLSTM1DCell
 .. autoclass:: ConvLSTM2DCell

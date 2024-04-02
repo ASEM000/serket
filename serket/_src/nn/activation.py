@@ -14,7 +14,8 @@
 
 from __future__ import annotations
 
-import functools as ft
+import inspect
+from collections.abc import Callable as ABCCallable
 from typing import Callable, Literal, TypeVar, Union, get_args
 
 import jax
@@ -22,112 +23,9 @@ import jax.numpy as jnp
 from jax import lax
 
 import serket as sk
-from serket._src.utils import IsInstance, Range, ScalarLike
+from serket._src.utils import IsInstance, Range, ScalarLike, single_dispatch
 
 T = TypeVar("T")
-
-
-def adaptive_leaky_relu(
-    input: jax.typing.ArrayLike,
-    a: float = 1.0,
-    v: float = 1.0,
-) -> jax.Array:
-    """Adaptive Leaky ReLU activation function
-
-    Reference:
-        https://arxiv.org/pdf/1906.01170.pdf.
-    """
-    return jnp.maximum(0, a * input) - v * jnp.maximum(0, -a * input)
-
-
-@sk.autoinit
-class AdaptiveLeakyReLU(sk.TreeClass):
-    """Leaky ReLU activation function
-
-    Reference:
-        https://arxiv.org/pdf/1906.01170.pdf.
-    """
-
-    a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
-    v: float = sk.field(
-        default=1.0,
-        on_setattr=[Range(0), ScalarLike()],
-        on_getattr=[lax.stop_gradient_p.bind],
-    )
-
-    def __call__(self, input: jax.Array) -> jax.Array:
-        return adaptive_leaky_relu(input, self.a, self.v)
-
-
-def adaptive_relu(input: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
-    """Adaptive ReLU activation function
-
-    Reference:
-        https://arxiv.org/pdf/1906.01170.pdf.
-    """
-    return jnp.maximum(0, a * input)
-
-
-@sk.autoinit
-class AdaptiveReLU(sk.TreeClass):
-    """ReLU activation function with learnable parameters
-
-    Reference:
-        https://arxiv.org/pdf/1906.01170.pdf.
-    """
-
-    a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
-
-    def __call__(self, input: jax.Array) -> jax.Array:
-        return adaptive_relu(input, self.a)
-
-
-def adaptive_sigmoid(input: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
-    """Adaptive sigmoid activation function
-
-    Reference:
-        https://arxiv.org/pdf/1906.01170.pdf.
-    """
-    return 1 / (1 + jnp.exp(-a * input))
-
-
-@sk.autoinit
-class AdaptiveSigmoid(sk.TreeClass):
-    """Sigmoid activation function with learnable `a` parameter
-
-    Reference:
-        https://arxiv.org/pdf/1906.01170.pdf.
-    """
-
-    a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
-
-    def __call__(self, input: jax.Array) -> jax.Array:
-        return adaptive_sigmoid(input, self.a)
-
-
-def adaptive_tanh(input: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
-    """Adaptive tanh activation function
-
-    Reference:
-        https://arxiv.org/pdf/1906.01170.pdf.
-    """
-    return (jnp.exp(a * input) - jnp.exp(-a * input)) / (
-        jnp.exp(a * input) + jnp.exp(-a * input)
-    )
-
-
-@sk.autoinit
-class AdaptiveTanh(sk.TreeClass):
-    """Tanh activation function with learnable parameters
-
-    Reference:
-        https://arxiv.org/pdf/1906.01170.pdf.
-    """
-
-    a: float = sk.field(default=1.0, on_setattr=[Range(0), ScalarLike()])
-
-    def __call__(self, input: jax.Array) -> jax.Array:
-        return adaptive_tanh(input, self.a)
 
 
 @sk.autoinit
@@ -177,11 +75,7 @@ class GLU(sk.TreeClass):
 
 
 def hard_shrink(input: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
-    """Hard shrink activation function
-
-    Reference:
-        https://arxiv.org/pdf/1702.00783.pdf.
-    """
+    """Hard shrink activation function"""
     return jnp.where(input > alpha, input, jnp.where(input < -alpha, input, 0.0))
 
 
@@ -296,11 +190,7 @@ class SoftSign(sk.TreeClass):
 
 
 def softshrink(input: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
-    """Soft shrink activation function
-
-    Reference:
-        https://arxiv.org/pdf/1702.00783.pdf.
-    """
+    """Soft shrink activation function"""
     return jnp.where(
         input < -alpha,
         input + alpha,
@@ -323,11 +213,7 @@ class SoftShrink(sk.TreeClass):
 
 
 def squareplus(input: jax.typing.ArrayLike) -> jax.Array:
-    """SquarePlus activation function
-
-    Reference:
-        https://arxiv.org/pdf/1908.08681.pdf.
-    """
+    """SquarePlus activation function"""
     return 0.5 * (input + jnp.sqrt(input * input + 4))
 
 
@@ -414,45 +300,8 @@ class PReLU(sk.TreeClass):
         return prelu(input, self.a)
 
 
-def snake(input: jax.typing.ArrayLike, a: float = 1.0) -> jax.Array:
-    """Snake activation function
-
-    Args:
-        a: scalar (frequency) parameter of the activation function, default is 1.0.
-
-    Reference:
-        https://arxiv.org/pdf/2006.08195.pdf.
-    """
-    return input + (1 - jnp.cos(2 * a * input)) / (2 * a)
-
-
-@sk.autoinit
-class Snake(sk.TreeClass):
-    """Snake activation function
-
-    Args:
-        a: scalar (frequency) parameter of the activation function, default is 1.0.
-
-    Reference:
-        https://arxiv.org/pdf/2006.08195.pdf.
-    """
-
-    a: float = sk.field(
-        default=1.0,
-        on_setattr=[Range(0), ScalarLike()],
-        on_getattr=[lax.stop_gradient_p.bind],
-    )
-
-    def __call__(self, input: jax.Array) -> jax.Array:
-        return snake(input, self.a)
-
-
 # useful for building layers from configuration text
 ActivationLiteral = Literal[
-    "adaptive_leaky_relu",
-    "adaptive_relu",
-    "adaptive_sigmoid",
-    "adaptive_tanh",
     "celu",
     "elu",
     "gelu",
@@ -470,7 +319,6 @@ ActivationLiteral = Literal[
     "relu6",
     "selu",
     "sigmoid",
-    "snake",
     "softplus",
     "softshrink",
     "softsign",
@@ -483,10 +331,6 @@ ActivationLiteral = Literal[
 
 
 acts = [
-    adaptive_leaky_relu,
-    adaptive_relu,
-    adaptive_sigmoid,
-    adaptive_tanh,
     jax.nn.celu,
     jax.nn.elu,
     jax.nn.gelu,
@@ -504,7 +348,6 @@ acts = [
     jax.nn.relu6,
     jax.nn.selu,
     jax.nn.sigmoid,
-    snake,
     jax.nn.softplus,
     softshrink,
     softsign,
@@ -521,51 +364,20 @@ ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 act_map = dict(zip(get_args(ActivationLiteral), acts))
 
 
-@ft.singledispatch
-def resolve_activation(act: T) -> T:
-    return act
+@single_dispatch(argnum=0)
+def resolve_activation(act):
+    raise TypeError(f"Unknown activation type {type(act)}.")
 
 
-@resolve_activation.register(str)
+@resolve_activation.def_type(ABCCallable)
+def _(func: T) -> T:
+    assert len(inspect.getfullargspec(func).args) == 1
+    return func
+
+
+@resolve_activation.def_type(str)
 def _(act: str):
     try:
         return jax.tree_map(lambda x: x, act_map[act])
     except KeyError:
         raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")
-
-
-def def_act_entry(key: str, act: ActivationFunctionType) -> None:
-    """Register a custom activation function key for use in ``serket`` layers.
-
-    Args:
-        key: The key to register the function under.
-        act: a callable object that takes a single argument and returns a ``jax``
-            array.
-
-    Note:
-        The registered key can be used in any of ``serket`` ``act_*`` arguments as
-        substitution for the function.
-
-    Note:
-        By design, activation functions can be passed directly to ``serket`` layers
-        with the ``act`` argument. This function is useful if you want to
-        represent activation functions as a string in a configuration file.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> import jax.random as jr
-        >>> @sk.autoinit
-        ... class MyTrainableActivation(sk.TreeClass):
-        ...    my_param: float = 10.0
-        ...    def __call__(self, x):
-        ...        return x * self.my_param
-        >>> sk.def_act_entry("my_act", MyTrainableActivation())
-    """
-    if key in act_map:
-        raise ValueError(f"`init_key` {key=} already registered")
-
-    if not callable(act):
-        raise TypeError(f"{act=} must be a callable object")
-
-    act_map[key] = act

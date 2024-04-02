@@ -6,3 +6,5 @@ Linear
 .. autoclass:: Identity
 .. autoclass:: Embedding
 .. autoclass:: MLP
+
+.. autofunction:: linear

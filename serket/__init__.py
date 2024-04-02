@@ -14,70 +14,49 @@
 
 
 from sepes import (
-    AtIndexer,
-    BaseKey,
-    Partial,
     TreeClass,
     at,
     autoinit,
     bcmap,
     field,
     fields,
-    freeze,
-    is_frozen,
-    is_nondiff,
-    is_tree_equal,
+    is_masked,
     leafwise,
-    partial,
     tree_diagram,
-    tree_graph,
     tree_mask,
-    tree_mermaid,
     tree_repr,
     tree_str,
     tree_summary,
     tree_unmask,
-    unfreeze,
     value_and_tree,
 )
 
 from serket._src.containers import RandomChoice, Sequential
 from serket._src.custom_transform import tree_eval, tree_state
-from serket._src.nn.activation import def_act_entry
-from serket._src.nn.initialization import def_init_entry
 
 from . import cluster, image, nn
 
 __all__ = [
-    # general utils
+    # sepes
+    # module utils
     "TreeClass",
-    "is_tree_equal",
-    "field",
-    "fields",
-    "autoinit",
     # pprint utils
     "tree_diagram",
-    "tree_graph",
-    "tree_mermaid",
     "tree_repr",
     "tree_str",
     "tree_summary",
     # masking utils
-    "is_nondiff",
-    "is_frozen",
-    "freeze",
-    "unfreeze",
+    "is_masked",
     "tree_unmask",
     "tree_mask",
-    "value_and_tree",
-    # indexing utils
-    "AtIndexer",
-    "at",
-    "BaseKey",
     # tree utils
+    "at",
     "bcmap",
-    "Partial",
-    "partial",
+    "value_and_tree",
+    # construction utils
+    "field",
+    "fields",
+    "autoinit",
     "leafwise",
     # serket
     "cluster",
@@ -85,8 +64,6 @@ __all__ = [
     "image",
     "tree_eval",
     "tree_state",
-    "def_init_entry",
-    "def_act_entry",
     # containers
     "Sequential",
     "RandomChoice",

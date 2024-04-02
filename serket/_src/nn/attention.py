@@ -314,7 +314,7 @@ class MultiHeadAttention(sk.TreeClass):
         # [..., v_length, v_features] -> [..., v_length, head_features*num_heads]
         v_heads = self.v_projection(v_input)
 
-        attention = type(self).attention_op(
+        attention = self.attention_op(
             q_heads=q_heads,
             k_heads=k_heads,
             v_heads=v_heads,
@@ -331,4 +331,4 @@ class MultiHeadAttention(sk.TreeClass):
 
         return self.out_projection(attention)
 
-    attention_op = dot_product_attention
+    attention_op = staticmethod(dot_product_attention)

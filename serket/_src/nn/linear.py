@@ -31,41 +31,42 @@ from serket._src.nn.initialization import DType, InitType, resolve_init
 from serket._src.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb, tuplify
 
 T = TypeVar("T")
+PyTree = Any
 
 
 class Batched(Generic[T]):
     pass
 
 
-PyTree = Any
-
-
-def is_lazy_call(instance, *_, **__) -> bool:
-    return getattr(instance, "in_features", False) is None
-
-
-def is_lazy_init(_, in_features, *__, **___) -> bool:
-    return in_features is None
-
-
-def general_linear(
+def linear(
     input: jax.Array,
-    weight: jax.Array,
+    weight: Any,
     bias: jax.Array | None,
     in_axis: tuple[int, ...],
     out_axis: int,
 ) -> jax.Array:
-    in_axis_shape = tuple(input.shape[i] for i in in_axis)
-    features_shape = weight.shape[1:]
-    assert in_axis_shape == features_shape, f"{in_axis_shape=} != {features_shape=}"
+    """A@B + C.
 
-    in_axis = sorted([axis if axis >= 0 else axis + input.ndim for axis in in_axis])
+    Args:
+        input: input array.
+        weight: weight array. In the shape of (out_features, in_feature_1, in_feature_2, ...)
+        bias: bias array. In the shape of (out_features,) or ``None`` for no bias.
+        in_axis: which axes in the input to apply the linear layer to. ``tuple`` of ``ints``
+            corresponding to the (in_feature_1, in_feature_2, ...)
+        out_axis: the axis to put the result. accepts ``in`` values.
+    """
+    in_axis = [axis if axis >= 0 else axis + input.ndim for axis in in_axis]
     lhs = "".join(str(axis) for axis in range(input.ndim))  # 0, 1, 2, 3
     rhs = "F" + "".join(str(axis) for axis in in_axis)  # F, 1, 2, 3
     out = "".join(str(axis) for axis in range(input.ndim) if axis not in in_axis)
     out_axis = out_axis if out_axis >= 0 else out_axis + len(out) + 1
     out = out[:out_axis] + "F" + out[out_axis:]
-    result = jnp.einsum(f"{lhs},{rhs}->{out}", input, weight)
+
+    try:
+        einsum_pattern = f"{lhs},{rhs}->{out}"
+        result = jnp.einsum(einsum_pattern, input, weight)
+    except ValueError as e:
+        raise type(e)(f"{einsum_pattern=}, {e}")
 
     if bias is None:
         return result
@@ -75,6 +76,14 @@ def general_linear(
         del broadcast_shape[out_axis]
     bias = jnp.expand_dims(bias, axis=broadcast_shape)
     return result + bias
+
+
+def is_lazy_call(instance, *_1, **_2) -> bool:
+    return getattr(instance, "in_features", False) is None
+
+
+def is_lazy_init(_1, in_features, *_2, **_3) -> bool:
+    return in_features is None
 
 
 def infer_in_features(instance, x, **__) -> tuple[int, ...]:
@@ -160,9 +169,22 @@ class Linear(sk.TreeClass):
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        self.in_features = tuplify(in_features)
+
+        in_features = tuplify(in_features)
+        in_axis = tuplify(in_axis)
+
+        if len(in_axis) != len(in_features):
+            raise ValueError(f"{len(in_axis)=} != {len(in_features)=}")
+
+        # arrange the in_features by the in_axis
+        def compare(ik):
+            return in_axis[ik[0]]
+
+        _, in_features = zip(*sorted(enumerate(in_features), key=compare))
+
+        self.in_features = in_features
         self.out_features = out_features
-        self.in_axis = tuplify(in_axis)
+        self.in_axis = sorted(in_axis)
         self.out_axis = out_axis
         self.weight_init = weight_init
         self.bias_init = bias_init
@@ -173,24 +195,24 @@ class Linear(sk.TreeClass):
         if not (all(isinstance(i, int) for i in self.in_axis)):
             raise TypeError(f"Expected tuple of ints for {self.in_axis=}")
 
-        if len(self.in_axis) != len(self.in_features):
-            raise ValueError(f"{len(self.in_axis)=} != {len(self.in_features)=}")
-
         k1, k2 = jr.split(key)
-        weight_shape = (out_features, *self.in_features)
+
+        weight_shape = (out_features, *in_features)
         self.weight = resolve_init(weight_init)(k1, weight_shape, dtype)
         self.bias = resolve_init(bias_init)(k2, (self.out_features,), dtype)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, input: jax.Array) -> jax.Array:
         """Apply a linear transformation to the input."""
-        return general_linear(
+        return self.linear_op(
             input=input,
             weight=self.weight,
             bias=self.bias,
             in_axis=self.in_axis,
             out_axis=self.out_axis,
         )
+
+    linear_op = staticmethod(linear)
 
 
 class Identity(sk.TreeClass):
@@ -359,7 +381,7 @@ class MLP(sk.TreeClass):
             return sk.tree_mask(layer)
 
         self.in_linear = Linear(in_features, hidden_features, key=keys[0], **kwargs)
-        self.mid_linear = sk.tree_unmask(batched_linear(keys[1:-1]))
+        self.mid_linear: Batched[Linear] = sk.tree_unmask(batched_linear(keys[1:-1]))
         self.out_linear = Linear(hidden_features, out_features, key=keys[-1], **kwargs)
 
     def __call__(self, input: jax.Array) -> jax.Array:

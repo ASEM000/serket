@@ -22,10 +22,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install sepes>=0.10.0
-          python -m pip install keras_nightly==3.0.0.dev2023110103
+          python -m pip install sepes>=0.12.0
+          python -m pip install keras>=0.3.0
           python -m pip install scikit-learn
-          python -m pip install pytest wheel optax jaxlib coverage kernex
+          python -m pip install pytest wheel optax jaxlib coverage
       - name: Pytest Check
         run: |
           python -m pip install .

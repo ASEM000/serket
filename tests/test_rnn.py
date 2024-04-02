@@ -204,7 +204,7 @@ def test_conv_lstm(sk_layer, keras_layer, ndim):
 
 
 def test_dense_cell():
-    cell = sk.nn.DenseCell(
+    cell = sk.nn.LinearCell(
         in_features=10,
         hidden_features=10,
         act=lambda x: x,

@@ -1,4 +1,4 @@
-[build-systems]
+[build-system]
 requires = ["setuptools >= 61"]
 build-backend = "setuptools.build_meta"
 
@@ -15,7 +15,7 @@ keywords = [
   "functional-programming",
   "machine-learning",
 ]
-dependencies = ["sepes>=0.11.3"]
+dependencies = ["sepes>=0.12.0"]
 
 classifiers = [
   "Development Status :: 5 - Production/Stable",
