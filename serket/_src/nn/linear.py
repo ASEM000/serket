@@ -37,24 +37,13 @@ from serket._src.utils import (
 )
 
 T = TypeVar("T")
+PyTree = Any
 
 
 class Batched(Generic[T]):
     pass
 
 
-PyTree = Any
-
-
-def is_lazy_call(instance, *_1, **_2) -> bool:
-    return getattr(instance, "in_features", False) is None
-
-
-def is_lazy_init(_1, in_features, *_2, **_3) -> bool:
-    return in_features is None
-
-
-@single_dispatch(argnum=1)
 def linear(
     input: jax.Array,
     weight: Any,
@@ -72,19 +61,6 @@ def linear(
             corresponding to the (in_feature_1, in_feature_2, ...)
         out_axis: the axis to put the result. accepts ``in`` values.
     """
-    del input, bias, in_axis, out_axis
-    raise TypeError(f"{type(weight)=}")
-
-
-@linear.def_type(jax.Array)
-def _(
-    input: jax.Array,
-    weight: jax.Array,
-    bias: jax.Array | None,
-    in_axis: tuple[int, ...],
-    out_axis: int,
-) -> jax.Array:
-    # weight array handler
     in_axis = [axis if axis >= 0 else axis + input.ndim for axis in in_axis]
     lhs = "".join(str(axis) for axis in range(input.ndim))  # 0, 1, 2, 3
     rhs = "F" + "".join(str(axis) for axis in in_axis)  # F, 1, 2, 3
@@ -106,6 +82,14 @@ def _(
         del broadcast_shape[out_axis]
     bias = jnp.expand_dims(bias, axis=broadcast_shape)
     return result + bias
+
+
+def is_lazy_call(instance, *_1, **_2) -> bool:
+    return getattr(instance, "in_features", False) is None
+
+
+def is_lazy_init(_1, in_features, *_2, **_3) -> bool:
+    return in_features is None
 
 
 def infer_in_features(instance, x, **__) -> tuple[int, ...]:
