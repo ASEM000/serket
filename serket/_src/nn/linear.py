@@ -28,7 +28,13 @@ from serket._src.nn.activation import (
     resolve_activation,
 )
 from serket._src.nn.initialization import DType, InitType, resolve_init
-from serket._src.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb, tuplify
+from serket._src.utils import (
+    maybe_lazy_call,
+    maybe_lazy_init,
+    positive_int_cb,
+    single_dispatch,
+    tuplify,
+)
 
 T = TypeVar("T")
 
@@ -40,17 +46,18 @@ class Batched(Generic[T]):
 PyTree = Any
 
 
-def is_lazy_call(instance, *_, **__) -> bool:
+def is_lazy_call(instance, *_1, **_2) -> bool:
     return getattr(instance, "in_features", False) is None
 
 
-def is_lazy_init(_, in_features, *__, **___) -> bool:
+def is_lazy_init(_1, in_features, *_2, **_3) -> bool:
     return in_features is None
 
 
+@single_dispatch(argnum=1)
 def linear(
     input: jax.Array,
-    weight: jax.Array,
+    weight: Any,
     bias: jax.Array | None,
     in_axis: tuple[int, ...],
     out_axis: int,
@@ -65,6 +72,19 @@ def linear(
             corresponding to the (in_feature_1, in_feature_2, ...)
         out_axis: the axis to put the result. accepts ``in`` values.
     """
+    del input, bias, in_axis, out_axis
+    raise TypeError(f"{type(weight)=}")
+
+
+@linear.def_type(jax.Array)
+def _(
+    input: jax.Array,
+    weight: jax.Array,
+    bias: jax.Array | None,
+    in_axis: tuple[int, ...],
+    out_axis: int,
+) -> jax.Array:
+    # weight array handler
     in_axis = [axis if axis >= 0 else axis + input.ndim for axis in in_axis]
     lhs = "".join(str(axis) for axis in range(input.ndim))  # 0, 1, 2, 3
     rhs = "F" + "".join(str(axis) for axis in in_axis)  # F, 1, 2, 3
