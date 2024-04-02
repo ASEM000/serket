@@ -76,7 +76,7 @@ def linear(
         einsum_pattern = f"{lhs},{rhs}->{out}"
         result = jnp.einsum(einsum_pattern, input, weight)
     except ValueError as e:
-        raise type(e)(f"{einsum_pattern=}", e)
+        raise type(e)(f"{einsum_pattern=}, {e}")
 
     if bias is None:
         return result

@@ -119,7 +119,7 @@ def tree_state(tree: T, **kwargs) -> T:
             # check if all necessary kwargs for this state rule are passed
             state_kwargs = getfullargspec(func).kwonlyargs
 
-            if set(set(state_kwargs)).issubset(set(kwargs)):
+            if set(state_kwargs).issubset(set(kwargs)):
                 # the state rule is registered and the kwargs passed to `tree_state`
                 return func(leaf, **{key: kwargs[key] for key in state_kwargs})
 
