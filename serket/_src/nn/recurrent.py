@@ -59,15 +59,15 @@ State = Any
 """Defines RNN related classes."""
 
 
-def is_lazy_call(instance, *_, **__) -> bool:
+def is_lazy_call(instance, *_1, **_2) -> bool:
     return instance.in_features is None
 
 
-def is_lazy_init(_, in_features: int | None, *__, **___) -> bool:
+def is_lazy_init(_, in_features: int | None, *_1, **_2) -> bool:
     return in_features is None
 
 
-def infer_in_features(_, input: jax.Array, *__, **___) -> int:
+def infer_in_features(_, input: jax.Array, *_1, **_2) -> int:
     return input.shape[0]
 
 
@@ -198,7 +198,7 @@ class SimpleRNNCell(TreeClass):
     spatial_ndim: int = 0
 
 
-class DenseState(RNNState): ...
+class LinearState(RNNState): ...
 
 
 class LinearCell(TreeClass):
@@ -280,13 +280,13 @@ class LinearCell(TreeClass):
     def __call__(
         self,
         input: jax.Array,
-        state: DenseState,
-    ) -> tuple[jax.Array, DenseState]:
-        if not isinstance(state, DenseState):
-            raise TypeError(f"Expected {state=} to be an instance of `DenseState`")
+        state: LinearState,
+    ) -> tuple[jax.Array, LinearState]:
+        if not isinstance(state, LinearState):
+            raise TypeError(f"Expected {state=} to be an instance of `LinearState`")
         h = self.in_to_hidden(input)
         h = self.act(h)
-        return h, DenseState(h)
+        return h, LinearState(h)
 
     spatial_ndim: int = 0
 
@@ -1482,8 +1482,8 @@ def _(cell: SimpleRNNCell) -> SimpleRNNState:
 
 
 @tree_state.def_state(LinearCell)
-def _(cell: LinearCell) -> DenseState:
-    return DenseState(jnp.empty([cell.hidden_features]))
+def _(cell: LinearCell) -> LinearState:
+    return LinearState(jnp.empty([cell.hidden_features]))
 
 
 @tree_state.def_state(LSTMCell)
