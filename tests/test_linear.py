@@ -72,7 +72,7 @@ def test_general_linear_shape(
     assert layer(x).shape == desired_shape
 
 
-def test_linear_errors():
+def test_linear():
     x = jnp.ones([1, 2, 3, 4])
     layer = sk.nn.Linear(
         in_features=(1, 2),

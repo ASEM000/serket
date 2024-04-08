@@ -198,13 +198,10 @@ class Linear(sk.TreeClass):
         if len(out_axis) != len(out_features):
             raise ValueError(f"{len(out_axis)=} != {len(out_features)=}")
 
-        _, in_f = zip(*sorted(enumerate(in_features), key=lambda ik: in_axis[ik[0]]))
-        _, out_f = zip(*sorted(enumerate(out_features), key=lambda ik: out_axis[ik[0]]))
-
-        self.in_features = in_f
-        self.out_features = out_f
-        self.in_axis = sorted(in_axis)
-        self.out_axis = sorted(out_axis)
+        self.in_features = in_features
+        self.out_features = out_features
+        self.in_axis = in_axis
+        self.out_axis = out_axis
         self.weight_init = weight_init
         self.bias_init = bias_init
 
