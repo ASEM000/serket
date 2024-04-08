@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,36 +14,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable as ABCCallable
-from typing import Any, Callable, Literal, Tuple, Union, get_args
+from typing import Callable, get_args
 
 import jax
 import jax.nn.initializers as ji
 import jax.tree_util as jtu
-import numpy as np
 
-from serket._src.utils import single_dispatch
-
-InitLiteral = Literal[
-    "he_normal",
-    "he_uniform",
-    "glorot_normal",
-    "glorot_uniform",
-    "lecun_normal",
-    "lecun_uniform",
-    "normal",
-    "uniform",
-    "ones",
-    "zeros",
-    "xavier_normal",
-    "xavier_uniform",
-    "orthogonal",
-]
-
-Shape = Tuple[int, ...]
-DType = Union[np.dtype, str, Any]
-InitFuncType = Callable[[jax.Array, Shape, DType], jax.Array]
-InitType = Union[InitLiteral, InitFuncType]
-
+from serket._src.utils.dispatch import single_dispatch
+from serket._src.utils.typing import InitFuncType, InitLiteral, InitType
 
 inits: list[InitFuncType] = [
     ji.he_normal(),

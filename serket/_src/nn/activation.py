@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,17 +22,18 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 
-import serket as sk
-from serket._src.utils import IsInstance, Range, ScalarLike, single_dispatch
+from serket import TreeClass, autoinit, field
+from serket._src.utils.dispatch import single_dispatch
+from serket._src.utils.validate import IsInstance, Range, ScalarLike
 
 T = TypeVar("T")
 
 
-@sk.autoinit
-class CeLU(sk.TreeClass):
+@autoinit
+class CeLU(TreeClass):
     """Celu activation function"""
 
-    alpha: float = sk.field(
+    alpha: float = field(
         default=1.0,
         on_setattr=[ScalarLike()],
         on_getattr=[lax.stop_gradient_p.bind],
@@ -42,11 +43,11 @@ class CeLU(sk.TreeClass):
         return jax.nn.celu(input, alpha=self.alpha)
 
 
-@sk.autoinit
-class ELU(sk.TreeClass):
+@autoinit
+class ELU(TreeClass):
     """Exponential linear unit"""
 
-    alpha: float = sk.field(
+    alpha: float = field(
         default=1.0,
         on_setattr=[ScalarLike()],
         on_getattr=[lax.stop_gradient_p.bind],
@@ -56,18 +57,18 @@ class ELU(sk.TreeClass):
         return jax.nn.elu(input, alpha=self.alpha)
 
 
-@sk.autoinit
-class GELU(sk.TreeClass):
+@autoinit
+class GELU(TreeClass):
     """Gaussian error linear unit"""
 
-    approximate: bool = sk.field(default=False, on_setattr=[IsInstance(bool)])
+    approximate: bool = field(default=False, on_setattr=[IsInstance(bool)])
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.gelu(input, approximate=self.approximate)
 
 
-@sk.autoinit
-class GLU(sk.TreeClass):
+@autoinit
+class GLU(TreeClass):
     """Gated linear unit"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
@@ -79,11 +80,11 @@ def hard_shrink(input: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
     return jnp.where(input > alpha, input, jnp.where(input < -alpha, input, 0.0))
 
 
-@sk.autoinit
-class HardShrink(sk.TreeClass):
+@autoinit
+class HardShrink(TreeClass):
     """Hard shrink activation function"""
 
-    alpha: float = sk.field(
+    alpha: float = field(
         default=0.5,
         on_setattr=[Range(0), ScalarLike()],
         on_getattr=[lax.stop_gradient_p.bind],
@@ -93,46 +94,46 @@ class HardShrink(sk.TreeClass):
         return hard_shrink(input, self.alpha)
 
 
-class HardSigmoid(sk.TreeClass):
+class HardSigmoid(TreeClass):
     """Hard sigmoid activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.hard_sigmoid(input)
 
 
-class HardSwish(sk.TreeClass):
+class HardSwish(TreeClass):
     """Hard swish activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.hard_swish(input)
 
 
-class HardTanh(sk.TreeClass):
+class HardTanh(TreeClass):
     """Hard tanh activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.hard_tanh(input)
 
 
-class LogSigmoid(sk.TreeClass):
+class LogSigmoid(TreeClass):
     """Log sigmoid activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.log_sigmoid(input)
 
 
-class LogSoftmax(sk.TreeClass):
+class LogSoftmax(TreeClass):
     """Log softmax activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.log_softmax(input)
 
 
-@sk.autoinit
-class LeakyReLU(sk.TreeClass):
+@autoinit
+class LeakyReLU(TreeClass):
     """Leaky ReLU activation function"""
 
-    negative_slope: float = sk.field(
+    negative_slope: float = field(
         default=0.01,
         on_setattr=[Range(0), ScalarLike()],
         on_getattr=[lax.stop_gradient_p.bind],
@@ -142,35 +143,35 @@ class LeakyReLU(sk.TreeClass):
         return jax.nn.leaky_relu(input, self.negative_slope)
 
 
-class ReLU(sk.TreeClass):
+class ReLU(TreeClass):
     """ReLU activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.relu(input)
 
 
-class ReLU6(sk.TreeClass):
+class ReLU6(TreeClass):
     """ReLU6 activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.relu6(input)
 
 
-class SeLU(sk.TreeClass):
+class SeLU(TreeClass):
     """Scaled Exponential Linear Unit"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.selu(input)
 
 
-class Sigmoid(sk.TreeClass):
+class Sigmoid(TreeClass):
     """Sigmoid activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.sigmoid(input)
 
 
-class SoftPlus(sk.TreeClass):
+class SoftPlus(TreeClass):
     """SoftPlus activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
@@ -182,7 +183,7 @@ def softsign(x: jax.typing.ArrayLike) -> jax.Array:
     return x / (1 + jnp.abs(x))
 
 
-class SoftSign(sk.TreeClass):
+class SoftSign(TreeClass):
     """SoftSign activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
@@ -198,11 +199,11 @@ def softshrink(input: jax.typing.ArrayLike, alpha: float = 0.5) -> jax.Array:
     )
 
 
-@sk.autoinit
-class SoftShrink(sk.TreeClass):
+@autoinit
+class SoftShrink(TreeClass):
     """SoftShrink activation function"""
 
-    alpha: float = sk.field(
+    alpha: float = field(
         default=0.5,
         on_setattr=[Range(0), ScalarLike()],
         on_getattr=[lax.stop_gradient_p.bind],
@@ -217,21 +218,21 @@ def squareplus(input: jax.typing.ArrayLike) -> jax.Array:
     return 0.5 * (input + jnp.sqrt(input * input + 4))
 
 
-class SquarePlus(sk.TreeClass):
+class SquarePlus(TreeClass):
     """SquarePlus activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return squareplus(input)
 
 
-class Swish(sk.TreeClass):
+class Swish(TreeClass):
     """Swish activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return jax.nn.swish(input)
 
 
-class Tanh(sk.TreeClass):
+class Tanh(TreeClass):
     """Tanh activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
@@ -243,7 +244,7 @@ def tanh_shrink(input: jax.typing.ArrayLike) -> jax.Array:
     return input - jnp.tanh(input)
 
 
-class TanhShrink(sk.TreeClass):
+class TanhShrink(TreeClass):
     """TanhShrink activation function"""
 
     def __call__(self, input: jax.Array) -> jax.Array:
@@ -259,11 +260,11 @@ def thresholded_relu(input: jax.typing.ArrayLike, theta: float = 1.0) -> jax.Arr
     return jnp.where(input > theta, input, 0)
 
 
-@sk.autoinit
-class ThresholdedReLU(sk.TreeClass):
+@autoinit
+class ThresholdedReLU(TreeClass):
     """Thresholded ReLU activation function."""
 
-    theta: float = sk.field(
+    theta: float = field(
         default=1.0,
         on_setattr=[Range(0), ScalarLike()],
         on_getattr=[lax.stop_gradient_p.bind],
@@ -278,7 +279,7 @@ def mish(input: jax.typing.ArrayLike) -> jax.Array:
     return input * jax.nn.tanh(jax.nn.softplus(input))
 
 
-class Mish(sk.TreeClass):
+class Mish(TreeClass):
     """Mish activation function https://arxiv.org/pdf/1908.08681.pdf."""
 
     def __call__(self, input: jax.Array) -> jax.Array:
@@ -290,11 +291,11 @@ def prelu(input: jax.typing.ArrayLike, a: float = 0.25) -> jax.Array:
     return jnp.where(input >= 0, input, input * a)
 
 
-@sk.autoinit
-class PReLU(sk.TreeClass):
+@autoinit
+class PReLU(TreeClass):
     """Parametric ReLU activation function"""
 
-    a: float = sk.field(default=0.25, on_setattr=[Range(0), ScalarLike()])
+    a: float = field(default=0.25, on_setattr=[Range(0), ScalarLike()])
 
     def __call__(self, input: jax.Array) -> jax.Array:
         return prelu(input, self.a)

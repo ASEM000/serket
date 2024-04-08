@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,8 +27,11 @@ from serket._src.nn.activation import (
     ActivationType,
     resolve_activation,
 )
-from serket._src.nn.initialization import DType, InitType, resolve_init
-from serket._src.utils import maybe_lazy_call, maybe_lazy_init, positive_int_cb, tuplify
+from serket._src.nn.initialization import resolve_init
+from serket._src.utils.convert import tuplify
+from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
+from serket._src.utils.typing import DType, InitType
+from serket._src.utils.validate import validate_pos_int
 
 T = TypeVar("T")
 PyTree = Any
@@ -245,8 +248,8 @@ class Embedding(sk.TreeClass):
     """
 
     def __init__(self, in_features: int, out_features: int, key: jax.Array):
-        self.in_features = positive_int_cb(in_features)
-        self.out_features = positive_int_cb(out_features)
+        self.in_features = validate_pos_int(in_features)
+        self.out_features = validate_pos_int(out_features)
         self.weight = jr.normal(key, (self.out_features, self.in_features))
 
     def __call__(self, input: jax.Array) -> jax.Array:

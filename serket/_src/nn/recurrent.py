@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import jax.random as jr
 from typing_extensions import ParamSpec
 
 import serket as sk
+from serket import TreeClass, autoinit
 from serket._src.custom_transform import tree_state
 from serket._src.nn.activation import ActivationType, resolve_activation
 from serket._src.nn.convolution import (
@@ -34,16 +35,18 @@ from serket._src.nn.convolution import (
     FFTConv2D,
     FFTConv3D,
 )
-from serket._src.nn.initialization import DType, InitType
-from serket._src.utils import (
+from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
+from serket._src.utils.typing import (
     DilationType,
+    DType,
+    InitType,
     KernelSizeType,
     PaddingType,
     StridesType,
-    maybe_lazy_call,
-    maybe_lazy_init,
-    positive_int_cb,
+)
+from serket._src.utils.validate import (
     validate_in_features_shape,
+    validate_pos_int,
     validate_spatial_ndim,
 )
 
@@ -71,15 +74,15 @@ def infer_in_features(_, input: jax.Array, *__, **___) -> int:
 updates = dict(in_features=infer_in_features)
 
 
-@sk.autoinit
-class RNNState(sk.TreeClass):
+@autoinit
+class RNNState(TreeClass):
     hidden_state: jax.Array
 
 
 class SimpleRNNState(RNNState): ...
 
 
-class SimpleRNNCell(sk.TreeClass):
+class SimpleRNNCell(TreeClass):
     """Vanilla RNN cell that defines the update rule for the hidden state
 
     Args:
@@ -144,8 +147,8 @@ class SimpleRNNCell(sk.TreeClass):
     ):
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = positive_int_cb(in_features)
-        self.hidden_features = positive_int_cb(hidden_features)
+        self.in_features = validate_pos_int(in_features)
+        self.hidden_features = validate_pos_int(hidden_features)
         self.act = resolve_activation(act)
 
         i2h = sk.nn.Linear(
@@ -198,7 +201,7 @@ class SimpleRNNCell(sk.TreeClass):
 class DenseState(RNNState): ...
 
 
-class LinearCell(sk.TreeClass):
+class LinearCell(TreeClass):
     """No hidden state cell that applies a dense(Linear+activation) layer to the input
 
     Args:
@@ -257,8 +260,8 @@ class LinearCell(sk.TreeClass):
         key: jax.Array,
         dtype: DType = jnp.float32,
     ):
-        self.in_features = positive_int_cb(in_features)
-        self.hidden_features = positive_int_cb(hidden_features)
+        self.in_features = validate_pos_int(in_features)
+        self.hidden_features = validate_pos_int(hidden_features)
         self.act = resolve_activation(act)
 
         self.in_to_hidden = sk.nn.Linear(
@@ -288,12 +291,12 @@ class LinearCell(sk.TreeClass):
     spatial_ndim: int = 0
 
 
-@sk.autoinit
+@autoinit
 class LSTMState(RNNState):
     cell_state: jax.Array
 
 
-class LSTMCell(sk.TreeClass):
+class LSTMCell(TreeClass):
     """LSTM cell that defines the update rule for the hidden state and cell state
 
     Args:
@@ -361,8 +364,8 @@ class LSTMCell(sk.TreeClass):
     ):
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = positive_int_cb(in_features)
-        self.hidden_features = positive_int_cb(hidden_features)
+        self.in_features = validate_pos_int(in_features)
+        self.hidden_features = validate_pos_int(hidden_features)
         self.act = resolve_activation(act)
         self.recurrent_act = resolve_activation(recurrent_act)
 
@@ -424,7 +427,7 @@ class LSTMCell(sk.TreeClass):
 class GRUState(RNNState): ...
 
 
-class GRUCell(sk.TreeClass):
+class GRUCell(TreeClass):
     """GRU cell that defines the update rule for the hidden state and cell state
 
     Args:
@@ -491,8 +494,8 @@ class GRUCell(sk.TreeClass):
     ):
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = positive_int_cb(in_features)
-        self.hidden_features = positive_int_cb(hidden_features)
+        self.in_features = validate_pos_int(in_features)
+        self.hidden_features = validate_pos_int(hidden_features)
         self.act = resolve_activation(act)
         self.recurrent_act = resolve_activation(recurrent_act)
 
@@ -539,12 +542,12 @@ class GRUCell(sk.TreeClass):
     spatial_ndim: int = 0
 
 
-@sk.autoinit
+@autoinit
 class ConvLSTMNDState(RNNState):
     cell_state: jax.Array
 
 
-class ConvLSTMNDCell(sk.TreeClass):
+class ConvLSTMNDCell(TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -565,8 +568,8 @@ class ConvLSTMNDCell(sk.TreeClass):
     ):
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = positive_int_cb(in_features)
-        self.hidden_features = positive_int_cb(hidden_features)
+        self.in_features = validate_pos_int(in_features)
+        self.hidden_features = validate_pos_int(hidden_features)
         self.act = resolve_activation(act)
         self.recurrent_act = resolve_activation(recurrent_act)
 
@@ -970,7 +973,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
 class ConvGRUNDState(RNNState): ...
 
 
-class ConvGRUNDCell(sk.TreeClass):
+class ConvGRUNDCell(TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -991,8 +994,8 @@ class ConvGRUNDCell(sk.TreeClass):
     ):
         k1, k2 = jr.split(key, 2)
 
-        self.in_features = positive_int_cb(in_features)
-        self.hidden_features = positive_int_cb(hidden_features)
+        self.in_features = validate_pos_int(in_features)
+        self.hidden_features = validate_pos_int(hidden_features)
         self.act = resolve_activation(act)
         self.recurrent_act = resolve_activation(recurrent_act)
 

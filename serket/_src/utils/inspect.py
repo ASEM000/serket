@@ -11,3 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from __future__ import annotations
+
+import functools as ft
+import inspect
+from types import MethodType
+
+
+@ft.lru_cache(maxsize=128)
+def get_params(func: MethodType) -> tuple[inspect.Parameter, ...]:
+    """Get the arguments of func."""
+    return tuple(inspect.signature(func).parameters.values())

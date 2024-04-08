@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,25 +28,45 @@ import jax.random as jr
 from typing_extensions import Annotated
 
 import serket as sk
-from serket._src.nn.initialization import DType, InitType, resolve_init
-from serket._src.utils import (
+from serket._src.nn.initialization import resolve_init
+from serket._src.utils.convert import canonicalize
+from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
+from serket._src.utils.padding import (
+    calculate_transpose_padding,
+    delayed_canonicalize_padding,
+)
+from serket._src.utils.typing import (
     DilationType,
+    DType,
+    InitType,
     KernelSizeType,
     PaddingType,
     StridesType,
-    calculate_convolution_output_shape,
-    calculate_transpose_padding,
-    canonicalize,
-    delayed_canonicalize_padding,
-    generate_conv_dim_numbers,
-    maybe_lazy_call,
-    maybe_lazy_init,
-    positive_int_cb,
+    Weight,
+)
+from serket._src.utils.validate import (
     validate_in_features_shape,
+    validate_pos_int,
     validate_spatial_ndim,
 )
 
-Weight = Annotated[jax.Array, "OI..."]
+
+def calculate_convolution_output_shape(
+    shape: tuple[int, ...],
+    kernel_size: tuple[int, ...],
+    padding: tuple[tuple[int, int], ...],
+    strides: tuple[int, ...],
+):
+    """Compute the shape of the output of a convolutional layer."""
+    return tuple(
+        (xi + (li + ri) - ki) // si + 1
+        for xi, ki, si, (li, ri) in zip(shape, kernel_size, strides, padding)
+    )
+
+
+@ft.lru_cache(maxsize=None)
+def generate_conv_dim_numbers(spatial_ndim) -> jax.lax.ConvDimensionNumbers:
+    return jax.lax.ConvDimensionNumbers(*((tuple(range(spatial_ndim + 2)),) * 3))
 
 
 def fft_conv_general_dilated(
@@ -562,15 +582,15 @@ class ConvND(sk.TreeClass):
         groups: int = 1,
         dtype: DType = jnp.float32,
     ):
-        self.in_features = positive_int_cb(in_features)
-        self.out_features = positive_int_cb(out_features)
+        self.in_features = validate_pos_int(in_features)
+        self.out_features = validate_pos_int(out_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding
         self.dilation = canonicalize(dilation, self.spatial_ndim, "dilation")
         self.weight_init = weight_init
         self.bias_init = bias_init
-        self.groups = positive_int_cb(groups)
+        self.groups = validate_pos_int(groups)
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(out_features % groups == 0)=}")
@@ -1163,8 +1183,8 @@ class ConvNDTranspose(sk.TreeClass):
         groups: int = 1,
         dtype: DType = jnp.float32,
     ):
-        self.in_features = positive_int_cb(in_features)
-        self.out_features = positive_int_cb(out_features)
+        self.in_features = validate_pos_int(in_features)
+        self.out_features = validate_pos_int(out_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding  # delayed canonicalization
@@ -1172,12 +1192,12 @@ class ConvNDTranspose(sk.TreeClass):
         self.dilation = canonicalize(dilation, self.spatial_ndim, "dilation")
         self.weight_init = weight_init
         self.bias_init = bias_init
-        self.groups = positive_int_cb(groups)
+        self.groups = validate_pos_int(groups)
 
         if self.out_features % self.groups != 0:
             raise ValueError(f"{(self.out_features % self.groups ==0)=}")
 
-        in_features = positive_int_cb(self.in_features)
+        in_features = validate_pos_int(self.in_features)
         weight_shape = (out_features, in_features // groups, *self.kernel_size)
         self.weight = resolve_init(self.weight_init)(key, weight_shape, dtype)
 
@@ -1787,9 +1807,9 @@ class DepthwiseConvND(sk.TreeClass):
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = validate_pos_int(in_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
-        self.depth_multiplier = positive_int_cb(depth_multiplier)
+        self.depth_multiplier = validate_pos_int(depth_multiplier)
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding  # delayed canonicalization
         self.weight_init = weight_init
@@ -2302,9 +2322,9 @@ class SeparableConvND(sk.TreeClass):
         pointwise_bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = validate_pos_int(in_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
-        self.depth_multiplier = positive_int_cb(depth_multiplier)
+        self.depth_multiplier = validate_pos_int(depth_multiplier)
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")
         self.padding = padding  # delayed canonicalization
         self.depthwise_weight_init = depthwise_weight_init
@@ -2902,8 +2922,8 @@ class SpectralConvND(sk.TreeClass):
         key: jax.Array,
         dtype: DType = jnp.float32,
     ):
-        self.in_features = positive_int_cb(in_features)
-        self.out_features = positive_int_cb(out_features)
+        self.in_features = validate_pos_int(in_features)
+        self.out_features = validate_pos_int(out_features)
         self.modes: tuple[int, ...] = canonicalize(modes, self.spatial_ndim, "modes")
         weight_shape = (1, out_features, in_features, *self.modes)
         scale = 1 / (in_features * out_features)
@@ -3148,8 +3168,8 @@ class ConvNDLocal(sk.TreeClass):
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        self.in_features = positive_int_cb(in_features)
-        self.out_features = positive_int_cb(out_features)
+        self.in_features = validate_pos_int(in_features)
+        self.out_features = validate_pos_int(out_features)
         self.kernel_size = canonicalize(kernel_size, self.spatial_ndim, "kernel_size")
         self.in_size = canonicalize(in_size, self.spatial_ndim, name="in_size")
         self.strides = canonicalize(strides, self.spatial_ndim, "strides")

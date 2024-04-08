@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,10 +19,12 @@ import jax.numpy as jnp
 import jax.random as jr
 import numpy.testing as npt
 import pytest
+
 import serket as sk
 
 # Suppress FutureWarning
 warnings.simplefilter(action="ignore", category=FutureWarning)
+
 
 @pytest.mark.skip(reason="flaky test")
 def test_kmeans():
