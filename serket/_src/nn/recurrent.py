@@ -93,7 +93,7 @@ class SimpleRNNCell(TreeClass):
         bias_init: the function to use to initialize the bias
         recurrent_weight_init: the function to use to initialize the recurrent weights
         act: the activation function to use for the hidden state update
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -212,7 +212,7 @@ class LinearCell(TreeClass):
         bias_init: the function to use to initialize the bias
         act: the activation function to use for the hidden state update,
             use `None` for no activation
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -308,7 +308,7 @@ class LSTMCell(TreeClass):
         act: the activation function to use for the hidden state update
         recurrent_act: the activation function to use for the cell state update
         key: the key to use to initialize the weights
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -439,7 +439,7 @@ class GRUCell(TreeClass):
         recurrent_weight_init: the function to use to initialize the recurrent weights
         act: the activation function to use for the hidden state update
         recurrent_act: the activation function to use for the cell state update
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -644,7 +644,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -701,7 +701,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -758,7 +758,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -815,7 +815,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -872,7 +872,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -929,7 +929,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1068,7 +1068,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1122,7 +1122,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1176,7 +1176,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1230,7 +1230,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1284,7 +1284,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1338,7 +1338,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk

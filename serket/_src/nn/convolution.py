@@ -679,7 +679,7 @@ class Conv1D(ConvND):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -767,7 +767,7 @@ class Conv2D(ConvND):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -855,7 +855,7 @@ class Conv3D(ConvND):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -943,7 +943,7 @@ class FFTConv1D(ConvND):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1031,7 +1031,7 @@ class FFTConv2D(ConvND):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1119,7 +1119,7 @@ class FFTConv3D(ConvND):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1287,7 +1287,7 @@ class Conv1DTranspose(ConvNDTranspose):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1379,7 +1379,7 @@ class Conv2DTranspose(ConvNDTranspose):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1470,7 +1470,7 @@ class Conv3DTranspose(ConvNDTranspose):
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1562,7 +1562,7 @@ class FFTConv1DTranspose(ConvNDTranspose):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1654,7 +1654,7 @@ class FFTConv2DTranspose(ConvNDTranspose):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1746,7 +1746,7 @@ class FFTConv3DTranspose(ConvNDTranspose):
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1890,7 +1890,7 @@ class DepthwiseConv1D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1965,7 +1965,7 @@ class DepthwiseConv2D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2040,7 +2040,7 @@ class DepthwiseConv3D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2115,7 +2115,7 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2190,7 +2190,7 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2265,7 +2265,7 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2441,7 +2441,7 @@ class SeparableConv1D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2527,7 +2527,7 @@ class SeparableConv2D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2613,7 +2613,7 @@ class SeparableConv3D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2699,7 +2699,7 @@ class SeparableFFTConv1D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2785,7 +2785,7 @@ class SeparableFFTConv2D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2871,7 +2871,7 @@ class SeparableFFTConv3D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2961,7 +2961,7 @@ class SpectralConv1D(SpectralConvND):
         modes: Number of modes to use in the spectral convolution.
 
         key: key to use for initializing the weights.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
 
     Example:
@@ -3020,7 +3020,7 @@ class SpectralConv2D(SpectralConvND):
             integer for the same number of modes in each dimension.
 
         key: key to use for initializing the weights.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -3078,7 +3078,7 @@ class SpectralConv3D(SpectralConvND):
             integer for the same number of modes in each dimension.
 
         key: key to use for initializing the weights.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -3275,7 +3275,7 @@ class Conv1DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -3357,7 +3357,7 @@ class Conv2DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -3439,7 +3439,7 @@ class Conv3DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp

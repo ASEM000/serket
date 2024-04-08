@@ -144,7 +144,7 @@ class LayerNorm(sk.TreeClass):
             if ``None``, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if ``None``, the shift is not trainable.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
         eps: a value added to the denominator for numerical stability.
 
     Example:
@@ -247,7 +247,7 @@ class GroupNorm(sk.TreeClass):
             if None, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -335,7 +335,7 @@ class InstanceNorm(sk.TreeClass):
             if None, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -552,7 +552,7 @@ class BatchNorm(sk.TreeClass):
         axis: the feature axis that should be normalized. Defaults to 1. i.e.
             the other axes are reduced over.
         axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import jax
@@ -747,7 +747,7 @@ class EvalBatchNorm(sk.TreeClass):
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
         axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import jax
