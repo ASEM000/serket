@@ -36,7 +36,7 @@ def test_identity():
 
 
 @pytest.mark.parametrize(
-    "in_features, out_features,in_axis,out_axis,desired_shape",
+    "in_features,out_features,in_axis,out_axis,desired_shape",
     [
         # single feature
         (1, 10, 0, 0, (10, 2, 3, 4, 5, 6)),
@@ -165,9 +165,9 @@ def test_mlp():
         key=jax.random.PRNGKey(0),
     )
 
-    layer = layer.at["in_linear"]["weight"].set(w1.T)
-    layer = layer.at["mid_linear"]["weight"].set(w2.T[None])
-    layer = layer.at["out_linear"]["weight"].set(w3.T)
+    layer = layer.at["in_weight"].set(w1.T)
+    layer = layer.at["mid_weight"].set(w2.T[None])
+    layer = layer.at["out_weight"].set(w3.T)
 
     npt.assert_allclose(layer(x), y)
 
@@ -199,11 +199,11 @@ def test_mlp_bias():
         key=jax.random.PRNGKey(0),
     )
 
-    layer = layer.at["in_linear"]["weight"].set(w1.T)
-    layer = layer.at["in_linear"]["bias"].set(b1)
-    layer = layer.at["mid_linear"]["weight"].set(w2.T[None])
-    layer = layer.at["mid_linear"]["bias"].set(b2[None])
-    layer = layer.at["out_linear"]["weight"].set(w3.T)
-    layer = layer.at["out_linear"]["bias"].set(b3)
+    layer = layer.at["in_weight"].set(w1.T)
+    layer = layer.at["in_bias"].set(b1)
+    layer = layer.at["mid_weight"].set(w2.T[None])
+    layer = layer.at["mid_bias"].set(b2[None])
+    layer = layer.at["out_weight"].set(w3.T)
+    layer = layer.at["out_bias"].set(b3)
 
     npt.assert_allclose(layer(x), y)

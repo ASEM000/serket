@@ -45,8 +45,8 @@ def linear(
     input: jax.Array,
     weight: Any,
     bias: jax.Array | None,
-    in_axis: Sequence[int],
-    out_axis: Sequence[int],
+    in_axis: Sequence[int] = (-1,),
+    out_axis: Sequence[int] = (-1,),
 ) -> jax.Array:
     """Apply a linear transformation to the input.
 
@@ -115,13 +115,13 @@ class Linear(sk.TreeClass):
             int or tuple of ints.
         out_features: number of output features corresponding to ``out_axis``.
             Accepts int or tuple of ints.
-        key: key to use for initializing the weights and biases.
+        key: key to use for initializing the weight and biases.
         in_axis: axes to apply the linear layer to. Accepts int or tuple of ints.
             Defaults to -1.
         out_axis: result axis. Accepts int or tuple of ints. Defaults to -1.
         weight_init: weight initialization function. Defaults to ``glorot_uniform``.
         bias_init: bias initialization function. Defaults to ``zeros``.
-        dtype: dtype of the weights and biases. ``float32``
+        dtype: dtype of the weight and biases. ``float32``
 
     Example:
         Apply :class:`.Linear` layer t0 the last dimension of input
@@ -152,7 +152,7 @@ class Linear(sk.TreeClass):
         (3, 3, 4, 4)
 
     Note:
-        :class:`.Linear` supports lazy initialization, meaning that the weights and
+        :class:`.Linear` supports lazy initialization, meaning that the weight and
         biases are not initialized until the first call to the layer. This is
         useful when the input shape is not known at initialization time.
 
@@ -189,14 +189,20 @@ class Linear(sk.TreeClass):
         in_features = tuplify(in_features)
         in_axis = tuplify(in_axis)
 
-        if len(in_axis) != len(in_features):
-            raise ValueError(f"{len(in_axis)=} != {len(in_features)=}")
-
         out_features = tuplify(out_features)
         out_axis = tuplify(out_axis)
 
+        if len(in_axis) != len(in_features):
+            raise ValueError(f"{len(in_axis)=} != {len(in_features)=}")
+
         if len(out_axis) != len(out_features):
             raise ValueError(f"{len(out_axis)=} != {len(out_features)=}")
+
+        if not (all(isinstance(i, int) for i in in_features)):
+            raise TypeError(f"Expected tuple of ints for {in_features=}")
+
+        if not (all(isinstance(i, int) for i in in_axis)):
+            raise TypeError(f"Expected tuple of ints for {in_axis=}")
 
         self.in_features = in_features
         self.out_features = out_features
@@ -204,12 +210,6 @@ class Linear(sk.TreeClass):
         self.out_axis = out_axis
         self.weight_init = weight_init
         self.bias_init = bias_init
-
-        if not (all(isinstance(i, int) for i in self.in_features)):
-            raise TypeError(f"Expected tuple of ints for {self.in_features=}")
-
-        if not (all(isinstance(i, int) for i in self.in_axis)):
-            raise TypeError(f"Expected tuple of ints for {self.in_axis=}")
 
         k1, k2 = jr.split(key)
 
@@ -244,7 +244,7 @@ class Embedding(sk.TreeClass):
     Args:
         in_features: vocabulary size.
         out_features: embedding size.
-        key: random key to initialize the weights.
+        key: random key to initialize the weight.
 
     Example:
         >>> import jax.numpy as jnp
@@ -291,18 +291,25 @@ def scan_linear(
     if bias is None:
 
         def scan_func(input: jax.Array, weight: Batched[jax.Array]):
-            return act(input @ weight.T), None
+            return act(linear(input, weight, None)), None
 
         output, _ = jax.lax.scan(scan_func, input, weight)
         return output
 
     def scan_func(input: jax.Array, weight_bias: Batched[jax.Array]):
         weight, bias = weight_bias[..., :-1], weight_bias[..., -1]
-        return act(input @ weight.T + bias), None
+        return act(linear(input, weight, bias)), None
 
     weight_bias = jnp.concatenate([weight, bias[:, :, None]], axis=-1)
     output, _ = jax.lax.scan(scan_func, input, weight_bias)
     return output
+
+
+def infer_in_features(instance, x, **__) -> tuple[int, ...]:
+    return x.shape[-1]
+
+
+updates = dict(in_features=infer_in_features)
 
 
 class MLP(sk.TreeClass):
@@ -317,7 +324,7 @@ class MLP(sk.TreeClass):
         act: Activation function. Defaults to ``tanh``.
         weight_init: Weight initialization function. Defaults to ``glorot_uniform``.
         bias_init: Bias initialization function. Defaults to ``zeros``.
-        dtype: dtype of the weights and biases. ``float32``
+        dtype: dtype of the weight and biases. ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -336,7 +343,7 @@ class MLP(sk.TreeClass):
           layer (4, 2) = ``num_hidden_layers + 1``
 
     Note:
-        :class:`.MLP` supports lazy initialization, meaning that the weights and
+        :class:`.MLP` supports lazy initialization, meaning that the weight and
         biases are not initialized until the first call to the layer. This is
         useful when the input shape is not known at initialization time.
 
@@ -351,8 +358,8 @@ class MLP(sk.TreeClass):
         >>> lazy = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_features=10, key=key)
         >>> input = jnp.ones([1, 10])
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
-        >>> material.in_linear.in_features
-        (10,)
+        >>> material.in_features
+        10
 
     Note:
         :class:`.MLP` uses ``jax.lax.scan`` to reduce the ``jaxpr`` size.
@@ -371,6 +378,7 @@ class MLP(sk.TreeClass):
         >>> assert len(jaxpr1.jaxpr.eqns) == len(jaxpr2.jaxpr.eqns)
     """
 
+    @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
         in_features: int,
@@ -387,21 +395,32 @@ class MLP(sk.TreeClass):
         if hidden_features < 1:
             raise ValueError(f"`{hidden_features=}` must be positive.")
 
-        keys = jr.split(key, num_hidden_layers + 1)
+        self.in_features = in_features
+        self.out_features = out_features
+        self.hidden_features = hidden_features
+        self.num_hidden_layers = num_hidden_layers
+
+        in_key, mid_key, out_key = jr.split(key, 3)
         self.act = resolve_activation(act)
-        kwargs = dict(weight_init=weight_init, bias_init=bias_init, dtype=dtype)
 
-        @jax.vmap
-        def batched_linear(key: jax.Array) -> Batched[Linear]:
-            layer = Linear(hidden_features, hidden_features, key=key, **kwargs)
-            return sk.tree_mask(layer)
+        in_weight_shape = (hidden_features, in_features)
+        k1, k2 = jr.split(in_key)
+        self.in_weight = resolve_init(weight_init)(k1, in_weight_shape, dtype)
+        self.in_bias = resolve_init(bias_init)(k2, (hidden_features,), dtype)
 
-        self.in_linear = Linear(in_features, hidden_features, key=keys[0], **kwargs)
-        self.mid_linear: Batched[Linear] = sk.tree_unmask(batched_linear(keys[1:-1]))
-        self.out_linear = Linear(hidden_features, out_features, key=keys[-1], **kwargs)
+        k3, k4 = jr.split(mid_key)
+        mid_weight_shape = (num_hidden_layers, hidden_features, hidden_features)
+        self.mid_weight = resolve_init(weight_init)(k3, mid_weight_shape, dtype)
+        mid_bias_shape = (num_hidden_layers, hidden_features)
+        self.mid_bias = resolve_init(bias_init)(k4, mid_bias_shape, dtype)
 
+        k5, k6 = jr.split(out_key)
+        out_weight_shape = (out_features, hidden_features)
+        self.out_weight = resolve_init(weight_init)(k5, out_weight_shape, dtype)
+        self.out_bias = resolve_init(bias_init)(k6, (out_features,), dtype)
+
+    @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, input: jax.Array) -> jax.Array:
-        input = self.act(self.in_linear(input))
-        weight_h, bias_h = self.mid_linear.weight, self.mid_linear.bias
-        input = scan_linear(input, weight_h, bias_h, self.act)
-        return self.out_linear(input)
+        input = self.act(linear(input, self.in_weight, self.in_bias))
+        input = scan_linear(input, self.mid_weight, self.mid_bias, self.act)
+        return linear(input, self.out_weight, self.out_bias)
