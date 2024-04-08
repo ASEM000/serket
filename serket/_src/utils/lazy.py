@@ -12,7 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module provides decorators to handle lazy layers in a functional way."""
+"""This module provides decorators to handle lazy layers in a functional way.
+
+For instance:
+>>> net = Linear(None, 10, key=...)
+is a lazy layer because the input features are passed as ``None``. The layer
+is not materialized yet. To materialize the layer, you can use ``value_and_tree``
+to materialize the layer and get the output along with the materialized layer:
+>>> output, material = value_and_tree(lambda layer: layer(input))(net)
+
+- Contrary to other framework, `serket` is eager-first lazy-second. This means
+  that the lazy is opt-in and not the default behavior.
+
+- The key idea is to store the input arguments to the instance attribute to
+  be used later when the instance is re-initialized using ``maybe_lazy_call`` 
+  decorator. ``maybe_lazy_call`` assumes that the input arguments are stored
+  in the instance attribute and can be retrieved using ``vars(instance)``.
+  Meaning that upon re-initialization, ``obj.__init__(**vars(obj))`` will
+  re-initialize the instance with the same input arguments.
+
+- Because the instance is immutable, the process of re-initialization is
+  performed under ``value_and_tree`` that allows the instance to be mutable
+  with it's context after being copied first.
+"""
 
 from __future__ import annotations
 
