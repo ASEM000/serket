@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import abc
 import functools as ft
-from typing import Literal
 
 import jax
 import jax.random as jr
@@ -24,17 +23,16 @@ import jax.random as jr
 import serket as sk
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
-from serket._src.utils import (
+from serket._src.utils.convert import canonicalize
+from serket._src.utils.mapping import kernel_map
+from serket._src.utils.padding import delayed_canonicalize_padding
+from serket._src.utils.typing import (
     KernelSizeType,
+    MethodKind,
     PaddingType,
     StridesType,
-    canonicalize,
-    delayed_canonicalize_padding,
-    kernel_map,
-    validate_spatial_ndim,
 )
-
-MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
+from serket._src.utils.validate import validate_spatial_ndim
 
 
 def random_crop_nd(

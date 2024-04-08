@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,16 +21,11 @@ import jax.numpy as jnp
 import jax.random as jr
 from jax.scipy.ndimage import map_coordinates
 
-import serket as sk
+from serket import TreeClass, autoinit, field
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
-from serket._src.utils import (
-    CHWArray,
-    HWArray,
-    IsInstance,
-    Range,
-    validate_spatial_ndim,
-)
+from serket._src.utils.typing import CHWArray, HWArray
+from serket._src.utils.validate import IsInstance, Range, validate_spatial_ndim
 
 
 def affine_2d(array: HWArray, matrix: HWArray) -> HWArray:
@@ -189,7 +184,7 @@ def random_wave_transform_2d(
     return wave_transform_2d(image, length, amplitude)
 
 
-class Rotate2D(sk.TreeClass):
+class Rotate2D(TreeClass):
     """Rotate_2d a 2D image by an angle in dgrees in CCW direction
 
     .. image:: ../_static/rotate2d.png
@@ -220,7 +215,7 @@ class Rotate2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomRotate2D(sk.TreeClass):
+class RandomRotate2D(TreeClass):
     """Rotate_2d a 2D image by an angle in dgrees in CCW direction
 
     Args:
@@ -273,7 +268,7 @@ class RandomRotate2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class HorizontalShear2D(sk.TreeClass):
+class HorizontalShear2D(TreeClass):
     """Shear an image horizontally
 
     .. image:: ../_static/horizontalshear2d.png
@@ -304,7 +299,7 @@ class HorizontalShear2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomHorizontalShear2D(sk.TreeClass):
+class RandomHorizontalShear2D(TreeClass):
     """Shear an image horizontally with random angle choice.
 
     Args:
@@ -358,7 +353,7 @@ class RandomHorizontalShear2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class VerticalShear2D(sk.TreeClass):
+class VerticalShear2D(TreeClass):
     """Shear an image vertically
 
     .. image:: ../_static/verticalshear2d.png
@@ -389,7 +384,7 @@ class VerticalShear2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomVerticalShear2D(sk.TreeClass):
+class RandomVerticalShear2D(TreeClass):
     """Shear an image vertically with random angle choice.
 
     Args:
@@ -443,7 +438,7 @@ class RandomVerticalShear2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomPerspective2D(sk.TreeClass):
+class RandomPerspective2D(TreeClass):
     """Applies a random perspective transform to a channel-first image.
 
     .. image:: ../_static/randomperspective2d.png
@@ -481,8 +476,8 @@ class RandomPerspective2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class HorizontalTranslate2D(sk.TreeClass):
+@autoinit
+class HorizontalTranslate2D(TreeClass):
     """Translate an image horizontally by a pixel value.
 
     .. image:: ../_static/horizontaltranslate2d.png
@@ -502,7 +497,7 @@ class HorizontalTranslate2D(sk.TreeClass):
           [ 0  0 21 22 23]]]
     """
 
-    shift: int = sk.field(on_setattr=[IsInstance(int)])
+    shift: int = field(on_setattr=[IsInstance(int)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
@@ -511,8 +506,8 @@ class HorizontalTranslate2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class VerticalTranslate2D(sk.TreeClass):
+@autoinit
+class VerticalTranslate2D(TreeClass):
     """Translate an image vertically by a pixel value.
 
     .. image:: ../_static/verticaltranslate2d.png
@@ -532,7 +527,7 @@ class VerticalTranslate2D(sk.TreeClass):
           [11 12 13 14 15]]]
     """
 
-    shift: int = sk.field(on_setattr=[IsInstance(int)])
+    shift: int = field(on_setattr=[IsInstance(int)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
@@ -541,8 +536,8 @@ class VerticalTranslate2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class RandomHorizontalTranslate2D(sk.TreeClass):
+@autoinit
+class RandomHorizontalTranslate2D(TreeClass):
     """Translate an image horizontally by a random pixel value.
 
     Note:
@@ -579,7 +574,7 @@ class RandomHorizontalTranslate2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomVerticalTranslate2D(sk.TreeClass):
+class RandomVerticalTranslate2D(TreeClass):
     """Translate an image vertically by a random pixel value.
 
     Note:
@@ -618,7 +613,7 @@ class RandomVerticalTranslate2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class HorizontalFlip2D(sk.TreeClass):
+class HorizontalFlip2D(TreeClass):
     """Flip channels left to right.
 
     .. image:: ../_static/horizontalflip2d.png
@@ -648,8 +643,8 @@ class HorizontalFlip2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class RandomHorizontalFlip2D(sk.TreeClass):
+@autoinit
+class RandomHorizontalFlip2D(TreeClass):
     """Flip channels left to right with a probability of `rate`.
 
     .. image:: ../_static/horizontalflip2d.png
@@ -674,7 +669,7 @@ class RandomHorizontalFlip2D(sk.TreeClass):
           [25 24 23 22 21]]]
     """
 
-    rate: float = sk.field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
+    rate: float = field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
@@ -685,7 +680,7 @@ class RandomHorizontalFlip2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class VerticalFlip2D(sk.TreeClass):
+class VerticalFlip2D(TreeClass):
     """Flip channels up to down.
 
     .. image:: ../_static/verticalflip2d.png
@@ -715,8 +710,8 @@ class VerticalFlip2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class RandomVerticalFlip2D(sk.TreeClass):
+@autoinit
+class RandomVerticalFlip2D(TreeClass):
     """Flip channels up to down with a probability of `rate`.
 
     .. image:: ../_static/verticalflip2d.png
@@ -741,7 +736,7 @@ class RandomVerticalFlip2D(sk.TreeClass):
           [ 1  2  3  4  5]]]
     """
 
-    rate: float = sk.field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
+    rate: float = field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
@@ -752,7 +747,7 @@ class RandomVerticalFlip2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class WaveTransform2D(sk.TreeClass):
+class WaveTransform2D(TreeClass):
     """Apply a wave transform to an image.
 
     .. image:: ../_static/wavetransform2d.png
@@ -775,7 +770,7 @@ class WaveTransform2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomWaveTransform2D(sk.TreeClass):
+class RandomWaveTransform2D(TreeClass):
     """Apply a random wave transform to an image.
 
     .. image:: ../_static/wavetransform2d.png

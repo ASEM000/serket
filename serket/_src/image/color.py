@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,9 @@ import functools as ft
 import jax
 import jax.numpy as jnp
 
-import serket as sk
-from serket._src.utils import CHWArray, validate_spatial_ndim
+from serket import TreeClass
+from serket._src.utils.typing import CHWArray
+from serket._src.utils.validate import validate_spatial_ndim
 
 
 def rgb_to_grayscale(image: CHWArray, weights: jax.Array | None = None) -> CHWArray:
@@ -50,7 +51,7 @@ def grayscale_to_rgb(image: CHWArray) -> CHWArray:
     return jnp.concatenate([image, image, image], axis=0)
 
 
-class RGBToGrayscale2D(sk.TreeClass):
+class RGBToGrayscale2D(TreeClass):
     """Converts a channel-first RGB image to grayscale.
 
     .. image:: ../_static/rgbtograyscale2d.png
@@ -135,7 +136,7 @@ def hsv_to_rgb(image: CHWArray) -> CHWArray:
     return out
 
 
-class GrayscaleToRGB2D(sk.TreeClass):
+class GrayscaleToRGB2D(TreeClass):
     """Converts a grayscale image to RGB.
 
     Example:
@@ -155,7 +156,7 @@ class GrayscaleToRGB2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RGBToHSV2D(sk.TreeClass):
+class RGBToHSV2D(TreeClass):
     """Converts an RGB image to HSV.
 
     .. image:: ../_static/rgbtohsv2d.png
@@ -180,7 +181,7 @@ class RGBToHSV2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class HSVToRGB2D(sk.TreeClass):
+class HSVToRGB2D(TreeClass):
     """Converts an HSV image to RGB.
 
     Example:

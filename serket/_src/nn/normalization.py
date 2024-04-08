@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,15 +23,15 @@ from jax.custom_batching import custom_vmap
 
 import serket as sk
 from serket._src.custom_transform import tree_eval, tree_state
-from serket._src.nn.initialization import DType, InitType, resolve_init
-from serket._src.utils import (
+from serket._src.nn.initialization import resolve_init
+from serket._src.utils.convert import tuplify
+from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
+from serket._src.utils.typing import DType, InitType
+from serket._src.utils.validate import (
     Range,
     ScalarLike,
-    maybe_lazy_call,
-    maybe_lazy_init,
-    positive_int_cb,
-    tuplify,
     validate_in_features_shape,
+    validate_pos_int,
 )
 
 
@@ -297,8 +297,8 @@ class GroupNorm(sk.TreeClass):
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        self.in_features = positive_int_cb(in_features)
-        self.groups = positive_int_cb(groups)
+        self.in_features = validate_pos_int(in_features)
+        self.groups = validate_pos_int(groups)
         self.eps = eps
 
         # needs more info for checking
@@ -384,7 +384,7 @@ class InstanceNorm(sk.TreeClass):
         bias_init: InitType = "zeros",
         dtype: DType = jnp.float32,
     ):
-        self.in_features = positive_int_cb(in_features)
+        self.in_features = validate_pos_int(in_features)
         self.eps = eps
         self.weight = resolve_init(weight_init)(key, (in_features,), dtype)
         self.bias = resolve_init(bias_init)(key, (in_features,), dtype)

@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,15 +23,11 @@ import jax.numpy as jnp
 from typing_extensions import Annotated
 
 import serket as sk
-from serket._src.utils import (
-    KernelSizeType,
-    PaddingType,
-    StridesType,
-    canonicalize,
-    delayed_canonicalize_padding,
-    kernel_map,
-    validate_spatial_ndim,
-)
+from serket._src.utils.convert import canonicalize
+from serket._src.utils.mapping import kernel_map
+from serket._src.utils.padding import delayed_canonicalize_padding
+from serket._src.utils.typing import KernelSizeType, PaddingType, StridesType
+from serket._src.utils.validate import validate_spatial_ndim
 
 
 def pool_nd(

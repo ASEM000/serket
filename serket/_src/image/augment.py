@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,17 +21,12 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 
-import serket as sk
+from serket import TreeClass, autoinit, field
 from serket._src.custom_transform import tree_eval
 from serket._src.image.color import hsv_to_rgb, rgb_to_hsv
 from serket._src.nn.linear import Identity
-from serket._src.utils import (
-    CHWArray,
-    HWArray,
-    IsInstance,
-    Range,
-    validate_spatial_ndim,
-)
+from serket._src.utils.typing import CHWArray, HWArray
+from serket._src.utils.validate import IsInstance, Range, validate_spatial_ndim
 
 
 def pixel_shuffle_3d(array: CHWArray, upscale_factor: tuple[int, int]) -> CHWArray:
@@ -73,7 +68,7 @@ def adjust_contrast_2d(image: HWArray, factor: float):
     """Adjusts the contrast of an image by scaling the pixel values by a factor.
 
     Args:
-        array: input array \in [0, 1] with shape (height, width)
+        array: input array in [0, 1] with shape (height, width)
         factor: contrast factor to adust the contrast by.
     """
     _, _ = image.shape
@@ -97,7 +92,7 @@ def adjust_brightness_2d(image: HWArray, factor: float) -> HWArray:
     """Adjusts the brightness of an image by adding a value to the pixel values.
 
     Args:
-        array: input array \in [0, 1] with shape (height, width)
+        array: input array in [0, 1] with shape (height, width)
         factor: brightness factor to adust the brightness by.
     """
     _, _ = image.shape
@@ -240,7 +235,7 @@ def fourier_domain_adapt_2d(image: HWArray, styler: HWArray, beta: float):
     return image_out.astype(dtype)
 
 
-class PixelShuffle2D(sk.TreeClass):
+class PixelShuffle2D(TreeClass):
     """Rearrange elements in a tensor.
 
     .. image:: ../_static/pixelshuffle2d.png
@@ -265,8 +260,8 @@ class PixelShuffle2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class AdjustContrast2D(sk.TreeClass):
+@autoinit
+class AdjustContrast2D(TreeClass):
     """Adjusts the contrast of an 2D input by scaling the pixel values by a factor.
 
     .. image:: ../_static/adjustcontrast2d.png
@@ -289,7 +284,7 @@ class AdjustContrast2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomContrast2D(sk.TreeClass):
+class RandomContrast2D(TreeClass):
     """Randomly adjusts the contrast of an 1D input by scaling the pixel values by a factor.
 
     Args:
@@ -322,8 +317,8 @@ class RandomContrast2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class AdjustBrightness2D(sk.TreeClass):
+@autoinit
+class AdjustBrightness2D(TreeClass):
     """Adjusts the brightness of an 2D input by adding a value to the pixel values.
 
     .. image:: ../_static/adjustbrightness2d.png
@@ -342,7 +337,7 @@ class AdjustBrightness2D(sk.TreeClass):
           [1.     1.     1.     1.    ]]]
     """
 
-    factor: float = sk.field(on_setattr=[IsInstance(float), Range(0, 1)])
+    factor: float = field(on_setattr=[IsInstance(float), Range(0, 1)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
@@ -352,8 +347,8 @@ class AdjustBrightness2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class RandomBrightness2D(sk.TreeClass):
+@autoinit
+class RandomBrightness2D(TreeClass):
     """Randomly adjusts the brightness of an 2D input by adding a value to the pixel values.
 
     Args:
@@ -364,7 +359,7 @@ class RandomBrightness2D(sk.TreeClass):
           evaluation.
     """
 
-    range: tuple[float, float] = sk.field(on_setattr=[IsInstance(tuple)])
+    range: tuple[float, float] = field(on_setattr=[IsInstance(tuple)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, array: CHWArray, *, key: jax.Array) -> CHWArray:
@@ -375,7 +370,7 @@ class RandomBrightness2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class Pixelate2D(sk.TreeClass):
+class Pixelate2D(TreeClass):
     """Pixelate an image by upsizing and downsizing an image
 
     .. image:: ../_static/pixelate2d.png
@@ -410,8 +405,8 @@ class Pixelate2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class Solarize2D(sk.TreeClass):
+@autoinit
+class Solarize2D(TreeClass):
     """Inverts all values above a given threshold.
 
     .. image:: ../_static/solarize2d.png
@@ -450,8 +445,8 @@ class Solarize2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class Posterize2D(sk.TreeClass):
+@autoinit
+class Posterize2D(TreeClass):
     """Reduce the number of bits for each color channel.
 
     .. image:: ../_static/posterize2d.png
@@ -492,7 +487,7 @@ class Posterize2D(sk.TreeClass):
         - https://github.com/python-pillow/Pillow/blob/main/src/PIL/ImageOps.py#L547
     """
 
-    bits: int = sk.field(on_setattr=[IsInstance(int), Range(1, 8)])
+    bits: int = field(on_setattr=[IsInstance(int), Range(1, 8)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
@@ -501,8 +496,8 @@ class Posterize2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-@sk.autoinit
-class RandomJigSaw2D(sk.TreeClass):
+@autoinit
+class RandomJigSaw2D(TreeClass):
     """Mixes up tiles of an image.
 
     .. image:: ../_static/jigsaw2d.png
@@ -545,7 +540,7 @@ class RandomJigSaw2D(sk.TreeClass):
         - https://imgaug.readthedocs.io/en/latest/source/overview/geometric.html#jigsaw
     """
 
-    tiles: int = sk.field(on_setattr=[IsInstance(int), Range(1)])
+    tiles: int = field(on_setattr=[IsInstance(int), Range(1)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
@@ -562,7 +557,7 @@ class RandomJigSaw2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class AdjustLog2D(sk.TreeClass):
+class AdjustLog2D(TreeClass):
     """Adjust log correction on the input 2D image of range [0, 1].
 
     Args:
@@ -594,7 +589,7 @@ class AdjustLog2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class AdjustSigmoid2D(sk.TreeClass):
+class AdjustSigmoid2D(TreeClass):
     """Adjust sigmoid correction on the input 2D image of range [0, 1].
 
 
@@ -630,7 +625,7 @@ class AdjustSigmoid2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class AdjustHue2D(sk.TreeClass):
+class AdjustHue2D(TreeClass):
     """Adjust hue of an RGB image.
 
     .. image:: ../_static/adjusthue2d.png
@@ -651,7 +646,7 @@ class AdjustHue2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomHue2D(sk.TreeClass):
+class RandomHue2D(TreeClass):
     """Randomly adjust hue of an RGB image.
 
     Args:
@@ -674,7 +669,7 @@ class RandomHue2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class AdjustSaturation2D(sk.TreeClass):
+class AdjustSaturation2D(TreeClass):
     """Adjust saturation of an RGB image.
 
     .. image:: ../_static/adjustsaturation2d.png
@@ -695,7 +690,7 @@ class AdjustSaturation2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomSaturation2D(sk.TreeClass):
+class RandomSaturation2D(TreeClass):
     """Randomly adjust saturation of an RGB image.
 
     Args:
@@ -718,7 +713,7 @@ class RandomSaturation2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class FourierDomainAdapt2D(sk.TreeClass):
+class FourierDomainAdapt2D(TreeClass):
     """Domain adaptation via style transfer
 
     .. image:: ../_static/fourierdomainadapt2d.png

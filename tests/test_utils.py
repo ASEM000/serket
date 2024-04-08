@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,15 +21,13 @@ import pytest
 
 import serket as sk
 from serket._src.nn.initialization import resolve_init
-from serket._src.utils import (
-    IsInstance,
-    ScalarLike,
-    canonicalize,
+from serket._src.utils.convert import canonicalize
+from serket._src.utils.padding import (
     delayed_canonicalize_padding,
-    positive_int_cb,
     resolve_string_padding,
     resolve_tuple_padding,
 )
+from serket._src.utils.validate import IsInstance, ScalarLike, validate_pos_int
 
 
 @pytest.mark.parametrize(
@@ -129,9 +127,9 @@ def test_scalar_like_error():
     npt.assert_allclose(ScalarLike()(jax.numpy.array(1.0)), jax.numpy.array(1.0))
 
 
-def test_positive_int_cb_error():
+def test_validate_pos_int_error():
     with pytest.raises(ValueError):
-        positive_int_cb(1.0)
+        validate_pos_int(1.0)
 
 
 def test_lazy_call():

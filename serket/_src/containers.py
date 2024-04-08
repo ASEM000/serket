@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ from typing import Any, Callable, Sequence
 import jax
 import jax.random as jr
 
-import serket as sk
+from serket import TreeClass, tree_summary
 from serket._src.custom_transform import tree_eval
-from serket._src.utils import single_dispatch
+from serket._src.utils.dispatch import single_dispatch
 
 
 @single_dispatch(argnum=0)
@@ -53,7 +53,7 @@ def _(key: jax.Array, layers: Sequence[Callable[..., Any]], array: Any):
     return array
 
 
-class Sequential(sk.TreeClass):
+class Sequential(TreeClass):
     """A sequential container for layers.
 
     Args:
@@ -103,7 +103,7 @@ class Sequential(sk.TreeClass):
         return reversed(self.layers)
 
 
-@sk.tree_summary.def_type(Sequential)
+@tree_summary.def_type(Sequential)
 def _(node):
     types = [type(x).__name__ for x in node]
     return f"{type(node).__name__}[{','.join(types)}]"
@@ -121,7 +121,7 @@ def random_choice(key: jax.Array, layers: tuple[Callable[..., Any], ...], array:
     return jax.lax.switch(index, layers, array)
 
 
-class RandomChoice(sk.TreeClass):
+class RandomChoice(TreeClass):
     """Randomly selects one of the given layers/functions.
 
     Args:

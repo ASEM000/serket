@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,20 +22,20 @@ import jax.numpy as jnp
 import jax.random as jr
 from jax.scipy.ndimage import map_coordinates
 
-import serket as sk
+from serket import TreeClass
 from serket._src.image.geometric import rotate_2d
-from serket._src.nn.convolution import fft_conv_general_dilated
-from serket._src.nn.initialization import DType
-from serket._src.utils import (
-    CHWArray,
-    HWArray,
-    canonicalize,
-    delayed_canonicalize_padding,
+from serket._src.nn.convolution import (
+    fft_conv_general_dilated,
     generate_conv_dim_numbers,
-    kernel_map,
-    resolve_string_padding,
-    validate_spatial_ndim,
 )
+from serket._src.utils.convert import canonicalize
+from serket._src.utils.mapping import kernel_map
+from serket._src.utils.padding import (
+    delayed_canonicalize_padding,
+    resolve_string_padding,
+)
+from serket._src.utils.typing import CHWArray, DType, HWArray
+from serket._src.utils.validate import validate_spatial_ndim
 
 
 def filter_2d(
@@ -762,7 +762,7 @@ def fft_blur_pool_2d(
     return fft_filter_2d(image, kernel, strides)
 
 
-class BaseAvgBlur2D(sk.TreeClass):
+class BaseAvgBlur2D(TreeClass):
     def __init__(self, kernel_size: int | tuple[int, int]):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
 
@@ -824,7 +824,7 @@ class FFTAvgBlur2D(BaseAvgBlur2D):
     filter_op = staticmethod(fft_avg_blur_2d)
 
 
-class BaseGaussianBlur2D(sk.TreeClass):
+class BaseGaussianBlur2D(TreeClass):
     def __init__(
         self,
         kernel_size: int | tuple[int, int],
@@ -945,7 +945,7 @@ class FFTUnsharpMask2D(BaseGaussianBlur2D):
     filter_op = staticmethod(fft_unsharp_mask_2d)
 
 
-class BoxBlur2DBase(sk.TreeClass):
+class BoxBlur2DBase(TreeClass):
     def __init__(self, kernel_size: int | tuple[int, int]):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
 
@@ -1007,7 +1007,7 @@ class FFTBoxBlur2D(BoxBlur2DBase):
     filter_op = staticmethod(fft_box_blur_2d)
 
 
-class Laplacian2DBase(sk.TreeClass):
+class Laplacian2DBase(TreeClass):
     def __init__(self, kernel_size: int | tuple[int, int]):
         self.kernel_size = canonicalize(kernel_size, ndim=2, name="kernel_size")
 
@@ -1075,7 +1075,7 @@ class FFTLaplacian2D(Laplacian2DBase):
     filter_op = staticmethod(fft_laplacian_2d)
 
 
-class MotionBlur2DBase(sk.TreeClass):
+class MotionBlur2DBase(TreeClass):
     def __init__(
         self,
         kernel_size: int,
@@ -1148,7 +1148,7 @@ class FFTMotionBlur2D(MotionBlur2DBase):
     filter_op = staticmethod(fft_motion_blur_2d)
 
 
-class MedianBlur2D(sk.TreeClass):
+class MedianBlur2D(TreeClass):
     """Apply median filter to a channel-first image.
 
     .. image:: ../_static/medianblur2d.png
@@ -1186,7 +1186,7 @@ class MedianBlur2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class Sobel2DBase(sk.TreeClass):
+class Sobel2DBase(TreeClass):
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
         return jax.vmap(self.filter_op)(image)
@@ -1240,7 +1240,7 @@ class FFTSobel2D(Sobel2DBase):
     filter_op = staticmethod(fft_sobel_2d)
 
 
-class ElasticTransform2DBase(sk.TreeClass):
+class ElasticTransform2DBase(TreeClass):
     def __init__(
         self,
         kernel_size: int | tuple[int, int],
@@ -1321,7 +1321,7 @@ class FFTElasticTransform2D(ElasticTransform2DBase):
     filter_op = staticmethod(fft_elastic_transform_2d)
 
 
-class BilateralBlur2D(sk.TreeClass):
+class BilateralBlur2D(TreeClass):
     """Apply bilateral blur to a channel-first image.
 
     .. image:: ../_static/bilateralblur2d.png
@@ -1364,7 +1364,7 @@ class BilateralBlur2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class JointBilateralBlur2D(sk.TreeClass):
+class JointBilateralBlur2D(TreeClass):
     """Apply joint bilateral blur to a channel-first image.
 
     .. image:: ../_static/jointbilateralblur2d.png
@@ -1414,7 +1414,7 @@ class JointBilateralBlur2D(sk.TreeClass):
     spatial_ndim: int = 2
 
 
-class BlurPool2DBase(sk.TreeClass):
+class BlurPool2DBase(TreeClass):
     def __init__(
         self,
         kernel_size: int | tuple[int, int],

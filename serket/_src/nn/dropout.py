@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import jax.random as jr
 
 import serket as sk
 from serket._src.custom_transform import tree_eval
-from serket._src.utils import (
+from serket._src.utils.convert import canonicalize
+from serket._src.utils.mapping import kernel_map
+from serket._src.utils.validate import (
     IsInstance,
     Range,
-    canonicalize,
-    kernel_map,
-    positive_int_cb,
+    validate_pos_int,
     validate_spatial_ndim,
 )
 
@@ -179,8 +179,7 @@ class DropoutND(sk.TreeClass):
 
     @property
     @abc.abstractmethod
-    def spatial_ndim(self):
-        ...
+    def spatial_ndim(self): ...
 
 
 class Dropout1D(DropoutND):
@@ -299,7 +298,7 @@ class RandomCutoutND(sk.TreeClass):
         fill_value: int | float = 0,
     ):
         self.shape = canonicalize(shape, ndim=self.spatial_ndim, name="shape")
-        self.cutout_count = positive_int_cb(cutout_count)
+        self.cutout_count = validate_pos_int(cutout_count)
         self.fill_value = fill_value
 
     @ft.partial(validate_spatial_ndim, argnum=0)

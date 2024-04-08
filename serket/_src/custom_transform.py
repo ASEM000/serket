@@ -1,4 +1,4 @@
-# Copyright 2023 serket authors
+# Copyright 2024 serket authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ from typing import Any, TypeVar
 import jax
 
 import serket as sk
-from serket._src.utils import single_dispatch
+from serket._src.utils.dispatch import single_dispatch
 
 T = TypeVar("T")
 
