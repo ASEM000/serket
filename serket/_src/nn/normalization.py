@@ -15,13 +15,13 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import TypeVar
+from typing import Sequence, TypeVar
 
 import jax
 import jax.numpy as jnp
 from jax.custom_batching import custom_vmap
 
-import serket as sk
+from serket import TreeClass, autoinit, field
 from serket._src.custom_transform import tree_eval, tree_state
 from serket._src.nn.initialization import resolve_init
 from serket._src.utils.convert import tuplify
@@ -39,7 +39,7 @@ def layer_norm(
     input: jax.Array,
     weight: jax.Array | None,
     bias: jax.Array | None,
-    normalized_shape: tuple[int, ...],
+    normalized_shape: Sequence[int],
     eps: float | None = None,
 ) -> jax.Array:
     """Layer Normalization
@@ -130,7 +130,7 @@ def infer_normalized_shape(_1, input, *_2, **_3) -> int:
 updates = dict(normalized_shape=infer_normalized_shape)
 
 
-class LayerNorm(sk.TreeClass):
+class LayerNorm(TreeClass):
     """Layer Normalization
 
     .. image:: ../_static/norm_figure.png
@@ -144,7 +144,7 @@ class LayerNorm(sk.TreeClass):
             if ``None``, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if ``None``, the shift is not trainable.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
         eps: a value added to the denominator for numerical stability.
 
     Example:
@@ -185,7 +185,7 @@ class LayerNorm(sk.TreeClass):
         - https://openaccess.thecvf.com/content_ECCV_2018/html/Yuxin_Wu_Group_Normalization_ECCV_2018_paper.html
     """
 
-    eps: float = sk.field(on_setattr=[Range(0, min_inclusive=False), ScalarLike()])
+    eps: float = field(on_setattr=[Range(0, min_inclusive=False), ScalarLike()])
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
@@ -216,22 +216,22 @@ class LayerNorm(sk.TreeClass):
         )
 
 
-def is_lazy_call(instance, *_, **__) -> bool:
+def is_lazy_call(instance, *_1, **_2) -> bool:
     return instance.in_features is None
 
 
-def is_lazy_init(_, in_features, *__, **___) -> bool:
+def is_lazy_init(_, in_features, *_1, **_2) -> bool:
     return in_features is None
 
 
-def infer_in_features(instance, x, *_, **__) -> int:
+def infer_in_features(instance, x, *_1, **_2) -> int:
     return x.shape[0]
 
 
 updates = dict(in_features=infer_in_features)
 
 
-class GroupNorm(sk.TreeClass):
+class GroupNorm(TreeClass):
     """Group Normalization
 
     .. image:: ../_static/norm_figure.png
@@ -247,7 +247,7 @@ class GroupNorm(sk.TreeClass):
             if None, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -283,7 +283,7 @@ class GroupNorm(sk.TreeClass):
         - https://openaccess.thecvf.com/content_ECCV_2018/html/Yuxin_Wu_Group_Normalization_ECCV_2018_paper.html
     """
 
-    eps: float = sk.field(on_setattr=[Range(0), ScalarLike()])
+    eps: float = field(on_setattr=[Range(0), ScalarLike()])
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
@@ -320,7 +320,7 @@ class GroupNorm(sk.TreeClass):
         )
 
 
-class InstanceNorm(sk.TreeClass):
+class InstanceNorm(TreeClass):
     """Instance Normalization
 
     .. image:: ../_static/norm_figure.png
@@ -335,7 +335,7 @@ class InstanceNorm(sk.TreeClass):
             if None, the scale is not trainable.
         bias_init: a function to initialize the shift. Defaults to zeros.
             if None, the shift is not trainable.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -371,7 +371,7 @@ class InstanceNorm(sk.TreeClass):
         - https://openaccess.thecvf.com/content_ECCV_2018/html/Yuxin_Wu_Group_Normalization_ECCV_2018_paper.html
     """
 
-    eps: float = sk.field(on_setattr=[Range(0), ScalarLike()])
+    eps: float = field(on_setattr=[Range(0), ScalarLike()])
 
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
@@ -408,11 +408,11 @@ class InstanceNorm(sk.TreeClass):
 # computation.
 
 
-@sk.autoinit
-class BatchNormState(sk.TreeClass):
+@autoinit
+class BatchNormState(TreeClass):
     # use primitive `bind` on jax array instead of `stop_gradient` to avoid `tree_map`
-    running_mean: jax.Array = sk.field(on_getattr=[jax.lax.stop_gradient_p.bind])
-    running_var: jax.Array = sk.field(on_getattr=[jax.lax.stop_gradient_p.bind])
+    running_mean: jax.Array = field(on_getattr=[jax.lax.stop_gradient_p.bind])
+    running_var: jax.Array = field(on_getattr=[jax.lax.stop_gradient_p.bind])
 
 
 def batch_norm(
@@ -521,7 +521,7 @@ def infer_in_features(instance, input, *_, **__) -> int:
 updates = dict(in_features=infer_in_features)
 
 
-class BatchNorm(sk.TreeClass):
+class BatchNorm(TreeClass):
     """Applies normalization over batched inputs`
 
     .. image:: ../_static/norm_figure.png
@@ -552,7 +552,7 @@ class BatchNorm(sk.TreeClass):
         axis: the feature axis that should be normalized. Defaults to 1. i.e.
             the other axes are reduced over.
         axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import jax
@@ -718,7 +718,7 @@ class BatchNorm(sk.TreeClass):
         return batch_norm_impl(input, state)
 
 
-class EvalBatchNorm(sk.TreeClass):
+class EvalBatchNorm(TreeClass):
     """Applies normalization evlaution step over batched inputs`
 
     This layer intended to be the evaluation step of :class:`.BatchNorm`.
@@ -747,7 +747,7 @@ class EvalBatchNorm(sk.TreeClass):
             if None, the shift is not trainable.
         axis: the axis that should be normalized. Defaults to 1.
         axis_name: the axis name passed to ``jax.lax.pmean``. Defaults to None.
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import jax

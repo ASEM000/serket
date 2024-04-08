@@ -59,15 +59,15 @@ State = Any
 """Defines RNN related classes."""
 
 
-def is_lazy_call(instance, *_, **__) -> bool:
+def is_lazy_call(instance, *_1, **_2) -> bool:
     return instance.in_features is None
 
 
-def is_lazy_init(_, in_features: int | None, *__, **___) -> bool:
+def is_lazy_init(_, in_features: int | None, *_1, **_2) -> bool:
     return in_features is None
 
 
-def infer_in_features(_, input: jax.Array, *__, **___) -> int:
+def infer_in_features(_, input: jax.Array, *_1, **_2) -> int:
     return input.shape[0]
 
 
@@ -93,7 +93,7 @@ class SimpleRNNCell(TreeClass):
         bias_init: the function to use to initialize the bias
         recurrent_weight_init: the function to use to initialize the recurrent weights
         act: the activation function to use for the hidden state update
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -198,7 +198,7 @@ class SimpleRNNCell(TreeClass):
     spatial_ndim: int = 0
 
 
-class DenseState(RNNState): ...
+class LinearState(RNNState): ...
 
 
 class LinearCell(TreeClass):
@@ -212,7 +212,7 @@ class LinearCell(TreeClass):
         bias_init: the function to use to initialize the bias
         act: the activation function to use for the hidden state update,
             use `None` for no activation
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -280,13 +280,13 @@ class LinearCell(TreeClass):
     def __call__(
         self,
         input: jax.Array,
-        state: DenseState,
-    ) -> tuple[jax.Array, DenseState]:
-        if not isinstance(state, DenseState):
-            raise TypeError(f"Expected {state=} to be an instance of `DenseState`")
+        state: LinearState,
+    ) -> tuple[jax.Array, LinearState]:
+        if not isinstance(state, LinearState):
+            raise TypeError(f"Expected {state=} to be an instance of `LinearState`")
         h = self.in_to_hidden(input)
         h = self.act(h)
-        return h, DenseState(h)
+        return h, LinearState(h)
 
     spatial_ndim: int = 0
 
@@ -308,7 +308,7 @@ class LSTMCell(TreeClass):
         act: the activation function to use for the hidden state update
         recurrent_act: the activation function to use for the cell state update
         key: the key to use to initialize the weights
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -439,7 +439,7 @@ class GRUCell(TreeClass):
         recurrent_weight_init: the function to use to initialize the recurrent weights
         act: the activation function to use for the hidden state update
         recurrent_act: the activation function to use for the cell state update
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -644,7 +644,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -701,7 +701,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -758,7 +758,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -815,7 +815,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -872,7 +872,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -929,7 +929,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1068,7 +1068,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1122,7 +1122,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1176,7 +1176,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1230,7 +1230,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1284,7 +1284,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1338,7 +1338,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         recurrent_weight_init: Recurrent weight initialization function
         act: Activation function
         recurrent_act: Recurrent activation function
-        dtype: dtype of the weights and biases. defaults to ``jnp.float32``.
+        dtype: dtype of the weights and biases. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1482,8 +1482,8 @@ def _(cell: SimpleRNNCell) -> SimpleRNNState:
 
 
 @tree_state.def_state(LinearCell)
-def _(cell: LinearCell) -> DenseState:
-    return DenseState(jnp.empty([cell.hidden_features]))
+def _(cell: LinearCell) -> LinearState:
+    return LinearState(jnp.empty([cell.hidden_features]))
 
 
 @tree_state.def_state(LSTMCell)

@@ -72,10 +72,10 @@ def generate_conv_dim_numbers(spatial_ndim) -> jax.lax.ConvDimensionNumbers:
 def fft_conv_general_dilated(
     lhs: jax.Array,
     rhs: jax.Array,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
     groups: int,
-    dilation: tuple[int, ...],
+    dilation: Sequence[int],
 ) -> jax.Array:
     def pad(x: jax.Array, pad_width: tuple[tuple[int, int], ...]) -> jax.Array:
         return jnp.pad(x, [(max(lhs, 0), max(rhs, 0)) for (lhs, rhs) in (pad_width)])
@@ -143,9 +143,9 @@ def fft_conv_nd(
     input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
-    dilation: tuple[int, ...],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
     groups: int,
     mask: Weight | None = None,
 ) -> jax.Array:
@@ -184,9 +184,9 @@ def fft_conv_nd_transpose(
     input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
-    dilation: tuple[int, ...],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
     out_padding: int,
     mask: Weight | None = None,
 ) -> jax.Array:
@@ -228,8 +228,8 @@ def depthwise_fft_conv_nd(
     input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
     mask: Weight | None = None,
 ) -> jax.Array:
     """Depthwise convolution function using fft.
@@ -262,9 +262,9 @@ def separable_fft_conv_nd(
     depthwise_weight: Weight,
     pointwise_weight: Weight,
     pointwise_bias: jax.Array | None,
-    strides: tuple[int, ...],
-    depthwise_padding: tuple[tuple[int, int], ...],
-    pointwise_padding: tuple[tuple[int, int], ...],
+    strides: Sequence[int],
+    depthwise_padding: Sequence[tuple[int, int]],
+    pointwise_padding: Sequence[tuple[int, int]],
     depthwise_mask: Weight | None = None,
     pointwise_mask: Weight | None = None,
 ) -> jax.Array:
@@ -278,9 +278,9 @@ def separable_fft_conv_nd(
         strides: stride of the convolution accepts tuple of integers for different
             strides in each dimension.
         depthwise_padding: padding of the input before depthwise convolution accepts
-            tuple of integers for different padding in each dimension.
+            Sequence of integers for different padding in each dimension.
         pointwise_padding: padding of the input before pointwise convolution accepts
-            tuple of integers for different padding in each dimension.
+            Sequence of integers for different padding in each dimension.
         depthwise_mask: a binary mask multiplied with the depthwise convolutional
             kernel. shape is ``(depth_multiplier * in_features, 1, *self.kernel_size)``.
             set to ``None`` to not use a mask.
@@ -314,9 +314,9 @@ def conv_nd(
     input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
-    dilation: tuple[int, ...],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
     groups: int,
     mask: Weight | None = None,
 ) -> jax.Array:
@@ -353,9 +353,9 @@ def conv_nd_transpose(
     input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
-    dilation: tuple[int, ...],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
     out_padding: int,
     mask: Weight | None = None,
 ) -> jax.Array:
@@ -398,9 +398,9 @@ def separable_conv_nd(
     depthwise_weight: Weight,
     pointwise_weight: Weight,
     pointwise_bias: jax.Array | None,
-    strides: tuple[int, ...],
-    depthwise_padding: tuple[tuple[int, int], ...],
-    pointwise_padding: tuple[tuple[int, int], ...],
+    strides: Sequence[int],
+    depthwise_padding: Sequence[tuple[int, int]],
+    pointwise_padding: Sequence[tuple[int, int]],
     depthwise_mask: Weight | None = None,
     pointwise_mask: Weight | None = None,
 ) -> jax.Array:
@@ -414,9 +414,9 @@ def separable_conv_nd(
         strides: stride of the convolution accepts tuple of integers for different
             strides in each dimension.
         depthwise_padding: padding of the input before depthwise convolution accepts
-            tuple of integers for different padding in each dimension.
+            Sequence of integers for different padding in each dimension.
         pointwise_padding: padding of the input before pointwise convolution accepts
-            tuple of integers for different padding in each dimension.
+            Sequence of integers for different padding in each dimension.
         depthwise_mask: a binary mask multiplied with the depthwise convolutional
             kernel. shape is ``(depth_multiplier * in_features, 1, *self.kernel_size)``
             set to ``None`` to not use a mask.
@@ -448,8 +448,8 @@ def depthwise_conv_nd(
     input: jax.Array,
     weight: Weight,
     bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
     mask: Weight | None = None,
 ) -> jax.Array:
     """Depthwise convolution function wrapping ``jax.lax.conv_general_dilated``.
@@ -481,7 +481,7 @@ def depthwise_conv_nd(
 def spectral_conv_nd(
     input: Annotated[jax.Array, "I..."],
     weight: Weight,
-    modes: tuple[int, ...],
+    modes: Sequence[int],
 ) -> Annotated[jax.Array, "O..."]:
     """fourier neural operator convolution function.
 
@@ -492,7 +492,7 @@ def spectral_conv_nd(
         modes: number of modes included in the fft representation of the input.
     """
 
-    def generate_modes_slices(modes: tuple[int, ...]):
+    def generate_modes_slices(modes: Sequence[int]):
         *ms, ml = modes
         slices_ = [[slice(None, ml)]]
         slices_ += [[slice(None, mode), slice(-mode, None)] for mode in reversed(ms)]
@@ -514,10 +514,10 @@ def local_conv_nd(
     input: jax.Array,
     weight: jax.Array,
     bias: jax.Array | None,
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
-    dilation: tuple[int, ...],
-    kernel_size: tuple[int, ...],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
+    kernel_size: Sequence[int],
     mask: Weight | None = None,
 ) -> jax.Array:
     """Local convolution function wrapping ``jax.lax.conv_general_dilated_local``.
@@ -650,20 +650,20 @@ class Conv1D(ConvND):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -671,15 +671,15 @@ class Conv1D(ConvND):
 
         dilation: Dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -738,20 +738,20 @@ class Conv2D(ConvND):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -759,15 +759,15 @@ class Conv2D(ConvND):
 
         dilation: dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -826,20 +826,20 @@ class Conv3D(ConvND):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -847,15 +847,15 @@ class Conv3D(ConvND):
 
         dilation: dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -914,20 +914,20 @@ class FFTConv1D(ConvND):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -935,15 +935,15 @@ class FFTConv1D(ConvND):
 
         dilation: Dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1002,20 +1002,20 @@ class FFTConv2D(ConvND):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1023,15 +1023,15 @@ class FFTConv2D(ConvND):
 
         dilation: Dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1090,20 +1090,20 @@ class FFTConv3D(ConvND):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1111,15 +1111,15 @@ class FFTConv3D(ConvND):
 
         dilation: Dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1254,20 +1254,20 @@ class Conv1DTranspose(ConvNDTranspose):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1275,19 +1275,19 @@ class Conv1DTranspose(ConvNDTranspose):
 
         out_padding: padding of the output after convolution. accepts:
 
-            - single integer for same padding in all dimensions.
+            - Single integer for same padding in all dimensions.
 
         dilation: dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1346,20 +1346,20 @@ class Conv2DTranspose(ConvNDTranspose):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1367,19 +1367,19 @@ class Conv2DTranspose(ConvNDTranspose):
 
         out_padding: padding of the output after convolution. accepts:
 
-            - single integer for same padding in all dimensions.
+            - Single integer for same padding in all dimensions.
 
         dilation: dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1437,20 +1437,20 @@ class Conv3DTranspose(ConvNDTranspose):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1458,19 +1458,19 @@ class Conv3DTranspose(ConvNDTranspose):
 
         out_padding: padding of the output after convolution. accepts:
 
-            - single integer for same padding in all dimensions.
+            - Single integer for same padding in all dimensions.
 
         dilation: dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: Function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1529,20 +1529,20 @@ class FFTConv1DTranspose(ConvNDTranspose):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1550,19 +1550,19 @@ class FFTConv1DTranspose(ConvNDTranspose):
 
         out_padding: Padding of the output after convolution. accepts:
 
-            - single integer for same padding in all dimensions.
+            - Single integer for same padding in all dimensions.
 
         dilation: Dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1621,20 +1621,20 @@ class FFTConv2DTranspose(ConvNDTranspose):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1642,19 +1642,19 @@ class FFTConv2DTranspose(ConvNDTranspose):
 
         out_padding: Padding of the output after convolution. accepts:
 
-            - single integer for same padding in all dimensions.
+            - Single integer for same padding in all dimensions.
 
         dilation: Dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1713,20 +1713,20 @@ class FFTConv3DTranspose(ConvNDTranspose):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1734,19 +1734,19 @@ class FFTConv3DTranspose(ConvNDTranspose):
 
         out_padding: Padding of the output after convolution. accepts:
 
-            - single integer for same padding in all dimensions.
+            - Single integer for same padding in all dimensions.
 
         dilation: Dilation of the convolutional kernel accepts:
 
-            - single integer for same dilation in all dimensions.
-            - sequence of integers for different dilation in each dimension.
+            - Single integer for same dilation in all dimensions.
+            - Sequence of integers for different dilation in each dimension.
 
         weight_init: function to use for initializing the weights. defaults
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
         groups: number of groups to use for grouped convolution.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1864,23 +1864,23 @@ class DepthwiseConv1D(DepthwiseConvND):
             channels, for 3D convolution this is the number of input channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1890,7 +1890,7 @@ class DepthwiseConv1D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -1939,23 +1939,23 @@ class DepthwiseConv2D(DepthwiseConvND):
             channels, for 3D convolution this is the number of input channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -1965,7 +1965,7 @@ class DepthwiseConv2D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2015,22 +2015,22 @@ class DepthwiseConv3D(DepthwiseConvND):
 
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         padding: adding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2040,7 +2040,7 @@ class DepthwiseConv3D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2089,23 +2089,23 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
             channels, for 3D convolution this is the number of input channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2115,7 +2115,7 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2165,22 +2165,22 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
         kernel_size: Size of the convolutional kernel. accepts:
 
            - single integer for same kernel size in all dimnsions.
-           - sequence of integers for different kernel sizes in each dimension.
+           - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2190,7 +2190,7 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2240,22 +2240,22 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
         kernel_size: Size of the convolutional kernel. accepts:
 
            - single integer for same kernel size in all dimnsions.
-           - sequence of integers for different kernel sizes in each dimension.
+           - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2265,7 +2265,7 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2415,23 +2415,23 @@ class SeparableConv1D(SeparableConvND):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2441,7 +2441,7 @@ class SeparableConv1D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2501,23 +2501,23 @@ class SeparableConv2D(SeparableConvND):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2527,7 +2527,7 @@ class SeparableConv2D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2587,23 +2587,23 @@ class SeparableConv3D(SeparableConvND):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2613,7 +2613,7 @@ class SeparableConv3D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2674,22 +2674,22 @@ class SeparableFFTConv1D(SeparableConvND):
         kernel_size: Size of the convolutional kernel. accepts:
 
            - single integer for same kernel size in all dimnsions.
-           - sequence of integers for different kernel sizes in each dimension.
+           - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2699,7 +2699,7 @@ class SeparableFFTConv1D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2760,22 +2760,22 @@ class SeparableFFTConv2D(SeparableConvND):
         kernel_size: Size of the convolutional kernel. accepts:
 
            - single integer for same kernel size in all dimnsions.
-           - sequence of integers for different kernel sizes in each dimension.
+           - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2785,7 +2785,7 @@ class SeparableFFTConv2D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2846,22 +2846,22 @@ class SeparableFFTConv3D(SeparableConvND):
         kernel_size: Size of the convolutional kernel. accepts:
 
            - single integer for same kernel size in all dimnsions.
-           - sequence of integers for different kernel sizes in each dimension.
+           - Sequence of integers for different kernel sizes in each dimension.
 
         depth_multiplier: multiplier for the number of output channels. for example
             if the input has 32 channels and the depth multiplier is 2 then the
             output will have 64 channels.
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -2871,7 +2871,7 @@ class SeparableFFTConv3D(SeparableConvND):
             to ``glorot uniform``.
         bias_init: function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -2961,7 +2961,7 @@ class SpectralConv1D(SpectralConvND):
         modes: Number of modes to use in the spectral convolution.
 
         key: key to use for initializing the weights.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
 
     Example:
@@ -3020,7 +3020,7 @@ class SpectralConv2D(SpectralConvND):
             integer for the same number of modes in each dimension.
 
         key: key to use for initializing the weights.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -3078,7 +3078,7 @@ class SpectralConv3D(SpectralConvND):
             integer for the same number of modes in each dimension.
 
         key: key to use for initializing the weights.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -3250,22 +3250,22 @@ class Conv1DLocal(ConvNDLocal):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         in_size: the size of the spatial dimensions of the input. e.g excluding
             the first dimension. accepts a sequence of integer(s).
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -3275,7 +3275,7 @@ class Conv1DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -3332,22 +3332,22 @@ class Conv2DLocal(ConvNDLocal):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         in_size: the size of the spatial dimensions of the input. e.g excluding
             the first dimension. accepts a sequence of integer(s).
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -3357,7 +3357,7 @@ class Conv2DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp
@@ -3414,22 +3414,22 @@ class Conv3DLocal(ConvNDLocal):
             channels.
         kernel_size: Size of the convolutional kernel. accepts:
 
-            - single integer for same kernel size in all dimensions.
-            - sequence of integers for different kernel sizes in each dimension.
+            - Single integer for same kernel size in all dimensions.
+            - Sequence of integers for different kernel sizes in each dimension.
 
         in_size: the size of the spatial dimensions of the input. e.g excluding
             the first dimension. accepts a sequence of integer(s).
         strides: Stride of the convolution. accepts:
 
-            - single integer for same stride in all dimensions.
-            - sequence of integers for different strides in each dimension.
+            - Single integer for same stride in all dimensions.
+            - Sequence of integers for different strides in each dimension.
 
         key: key to use for initializing the weights.
         padding: Padding of the input before convolution. accepts:
 
-            - single integer for same padding in all dimensions.
-            - tuple of integers for different padding in each dimension.
-            - tuple of a tuple of two integers for before and after padding in
+            - Single integer for same padding in all dimensions.
+            - Sequence of integers for different padding in each dimension.
+            - Sequnece of a tuple of two integers for before and after padding in
               each dimension.
             - ``same``/``SAME`` for padding such that the output has the same shape
               as the input.
@@ -3439,7 +3439,7 @@ class Conv3DLocal(ConvNDLocal):
             to ``glorot uniform``.
         bias_init: Function to use for initializing the bias. defaults to
             ``zeros``. set to ``None`` to not use a bias.
-        dtype: dtype of the weights. defaults to ``jax.numpy.float32``
+        dtype: dtype of the weights. defaults to ``float32``
 
     Example:
         >>> import jax.numpy as jnp

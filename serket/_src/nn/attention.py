@@ -117,19 +117,19 @@ class MultiHeadAttention(sk.TreeClass):
         q_weight_init: Initializer for the query weight. Defaults to ``glorot_uniform``.
         q_bias_init: Initializer for the query bias. Defaults to zeros. use
             ``None`` to disable bias.
-        q_dtype: Data type for the query. Defaults to ``jnp.float32``.
+        q_dtype: Data type for the query. ``float32``
         k_weight_init: Initializer for the key weight. Defaults to ``glorot_uniform``.
         k_bias_init: Initializer for the key bias. Defaults to zeros. use
             ``None`` to disable bias.
-        k_dtype: Data type for the key. Defaults to ``jnp.float32``.
+        k_dtype: Data type for the key. ``float32``
         v_weight_init: Initializer for the value weight. Defaults to ``glorot_uniform``.
         v_bias_init: Initializer for the value bias. Defaults to zeros. use
             ``None`` to disable bias.
-        v_dtype: Data type for the value. Defaults to ``jnp.float32``.
+        v_dtype: Data type for the value. ``float32``
         out_weight_init: Initializer for the output weight. Defaults to ``glorot_uniform``.
         out_bias_init: Initializer for the output bias. Defaults to zeros. use
             ``None`` to disable bias.
-        out_dtype: Data type for the output. Defaults to ``jnp.float32``.
+        out_dtype: Data type for the output. ``float32``
         drop_rate: Dropout rate. defaults to 0.0.
         drop_broadcast: Whether to broadcast the dropout mask across the batch
             dimension and the heads dimension. Defaults to False.

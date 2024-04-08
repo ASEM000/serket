@@ -783,7 +783,7 @@ class AvgBlur2D(BaseAvgBlur2D):
 
     Args:
         kernel_size: size of the convolving kernel.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -807,7 +807,7 @@ class FFTAvgBlur2D(BaseAvgBlur2D):
 
     Args:
         kernel_size: size of the convolving kernel.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -853,7 +853,7 @@ class GaussianBlur2D(BaseGaussianBlur2D):
     Args:
         kernel_size: kernel size. accepts int or tuple of two ints.
         sigma: sigma. Defaults to 1. accepts float or tuple of two floats.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -878,7 +878,7 @@ class FFTGaussianBlur2D(BaseGaussianBlur2D):
     Args:
         kernel_size: kernel size. accepts int or tuple of two ints.
         sigma: sigma. Defaults to 1. accepts float or tuple of two floats.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -903,7 +903,7 @@ class UnsharpMask2D(BaseGaussianBlur2D):
     Args:
         kernel_size: kernel size. accepts int or tuple of two ints.
         sigma: sigma. Defaults to 1. accepts float or tuple of two floats.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -928,7 +928,7 @@ class FFTUnsharpMask2D(BaseGaussianBlur2D):
     Args:
         kernel_size: kernel size. accepts int or tuple of two ints.
         sigma: sigma. Defaults to 1. accepts float or tuple of two floats.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -966,7 +966,7 @@ class BoxBlur2D(BoxBlur2DBase):
 
     Args:
         kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -990,7 +990,7 @@ class FFTBoxBlur2D(BoxBlur2DBase):
 
     Args:
         kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1028,7 +1028,7 @@ class Laplacian2D(Laplacian2DBase):
 
     Args:
         kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1055,7 +1055,7 @@ class FFTLaplacian2D(Laplacian2DBase):
 
     Args:
         kernel_size: size of the convolving kernel. Accepts int or tuple of two ints.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1107,7 +1107,7 @@ class MotionBlur2D(MotionBlur2DBase):
         kernel_size: motion kernel width and height. It should be odd and positive.
         angle: angle of the motion blur in degrees (anti-clockwise rotation).
         direction: direction of the motion blur.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk
@@ -1132,7 +1132,7 @@ class FFTMotionBlur2D(MotionBlur2DBase):
         kernel_size: motion kernel width and height. It should be odd and positive.
         angle: angle of the motion blur in degrees (anti-clockwise rotation).
         direction: direction of the motion blur.
-        dtype: data type of the layer. Defaults to ``jnp.float32``.
+        dtype: data type of the layer. ``float32``
 
     Example:
         >>> import serket as sk

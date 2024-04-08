@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import abc
 import functools as ft
-from typing import Callable
+from typing import Callable, Sequence
 
 import jax
 import jax.numpy as jnp
@@ -34,18 +34,18 @@ def pool_nd(
     reducer: Callable[[jax.Array], jax.Array],
     inital_value: float,
     input: Annotated[jax.Array, "I..."],
-    kernel_size: tuple[int, ...],
-    strides: tuple[int, ...],
-    padding: tuple[int, ...],
+    kernel_size: Sequence[int],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
 ):
     """Pooling operation
 
     Args:
         reducer: reducer function. Takes an input and returns a single value
         input: channeled input of shape (channels, spatial_dims)
-        kernel_size: size of the kernel. accepts tuple of ints for each spatial dimension
-        strides: strides of the kernel. accepts tuple of ints for each spatial dimension
-        padding: padding of the kernel. accepts tuple of tuples of two ints for
+        kernel_size: size of the kernel. accepts a sequence of ints for each spatial dimension
+        strides: strides of the kernel. accepts a sequence of ints for each spatial dimension
+        padding: padding of the kernel. accepts a sequence of tuples of two ints for
             each spatial dimension for each side of the input
     """
     _, *S = input.shape
@@ -76,17 +76,17 @@ def _(primals, tangents):
 
 def max_pool_nd(
     input: jax.Array,
-    kernel_size: tuple[int, ...],
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
+    kernel_size: Sequence[int],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
 ) -> jax.Array:
     """Max pooling operation
 
     Args:
         input: channeled input of shape (channels, spatial_dims)
-        kernel_size: size of the kernel. accepts tuple of ints for each spatial dimension
-        strides: strides of the kernel. accepts tuple of ints for each spatial dimension
-        padding: padding of the kernel. accepts tuple of tuples of two ints for
+        kernel_size: size of the kernel. accepts a sequence of ints for each spatial dimension
+        strides: strides of the kernel. accepts a sequence of ints for each spatial dimension
+        padding: padding of the kernel. accepts a sequence of tuples of two ints for
             each spatial dimension for each side of the input
 
     Example:
@@ -106,9 +106,9 @@ def max_pool_nd(
 
 def avg_pool_nd(
     input: jax.Array,
-    kernel_size: tuple[int, ...],
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
+    kernel_size: Sequence[int],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
 ) -> jax.Array:
     """Average pooling operation
 
@@ -137,9 +137,9 @@ def avg_pool_nd(
 def lp_pool_nd(
     input: jax.Array,
     norm_type: float,
-    kernel_size: tuple[int, ...],
-    strides: tuple[int, ...],
-    padding: tuple[tuple[int, int], ...],
+    kernel_size: Sequence[int],
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
 ) -> jax.Array:
     """Lp pooling operation
 
@@ -174,7 +174,7 @@ def lp_pool_nd(
 def adaptive_pool_nd(
     reducer: Callable[[jax.Array], jax.Array],
     input: jax.Array,
-    out_dim: tuple[int, ...],
+    out_dim: Sequence[int],
 ) -> jax.Array:
     in_dim = input.shape[1:]
     strides = tuple(i // o for i, o in zip(in_dim, out_dim))
@@ -194,12 +194,12 @@ def adaptive_pool_nd(
     return reducer_map(input)
 
 
-def adaptive_avg_pool_nd(input: jax.Array, out_dim: tuple[int, ...]) -> jax.Array:
+def adaptive_avg_pool_nd(input: jax.Array, out_dim: Sequence[int]) -> jax.Array:
     """Adaptive average pooling operation
 
     Args:
         input: channeled input of shape (channels, spatial_dims)
-        out_dim: output dimension. accepts tuple of ints for each spatial dimension
+        out_dim: output dimension. accepts a sequence of ints for each spatial dimension
 
     Example:
         >>> import jax
@@ -214,12 +214,12 @@ def adaptive_avg_pool_nd(input: jax.Array, out_dim: tuple[int, ...]) -> jax.Arra
     return adaptive_pool_nd(jnp.mean, input, out_dim)
 
 
-def adaptive_max_pool_nd(input: jax.Array, out_dim: tuple[int, ...]) -> jax.Array:
+def adaptive_max_pool_nd(input: jax.Array, out_dim: Sequence[int]) -> jax.Array:
     """Adaptive max pooling operation
 
     Args:
         input: channeled input of shape (channels, spatial_dims)
-        out_dim: output dimension. accepts tuple of ints for each spatial dimension
+        out_dim: output dimension. accepts a sequence of ints for each spatial dimension
 
     Example:
         >>> import jax

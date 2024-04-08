@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import abc
 import functools as ft
+from typing import Sequence
 
 import jax
 import jax.random as jr
@@ -38,7 +39,7 @@ from serket._src.utils.validate import validate_spatial_ndim
 def random_crop_nd(
     key: jax.Array,
     input: jax.Array,
-    crop_size: tuple[int, ...],
+    crop_size: Sequence[int],
 ) -> jax.Array:
     """Crops an input to the given size at a random starts along each axis.
 
@@ -149,14 +150,14 @@ def extract_patches(
 
 def upsample_nd(
     input: jax.Array,
-    scale: int | tuple[int, ...],
+    scale: int | Sequence[int],
     method: MethodKind = "nearest",
 ) -> jax.Array:
     """Upsample a 1D input to a given size using a given interpolation method.
 
     Args:
         input: input array.
-        scale: the scale of the output. accetps a tuple of int denoting the scale
+        scale: the scale of the output. accetps a sequence of int denoting the scale
             multiplier along each axis.
         method: Interpolation method defaults to ``nearest``. choices are:
 
@@ -422,8 +423,6 @@ class CenterCrop3D(CenterCropND):
     spatial_ndim: int = 3
 
 
-@tree_eval.def_eval(RandomCrop1D)
-@tree_eval.def_eval(RandomCrop2D)
-@tree_eval.def_eval(RandomCrop3D)
+@tree_eval.def_eval(RandomCropND)
 def _(_) -> Identity:
     return Identity()
