@@ -571,7 +571,7 @@ class BatchNorm(TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> import jax.numpy as jnp
-        >>> class ThreadedBatchNorm(TreeClass):
+        >>> class ThreadedBatchNorm(sk.TreeClass):
         ...    def __init__(self, *, key: jax.Array):
         ...        k1, k2 = jax.random.split(key)
         ...        self.bn1 = sk.nn.BatchNorm(5, axis=-1, key=k1)
@@ -604,7 +604,7 @@ class BatchNorm(TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> import functools as ft
-        >>> class UnthreadedBatchNorm(TreeClass):
+        >>> class UnthreadedBatchNorm(sk.TreeClass):
         ...    def __init__(self, *, key: jax.Array):
         ...        k1, k2 = jax.random.split(key)
         ...        self.bn1 = sk.nn.BatchNorm(5, axis=-1, key=k1)
@@ -862,7 +862,7 @@ def weight_norm(leaf: T, axis: int | None = -1, eps: float = 1e-12) -> T:
         >>> import jax
         >>> import jax.numpy as jnp
         >>> import serket as sk
-        >>> class Net(TreeClass):
+        >>> class Net(sk.TreeClass):
         ...     def __init__(self, *, key: jax.Array):
         ...         k1, k2 = jax.random.split(key)
         ...         self.l1 = sk.nn.Linear(2, 4, key=k1)
