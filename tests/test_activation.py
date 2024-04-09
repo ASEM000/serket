@@ -45,7 +45,7 @@ from serket._src.nn.activation import (
     Tanh,
     TanhShrink,
     ThresholdedReLU,
-    resolve_activation,
+    resolve_act,
 )
 
 
@@ -234,9 +234,9 @@ def test_square_plus():
 
 def test_resolving():
     with pytest.raises(ValueError):
-        resolve_activation("nonexistent")
+        resolve_act("nonexistent")
 
 
 def test_invalid_act_sig():
     with pytest.raises(AssertionError):
-        resolve_activation(lambda x, y: x)
+        resolve_act(lambda x, y: x)

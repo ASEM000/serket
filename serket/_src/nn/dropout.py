@@ -22,8 +22,9 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 
-import serket as sk
+from serket import TreeClass, autoinit, field
 from serket._src.custom_transform import tree_eval
+from serket._src.nn.linear import Identity
 from serket._src.utils.convert import canonicalize
 from serket._src.utils.mapping import kernel_map
 from serket._src.utils.validate import (
@@ -107,8 +108,8 @@ def random_cutout_nd(
     return jax.lax.dynamic_update_slice(input, depatched, start_indices)
 
 
-@sk.autoinit
-class Dropout(sk.TreeClass):
+@autoinit
+class Dropout(TreeClass):
     """Drop some elements of the input array.
 
     Randomly zeroes some of the elements of the input array with
@@ -133,15 +134,15 @@ class Dropout(sk.TreeClass):
 
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> @sk.autoinit
-        ... class Model(sk.TreeClass):
-        ...     dropout: sk.nn.Dropout = sk.nn.Dropout(0.5)
-        >>> model = Model()
+        >>> class Model(sk.TreeClass):
+        ...     def __init__(self, rate):
+        ...         self.dropout = sk.nn.Dropout(rate)
+        >>> model = Model(rate=0.5)
         >>> sk.tree_eval(model)
         Model(dropout=Identity())
     """
 
-    drop_rate: float = sk.field(
+    drop_rate: float = field(
         default=0.5,
         on_setattr=[IsInstance(float), Range(0, 1)],
         on_getattr=[jax.lax.stop_gradient_p.bind],
@@ -158,9 +159,9 @@ class Dropout(sk.TreeClass):
         return dropout_nd(key, input, self.drop_rate, self.drop_axes)
 
 
-@sk.autoinit
-class DropoutND(sk.TreeClass):
-    drop_rate: float = sk.field(
+@autoinit
+class DropoutND(TreeClass):
+    drop_rate: float = field(
         default=0.5,
         on_setattr=[IsInstance(float), Range(0, 1)],
         on_getattr=[jax.lax.stop_gradient],
@@ -201,11 +202,10 @@ class Dropout1D(DropoutND):
         dropout to :class:`.Identity`.
 
         >>> import serket as sk
-        >>> import jax.random as jr
-        >>> @sk.autoinit
-        ... class Model(sk.TreeClass):
-        ...     dropout: sk.nn.Dropout1D = sk.nn.Dropout1D(0.5)
-        >>> model = Model()
+        >>> class Model(sk.TreeClass):
+        ...     def __init__(self, rate):
+        ...         self.dropout = sk.nn.Dropout1D(rate)
+        >>> model = Model(rate=0.5)
         >>> sk.tree_eval(model)
         Model(dropout=Identity())
 
@@ -237,11 +237,10 @@ class Dropout2D(DropoutND):
         dropout to :class:`.Identity`.
 
         >>> import serket as sk
-        >>> import jax.random as jr
-        >>> @sk.autoinit
-        ... class Model(sk.TreeClass):
-        ...     dropout: sk.nn.Dropout2D = sk.nn.Dropout2D(0.5)
-        >>> model = Model()
+        >>> class Model(sk.TreeClass):
+        ...     def __init__(self, rate):
+        ...         self.dropout = sk.nn.Dropout2D(rate)
+        >>> model = Model(rate=0.5)
         >>> sk.tree_eval(model)
         Model(dropout=Identity())
 
@@ -273,11 +272,10 @@ class Dropout3D(DropoutND):
         dropout to :class:`.Identity`.
 
         >>> import serket as sk
-        >>> import jax.random as jr
-        >>> @sk.autoinit
-        ... class Model(sk.TreeClass):
-        ...     dropout: sk.nn.Dropout2D = sk.nn.Dropout2D(0.5)
-        >>> model = Model()
+        >>> class Model(sk.TreeClass):
+        ...     def __init__(self, rate):
+        ...         self.dropout = sk.nn.Dropout3D(rate)
+        >>> model = Model(rate=0.5)
         >>> sk.tree_eval(model)
         Model(dropout=Identity())
 
@@ -289,7 +287,7 @@ class Dropout3D(DropoutND):
     spatial_ndim: int = 3
 
 
-class RandomCutoutND(sk.TreeClass):
+class RandomCutoutND(TreeClass):
     def __init__(
         self,
         shape: int | tuple[int],
@@ -407,5 +405,5 @@ class RandomCutout3D(RandomCutoutND):
 @tree_eval.def_eval(RandomCutoutND)
 @tree_eval.def_eval(DropoutND)
 @tree_eval.def_eval(Dropout)
-def _(_) -> sk.nn.Identity:
-    return sk.nn.Identity()
+def _(_) -> Identity:
+    return Identity()

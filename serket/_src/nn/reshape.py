@@ -21,7 +21,7 @@ from typing import Sequence
 import jax
 import jax.random as jr
 
-import serket as sk
+from serket import TreeClass
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
 from serket._src.utils.convert import canonicalize
@@ -174,7 +174,7 @@ def upsample_nd(
     return jax.image.resize(input, resized_shape, method)
 
 
-class UpsampleND(sk.TreeClass):
+class UpsampleND(TreeClass):
     def __init__(
         self,
         scale: int | tuple[int, ...] = 1,
@@ -297,7 +297,7 @@ class Upsample3D(UpsampleND):
     spatial_ndim: int = 3
 
 
-class RandomCropND(sk.TreeClass):
+class RandomCropND(TreeClass):
     def __init__(self, size: int | tuple[int, ...]):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 
@@ -346,7 +346,7 @@ class RandomCrop3D(RandomCropND):
     spatial_ndim: int = 3
 
 
-class CenterCropND(sk.TreeClass):
+class CenterCropND(TreeClass):
     def __init__(self, size: int | tuple[int, ...]):
         self.size = canonicalize(size, self.spatial_ndim, name="size")
 

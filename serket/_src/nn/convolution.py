@@ -27,7 +27,7 @@ import jax.numpy as jnp
 import jax.random as jr
 from typing_extensions import Annotated
 
-import serket as sk
+from serket import TreeClass
 from serket._src.nn.initialization import resolve_init
 from serket._src.utils.convert import canonicalize
 from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
@@ -565,7 +565,7 @@ def infer_in_features(instance, x, *_1, **_3) -> int:
 updates = dict(in_features=infer_in_features)
 
 
-class ConvND(sk.TreeClass):
+class ConvND(TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -1165,7 +1165,7 @@ class FFTConv3D(ConvND):
     conv_op = staticmethod(fft_conv_nd)
 
 
-class ConvNDTranspose(sk.TreeClass):
+class ConvNDTranspose(TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -1792,7 +1792,7 @@ class FFTConv3DTranspose(ConvNDTranspose):
     conv_op = staticmethod(fft_conv_nd_transpose)
 
 
-class DepthwiseConvND(sk.TreeClass):
+class DepthwiseConvND(TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -2305,7 +2305,7 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
     conv_op = staticmethod(depthwise_fft_conv_nd)
 
 
-class SeparableConvND(sk.TreeClass):
+class SeparableConvND(TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -2911,7 +2911,7 @@ class SeparableFFTConv3D(SeparableConvND):
     conv_op = staticmethod(separable_fft_conv_nd)
 
 
-class SpectralConvND(sk.TreeClass):
+class SpectralConvND(TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,
@@ -3151,7 +3151,7 @@ def infer_in_size(instance, x, *__, **___) -> tuple[int, ...]:
 updates = dict(in_features=infer_in_features, in_size=infer_in_size)
 
 
-class ConvNDLocal(sk.TreeClass):
+class ConvNDLocal(TreeClass):
     @ft.partial(maybe_lazy_init, is_lazy=is_lazy_init)
     def __init__(
         self,

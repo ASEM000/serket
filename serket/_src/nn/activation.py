@@ -23,7 +23,6 @@ import jax.numpy as jnp
 from jax import lax
 
 from serket import TreeClass, autoinit, field
-from serket._src.utils.dispatch import single_dispatch
 from serket._src.utils.typing import ActivationLiteral
 from serket._src.utils.validate import IsInstance, Range, ScalarLike
 
@@ -338,20 +337,13 @@ ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 act_map = dict(zip(get_args(ActivationLiteral), acts))
 
 
-@single_dispatch(argnum=0)
-def resolve_activation(act):
+def resolve_act(act):
+    if isinstance(act, ABCCallable):
+        assert len(inspect.getfullargspec(act).args) == 1
+        return act
+    if isinstance(act, str):
+        try:
+            return jax.tree_map(lambda x: x, act_map[act])
+        except KeyError:
+            raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")
     raise TypeError(f"Unknown activation type {type(act)}.")
-
-
-@resolve_activation.def_type(ABCCallable)
-def _(func: T) -> T:
-    assert len(inspect.getfullargspec(func).args) == 1
-    return func
-
-
-@resolve_activation.def_type(str)
-def _(act: str):
-    try:
-        return jax.tree_map(lambda x: x, act_map[act])
-    except KeyError:
-        raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")
