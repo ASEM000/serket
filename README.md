@@ -104,13 +104,7 @@ net = sk.tree_unmask(net)
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Filter    | - `{FFT,_}{Avg,Box,Gaussian,Motion}Blur2D` <br> - `{JointBilateral,Bilateral,Median}Blur2D` <br> - `{FFT,_}{UnsharpMask}2D` <br> - `{FFT,_}{Sobel,Laplacian}2D` <br> - `{FFT,_}BlurPool2D`                       |
 | Augment   | - `Adjust{Sigmoid,Log}2D` <br> - `{Adjust,Random}{Brightness,Contrast,Hue,Saturation}2D`, <br> - `RandomJigSaw2D`,`PixelShuffle2D`, <br> - `Pixelate2D`,`Posterize2D`,`Solarize2D` <br> - `FourierDomainAdapt2D` |
-| Geometric | - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D` <br> - `{Random,_}WaveTransform2D` <br> - `{FFT,_}ElasticTransform2D`                     |
+| Geometric | - `{Random,_}{Horizontal,Vertical}{Translate,Flip,Shear}2D` <br> - `{Random,_}{Rotate}2D` <br> - `RandomPerspective2D` <br> - `{FFT,_}ElasticTransform2D`                     |
 | Color     | - `RGBToGrayscale2D` , `GrayscaleToRGB2D` <br> - `RGBToHSV2D`, `HSVToRGB2D`                                                                                                                                      |
-
-#### 🌈 Cluster package: `serket.cluster`
-
-| Group      | Layers     |
-| ---------- | ---------- |
-| Clustering | - `KMeans` |
 
 </details>

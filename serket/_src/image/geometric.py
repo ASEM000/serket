@@ -747,60 +747,6 @@ class RandomVerticalFlip2D(TreeClass):
     spatial_ndim: int = 2
 
 
-class WaveTransform2D(TreeClass):
-    """Apply a wave transform to an image.
-
-    .. image:: ../_static/wavetransform2d.png
-
-    Args:
-        length: The length of the wave.
-        amplitude: The amplitude of the wave.
-    """
-
-    def __init__(self, length: int, amplitude: float):
-        self.length = length
-        self.amplitude = amplitude
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray) -> CHWArray:
-        in_axes = (0, None, None)
-        length, amplitude = jax.lax.stop_gradient((self.length, self.amplitude))
-        return jax.vmap(wave_transform_2d, in_axes=in_axes)(image, length, amplitude)
-
-    spatial_ndim: int = 2
-
-
-class RandomWaveTransform2D(TreeClass):
-    """Apply a random wave transform to an image.
-
-    .. image:: ../_static/wavetransform2d.png
-
-    Args:
-        length_range: The range of the length of the wave.
-        amplitude_range: The range of the amplitude of the wave.
-
-    Note:
-        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
-          evaluation.
-    """
-
-    def __init__(
-        self,
-        length_range: tuple[float, float],
-        amplitude_range: tuple[float, float],
-    ):
-        self.length_range = length_range
-        self.amplitude_range = amplitude_range
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
-        in_axes = (None, 0, None, None)
-        L, A = jax.lax.stop_gradient((self.length_range, self.amplitude_range))
-        return jax.vmap(random_wave_transform_2d, in_axes=in_axes)(key, image, L, A)
-
-    spatial_ndim: int = 2
-
-
 @tree_eval.def_eval(RandomRotate2D)
 @tree_eval.def_eval(RandomHorizontalFlip2D)
 @tree_eval.def_eval(RandomVerticalFlip2D)
@@ -809,6 +755,5 @@ class RandomWaveTransform2D(TreeClass):
 @tree_eval.def_eval(RandomPerspective2D)
 @tree_eval.def_eval(RandomHorizontalTranslate2D)
 @tree_eval.def_eval(RandomVerticalTranslate2D)
-@tree_eval.def_eval(RandomWaveTransform2D)
 def _(_):
     return Identity()

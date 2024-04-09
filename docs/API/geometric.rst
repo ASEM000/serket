@@ -18,15 +18,11 @@ Geometric API
 .. autoclass:: VerticalShear2D    
 .. autoclass:: RandomVerticalShear2D
 
-
 .. autoclass:: VerticalFlip2D
 .. autoclass:: RandomVerticalFlip2D
 
 .. autoclass:: VerticalTranslate2D
 .. autoclass:: RandomVerticalTranslate2D
-
-.. autoclass:: WaveTransform2D
-.. autoclass:: RandomWaveTransform2D
 
 .. autoclass:: ElasticTransform2D
 .. autoclass:: FFTElasticTransform2D

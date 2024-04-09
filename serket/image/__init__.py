@@ -33,10 +33,12 @@ from serket._src.image.augment import (
 from serket._src.image.color import (
     GrayscaleToRGB2D,
     HSVToRGB2D,
+    KMeansColorQuantization2D,
     RGBToGrayscale2D,
     RGBToHSV2D,
     grayscale_to_rgb,
     hsv_to_rgb,
+    kmeans_color_quantization_2d,
     rgb_to_grayscale,
     rgb_to_hsv,
 )
@@ -98,12 +100,10 @@ from serket._src.image.geometric import (
     RandomVerticalFlip2D,
     RandomVerticalShear2D,
     RandomVerticalTranslate2D,
-    RandomWaveTransform2D,
     Rotate2D,
     VerticalFlip2D,
     VerticalShear2D,
     VerticalTranslate2D,
-    WaveTransform2D,
 )
 
 __all__ = [
@@ -182,19 +182,19 @@ __all__ = [
     "RandomVerticalFlip2D",
     "RandomVerticalShear2D",
     "RandomVerticalTranslate2D",
-    "RandomWaveTransform2D",
     "Rotate2D",
     "VerticalFlip2D",
     "VerticalShear2D",
     "VerticalTranslate2D",
-    "WaveTransform2D",
     # color
     "GrayscaleToRGB2D",
     "HSVToRGB2D",
+    "KMeansColorQuantization2D",
     "RGBToGrayscale2D",
     "RGBToHSV2D",
     "grayscale_to_rgb",
     "hsv_to_rgb",
+    "kmeans_color_quantization_2d",
     "rgb_to_grayscale",
     "rgb_to_hsv",
 ]
