@@ -550,15 +550,15 @@ def local_conv_nd(
     return jnp.squeeze(x + bias, 0) if bias is not None else jnp.squeeze(x, 0)
 
 
-def is_lazy_call(instance, *_, **__) -> bool:
+def is_lazy_call(instance, *_1, **_2) -> bool:
     return getattr(instance, "in_features", False) is None
 
 
-def is_lazy_init(_, in_features, *__, **___) -> bool:
+def is_lazy_init(_1, in_features, *_2, **_3) -> bool:
     return in_features is None
 
 
-def infer_in_features(instance, x, *_, **__) -> int:
+def infer_in_features(instance, x, *_1, **_3) -> int:
     return x.shape[0]
 
 

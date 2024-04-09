@@ -389,7 +389,7 @@ def test_random_flip_up_down_2d():
     npt.assert_allclose(y, jnp.array([[[7, 8, 9], [4, 5, 6], [1, 2, 3]]]))
 
 
-def test_pixel_shuffle():
+def test_pixel_shuffle_3d():
     x = jnp.array(
         [
             [[0.08482574, 1.9097648], [0.29561743, 1.120948]],
