@@ -22,7 +22,9 @@ import jax.numpy as jnp
 import jax.random as jr
 from typing_extensions import Annotated
 
-import serket as sk
+from serket import TreeClass
+from serket._src.nn.dropout import Dropout
+from serket._src.nn.linear import Linear
 from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
 from serket._src.utils.typing import DType, InitType
 
@@ -97,7 +99,7 @@ def dot_product_attention(
     return merge_heads(drop_func(attention))
 
 
-class MultiHeadAttention(sk.TreeClass):
+class MultiHeadAttention(TreeClass):
     """Multi-head attention module.
 
     The module consists of linear projections for query, key, and value
@@ -247,9 +249,9 @@ class MultiHeadAttention(sk.TreeClass):
         self.num_heads = num_heads
         # while dropout == 0.0 is a no-op, still instantiate a dropout layer
         # because .at[drop_rate] can be used to change the dropout rate later on.
-        self.dropout = sk.nn.Dropout(drop_rate, (-1, -2) if drop_broadcast else None)
+        self.dropout = Dropout(drop_rate, (-1, -2) if drop_broadcast else None)
 
-        self.q_projection = sk.nn.Linear(
+        self.q_projection = Linear(
             in_features=q_features,
             out_features=head_features * num_heads,
             weight_init=q_weight_init,
@@ -258,7 +260,7 @@ class MultiHeadAttention(sk.TreeClass):
             key=qkey,
         )
 
-        self.k_projection = sk.nn.Linear(
+        self.k_projection = Linear(
             in_features=k_features,
             out_features=head_features * num_heads,
             weight_init=k_weight_init,
@@ -267,7 +269,7 @@ class MultiHeadAttention(sk.TreeClass):
             key=kkey,
         )
 
-        self.v_projection = sk.nn.Linear(
+        self.v_projection = Linear(
             in_features=v_features,
             out_features=head_features * num_heads,
             weight_init=v_weight_init,
@@ -276,7 +278,7 @@ class MultiHeadAttention(sk.TreeClass):
             key=vkey,
         )
 
-        self.out_projection = sk.nn.Linear(
+        self.out_projection = Linear(
             in_features=head_features * num_heads,
             out_features=out_features,
             weight_init=out_weight_init,

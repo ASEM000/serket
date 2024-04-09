@@ -16,14 +16,14 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable as ABCCallable
-from typing import Callable, Literal, TypeVar, Union, get_args
+from typing import Callable, TypeVar, Union, get_args
 
 import jax
 import jax.numpy as jnp
 from jax import lax
 
 from serket import TreeClass, autoinit, field
-from serket._src.utils.dispatch import single_dispatch
+from serket._src.utils.typing import ActivationLiteral
 from serket._src.utils.validate import IsInstance, Range, ScalarLike
 
 T = TypeVar("T")
@@ -302,34 +302,6 @@ class PReLU(TreeClass):
 
 
 # useful for building layers from configuration text
-ActivationLiteral = Literal[
-    "celu",
-    "elu",
-    "gelu",
-    "glu",
-    "hard_shrink",
-    "hard_sigmoid",
-    "hard_swish",
-    "hard_tanh",
-    "leaky_relu",
-    "log_sigmoid",
-    "log_softmax",
-    "mish",
-    "prelu",
-    "relu",
-    "relu6",
-    "selu",
-    "sigmoid",
-    "softplus",
-    "softshrink",
-    "softsign",
-    "squareplus",
-    "swish",
-    "tanh",
-    "tanh_shrink",
-    "thresholded_relu",
-]
-
 
 acts = [
     jax.nn.celu,
@@ -365,20 +337,13 @@ ActivationType = Union[ActivationLiteral, ActivationFunctionType]
 act_map = dict(zip(get_args(ActivationLiteral), acts))
 
 
-@single_dispatch(argnum=0)
-def resolve_activation(act):
+def resolve_act(act):
+    if isinstance(act, ABCCallable):
+        assert len(inspect.getfullargspec(act).args) == 1
+        return act
+    if isinstance(act, str):
+        try:
+            return jax.tree_map(lambda x: x, act_map[act])
+        except KeyError:
+            raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")
     raise TypeError(f"Unknown activation type {type(act)}.")
-
-
-@resolve_activation.def_type(ABCCallable)
-def _(func: T) -> T:
-    assert len(inspect.getfullargspec(func).args) == 1
-    return func
-
-
-@resolve_activation.def_type(str)
-def _(act: str):
-    try:
-        return jax.tree_map(lambda x: x, act_map[act])
-    except KeyError:
-        raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")

@@ -389,7 +389,7 @@ def test_random_flip_up_down_2d():
     npt.assert_allclose(y, jnp.array([[[7, 8, 9], [4, 5, 6], [1, 2, 3]]]))
 
 
-def test_pixel_shuffle():
+def test_pixel_shuffle_3d():
     x = jnp.array(
         [
             [[0.08482574, 1.9097648], [0.29561743, 1.120948]],
@@ -490,17 +490,6 @@ def test_median_blur():
         ]
     )
     npt.assert_allclose(y, z, atol=1e-6)
-
-
-def test_wave_transform():
-    x = jnp.ones((1, 5, 5))
-    y = sk.image.WaveTransform2D(length=1, amplitude=0)(x)
-    npt.assert_allclose(x, y, atol=1e-6)
-
-    y = sk.image.RandomWaveTransform2D(length_range=[1, 1], amplitude_range=[0, 0])(
-        x, key=jax.random.PRNGKey(0)
-    )
-    npt.assert_allclose(x, y, atol=1e-6)
 
 
 def test_adjust_log_2d():
@@ -854,3 +843,15 @@ def test_fourier_domain_adapt_2d():
     y = jnp.ones([3, 5, 5])
     layer = sk.image.FourierDomainAdapt2D(beta=0.5)
     assert layer(x, y).shape == (3, 10, 10)
+
+
+def test_color_quantization():
+    image = jnp.ones([3, 5, 5])
+    k1, k2 = jr.split(jr.PRNGKey(0))
+    layer = sk.image.KMeansColorQuantization2D(k=[2, 3, 4])
+    image = jr.uniform(k1, shape=(3, 50, 50))
+    quantized_image = layer(image, key=k2)
+    r_quantized, g_quantized, b_quantized = quantized_image
+    assert len(jnp.unique(r_quantized)) == 2
+    assert len(jnp.unique(g_quantized)) == 3
+    assert len(jnp.unique(b_quantized)) == 4

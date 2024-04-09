@@ -22,7 +22,7 @@ import jax
 import jax.numpy as jnp
 from typing_extensions import Annotated
 
-import serket as sk
+from serket import TreeClass
 from serket._src.utils.convert import canonicalize
 from serket._src.utils.mapping import kernel_map
 from serket._src.utils.padding import delayed_canonicalize_padding
@@ -234,7 +234,7 @@ def adaptive_max_pool_nd(input: jax.Array, out_dim: Sequence[int]) -> jax.Array:
     return adaptive_pool_nd(max_op, input, out_dim)
 
 
-class MaxPoolND(sk.TreeClass):
+class MaxPoolND(TreeClass):
     def __init__(
         self,
         kernel_size: KernelSizeType,
@@ -324,7 +324,7 @@ class MaxPool3D(MaxPoolND):
     spatial_ndim: int = 3
 
 
-class AvgPoolND(sk.TreeClass):
+class AvgPoolND(TreeClass):
     def __init__(
         self,
         kernel_size: KernelSizeType,
@@ -395,7 +395,7 @@ class AvgPool3D(AvgPoolND):
     spatial_ndim: int = 3
 
 
-class LPPoolND(sk.TreeClass):
+class LPPoolND(TreeClass):
     def __init__(
         self,
         norm_type: float,
@@ -473,7 +473,7 @@ class LPPool3D(LPPoolND):
     spatial_ndim: int = 3
 
 
-class GlobalAvgPoolND(sk.TreeClass):
+class GlobalAvgPoolND(TreeClass):
     def __init__(self, keepdims: bool = True):
         self.keepdims = keepdims
 
@@ -515,7 +515,7 @@ class GlobalAvgPool3D(GlobalAvgPoolND):
     spatial_ndim: int = 3
 
 
-class GlobalMaxPoolND(sk.TreeClass):
+class GlobalMaxPoolND(TreeClass):
     def __init__(self, keepdims: bool = True):
         self.keepdims = keepdims
 
@@ -557,7 +557,7 @@ class GlobalMaxPool3D(GlobalMaxPoolND):
     spatial_ndim: int = 3
 
 
-class AdaptiveAvgPoolND(sk.TreeClass):
+class AdaptiveAvgPoolND(TreeClass):
     def __init__(self, output_size: tuple[int, ...]):
         self.output_size = canonicalize(
             output_size,
@@ -602,7 +602,7 @@ class AdaptiveAvgPool3D(AdaptiveAvgPoolND):
     spatial_ndim: int = 3
 
 
-class AdaptiveMaxPoolND(sk.TreeClass):
+class AdaptiveMaxPoolND(TreeClass):
     def __init__(self, output_size: tuple[int, ...]):
         self.output_size = canonicalize(
             output_size,

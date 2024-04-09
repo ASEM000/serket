@@ -31,10 +31,9 @@ from sepes import (
     value_and_tree,
 )
 
+from serket import image, nn
 from serket._src.containers import RandomChoice, Sequential
 from serket._src.custom_transform import tree_eval, tree_state
-
-from . import cluster, image, nn
 
 __all__ = [
     # sepes

@@ -85,7 +85,6 @@ Install from github::
     
     notebooks/layers_overview
     API/common
-    API/cluster
     API/nn
     API/image
     API/sepes

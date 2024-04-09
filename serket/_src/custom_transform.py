@@ -131,7 +131,7 @@ def tree_state(tree: T, **kwargs) -> T:
                 f"are not passed to the state rule.\n{e}"
             )
 
-    return jax.tree_map(dispatch_func, tree, is_leaf=is_leaf)
+    return jax.tree_util.tree_map(dispatch_func, tree, is_leaf=is_leaf)
 
 
 tree_state.dispatcher = single_dispatch(argnum=0)(NoState)
@@ -202,7 +202,7 @@ def tree_eval(tree):
     def is_leaf(node: Any) -> bool:
         return isinstance(node, types)
 
-    return jax.tree_map(tree_eval.dispatcher, tree, is_leaf=is_leaf)
+    return jax.tree_util.tree_map(tree_eval.dispatcher, tree, is_leaf=is_leaf)
 
 
 tree_eval.dispatcher = single_dispatch(argnum=0)(lambda x: x)

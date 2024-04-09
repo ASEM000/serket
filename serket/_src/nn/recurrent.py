@@ -23,10 +23,9 @@ import jax.numpy as jnp
 import jax.random as jr
 from typing_extensions import ParamSpec
 
-import serket as sk
 from serket import TreeClass, autoinit
 from serket._src.custom_transform import tree_state
-from serket._src.nn.activation import ActivationType, resolve_activation
+from serket._src.nn.activation import ActivationType, resolve_act
 from serket._src.nn.convolution import (
     Conv1D,
     Conv2D,
@@ -35,6 +34,7 @@ from serket._src.nn.convolution import (
     FFTConv2D,
     FFTConv3D,
 )
+from serket._src.nn.linear import Linear
 from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
 from serket._src.utils.typing import (
     DilationType,
@@ -149,9 +149,9 @@ class SimpleRNNCell(TreeClass):
 
         self.in_features = validate_pos_int(in_features)
         self.hidden_features = validate_pos_int(hidden_features)
-        self.act = resolve_activation(act)
+        self.act = resolve_act(act)
 
-        i2h = sk.nn.Linear(
+        i2h = Linear(
             in_features,
             hidden_features,
             weight_init=weight_init,
@@ -160,7 +160,7 @@ class SimpleRNNCell(TreeClass):
             dtype=dtype,
         )
 
-        h2h = sk.nn.Linear(
+        h2h = Linear(
             hidden_features,
             hidden_features,
             weight_init=recurrent_weight_init,
@@ -169,7 +169,7 @@ class SimpleRNNCell(TreeClass):
             dtype=dtype,
         )
 
-        self.in_hidden_to_hidden = sk.nn.Linear(
+        self.in_hidden_to_hidden = Linear(
             in_features=in_features + hidden_features,
             out_features=hidden_features,
             weight_init=lambda *_: jnp.concatenate([i2h.weight, h2h.weight], axis=-1),
@@ -262,9 +262,9 @@ class LinearCell(TreeClass):
     ):
         self.in_features = validate_pos_int(in_features)
         self.hidden_features = validate_pos_int(hidden_features)
-        self.act = resolve_activation(act)
+        self.act = resolve_act(act)
 
-        self.in_to_hidden = sk.nn.Linear(
+        self.in_to_hidden = Linear(
             in_features,
             hidden_features,
             weight_init=weight_init,
@@ -366,10 +366,10 @@ class LSTMCell(TreeClass):
 
         self.in_features = validate_pos_int(in_features)
         self.hidden_features = validate_pos_int(hidden_features)
-        self.act = resolve_activation(act)
-        self.recurrent_act = resolve_activation(recurrent_act)
+        self.act = resolve_act(act)
+        self.recurrent_act = resolve_act(recurrent_act)
 
-        i2h = sk.nn.Linear(
+        i2h = Linear(
             in_features,
             hidden_features * 4,
             weight_init=weight_init,
@@ -378,7 +378,7 @@ class LSTMCell(TreeClass):
             dtype=dtype,
         )
 
-        h2h = sk.nn.Linear(
+        h2h = Linear(
             hidden_features,
             hidden_features * 4,
             weight_init=recurrent_weight_init,
@@ -387,7 +387,7 @@ class LSTMCell(TreeClass):
             dtype=dtype,
         )
 
-        self.in_hidden_to_hidden = sk.nn.Linear(
+        self.in_hidden_to_hidden = Linear(
             in_features=in_features + hidden_features,
             out_features=hidden_features,
             weight_init=lambda *_: jnp.concatenate([i2h.weight, h2h.weight], axis=-1),
@@ -496,10 +496,10 @@ class GRUCell(TreeClass):
 
         self.in_features = validate_pos_int(in_features)
         self.hidden_features = validate_pos_int(hidden_features)
-        self.act = resolve_activation(act)
-        self.recurrent_act = resolve_activation(recurrent_act)
+        self.act = resolve_act(act)
+        self.recurrent_act = resolve_act(recurrent_act)
 
-        self.in_to_hidden = sk.nn.Linear(
+        self.in_to_hidden = Linear(
             in_features,
             hidden_features * 3,
             weight_init=weight_init,
@@ -509,7 +509,7 @@ class GRUCell(TreeClass):
             out_axis=0,
         )
 
-        self.hidden_to_hidden = sk.nn.Linear(
+        self.hidden_to_hidden = Linear(
             hidden_features,
             hidden_features * 3,
             weight_init=recurrent_weight_init,
@@ -570,8 +570,8 @@ class ConvLSTMNDCell(TreeClass):
 
         self.in_features = validate_pos_int(in_features)
         self.hidden_features = validate_pos_int(hidden_features)
-        self.act = resolve_activation(act)
-        self.recurrent_act = resolve_activation(recurrent_act)
+        self.act = resolve_act(act)
+        self.recurrent_act = resolve_act(recurrent_act)
 
         self.in_to_hidden = self.conv_layer(
             in_features,
@@ -996,8 +996,8 @@ class ConvGRUNDCell(TreeClass):
 
         self.in_features = validate_pos_int(in_features)
         self.hidden_features = validate_pos_int(hidden_features)
-        self.act = resolve_activation(act)
-        self.recurrent_act = resolve_activation(recurrent_act)
+        self.act = resolve_act(act)
+        self.recurrent_act = resolve_act(recurrent_act)
 
         self.in_to_hidden = self.conv_layer(
             in_features,

@@ -25,7 +25,7 @@ import serket as sk
 from serket._src.nn.activation import (
     ActivationFunctionType,
     ActivationType,
-    resolve_activation,
+    resolve_act,
 )
 from serket._src.nn.initialization import resolve_init
 from serket._src.utils.convert import tuplify
@@ -49,16 +49,17 @@ def generate_einsum_pattern(
 ):
     # helper function to generate the einsum pattern for linear layer
     # with flexible input and output axes
-    alpha = "abcdefghijklmnopqrstuvwxyz"
+    lhs_alpha = "abcdefghijklmnopqrstuvwxyz"
+    rhs_alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     assert (len(in_axis) + len(out_axis)) == rhs_ndim
     in_axis = [axis if axis >= 0 else axis + lhs_ndim for axis in in_axis]
-    lhs = "".join(str(axis) for axis in range(lhs_ndim))  # 0, 1, 2, 3
-    rhs = alpha[: len(out_axis)] + "".join(str(axis) for axis in in_axis)  # F, 1, 2, 3
-    out = [str(axis) for axis in range(lhs_ndim) if axis not in in_axis]
+    lhs = "".join(lhs_alpha[axis] for axis in range(lhs_ndim))
+    rhs = rhs_alpha[: len(out_axis)] + "".join(lhs_alpha[axis] for axis in in_axis)
+    out = [lhs_alpha[axis] for axis in range(lhs_ndim) if axis not in in_axis]
     out_axis = [o if o >= 0 else o + len(out) + 1 for o in out_axis]
 
     for i, axis in enumerate(out_axis):
-        out.insert(axis, alpha[i])
+        out.insert(axis, rhs_alpha[i])
     return f"{lhs},{rhs}->{''.join(out)}"
 
 
@@ -81,13 +82,8 @@ def linear(
         in_axis: axes to apply the linear layer to.
         out_axis: result axis.
     """
-    einsum_pattern = generate_einsum_pattern(input.ndim, weight.ndim, in_axis, out_axis)
-
-    try:
-        result = jnp.einsum(einsum_pattern, input, weight)
-    except ValueError as e:
-        # the pattern is invalid, raise a more informative error
-        raise type(e)(f"{einsum_pattern=}, {e}")
+    pattern = generate_einsum_pattern(input.ndim, weight.ndim, in_axis, out_axis)
+    result = jnp.einsum(pattern, input, weight)
 
     if bias is None:
         return result
@@ -411,7 +407,7 @@ class MLP(sk.TreeClass):
         self.num_hidden_layers = num_hidden_layers
 
         in_key, mid_key, out_key = jr.split(key, 3)
-        self.act = resolve_activation(act)
+        self.act = resolve_act(act)
 
         in_weight_shape = (hidden_features, in_features)
         k1, k2 = jr.split(in_key)
