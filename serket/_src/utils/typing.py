@@ -14,11 +14,11 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Callable, Literal, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, Literal, Sequence, Tuple, TypeVar, Union
 
 import jax
 import numpy as np
-from typing_extensions import ParamSpec
+from typing_extensions import Annotated, ParamSpec
 
 KernelSizeType = Union[int, Sequence[int]]
 StridesType = Union[int, Sequence[int]]
