@@ -65,3 +65,32 @@ InitFuncType = Callable[[jax.Array, Shape, DType], jax.Array]
 InitType = Union[InitLiteral, InitFuncType]
 MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
 Weight = Annotated[jax.Array, "OI..."]
+
+
+ActivationLiteral = Literal[
+    "celu",
+    "elu",
+    "gelu",
+    "glu",
+    "hard_shrink",
+    "hard_sigmoid",
+    "hard_swish",
+    "hard_tanh",
+    "leaky_relu",
+    "log_sigmoid",
+    "log_softmax",
+    "mish",
+    "prelu",
+    "relu",
+    "relu6",
+    "selu",
+    "sigmoid",
+    "softplus",
+    "softshrink",
+    "softsign",
+    "squareplus",
+    "swish",
+    "tanh",
+    "tanh_shrink",
+    "thresholded_relu",
+]

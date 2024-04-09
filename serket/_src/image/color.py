@@ -54,6 +54,63 @@ def grayscale_to_rgb(image: CHWArray) -> CHWArray:
     return jnp.concatenate([image, image, image], axis=0)
 
 
+def rgb_to_hsv(image: CHWArray) -> CHWArray:
+    """Convert an RGB image to HSV.
+
+    Args:
+        image: RGB image in channel-first format with range [0, 1].
+
+    Returns:
+        HSV image in channel-first format with range [0, 2pi] for hue, [0, 1] for saturation and value.
+    """
+    # https://kornia.readthedocs.io/en/latest/_modules/kornia/color/hsv.html#rgb_to_hsv
+
+    eps = jnp.finfo(image.dtype).eps
+    maxc = jnp.max(image, axis=0, keepdims=True)
+    argmaxc = jnp.argmax(image, axis=0, keepdims=True)
+    minc = jnp.min(image, axis=0, keepdims=True)
+    diff = maxc - minc
+
+    diff = jnp.where(diff == 0, 1, diff)
+    rc, gc, bc = jnp.split((maxc - image), 3, axis=0)
+
+    h1 = bc - gc
+    h2 = (rc - bc) + 2.0 * diff
+    h3 = (gc - rc) + 4.0 * diff
+
+    h = jnp.stack((h1, h2, h3), axis=0) / (diff + eps)
+    h = jnp.take_along_axis(h, argmaxc[None], axis=0).squeeze(0)
+    h = (h / 6.0) % 1.0
+    h = 2.0 * jnp.pi * h
+    # saturation
+    s = diff / (maxc + eps)
+    # value
+    v = maxc
+    return jnp.concatenate((h, s, v), axis=0)
+
+
+def hsv_to_rgb(image: CHWArray) -> CHWArray:
+    """Convert an image from HSV to RGB."""
+    # https://kornia.readthedocs.io/en/latest/_modules/kornia/color/hsv.html#rgb_to_hsv
+    c, _, _ = image.shape
+    assert c == 3
+
+    h = image[0] / (2 * jnp.pi)
+    s = image[1]
+    v = image[2]
+
+    hi = jnp.floor(h * 6) % 6
+    f = ((h * 6) % 6) - hi
+    p = v * (1 - s)
+    q = v * (1 - f * s)
+    t = v * (1 - (1 - f) * s)
+
+    indices = jnp.stack([hi, hi + 6, hi + 12], axis=0).astype(jnp.int32)
+    out = jnp.stack((v, q, p, p, t, v, t, v, v, q, p, p, p, p, t, v, v, q))
+    out = jnp.take_along_axis(out, indices, axis=0)
+    return out
+
+
 class KMeansState(NamedTuple):
     centers: Annotated[jax.Array, "Float[k,d]"]
     error: Annotated[jax.Array, "Float[k,d]"]
@@ -163,63 +220,6 @@ class RGBToGrayscale2D(TreeClass):
         return rgb_to_grayscale(image, self.weights)
 
     spatial_ndim: int = 2
-
-
-def rgb_to_hsv(image: CHWArray) -> CHWArray:
-    """Convert an RGB image to HSV.
-
-    Args:
-        image: RGB image in channel-first format with range [0, 1].
-
-    Returns:
-        HSV image in channel-first format with range [0, 2pi] for hue, [0, 1] for saturation and value.
-    """
-    # https://kornia.readthedocs.io/en/latest/_modules/kornia/color/hsv.html#rgb_to_hsv
-
-    eps = jnp.finfo(image.dtype).eps
-    maxc = jnp.max(image, axis=0, keepdims=True)
-    argmaxc = jnp.argmax(image, axis=0, keepdims=True)
-    minc = jnp.min(image, axis=0, keepdims=True)
-    diff = maxc - minc
-
-    diff = jnp.where(diff == 0, 1, diff)
-    rc, gc, bc = jnp.split((maxc - image), 3, axis=0)
-
-    h1 = bc - gc
-    h2 = (rc - bc) + 2.0 * diff
-    h3 = (gc - rc) + 4.0 * diff
-
-    h = jnp.stack((h1, h2, h3), axis=0) / (diff + eps)
-    h = jnp.take_along_axis(h, argmaxc[None], axis=0).squeeze(0)
-    h = (h / 6.0) % 1.0
-    h = 2.0 * jnp.pi * h
-    # saturation
-    s = diff / (maxc + eps)
-    # value
-    v = maxc
-    return jnp.concatenate((h, s, v), axis=0)
-
-
-def hsv_to_rgb(image: CHWArray) -> CHWArray:
-    """Convert an image from HSV to RGB."""
-    # https://kornia.readthedocs.io/en/latest/_modules/kornia/color/hsv.html#rgb_to_hsv
-    c, _, _ = image.shape
-    assert c == 3
-
-    h = image[0] / (2 * jnp.pi)
-    s = image[1]
-    v = image[2]
-
-    hi = jnp.floor(h * 6) % 6
-    f = ((h * 6) % 6) - hi
-    p = v * (1 - s)
-    q = v * (1 - f * s)
-    t = v * (1 - (1 - f) * s)
-
-    indices = jnp.stack([hi, hi + 6, hi + 12], axis=0).astype(jnp.int32)
-    out = jnp.stack((v, q, p, p, t, v, t, v, v, q, p, p, p, p, t, v, v, q))
-    out = jnp.take_along_axis(out, indices, axis=0)
-    return out
 
 
 class GrayscaleToRGB2D(TreeClass):

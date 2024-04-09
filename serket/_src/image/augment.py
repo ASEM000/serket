@@ -547,7 +547,7 @@ class RandomJigSaw2D(TreeClass):
         """Mixes up tiles of an image.
 
         Args:
-            x: channel-first image (CHW)
+            image: channel-first image (CHW)
             key: random key
         """
         in_axes = (None, 0, None)

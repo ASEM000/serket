@@ -34,7 +34,6 @@ from serket._src.utils.validate import (
 )
 
 
-@ft.partial(jax.jit, inline=True, static_argnums=3)
 def dropout_nd(
     key: jax.Array,
     input: jax.Array,

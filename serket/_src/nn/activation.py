@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable as ABCCallable
-from typing import Callable, Literal, TypeVar, Union, get_args
+from typing import Callable, TypeVar, Union, get_args
 
 import jax
 import jax.numpy as jnp
@@ -24,6 +24,7 @@ from jax import lax
 
 from serket import TreeClass, autoinit, field
 from serket._src.utils.dispatch import single_dispatch
+from serket._src.utils.typing import ActivationLiteral
 from serket._src.utils.validate import IsInstance, Range, ScalarLike
 
 T = TypeVar("T")
@@ -302,34 +303,6 @@ class PReLU(TreeClass):
 
 
 # useful for building layers from configuration text
-ActivationLiteral = Literal[
-    "celu",
-    "elu",
-    "gelu",
-    "glu",
-    "hard_shrink",
-    "hard_sigmoid",
-    "hard_swish",
-    "hard_tanh",
-    "leaky_relu",
-    "log_sigmoid",
-    "log_softmax",
-    "mish",
-    "prelu",
-    "relu",
-    "relu6",
-    "selu",
-    "sigmoid",
-    "softplus",
-    "softshrink",
-    "softsign",
-    "squareplus",
-    "swish",
-    "tanh",
-    "tanh_shrink",
-    "thresholded_relu",
-]
-
 
 acts = [
     jax.nn.celu,
