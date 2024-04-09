@@ -57,22 +57,20 @@ attention_updates = dict(
 
 
 def dot_product_attention(
-    q_heads: jax.Array,
-    k_heads: jax.Array,
-    v_heads: jax.Array,
-    num_heads: int,
-    mask: jax.Array | None,
+    q_heads: Annotated[jax.Array, "..., q_length, num_heads, head_features"],
+    k_heads: Annotated[jax.Array, "..., kv_length, num_heads, head_features"],
+    v_heads: Annotated[jax.Array, "..., kv_length, num_heads, head_features"],
+    mask: Annotated[jax.Array, "..., num_heads, q_length, kv_length"] | None,
     drop_func: Callable[[jax.Array], jax.Array],
 ) -> jax.Array:
     """Applies multi-head attention to the given inputs.
 
     Args:
-        q_input: Query input. [..., q_length, q_features]
-        k_input: Key input. [..., k_length, k_features]
-        v_input: Value input. [..., v_length, v_features]
+        q_input: Query input. [..., q_length, num_heads, head_features]
+        k_input: Key input. [..., k_length, num_heads, head_features]
+        v_input: Value input. [..., v_length, num_heads, head_features]
         mask: Mask input. [..., num_heads, q_length, kv_length]. Use ``None``
             for no masking.
-        num_heads: Number of attention heads.
         drop_func: Dropout function. Takes a single input and returns a single output.
             Use ``lambda input: input`` for no dropout.
 
@@ -80,22 +78,14 @@ def dot_product_attention(
         - https://keras.io/api/layers/attention_layers/multi_head_attention/
         - https://flax.readthedocs.io/en/latest/_modules/flax/linen/attention.html
     """
-    k_depth = k_heads.shape[-1]
-    # [..., q_length, head_features*num_heads] -> [..., q_length, num_heads, head_features]
-    q_heads = split_heads(q_heads, num_heads)
-    # [..., k_length, head_features*num_heads] -> [..., k_length, num_heads, head_features]
-    k_heads = split_heads(k_heads, num_heads)
-    # [..., v_length, head_features*num_heads] -> [..., v_length, num_heads, head_features]
-    v_heads = split_heads(v_heads, num_heads)
-
+    *_, num_heads, k_depth = k_heads.shape
     logits = jnp.einsum("...qhd,...khd->...hqk", q_heads, k_heads)
     logits /= jnp.sqrt(k_depth // num_heads)
-
     min_num = jnp.finfo(logits.dtype).min
     logits = logits if mask is None else jnp.where(mask, logits, min_num)
-
-    attention_weight = jax.nn.softmax(logits)
-    attention = jnp.einsum("...hqk,...khd->...qhd", attention_weight, v_heads)
+    weight = jax.nn.softmax(logits)
+    attention = jnp.einsum("...hqk,...khd->...qhd", weight, v_heads)
+    # avoid using Dropout layers inside functions
     return merge_heads(drop_func(attention))
 
 
@@ -309,18 +299,17 @@ class MultiHeadAttention(TreeClass):
                 Defaults to ``None`` for no dropout.
         """
 
-        # [..., q_length, q_features] -> [..., q_length, head_features*num_heads]
-        q_heads = self.q_projection(q_input)
-        # [..., k_length, k_features] -> [..., k_length, head_features*num_heads]
-        k_heads = self.k_projection(k_input)
-        # [..., v_length, v_features] -> [..., v_length, head_features*num_heads]
-        v_heads = self.v_projection(v_input)
+        # [..., q_length, q_features] -> [..., q_length, head_features, num_heads]
+        q_heads = split_heads(self.q_projection(q_input), self.num_heads)
+        # [..., k_length, k_features] -> [..., k_length, head_features, num_heads]
+        k_heads = split_heads(self.k_projection(k_input), self.num_heads)
+        # [..., v_length, v_features] -> [..., v_length, head_features, num_heads]
+        v_heads = split_heads(self.v_projection(v_input), self.num_heads)
 
         attention = self.attention_op(
             q_heads=q_heads,
             k_heads=k_heads,
             v_heads=v_heads,
-            num_heads=self.num_heads,
             mask=mask,
             # note that if `tree_eval` is used, self.dropout is converted to an
             # identity function, so the `key` argument is ignored.
