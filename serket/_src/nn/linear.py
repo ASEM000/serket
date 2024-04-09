@@ -65,7 +65,7 @@ def generate_einsum_pattern(
 
 def linear(
     input: jax.Array,
-    weight: Any,
+    weight: jax.Array,
     bias: jax.Array | None,
     in_axis: Sequence[int] = (-1,),
     out_axis: Sequence[int] = (-1,),

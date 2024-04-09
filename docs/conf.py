@@ -105,6 +105,7 @@ html_theme_options = {
         "notebook_interface": "jupyterlab",
         "colab_url": "https://colab.research.google.com/",
     },
+    "navigation_with_keys": False,
 }
 
 html_css_files = ["custom.css"]

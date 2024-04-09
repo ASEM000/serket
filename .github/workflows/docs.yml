@@ -30,14 +30,11 @@ jobs:
           pip install .
           pip install -r docs/requirements.txt
 
-      - name: Setup Graphviz
-        uses: ts-graphviz/setup-graphviz@v1
-
-      - name: Test doctests
+      - name: Run doctests
         run: |
           cd docs
           make doctest
-      - name: Test docs to HTML
+      - name: Make HTML
         run: |
           cd docs
           make html
