@@ -29,11 +29,32 @@ from serket._src.utils.validate import IsInstance, Range, validate_spatial_ndim
 
 
 def affine_2d(array: HWArray, matrix: HWArray) -> HWArray:
+    assert array.ndim == 2
     h, w = array.shape
     center = jnp.array((h // 2, w // 2))
     coords = jnp.indices((h, w)).reshape(2, -1) - center.reshape(2, 1)
     coords = matrix @ coords + center.reshape(2, 1)
     return map_coordinates(array, coords, order=1).reshape((h, w))
+
+
+def horizontal_flip_2d(image: HWArray) -> HWArray:
+    assert image.ndim == 2
+    return jnp.flip(image, axis=1)
+
+
+def random_horizontal_flip_2d(key: jax.Array, image: HWArray, rate: float) -> HWArray:
+    prop = jr.bernoulli(key, rate)
+    return jnp.where(prop, horizontal_flip_2d(image), image)
+
+
+def vertical_flip_2d(image: HWArray) -> HWArray:
+    assert image.ndim == 2
+    return jnp.flip(image, axis=0)
+
+
+def random_vertical_flip_2d(key: jax.Array, image: HWArray, rate: float) -> HWArray:
+    prop = jr.bernoulli(key, rate)
+    return jnp.where(prop, vertical_flip_2d(image), image)
 
 
 def horizontal_shear_2d(image: HWArray, angle: float) -> HWArray:
@@ -92,37 +113,9 @@ def random_rotate_2d(
     return rotate_2d(image, angle)
 
 
-def perspective_transform_2d(image: HWArray, coeffs: jax.Array) -> HWArray:
-    """Apply a perspective transform to an image."""
-
-    rows, cols = image.shape
-    y, x = jnp.meshgrid(jnp.arange(rows), jnp.arange(cols), indexing="ij")
-    a, b, c, d, e, f, g, h = coeffs
-    w = g * x + h * y + 1.0
-    x_prime = (a * x + b * y + c) / w
-    y_prime = (d * x + e * y + f) / w
-    coords = [y_prime.ravel(), x_prime.ravel()]
-    return map_coordinates(image, coords, order=1).reshape(rows, cols)
-
-
-def random_perspective_2d(
-    key: jax.Array,
-    image: HWArray,
-    scale: float,
-) -> HWArray:
-    """Applies a random perspective transform to a channel-first image"""
-    _, _ = image.shape
-    a = e = 1.0
-    b = d = 0.0
-    c = f = 0.0  # no translation
-    g, h = jr.uniform(key, shape=(2,), minval=-1e-4, maxval=1e-4) * scale
-    coeffs = jnp.array([a, b, c, d, e, f, g, h])
-    return perspective_transform_2d(image, coeffs)
-
-
 def horizontal_translate_2d(image: HWArray, shift: int) -> HWArray:
     """Translate an image horizontally by a pixel value."""
-    _, _ = image.shape
+    assert image.ndim == 2
     if shift > 0:
         return jnp.zeros_like(image).at[:, shift:].set(image[:, :-shift])
     if shift < 0:
@@ -132,7 +125,7 @@ def horizontal_translate_2d(image: HWArray, shift: int) -> HWArray:
 
 def vertical_translate_2d(image: HWArray, shift: int) -> HWArray:
     """Translate an image vertically by a pixel value."""
-    _, _ = image.shape
+    assert image.ndim == 2
     if shift > 0:
         return jnp.zeros_like(image).at[shift:, :].set(image[:-shift, :])
     if shift < 0:
@@ -150,38 +143,6 @@ def random_vertical_translate_2d(key: jax.Array, image: HWArray) -> HWArray:
     h, _ = image.shape
     shift = jr.randint(key, shape=(), minval=-h, maxval=h)
     return vertical_translate_2d(image, shift)
-
-
-def wave_transform_2d(image: HWArray, length: float, amplitude: float) -> HWArray:
-    """Transform an image with a sinusoidal wave."""
-    _, _ = image.shape
-    eps = jnp.finfo(image.dtype).eps
-    ny, nx = jnp.indices(image.shape)
-    sinx = nx + amplitude * jnp.sin(ny / (length + eps))
-    cosy = ny + amplitude * jnp.cos(nx / (length + eps))
-    return map_coordinates(image, [cosy, sinx], order=1)
-
-
-def random_wave_transform_2d(
-    key: jax.Array,
-    image: HWArray,
-    length_range: tuple[float, float],
-    amplitude_range: tuple[float, float],
-) -> HWArray:
-    """Transform an image with a sinusoidal wave.
-
-    Args:
-        key: a random key.
-        image: a 2D image to transform.
-        length_range: a tuple of min length and max length to randdomly choose from.
-        amplitude_range: a tuple of min amplitude and max amplitude to randdomly choose from.
-    """
-    k1, k2 = jr.split(key)
-    l0, l1 = length_range
-    length = jr.uniform(k1, shape=(), minval=l0, maxval=l1)
-    a0, a1 = amplitude_range
-    amplitude = jr.uniform(k2, shape=(), minval=a0, maxval=a1)
-    return wave_transform_2d(image, length, amplitude)
 
 
 class Rotate2D(TreeClass):
@@ -438,44 +399,6 @@ class RandomVerticalShear2D(TreeClass):
     spatial_ndim: int = 2
 
 
-class RandomPerspective2D(TreeClass):
-    """Applies a random perspective transform to a channel-first image.
-
-    .. image:: ../_static/randomperspective2d.png
-
-    Args:
-        scale: the scale of the random perspective transform. Higher scale will
-            lead to higher degree of perspective transform. default to 1.0. 0.0
-            means no perspective transform.
-
-    Note:
-        - Use :func:`tree_eval` to replace this layer with :class:`Identity` during
-          evaluation.
-
-        >>> import serket as sk
-        >>> import jax.numpy as jnp
-        >>> x = jnp.arange(1, 17).reshape(1, 4, 4)
-        >>> layer = sk.image.RandomPerspective2D(100)
-        >>> eval_layer = sk.tree_eval(layer)
-        >>> print(eval_layer(x))
-        [[[ 1  2  3  4]
-          [ 5  6  7  8]
-          [ 9 10 11 12]
-          [13 14 15 16]]]
-    """
-
-    def __init__(self, scale: float = 1.0):
-        self.scale = scale
-
-    @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
-        scale = jax.lax.stop_gradient(self.scale)
-        args = (key, image, scale)
-        return jax.vmap(random_perspective_2d, in_axes=(None, 0, None))(*args)
-
-    spatial_ndim: int = 2
-
-
 @autoinit
 class HorizontalTranslate2D(TreeClass):
     """Translate an image horizontally by a pixel value.
@@ -638,7 +561,7 @@ class HorizontalFlip2D(TreeClass):
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
-        return jax.vmap(lambda x: jnp.flip(x, axis=1))(image)
+        return jax.vmap(horizontal_flip_2d)(image)
 
     spatial_ndim: int = 2
 
@@ -673,9 +596,9 @@ class RandomHorizontalFlip2D(TreeClass):
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+        in_axes = (None, 0, None)
         rate = jax.lax.stop_gradient(self.rate)
-        prop = jax.random.bernoulli(key, rate)
-        return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=1))(image), image)
+        return jax.vmap(random_horizontal_flip_2d, in_axes=in_axes)(key, image, rate)
 
     spatial_ndim: int = 2
 
@@ -705,7 +628,7 @@ class VerticalFlip2D(TreeClass):
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray) -> CHWArray:
-        return jax.vmap(lambda x: jnp.flip(x, axis=0))(image)
+        return jax.vmap(vertical_flip_2d)(image)
 
     spatial_ndim: int = 2
 
@@ -740,9 +663,9 @@ class RandomVerticalFlip2D(TreeClass):
 
     @ft.partial(validate_spatial_ndim, argnum=0)
     def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+        in_axes = (None, 0, None)
         rate = jax.lax.stop_gradient(self.rate)
-        prop = jax.random.bernoulli(key, rate)
-        return jnp.where(prop, jax.vmap(lambda x: jnp.flip(x, axis=0))(image), image)
+        return jax.vmap(random_vertical_flip_2d, in_axes=in_axes)(key, image, rate)
 
     spatial_ndim: int = 2
 
@@ -752,7 +675,6 @@ class RandomVerticalFlip2D(TreeClass):
 @tree_eval.def_eval(RandomVerticalFlip2D)
 @tree_eval.def_eval(RandomHorizontalShear2D)
 @tree_eval.def_eval(RandomVerticalShear2D)
-@tree_eval.def_eval(RandomPerspective2D)
 @tree_eval.def_eval(RandomHorizontalTranslate2D)
 @tree_eval.def_eval(RandomVerticalTranslate2D)
 def _(_):
