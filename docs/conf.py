@@ -113,11 +113,7 @@ html_css_files = ["custom.css"]
 # -- Options for doctest -----------------------------------------------------
 
 doctest_test_doctest_blocks = "true"
-doctest_global_setup = """
-import jax
-import jax.numpy as jnp
-import serket as sk
-"""
+doctest_global_setup = """"""
 doctest_default_flags = (
     doctest.ELLIPSIS
     | doctest.IGNORE_EXCEPTION_DETAIL
@@ -149,3 +145,5 @@ nbsphinx_timeout = 180
 # Tell sphinx-autodoc-typehints to generate stub parameter annotations including
 # types, even if the parameters aren't explicitly documented.
 always_document_param_types = True
+autodoc_typehints_format = "short"
+python_use_unqualified_type_names = True

@@ -32,7 +32,7 @@ from sepes import (
 )
 
 from serket import image, nn
-from serket._src.containers import RandomChoice, Sequential
+from serket._src.containers import Sequential
 from serket._src.custom_transform import tree_eval, tree_state
 
 __all__ = [
@@ -65,7 +65,6 @@ __all__ = [
     "tree_state",
     # containers
     "Sequential",
-    "RandomChoice",
 ]
 
 

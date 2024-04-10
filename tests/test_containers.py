@@ -28,14 +28,3 @@ def test_sequential_without_key():
 def test_sequential_with_key():
     layer = sk.Sequential(lambda x: x + 1, lambda x: x * 2)
     assert layer(1, key=jr.PRNGKey(0)) == 4
-
-
-def test_random_choice():
-    layer = sk.RandomChoice(lambda x: x + 2, lambda x: x * 2)
-    key = jr.PRNGKey(0)
-    assert layer(1, key=key) == 3.0
-    key = jr.PRNGKey(10)
-    assert layer(1, key=key) == 2.0
-
-    # convert all choices to sequential
-    assert sk.tree_eval(layer)(1, key=jax.random.PRNGKey(0)) == (1.0 + 2.0) * 2.0

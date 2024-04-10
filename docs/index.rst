@@ -56,15 +56,6 @@ Install from github::
         net, (loss, logits) = train_step(net, xb, yb)
         accuracy = accuracy_func(logits, y_train)
 
-    net = sk.tree_unmask(net)
-
-
-.. toctree::
-    :caption: 👋 Introduction
-    :maxdepth: 1
-    
-    notebooks/mental_model
-
 .. toctree::
     :caption: 📖 Guides
     :maxdepth: 1
@@ -73,17 +64,14 @@ Install from github::
     core_guides
     other_guides
     interoperability
-    common_recipes
 
 .. currentmodule:: serket
     
 
-
 .. toctree::
     :caption: 📃 API Documentation
     :maxdepth: 1
-    
-    notebooks/layers_overview
+
     API/common
     API/nn
     API/image
