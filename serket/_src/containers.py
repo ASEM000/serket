@@ -21,7 +21,6 @@ import jax
 import jax.random as jr
 
 from serket import TreeClass, tree_summary
-from serket._src.custom_transform import tree_eval
 from serket._src.utils.dispatch import single_dispatch
 
 
@@ -107,58 +106,3 @@ class Sequential(TreeClass):
 def _(node):
     types = [type(x).__name__ for x in node]
     return f"{type(node).__name__}[{','.join(types)}]"
-
-
-def random_choice(key: jax.Array, layers: tuple[Callable[..., Any], ...], array: Any):
-    """Randomly selects one of the given layers/functions.
-
-    Args:
-        layers: variable number of layers/functions to select from.
-        array: an array to apply the layer to.
-        key: a random number generator key.
-    """
-    index = jr.randint(key, (), 0, len(layers))
-    return jax.lax.switch(index, layers, array)
-
-
-class RandomChoice(TreeClass):
-    """Randomly selects one of the given layers/functions.
-
-    Args:
-        layers: variable number of layers/functions to select from.
-
-    Example:
-        >>> import serket as sk
-        >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
-        >>> print(sk.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key=key))
-        3.0
-        >>> key = jr.PRNGKey(10)
-        >>> print(sk.RandomChoice(lambda x: x + 2, lambda x: x * 2)(1.0, key=key))
-        2.0
-
-    Note:
-        Using :func:`tree_eval` will convert this layer to a :class:`.Sequential`
-        to apply the all layers sequentially.
-
-        >>> import serket as sk
-        >>> layer = sk.RandomChoice(lambda x: x + 2, lambda x: x * 2)
-        >>> # will apply all layers sequentially
-        >>> print(sk.tree_eval(layer)(1.0))
-        6.0
-
-    Reference:
-        - https://imgaug.readthedocs.io/en/latest/source/overview/meta.html#OneOf
-        - https://pytorch.org/vision/main/generated/torchvision.transforms.RandomChoice.html
-    """
-
-    def __init__(self, *layers):
-        self.layers = layers
-
-    def __call__(self, input: jax.Array, *, key: jax.Array):
-        return random_choice(key, self.layers, input)
-
-
-@tree_eval.def_eval(RandomChoice)
-def tree_eval_sequential(layer) -> Sequential:
-    return Sequential(*layer.layers)

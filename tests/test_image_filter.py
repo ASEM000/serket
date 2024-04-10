@@ -72,25 +72,6 @@ def test_GaussBlur2D():
     npt.assert_allclose(layer(x), z, atol=1e-5)
 
 
-def test_solarize2d():
-    x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = sk.image.Solarize2D(threshold=10, max_val=25)
-    npt.assert_allclose(
-        layer(x),
-        jnp.array(
-            [
-                [
-                    [1, 2, 3, 4, 5],
-                    [6, 7, 8, 9, 15],
-                    [14, 13, 12, 11, 10],
-                    [9, 8, 7, 6, 5],
-                    [4, 3, 2, 1, 0],
-                ]
-            ]
-        ),
-    )
-
-
 def test_horizontal_translate():
     x = jnp.arange(1, 26).reshape(1, 5, 5)
     layer = sk.image.HorizontalTranslate2D(2)
@@ -167,15 +148,6 @@ def test_vertical_translate():
     layer = sk.image.VerticalTranslate2D(0)
 
     npt.assert_allclose(layer(x), x)
-
-
-def test_jigsaw():
-    x = jnp.arange(1, 17).reshape(1, 4, 4)
-    layer = sk.image.RandomJigSaw2D(2)
-    npt.assert_allclose(
-        layer(x, key=jax.random.PRNGKey(0)),
-        jnp.array([[[9, 10, 3, 4], [13, 14, 7, 8], [11, 12, 1, 2], [15, 16, 5, 6]]]),
-    )
 
 
 def test_rotate():
@@ -261,106 +233,6 @@ def test_vertical_shear():
         sk.image.RandomVerticalShear2D((45, 0, 9))(x, key=jax.random.PRNGKey(0))
 
 
-def test_posterize():
-    x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = sk.image.Posterize2D(4)
-    posterized = jnp.array(
-        [
-            [
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [16, 16, 16, 16, 16],
-                [16, 16, 16, 16, 16],
-            ]
-        ]
-    )
-
-    npt.assert_allclose(layer(x), posterized)
-
-
-def test_pixelate():
-    x = jnp.arange(1, 26).reshape(1, 5, 5)
-    layer = sk.image.Pixelate2D(1)
-    npt.assert_allclose(layer(x), x)
-
-
-def test_adjust_contrast_2d():
-    x = jnp.array(
-        [
-            [
-                [0.19165385, 0.4459561, 0.03873193],
-                [0.58923364, 0.0923605, 0.2597469],
-                [0.83097064, 0.4854728, 0.03308535],
-            ],
-            [
-                [0.10485303, 0.10068893, 0.408355],
-                [0.40298176, 0.6227188, 0.8612417],
-                [0.52223504, 0.3363577, 0.1300546],
-            ],
-        ]
-    )
-    y = jnp.array(
-        [
-            [
-                [0.26067203, 0.38782316, 0.18421106],
-                [0.45946193, 0.21102534, 0.29471856],
-                [0.5803304, 0.4075815, 0.18138777],
-            ],
-            [
-                [0.24628687, 0.24420482, 0.39803785],
-                [0.39535123, 0.50521976, 0.6244812],
-                [0.45497787, 0.3620392, 0.25888765],
-            ],
-        ]
-    )
-
-    npt.assert_allclose(sk.image.AdjustContrast2D(factor=0.5)(x), y, atol=1e-5)
-
-
-def test_random_contrast_2d():
-    x = jnp.array(
-        [
-            [
-                [0.19165385, 0.4459561, 0.03873193],
-                [0.58923364, 0.0923605, 0.2597469],
-                [0.83097064, 0.4854728, 0.03308535],
-            ],
-            [
-                [0.10485303, 0.10068893, 0.408355],
-                [0.40298176, 0.6227188, 0.8612417],
-                [0.52223504, 0.3363577, 0.1300546],
-            ],
-        ]
-    )
-
-    y = jnp.array(
-        [
-            [
-                [0.23179087, 0.4121493, 0.1233343],
-                [0.5137658, 0.1613692, 0.28008443],
-                [0.68521255, 0.44017565, 0.11932957],
-            ],
-            [
-                [0.18710288, 0.1841496, 0.40235513],
-                [0.39854428, 0.55438805, 0.7235553],
-                [0.4831221, 0.3512926, 0.20497654],
-            ],
-        ]
-    )
-
-    npt.assert_allclose(
-        sk.image.RandomContrast2D(range=(0.5, 1))(x, key=jax.random.PRNGKey(0)),
-        y,
-        atol=1e-5,
-    )
-
-    with pytest.raises(ValueError):
-        sk.image.RandomContrast2D(range=(1, 0))(x, key=jax.random.PRNGKey(0))
-    with pytest.raises(ValueError):
-        sk.image.RandomContrast2D(range=(0, 0, 0))(x, key=jax.random.PRNGKey(0))
-
-
 def test_flip_left_right_2d():
     flip = sk.image.HorizontalFlip2D()
     x = jnp.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]])
@@ -387,28 +259,6 @@ def test_random_flip_up_down_2d():
     x = jnp.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]])
     y = flip(x, key=jax.random.PRNGKey(0))
     npt.assert_allclose(y, jnp.array([[[7, 8, 9], [4, 5, 6], [1, 2, 3]]]))
-
-
-def test_pixel_shuffle_3d():
-    x = jnp.array(
-        [
-            [[0.08482574, 1.9097648], [0.29561743, 1.120948]],
-            [[0.33432344, -0.82606775], [0.6481277, 1.0434873]],
-            [[-0.7824839, -0.4539462], [0.6297971, 0.81524646]],
-            [[-0.32787678, -1.1234448], [-1.6607416, 0.27290547]],
-        ]
-    )
-
-    ps = sk.image.PixelShuffle2D(2)
-    y = jnp.array([0.08482574, 0.33432344, 1.9097648, -0.82606775])
-
-    npt.assert_allclose(ps(x)[0, 0], y, atol=1e-5)
-
-    with pytest.raises(ValueError):
-        sk.image.PixelShuffle2D(3)(jnp.ones([6, 4, 4]))
-
-    with pytest.raises(TypeError):
-        sk.image.PixelShuffle2D(-3)(jnp.ones([9, 6, 4]))
 
 
 def test_unsharp_mask():
@@ -492,130 +342,6 @@ def test_median_blur():
     npt.assert_allclose(y, z, atol=1e-6)
 
 
-def test_adjust_log_2d():
-    x = jnp.arange(1, 17).reshape(1, 4, 4) / 16.0
-    y = sk.image.AdjustLog2D()(x)
-    z = jnp.array(
-        [
-            [
-                [0.08746284, 0.16992499, 0.24792752, 0.32192808],
-                [0.3923174, 0.45943162, 0.52356195, 0.5849625],
-                [0.64385617, 0.7004397, 0.75488746, 0.8073549],
-                [0.857981, 0.9068906, 0.9541963, 1.0],
-            ]
-        ],
-    )
-    npt.assert_allclose(y, z, atol=1e-6)
-
-
-def test_adjust_sigmoid_2d():
-    x = jnp.arange(1, 17).reshape(1, 4, 4) / 16.0
-    y = sk.image.AdjustSigmoid2D()(x)
-    z = jnp.array(
-        [
-            [
-                [0.01243165, 0.02297737, 0.04208773, 0.07585818],
-                [0.13296424, 0.22270013, 0.34864512, 0.5],
-                [0.6513549, 0.7772999, 0.86703575, 0.9241418],
-                [0.95791227, 0.97702265, 0.9875683, 0.9933072],
-            ]
-        ]
-    )
-    npt.assert_allclose(y, z, atol=1e-6)
-
-
-def test_rgb_to_grayscale():
-    gray = jnp.ones((1, 5, 5))
-    assert sk.image.GrayscaleToRGB2D()(gray).shape == (3, 5, 5)
-    rgb = jnp.ones((3, 5, 5))
-    assert sk.image.RGBToGrayscale2D()(rgb).shape == (1, 5, 5)
-
-
-def test_rgb_to_hsv_to_rgb():
-    array = jnp.arange(1, 28).reshape(3, 3, 3) / 27.0
-    hsv = sk.image.RGBToHSV2D()(array)
-    target = jnp.array(
-        [
-            [
-                [3.665191888809204, 3.665191411972046, 3.665191888809204],
-                [3.665191411972046, 3.665191888809204, 3.665191888809204],
-                [3.665191411972046, 3.665191888809204, 3.665191411972046],
-            ],
-            [
-                [0.947368443012238, 0.899999976158142, 0.857142865657806],
-                [0.818181753158569, 0.782608687877655, 0.750000000000000],
-                [0.719999969005585, 0.692307710647583, 0.666666626930237],
-            ],
-            [
-                [0.703703701496124, 0.740740716457367, 0.777777791023254],
-                [0.814814805984497, 0.851851880550385, 0.888888895511627],
-                [0.925925910472870, 0.962962985038757, 1.000000000000000],
-            ],
-        ]
-    )
-    # with kornia
-    npt.assert_allclose(target, hsv, atol=1e-6)
-
-    # identity
-    npt.assert_allclose(sk.image.HSVToRGB2D()(hsv), array, atol=1e-6)
-
-
-def test_adjust_hue():
-    array = jnp.arange(1, 28).reshape(3, 3, 3) / 27.0
-    layer = sk.image.AdjustHue2D(2.0)
-    target = jnp.array(
-        [
-            [
-                [0.703703701496124, 0.740740716457367, 0.777777791023254],
-                [0.814814805984497, 0.851851880550385, 0.888888895511627],
-                [0.925925910472870, 0.962962985038757, 1.000000000000000],
-            ],
-            [
-                [0.037037022411823, 0.074074089527130, 0.111111104488373],
-                [0.148148193955421, 0.185185194015503, 0.222222223877907],
-                [0.259259283542633, 0.296296298503876, 0.333333373069763],
-            ],
-            [
-                [0.430464237928391, 0.467501282691956, 0.504538357257843],
-                [0.541575372219086, 0.578612446784973, 0.615649461746216],
-                [0.652686476707458, 0.689723551273346, 0.726760566234589],
-            ],
-        ]
-    )
-
-    npt.assert_allclose(layer(array), target, atol=1e-6)
-    layer = sk.image.RandomHue2D((0.0, 0.0))
-    npt.assert_allclose((layer)(array, key=jr.PRNGKey(0)), array, atol=1e-6)
-
-
-def test_adjust_saturation():
-    array = jnp.arange(1, 28).reshape(3, 3, 3) / 27.0
-    layer = sk.image.AdjustSaturation2D(0.6)
-    target = jnp.array(
-        [
-            [
-                [0.303703695535660, 0.340740710496902, 0.377777755260468],
-                [0.414814800024033, 0.451851814985275, 0.488888859748840],
-                [0.525925874710083, 0.562962949275970, 0.600000023841858],
-            ],
-            [
-                [0.503703594207764, 0.540740728378296, 0.577777683734894],
-                [0.614814817905426, 0.651851773262024, 0.688888788223267],
-                [0.725925922393799, 0.762962877750397, 0.800000011920929],
-            ],
-            [
-                [0.703703701496124, 0.740740716457367, 0.777777791023254],
-                [0.814814805984497, 0.851851880550385, 0.888888895511627],
-                [0.925925910472870, 0.962962985038757, 1.000000000000000],
-            ],
-        ]
-    )
-
-    npt.assert_allclose(layer(array), target, atol=1e-6)
-    layer = sk.image.RandomSaturation2D((1.0, 1.0))
-    npt.assert_allclose(layer(array, key=jr.PRNGKey(0)), array, atol=1e-6)
-
-
 def test_random_horizontal_translate_2d():
     layer = sk.image.RandomHorizontalTranslate2D()
     assert layer(jnp.ones([3, 10, 10]), key=jr.PRNGKey(0)).shape == (3, 10, 10)
@@ -624,15 +350,6 @@ def test_random_horizontal_translate_2d():
 def test_random_vertical_translate_2d():
     layer = sk.image.RandomVerticalTranslate2D()
     assert layer(jnp.ones([3, 10, 10]), key=jax.random.PRNGKey(0)).shape == (3, 10, 10)
-
-
-def test_random_perspective_2d():
-    layer = sk.image.RandomPerspective2D(scale=0)
-    npt.assert_allclose(
-        layer(jnp.ones([3, 10, 10]), key=jr.PRNGKey(0)),
-        jnp.ones([3, 10, 10]),
-        atol=1e-6,
-    )
 
 
 def test_sobel_2d():
@@ -654,24 +371,6 @@ def test_sobel_2d():
 
     layer = sk.image.FFTSobel2D()
     npt.assert_allclose(layer(x), target, atol=1e-5)
-
-
-def test_adjust_brightness():
-    x = jnp.arange(1, 10).reshape(1, 3, 3) / 10
-    npt.assert_allclose(
-        sk.image.AdjustBrightness2D(0.5)(x),
-        jnp.array([[[0.6, 0.7, 0.8], [0.9, 1.0, 1.0], [1.0, 1.0, 1.0]]]),
-        atol=1e-6,
-    )
-
-
-def test_random_brightness():
-    x = jnp.arange(1, 10).reshape(1, 3, 3) / 10
-    npt.assert_allclose(
-        sk.image.RandomBrightness2D((0.5, 0.5))(x, key=jr.PRNGKey(0)),
-        jnp.array([[[0.6, 0.7, 0.8], [0.9, 1.0, 1.0], [1.0, 1.0, 1.0]]]),
-        atol=1e-6,
-    )
 
 
 def test_elastic_transform_2d():
@@ -836,22 +535,3 @@ def test_blur_pool_2d():
     layer = sk.image.FFTBlurPool2D((3, 3), strides=2)
 
     npt.assert_allclose(layer(x), y, atol=1e-6)
-
-
-def test_fourier_domain_adapt_2d():
-    x = jnp.ones([3, 10, 10])
-    y = jnp.ones([3, 5, 5])
-    layer = sk.image.FourierDomainAdapt2D(beta=0.5)
-    assert layer(x, y).shape == (3, 10, 10)
-
-
-def test_color_quantization():
-    image = jnp.ones([3, 5, 5])
-    k1, k2 = jr.split(jr.PRNGKey(0))
-    layer = sk.image.KMeansColorQuantization2D(k=[2, 3, 4])
-    image = jr.uniform(k1, shape=(3, 50, 50))
-    quantized_image = layer(image, key=k2)
-    r_quantized, g_quantized, b_quantized = quantized_image
-    assert len(jnp.unique(r_quantized)) == 2
-    assert len(jnp.unique(g_quantized)) == 3
-    assert len(jnp.unique(b_quantized)) == 4

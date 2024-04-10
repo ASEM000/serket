@@ -9,6 +9,4 @@
    :caption: API Documentation
 
    geometric
-   augment
    filter
-   color
