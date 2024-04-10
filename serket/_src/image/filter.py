@@ -615,7 +615,6 @@ def fft_elastic_transform_2d(
     return map_coordinates(image, (ny, nx), order=1, mode="nearest").reshape(r, c)
 
 
-@ft.partial(jax.jit, inline=True, static_argnums=1)
 def bilateral_blur_2d(
     image: HWArray,
     kernel_size: tuple[int, int],
@@ -663,7 +662,6 @@ def bilateral_blur_2d(
     return bilateral_blur_2d(image)
 
 
-@ft.partial(jax.jit, inline=True, static_argnums=2)
 def joint_bilateral_blur_2d(
     image: HWArray,
     guidance: HWArray,
