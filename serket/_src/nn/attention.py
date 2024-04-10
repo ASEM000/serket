@@ -78,9 +78,9 @@ def dot_product_attention(
         - https://keras.io/api/layers/attention_layers/multi_head_attention/
         - https://flax.readthedocs.io/en/latest/_modules/flax/linen/attention.html
     """
-    *_, num_heads, k_depth = k_heads.shape
+    *_other, _length, _num_heads, k_depth = k_heads.shape
     logits = jnp.einsum("...qhd,...khd->...hqk", q_heads, k_heads)
-    logits /= jnp.sqrt(k_depth // num_heads)
+    logits /= jnp.sqrt(k_depth)
     min_num = jnp.finfo(logits.dtype).min
     logits = logits if mask is None else jnp.where(mask, logits, min_num)
     weight = jax.nn.softmax(logits)
