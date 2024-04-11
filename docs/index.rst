@@ -64,6 +64,7 @@ Install from github::
     core_guides
     other_guides
     interoperability
+    tree_recipes
 
 .. currentmodule:: serket
     
