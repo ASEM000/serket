@@ -19,7 +19,7 @@ import functools as ft
 from serket._src.utils.inspect import get_params
 
 
-def single_dispatch(argnum: int = 0):
+def single_dispatch(argnum: int):
     """Single dispatch with argnum"""
 
     def decorator(func):

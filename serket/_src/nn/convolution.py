@@ -558,7 +558,7 @@ def is_lazy_init(_1, in_features, *_2, **_3) -> bool:
     return in_features is None
 
 
-def infer_in_features(instance, x, *_1, **_3) -> int:
+def infer_in_features(_1, x, *_2, **_3) -> int:
     return x.shape[0]
 
 
