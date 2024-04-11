@@ -31,7 +31,10 @@ def single_dispatch(argnum: int = 0):
                 klass = type(args[argnum])
             except IndexError:
                 argname = get_params(func)[argnum].name
-                klass = type(kwargs[argname])
+                try:
+                    klass = type(kwargs[argname])
+                except KeyError:
+                    raise TypeError(f"{func.__name__} missing required {argname=}")
             return dispatcher.dispatch(klass)(*args, **kwargs)
 
         wrapper.def_type = dispatcher.register

@@ -64,7 +64,7 @@ DType = Union[np.dtype, str, Any]
 InitFuncType = Callable[[jax.Array, Shape, DType], jax.Array]
 InitType = Union[InitLiteral, InitFuncType]
 MethodKind = Literal["nearest", "linear", "cubic", "lanczos3", "lanczos5"]
-Weight = Annotated[jax.Array, "OI..."]
+Weight = Union[jax.Array, Any]
 
 
 ActivationLiteral = Literal[
