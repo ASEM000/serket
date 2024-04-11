@@ -221,7 +221,7 @@ def test_linear_dispatch():
     def _(
         input: jax.Array,
         weight: PlusOne,
-        bias: jax.Array | None,
+        bias,
         in_axis: Sequence[int],
         out_axis: Sequence[int],
     ):
