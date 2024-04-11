@@ -6,7 +6,6 @@
     :caption: Core guides
     :maxdepth: 1
 
-    notebooks/[guides][core]surgery
     notebooks/[guides][core]checkpointing
     notebooks/[guides][core]distributed_training
     notebooks/[guides][core]mixed_precision
