@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Any, Generic, Sequence, TypeVar
+from typing import Sequence
 
 import jax
 import jax.numpy as jnp
@@ -30,15 +30,8 @@ from serket._src.nn.activation import (
 from serket._src.nn.initialization import resolve_init
 from serket._src.utils.convert import tuplify
 from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
-from serket._src.utils.typing import DType, InitType
+from serket._src.utils.typing import Batched, DType, InitType
 from serket._src.utils.validate import validate_pos_int
-
-T = TypeVar("T")
-PyTree = Any
-
-
-class Batched(Generic[T]):
-    pass
 
 
 def generate_einsum_pattern(
@@ -308,7 +301,7 @@ def scan_linear(
     return output
 
 
-def infer_in_features(instance, x, **__) -> tuple[int, ...]:
+def infer_in_features(_1, x, **_2) -> int:
     return x.shape[-1]
 
 

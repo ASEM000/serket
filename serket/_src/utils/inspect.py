@@ -16,10 +16,9 @@ from __future__ import annotations
 
 import functools as ft
 import inspect
-from types import MethodType
 
 
 @ft.lru_cache(maxsize=128)
-def get_params(func: MethodType) -> tuple[inspect.Parameter, ...]:
+def get_params(func) -> tuple[inspect.Parameter, ...]:
     """Get the arguments of func."""
     return tuple(inspect.signature(func).parameters.values())

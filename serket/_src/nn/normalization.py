@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Sequence, TypeVar
+from typing import Sequence
 
 import jax
 import jax.numpy as jnp
@@ -26,7 +26,7 @@ from serket._src.custom_transform import tree_eval, tree_state
 from serket._src.nn.initialization import resolve_init
 from serket._src.utils.convert import tuplify
 from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
-from serket._src.utils.typing import DType, InitType
+from serket._src.utils.typing import DType, InitType, T
 from serket._src.utils.validate import (
     Range,
     ScalarLike,
@@ -842,9 +842,6 @@ def _(batch_norm: BatchNorm) -> BatchNormState:
     running_mean = jnp.zeros([batch_norm.in_features])
     running_var = jnp.ones([batch_norm.in_features])
     return BatchNormState(running_mean, running_var)
-
-
-T = TypeVar("T")
 
 
 def weight_norm(leaf: T, axis: int | None = -1, eps: float = 1e-12) -> T:

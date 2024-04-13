@@ -24,9 +24,8 @@ import jax.random as jr
 from serket import TreeClass
 from serket._src.custom_transform import tree_eval
 from serket._src.nn.linear import Identity
-from serket._src.utils.convert import canonicalize
+from serket._src.utils.convert import canonicalize, delayed_canonicalize_padding
 from serket._src.utils.mapping import kernel_map
-from serket._src.utils.padding import delayed_canonicalize_padding
 from serket._src.utils.typing import (
     KernelSizeType,
     MethodKind,

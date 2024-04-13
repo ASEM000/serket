@@ -23,9 +23,8 @@ import jax.numpy as jnp
 from typing_extensions import Annotated
 
 from serket import TreeClass
-from serket._src.utils.convert import canonicalize
+from serket._src.utils.convert import canonicalize, delayed_canonicalize_padding
 from serket._src.utils.mapping import kernel_map
-from serket._src.utils.padding import delayed_canonicalize_padding
 from serket._src.utils.typing import KernelSizeType, PaddingType, StridesType
 from serket._src.utils.validate import validate_spatial_ndim
 

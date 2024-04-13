@@ -28,12 +28,12 @@ from serket._src.nn.convolution import (
     fft_conv_general_dilated,
     generate_conv_dim_numbers,
 )
-from serket._src.utils.convert import canonicalize
-from serket._src.utils.mapping import kernel_map
-from serket._src.utils.padding import (
+from serket._src.utils.convert import (
+    canonicalize,
     delayed_canonicalize_padding,
     resolve_string_padding,
 )
+from serket._src.utils.mapping import kernel_map
 from serket._src.utils.typing import CHWArray, DType, HWArray
 from serket._src.utils.validate import validate_spatial_ndim
 

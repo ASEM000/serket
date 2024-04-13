@@ -21,8 +21,8 @@ import pytest
 
 import serket as sk
 from serket._src.nn.initialization import resolve_init
-from serket._src.utils.convert import canonicalize
-from serket._src.utils.padding import (
+from serket._src.utils.convert import (
+    canonicalize,
     delayed_canonicalize_padding,
     resolve_string_padding,
     resolve_tuple_padding,

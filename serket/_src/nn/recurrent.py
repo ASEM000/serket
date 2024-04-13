@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Defines RNN related classes."""
+
 from __future__ import annotations
 
 import abc
 import functools as ft
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable
 
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from typing_extensions import ParamSpec
 
 from serket import TreeClass, autoinit
 from serket._src.custom_transform import tree_state
@@ -42,6 +43,7 @@ from serket._src.utils.typing import (
     InitType,
     KernelSizeType,
     PaddingType,
+    S,
     StridesType,
 )
 from serket._src.utils.validate import (
@@ -49,14 +51,6 @@ from serket._src.utils.validate import (
     validate_pos_int,
     validate_spatial_ndim,
 )
-
-P = ParamSpec("P")
-T = TypeVar("T")
-S = TypeVar("S")
-
-State = Any
-
-"""Defines RNN related classes."""
 
 
 def is_lazy_call(instance, *_1, **_2) -> bool:

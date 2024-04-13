@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, Generic, Literal, Sequence, Tuple, TypeVar, Union
 
 import jax
 import numpy as np
@@ -94,3 +94,13 @@ ActivationLiteral = Literal[
     "tanh_shrink",
     "thresholded_relu",
 ]
+
+
+P = ParamSpec("P")
+T = TypeVar("T")
+S = TypeVar("S")
+PyTree = TypeVar("PyTree", bound=Any)
+
+
+class Batched(Generic[T]):
+    pass
