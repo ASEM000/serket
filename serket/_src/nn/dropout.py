@@ -149,7 +149,7 @@ class Dropout(TreeClass):
     )
     drop_axes: tuple[int, ...] | None = None
 
-    def __call__(self, input: jax.Array, *, key: jax.Array):
+    def __call__(self, input: jax.Array, *, key: jax.Array | None = None) -> jax.Array:
         """Drop some elements of the input array.
 
         Args:
@@ -168,7 +168,7 @@ class DropoutND(TreeClass):
     )
 
     @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array, *, key: jax.Array | None = None) -> jax.Array:
         """Drop some elements of the input array.
 
         Args:
@@ -299,7 +299,7 @@ class RandomCutoutND(TreeClass):
         self.fill_value = fill_value
 
     @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, input: jax.Array, *, key: jax.Array) -> jax.Array:
+    def __call__(self, input: jax.Array, *, key: jax.Array | None = None) -> jax.Array:
         """Drop some elements of the input array.
 
         Args:

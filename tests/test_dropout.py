@@ -57,3 +57,12 @@ def test_random_cutout_3d():
     x = jnp.ones((1, 10, 10, 10))
     y = layer(x, key=jax.random.PRNGKey(0))
     npt.assert_equal(y.shape, (1, 10, 10, 10))
+
+
+def test_random_tree_eval_optional_key():
+    layer = sk.nn.Dropout(0.5)
+    x = jnp.ones((1, 10))
+    y = sk.tree_eval(layer)(x)  # no need to pass a key with tree_eval
+    npt.assert_allclose(x, y)
+    y = sk.tree_eval(layer)(x, key=jax.random.PRNGKey(0))  # key is ignored in Identity
+    npt.assert_allclose(x, y)
