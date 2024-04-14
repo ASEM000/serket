@@ -306,7 +306,7 @@ class RandomHorizontalShear2D(TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array | None = None) -> CHWArray:
         angle = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
         return jax.vmap(random_horizontal_shear_2d, in_axes=in_axes)(key, image, angle)
@@ -391,7 +391,7 @@ class RandomVerticalShear2D(TreeClass):
         self.range = range
 
     @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array | None = None) -> CHWArray:
         angle = jax.lax.stop_gradient(self.range)
         in_axes = (None, 0, None)
         return jax.vmap(random_vertical_shear_2d, in_axes=in_axes)(key, image, angle)
@@ -491,7 +491,7 @@ class RandomHorizontalTranslate2D(TreeClass):
     """
 
     @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array | None = None) -> CHWArray:
         return jax.vmap(random_horizontal_translate_2d, in_axes=(None, 0))(key, image)
 
     spatial_ndim: int = 2
@@ -530,7 +530,7 @@ class RandomVerticalTranslate2D(TreeClass):
     """
 
     @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array | None = None) -> CHWArray:
         return jax.vmap(random_vertical_translate_2d, in_axes=(None, 0))(key, image)
 
     spatial_ndim: int = 2
@@ -595,7 +595,7 @@ class RandomHorizontalFlip2D(TreeClass):
     rate: float = field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array | None = None) -> CHWArray:
         in_axes = (None, 0, None)
         rate = jax.lax.stop_gradient(self.rate)
         return jax.vmap(random_horizontal_flip_2d, in_axes=in_axes)(key, image, rate)
@@ -662,7 +662,7 @@ class RandomVerticalFlip2D(TreeClass):
     rate: float = field(on_setattr=[IsInstance(float), Range(0.0, 1.0)])
 
     @ft.partial(validate_spatial_ndim, argnum=0)
-    def __call__(self, image: CHWArray, *, key: jax.Array) -> CHWArray:
+    def __call__(self, image: CHWArray, *, key: jax.Array | None = None) -> CHWArray:
         in_axes = (None, 0, None)
         rate = jax.lax.stop_gradient(self.rate)
         return jax.vmap(random_vertical_flip_2d, in_axes=in_axes)(key, image, rate)
