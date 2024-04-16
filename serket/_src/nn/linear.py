@@ -29,6 +29,7 @@ from serket._src.nn.activation import (
 )
 from serket._src.nn.initialization import resolve_init
 from serket._src.utils.convert import tuplify
+from serket._src.utils.dispatch import single_dispatch
 from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
 from serket._src.utils.typing import Batched, DType, InitType
 from serket._src.utils.validate import validate_pos_int
@@ -57,9 +58,10 @@ def generate_einsum_pattern(
     return lhs, rhs, out
 
 
+@single_dispatch(argnum=1)
 def linear(
     input: jax.Array,
-    weight: jax.Array,
+    weight: Any,
     bias: jax.Array | None,
     in_axis: Sequence[int] = (-1,),
     out_axis: Sequence[int] = (-1,),
@@ -76,8 +78,20 @@ def linear(
         in_axis: axes to apply the linear layer to.
         out_axis: result axis.
     """
-    lhs, rhs, out = generate_einsum_pattern(input.ndim, weight.ndim, in_axis, out_axis)
-    result = jnp.einsum(f"{lhs},{rhs}->{out}", input, weight)
+    del input, bias, in_axis, out_axis
+    raise NotImplementedError(f"{type(weight)=}")
+
+
+@linear.def_type(jax.Array)
+def _(
+    input: jax.Array,
+    weight: jax.Array,
+    bias: jax.Array | None,
+    in_axis: Sequence[int] = (-1,),
+    out_axis: Sequence[int] = (-1,),
+) -> jax.Array:
+    pattern = generate_einsum_pattern(input.ndim, weight.ndim, in_axis, out_axis)
+    result = jnp.einsum(pattern, input, weight)
 
     if bias is None:
         return result

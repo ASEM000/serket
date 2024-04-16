@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import NamedTuple, Sequence
+
 import jax
 import jax.numpy as jnp
 import numpy.testing as npt
@@ -207,3 +209,45 @@ def test_mlp_bias():
     layer = layer.at["out_bias"].set(b3)
 
     npt.assert_allclose(layer(x), y)
+
+
+def test_linear_dispatch():
+    # test per-weight dispatch on function-level
+    class PlusOne(NamedTuple):
+        array: jax.Array
+
+    # dispatch is on the function level
+    @sk.nn.linear.def_type(PlusOne)
+    def _(
+        input: jax.Array,
+        weight: PlusOne,
+        bias,
+        in_axis: Sequence[int],
+        out_axis: Sequence[int],
+    ):
+        return sk.nn.linear(
+            input=input,
+            weight=weight.array + 1,
+            bias=bias,
+            in_axis=in_axis,
+            out_axis=out_axis,
+        )
+
+    # layer version that depends on the linear function
+    # will dispatch on the weight
+    linear = sk.nn.Linear(
+        in_features=2,
+        out_features=3,
+        key=jax.random.PRNGKey(0),
+        weight_init=lambda key, shape, dtype: PlusOne(
+            jax.random.normal(key, shape, dtype)
+        ),
+        bias_init="zeros",
+    )
+
+    input = jax.random.normal(jax.random.PRNGKey(1), (10, 2))
+    lhs = linear(input)
+
+    rhs = input @ (linear.weight.array.T + 1) + linear.bias
+
+    npt.assert_allclose(lhs, rhs, atol=1e-6)

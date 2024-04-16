@@ -29,7 +29,10 @@ from typing_extensions import Annotated
 
 from serket import TreeClass
 from serket._src.nn.initialization import resolve_init
-from serket._src.utils.convert import (
+from serket._src.utils.convert import canonicalize
+from serket._src.utils.dispatch import single_dispatch
+from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
+from serket._src.utils.padding import (
     calculate_transpose_padding,
     canonicalize,
     delayed_canonicalize_padding,
@@ -139,6 +142,7 @@ def fft_conv_general_dilated(
     )
 
 
+@single_dispatch(argnum=1)
 def fft_conv_nd(
     input: jax.Array,
     weight: Weight,
@@ -168,6 +172,21 @@ def fft_conv_nd(
         mask: a binary mask multiplied with the convolutional kernel. shape is
             ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
+    del input, bias, strides, padding, dilation, groups, mask
+    raise NotImplementedError(f"{type(weight)=}")
+
+
+@fft_conv_nd.def_type(jax.Array)
+def _(
+    input: jax.Array,
+    weight: jax.Array,
+    bias: jax.Array | None,
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
+    groups: int,
+    mask: Weight | None = None,
+) -> jax.Array:
     x = fft_conv_general_dilated(
         lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
@@ -180,6 +199,7 @@ def fft_conv_nd(
     return jnp.squeeze(x, 0) if bias is None else jnp.squeeze((x + bias), 0)
 
 
+@single_dispatch(argnum=1)
 def fft_conv_nd_transpose(
     input: jax.Array,
     weight: Weight,
@@ -206,6 +226,21 @@ def fft_conv_nd_transpose(
         mask: a binary mask multiplied with the convolutional kernel. shape is
             ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
+    del input, bias, strides, padding, dilation, out_padding, mask
+    raise NotImplementedError(f"{type(weight)=}")
+
+
+@fft_conv_nd_transpose.def_type(jax.Array)
+def _(
+    input: jax.Array,
+    weight: jax.Array,
+    bias: jax.Array | None,
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
+    out_padding: int,
+    mask: Weight | None = None,
+) -> jax.Array:
     transposed_padding = calculate_transpose_padding(
         padding=padding,
         extra_padding=out_padding,
@@ -310,6 +345,7 @@ def separable_fft_conv_nd(
     )
 
 
+@single_dispatch(argnum=1)
 def conv_nd(
     input: jax.Array,
     weight: Weight,
@@ -336,6 +372,21 @@ def conv_nd(
         mask: a binary mask multiplied with the convolutional kernel. shape is
             ``(out_features, in_features, kernel)``. set
     """
+    del input, bias, strides, padding, dilation, groups, mask
+    raise NotImplementedError(f"{type(weight)=}")
+
+
+@conv_nd.def_type(jax.Array)
+def _(
+    input: jax.Array,
+    weight: jax.Array,
+    bias: jax.Array | None,
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
+    groups: int,
+    mask: Weight | None = None,
+) -> jax.Array:
     x = jax.lax.conv_general_dilated(
         lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
@@ -349,9 +400,41 @@ def conv_nd(
     return jnp.squeeze(x, 0) if bias is None else jnp.squeeze((x + bias), 0)
 
 
+@single_dispatch(argnum=1)
 def conv_nd_transpose(
     input: jax.Array,
     weight: Weight,
+    bias: jax.Array | None,
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
+    out_padding: int,
+    mask: Weight | None = None,
+) -> jax.Array:
+    """Transposed convolution function wrapping ``jax.lax.conv_general_dilated``.
+
+    Args:
+        input: input array. shape is ``(in_features, spatial)``.
+        weight: convolutional kernel. shape is ``(out_features, in_features, kernel)``.
+        bias: bias. shape is ``(out_features, spatial)``. set to ``None`` to not use a bias.
+        strides: stride of the convolution accepts tuple of integers for different
+         strides in each dimension.
+        padding: padding of the input before convolution accepts tuple of integers
+         for different padding in each dimension.
+        dilation: dilation of the convolutional kernel accepts tuple of integers
+            for different dilation in each dimension.
+        out_padding: padding of the output after convolution.
+        mask: a binary mask multiplied with the convolutional kernel. shape is
+            ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
+    """
+    del input, bias, strides, padding, dilation, out_padding, mask
+    raise NotImplementedError(f"{type(weight)=}")
+
+
+@conv_nd_transpose.def_type(jax.Array)
+def _(
+    input: jax.Array,
+    weight: jax.Array,
     bias: jax.Array | None,
     strides: Sequence[int],
     padding: Sequence[tuple[int, int]],
@@ -478,6 +561,7 @@ def depthwise_conv_nd(
     return jnp.squeeze(x, 0) if bias is None else jnp.squeeze(x + bias, 0)
 
 
+@single_dispatch(argnum=1)
 def spectral_conv_nd(
     input: Annotated[jax.Array, "I..."],
     weight: Weight,
@@ -491,7 +575,16 @@ def spectral_conv_nd(
             where dim is the number of spatial dimensions on the
         modes: number of modes included in the fft representation of the input.
     """
+    del input, modes
+    raise NotImplementedError(f"{type(weight)=}")
 
+
+@spectral_conv_nd.def_type(jax.Array)
+def _(
+    input: Annotated[jax.Array, "I..."],
+    weight: jax.Array,
+    modes: Sequence[int],
+) -> Annotated[jax.Array, "O..."]:
     def generate_modes_slices(modes: Sequence[int]):
         *ms, ml = modes
         slices_ = [[slice(None, ml)]]
@@ -510,9 +603,10 @@ def spectral_conv_nd(
     return jnp.fft.irfftn(out, s=(*si, sl))
 
 
+@single_dispatch(argnum=1)
 def local_conv_nd(
     input: jax.Array,
-    weight: jax.Array,
+    weight: Weight,
     bias: jax.Array | None,
     strides: Sequence[int],
     padding: Sequence[tuple[int, int]],
@@ -537,6 +631,21 @@ def local_conv_nd(
         mask: a binary mask multiplied with the convolutional kernel. shape is
             ``(out_features, in_features, kernel)``. set to ``None`` to not use a mask.
     """
+    del input, bias, strides, padding, dilation, kernel_size, mask
+    raise NotImplementedError(f"{type(weight)=}")
+
+
+@local_conv_nd.def_type(jax.Array)
+def _(
+    input: jax.Array,
+    weight: jax.Array,
+    bias: jax.Array | None,
+    strides: Sequence[int],
+    padding: Sequence[tuple[int, int]],
+    dilation: Sequence[int],
+    kernel_size: Sequence[int],
+    mask: Weight | None = None,
+) -> jax.Array:
     x = jax.lax.conv_general_dilated_local(
         lhs=jnp.expand_dims(input, 0),
         rhs=weight if mask is None else weight * mask,
