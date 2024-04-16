@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
-from typing import Sequence
+from typing import Any, Sequence
 
 import jax
 import jax.numpy as jnp
@@ -35,11 +35,12 @@ from serket._src.utils.typing import Batched, DType, InitType
 from serket._src.utils.validate import validate_pos_int
 
 
+@ft.lru_cache(maxsize=None)
 def generate_einsum_pattern(
     lhs_ndim: int,
     rhs_ndim: int,
-    in_axis: Sequence[int],
-    out_axis: Sequence[int],
+    in_axis: tuple[int, ...],
+    out_axis: tuple[int, ...],
 ) -> tuple[str, str, str]:
     # helper function to generate the einsum pattern for linear layer
     # with flexible input and output axes
@@ -90,8 +91,9 @@ def _(
     in_axis: Sequence[int] = (-1,),
     out_axis: Sequence[int] = (-1,),
 ) -> jax.Array:
-    pattern = generate_einsum_pattern(input.ndim, weight.ndim, in_axis, out_axis)
-    result = jnp.einsum(pattern, input, weight)
+    in_axis, out_axis = tuple(in_axis), tuple(out_axis)
+    lhs, rhs, out = generate_einsum_pattern(input.ndim, weight.ndim, in_axis, out_axis)
+    result = jnp.einsum(f"{lhs},{rhs}->{out}", input, weight)
 
     if bias is None:
         return result

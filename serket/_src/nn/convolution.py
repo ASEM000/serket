@@ -29,14 +29,12 @@ from typing_extensions import Annotated
 
 from serket import TreeClass
 from serket._src.nn.initialization import resolve_init
-from serket._src.utils.convert import canonicalize
-from serket._src.utils.dispatch import single_dispatch
-from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
-from serket._src.utils.padding import (
+from serket._src.utils.convert import (
     calculate_transpose_padding,
     canonicalize,
     delayed_canonicalize_padding,
 )
+from serket._src.utils.dispatch import single_dispatch
 from serket._src.utils.lazy import maybe_lazy_call, maybe_lazy_init
 from serket._src.utils.typing import (
     DilationType,
