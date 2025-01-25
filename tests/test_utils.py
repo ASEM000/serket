@@ -48,7 +48,7 @@ from serket._src.utils.validate import IsInstance, ScalarLike, validate_pos_int
     ],
 )
 def test_canonicalize_init_string(init_name):
-    k = jr.PRNGKey(0)
+    k = jr.key(0)
     assert resolve_init(init_name)(k, (2, 2)).shape == (2, 2)
 
 
@@ -133,7 +133,7 @@ def test_validate_pos_int_error():
 
 
 def test_lazy_call():
-    layer = sk.nn.Linear(None, 1, key=jax.random.PRNGKey(0))
+    layer = sk.nn.Linear(None, 1, key=jax.random.key(0))
 
     with pytest.raises(RuntimeError):
         # calling a lazy layer

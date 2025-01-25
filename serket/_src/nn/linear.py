@@ -126,7 +126,7 @@ class Linear(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> input = jnp.ones([1, 2, 3, 4])
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.Linear(4, 5, key=key)
         >>> layer(input).shape
         (1, 2, 3, 5)
@@ -142,7 +142,7 @@ class Linear(sk.TreeClass):
         >>> in_features = (1, 2)  # number of input features corresponding to ``in_axis``
         >>> out_axis = (0, 2) # which axes to map the output to
         >>> out_features = (3, 4)  # number of output features corresponding to ``out_axis``
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.Linear(in_features, out_features, in_axis=in_axis, out_axis=out_axis, key=key)
         >>> layer(input).shape
         (3, 3, 4, 4)
@@ -160,7 +160,7 @@ class Linear(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> input = jnp.ones((10, 5, 4))
         >>> lazy = sk.nn.Linear(None, 12, in_axis=(0, 2), key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
@@ -247,7 +247,7 @@ class Embedding(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.random as jr
         >>> # 10 words in the vocabulary, each word is represented by a 3 dimensional vector
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> table = sk.nn.Embedding(10, 3, key=key)
         >>> # take the last word in the vocab
         >>> input = jnp.array([9])
@@ -326,7 +326,7 @@ class MLP(sk.TreeClass):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.MLP(1, 2, hidden_features=4, num_hidden_layers=2, key=key)
         >>> input = jnp.ones((3, 1))
         >>> layer(input).shape
@@ -350,7 +350,7 @@ class MLP(sk.TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.MLP(None, 1, num_hidden_layers=2, hidden_features=10, key=key)
         >>> input = jnp.ones([1, 10])
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
@@ -365,9 +365,9 @@ class MLP(sk.TreeClass):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> # 10 hidden layers
-        >>> mlp1 = sk.nn.MLP(1, 2, 5, 10, key=jax.random.PRNGKey(0))
+        >>> mlp1 = sk.nn.MLP(1, 2, 5, 10, key=jax.random.key(0))
         >>> # 50 hidden layers
-        >>> mlp2 = sk.nn.MLP(1, 2, 5, 50, key=jax.random.PRNGKey(0))
+        >>> mlp2 = sk.nn.MLP(1, 2, 5, 50, key=jax.random.key(0))
         >>> jaxpr1 = jax.make_jaxpr(mlp1)(jnp.ones([10, 1]))
         >>> jaxpr2 = jax.make_jaxpr(mlp2)(jnp.ones([10, 1]))
         >>> # same number of equations irrespective of the number of hidden layers

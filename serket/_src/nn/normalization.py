@@ -153,7 +153,7 @@ class LayerNorm(TreeClass):
         >>> import jax.numpy as jnp
         >>> import numpy.testing as npt
         >>> C, H, W = 4, 5, 6
-        >>> k1, k2 = jr.split(jr.PRNGKey(0), 2)
+        >>> k1, k2 = jr.split(jr.key(0), 2)
         >>> input = jr.uniform(k1, shape=(C, H, W))
         >>> layer = sk.nn.LayerNorm((H, W), key=k2)
         >>> output = layer(input)
@@ -174,7 +174,7 @@ class LayerNorm(TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> input = jnp.ones((5,10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.LayerNorm(None, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> material(input).shape
@@ -253,7 +253,7 @@ class GroupNorm(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.GroupNorm(5, groups=1, key=key)
         >>> input = jnp.ones((5,10))
         >>> layer(input).shape
@@ -271,7 +271,7 @@ class GroupNorm(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.GroupNorm(None, groups=5, key=key)
         >>> input = jnp.ones((5,10))
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
@@ -341,7 +341,7 @@ class InstanceNorm(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.InstanceNorm(5, key=key)
         >>> input = jnp.ones((5,10))
         >>> layer(input).shape
@@ -359,7 +359,7 @@ class InstanceNorm(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.InstanceNorm(None, key=key)
         >>> input = jnp.ones((5,10))
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
@@ -558,9 +558,9 @@ class BatchNorm(TreeClass):
         >>> import jax
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> bn = sk.nn.BatchNorm(10, key=jr.PRNGKey(0))
+        >>> bn = sk.nn.BatchNorm(10, key=jr.key(0))
         >>> state = sk.tree_state(bn)
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> input = jr.uniform(key, shape=(5, 10))
         >>> output, state = jax.vmap(bn, in_axes=(0, None), out_axes=(0, None))(input, state)
 
@@ -583,7 +583,7 @@ class BatchNorm(TreeClass):
         ...        # update the output state
         ...        state = state.at["bn1"].set(bn1).at["bn2"].set(bn2)
         ...        return input, state
-        >>> net: ThreadedBatchNorm = ThreadedBatchNorm(key=jr.PRNGKey(0))
+        >>> net: ThreadedBatchNorm = ThreadedBatchNorm(key=jr.key(0))
         >>> # initialize state as the same structure as tree
         >>> state: ThreadedBatchNorm = sk.tree_state(net)
         >>> inputs = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
@@ -628,7 +628,7 @@ class BatchNorm(TreeClass):
         ...        output, new_net = sk.value_and_tree(lambda net: net(input))(net)
         ...        return output, sk.tree_mask(new_net)
         ...    return sk.tree_unmask(forward(input))
-        >>> net: UnthreadedBatchNorm = UnthreadedBatchNorm(key=jr.PRNGKey(0))
+        >>> net: UnthreadedBatchNorm = UnthreadedBatchNorm(key=jr.key(0))
         >>> inputs = jnp.linspace(-jnp.pi, jnp.pi, 50 * 20).reshape(20, 10, 5)
         >>> for input in inputs:
         ...    output, net = mask_vmap(net, input)
@@ -645,7 +645,7 @@ class BatchNorm(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.BatchNorm(None, key=key)
         >>> input = jnp.ones((5,10))
         >>> _ , material = sk.value_and_tree(lambda lazy: lazy(input, None))(lazy)
@@ -753,9 +753,9 @@ class EvalBatchNorm(TreeClass):
         >>> import jax
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> bn = sk.nn.BatchNorm(10, key=jr.PRNGKey(0))
+        >>> bn = sk.nn.BatchNorm(10, key=jr.key(0))
         >>> state = sk.tree_state(bn)
-        >>> input = jax.random.uniform(jr.PRNGKey(0), shape=(5, 10))
+        >>> input = jax.random.uniform(jr.key(0), shape=(5, 10))
         >>> output, state = jax.vmap(bn, in_axes=(0, None), out_axes=(0, None))(input, state)
         >>> # convert to evaluation mode
         >>> bn = sk.tree_eval(bn)

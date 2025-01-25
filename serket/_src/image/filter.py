@@ -1276,7 +1276,7 @@ class ElasticTransform2D(ElasticTransform2DBase):
         >>> import jax.random as jr
         >>> import jax.numpy as jnp
         >>> layer = sk.image.ElasticTransform2D(kernel_size=3, sigma=1.0, alpha=1.0)
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> image = jnp.arange(1, 26).reshape(1, 5, 5).astype(jnp.float32)
         >>> print(layer(image, key=key))  # doctest: +SKIP
         [[[ 1.0669159  2.2596366  3.210071   3.9703817  4.9207525]
@@ -1306,7 +1306,7 @@ class FFTElasticTransform2D(ElasticTransform2DBase):
         >>> import jax.random as jr
         >>> import jax.numpy as jnp
         >>> layer = sk.image.FFTElasticTransform2D(kernel_size=3, sigma=1.0, alpha=1.0)
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> image = jnp.arange(1, 26).reshape(1, 5, 5).astype(jnp.float32)
         >>> print(layer(image, key=key))  # doctest: +SKIP
         [[[ 1.0669159  2.2596366  3.210071   3.9703817  4.9207525]

@@ -30,7 +30,7 @@ Install from github::
     import serket as sk
 
     x_train, y_train = ..., ...
-    k1, k2 = jax.random.split(jax.random.PRNGKey(0))
+    k1, k2 = jax.random.split(jax.random.key(0))
 
     net = sk.tree_mask(sk.Sequential(
         jnp.ravel,

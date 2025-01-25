@@ -27,7 +27,7 @@ import serket as sk
 
 
 def test_simple_rnn():
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     time_step = 3
     in_features = 2
     hidden_features = 3
@@ -54,7 +54,7 @@ def test_simple_rnn():
 
 
 def test_lstm():
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     time_step = 3
     in_features = 2
     hidden_features = 3
@@ -84,7 +84,7 @@ def test_lstm():
 
 
 def test_bilstm():
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     time_step = 3
     in_features = 2
     hidden_features = 3
@@ -161,7 +161,7 @@ def test_bilstm():
     ],
 )
 def test_conv_lstm(sk_layer, keras_layer, ndim):
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     time_step = 3
     in_features = 2
     spatial = [5] * ndim
@@ -210,7 +210,7 @@ def test_dense_cell():
         act=lambda x: x,
         weight_init="ones",
         bias_init=None,
-        key=jr.PRNGKey(0),
+        key=jr.key(0),
     )
     input = jnp.ones([10, 10])
     state = sk.tree_state(cell)

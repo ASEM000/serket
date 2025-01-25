@@ -22,9 +22,9 @@ import serket as sk
 
 def test_sequential_without_key():
     layer = sk.Sequential(lambda x: x + 1, lambda x: x * 2)
-    assert layer(1, key=jax.random.PRNGKey(0)) == 4
+    assert layer(1, key=jax.random.key(0)) == 4
 
 
 def test_sequential_with_key():
     layer = sk.Sequential(lambda x: x + 1, lambda x: x * 2)
-    assert layer(1, key=jr.PRNGKey(0)) == 4
+    assert layer(1, key=jr.key(0)) == 4

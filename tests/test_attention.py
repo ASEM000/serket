@@ -27,27 +27,27 @@ def test_attention_shape():
     qkv_features = 4
     q_length = 4
     kv_length = 2
-    mask = jr.uniform(jr.PRNGKey(2), (batch, num_heads, q_length, kv_length))
+    mask = jr.uniform(jr.key(2), (batch, num_heads, q_length, kv_length))
     mask = (mask > 0.5).astype(jnp.float32)
-    q = jr.uniform(jr.PRNGKey(0), (batch, q_length, qkv_features))
-    k = jr.uniform(jr.PRNGKey(1), (batch, kv_length, qkv_features))
-    v = jr.uniform(jr.PRNGKey(2), (batch, kv_length, qkv_features))
+    q = jr.uniform(jr.key(0), (batch, q_length, qkv_features))
+    k = jr.uniform(jr.key(1), (batch, kv_length, qkv_features))
+    v = jr.uniform(jr.key(2), (batch, kv_length, qkv_features))
     layer = sk.nn.MultiHeadAttention(
         num_heads,
         qkv_features,
         drop_rate=0.0,
-        key=jr.PRNGKey(0),
+        key=jr.key(0),
     )
-    assert (layer(q, k, v, mask=mask, key=jr.PRNGKey(0)).shape) == (3, 4, 4)
+    assert (layer(q, k, v, mask=mask, key=jr.key(0)).shape) == (3, 4, 4)
 
     with pytest.raises(ValueError):
-        sk.nn.MultiHeadAttention(10, 2, key=jr.PRNGKey(0))
+        sk.nn.MultiHeadAttention(10, 2, key=jr.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.MultiHeadAttention(4, 4, 10, key=jr.PRNGKey(0))
+        sk.nn.MultiHeadAttention(4, 4, 10, key=jr.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.MultiHeadAttention(4, 4, 4, 10, key=jr.PRNGKey(0))
+        sk.nn.MultiHeadAttention(4, 4, 4, 10, key=jr.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.MultiHeadAttention(4, 4, 4, 4, 10, key=jr.PRNGKey(0))
+        sk.nn.MultiHeadAttention(4, 4, 4, 4, 10, key=jr.key(0))

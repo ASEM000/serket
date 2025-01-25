@@ -64,7 +64,7 @@ class Sequential(TreeClass):
         >>> import jax.random as jr
         >>> import serket as sk
         >>> layers = sk.Sequential(lambda x: x + 1, lambda x: x * 2)
-        >>> print(layers(jnp.array([1, 2, 3]), key=jr.PRNGKey(0)))
+        >>> print(layers(jnp.array([1, 2, 3]), key=jr.key(0)))
         [4 6 8]
 
     Note:

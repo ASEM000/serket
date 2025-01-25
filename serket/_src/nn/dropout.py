@@ -125,7 +125,7 @@ class Dropout(TreeClass):
         >>> import jax.random as jr
         >>> layer = sk.nn.Dropout(0.5)
         >>> input = jnp.ones(10)
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> output = layer(input, key=key)
 
     Note:
@@ -194,7 +194,7 @@ class Dropout1D(DropoutND):
         >>> import jax.random as jr
         >>> layer = sk.nn.Dropout1D(0.5)
         >>> input = jnp.ones((1, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> output = layer(input, key=key)
 
     Note:
@@ -229,7 +229,7 @@ class Dropout2D(DropoutND):
         >>> import jax.random as jr
         >>> layer = sk.nn.Dropout2D(0.5)
         >>> input = jnp.ones((1, 5, 5))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> output = layer(input, key=key)
 
     Note:
@@ -264,7 +264,7 @@ class Dropout3D(DropoutND):
         >>> import jax.random as jr
         >>> layer = sk.nn.Dropout3D(0.5)
         >>> input = jnp.ones((1, 2, 2, 2))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> output = layer(input, key=key)
 
     Note:
@@ -331,7 +331,7 @@ class RandomCutout1D(RandomCutoutND):
         >>> import jax.random as jr
         >>> layer = sk.nn.RandomCutout1D(5)
         >>> input = jnp.ones((1, 10)) * 100
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> output = layer(input, key=key)
 
     Reference:
@@ -362,7 +362,7 @@ class RandomCutout2D(RandomCutoutND):
         >>> import jax.random as jr
         >>> layer = sk.nn.RandomCutout2D(shape=(3,2), cutout_count=2, fill_value=0)
         >>> input = jnp.arange(1,101).reshape(1, 10, 10)
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> output = layer(input, key=key)
 
     Reference:
@@ -391,7 +391,7 @@ class RandomCutout3D(RandomCutoutND):
         >>> import jax.random as jr
         >>> layer = sk.nn.RandomCutout3D(shape=(2, 2, 2), cutout_count=2, fill_value=0)
         >>> input = jnp.arange(1, 2 * 5 * 5 + 1).reshape(1, 2, 5, 5)
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> output = layer(input, key=key)
 
     Reference:

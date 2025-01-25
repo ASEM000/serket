@@ -25,11 +25,11 @@ def test_dropout():
 
     layer = sk.nn.Dropout(1.0)
     npt.assert_allclose(
-        layer(x, key=jax.random.PRNGKey(0)), jnp.array([0.0, 0.0, 0.0, 0.0, 0.0])
+        layer(x, key=jax.random.key(0)), jnp.array([0.0, 0.0, 0.0, 0.0, 0.0])
     )
 
     layer = layer.at["drop_rate"].set(0.0)
-    npt.assert_allclose(layer(x, key=jax.random.PRNGKey(0)), x)
+    npt.assert_allclose(layer(x, key=jax.random.key(0)), x)
 
     with pytest.raises(ValueError):
         sk.nn.Dropout(1.1)
@@ -41,21 +41,21 @@ def test_dropout():
 def test_random_cutout_1d():
     layer = sk.nn.RandomCutout1D(3, 1)
     x = jnp.ones((1, 10))
-    y = layer(x, key=jax.random.PRNGKey(0))
+    y = layer(x, key=jax.random.key(0))
     npt.assert_equal(y.shape, (1, 10))
 
 
 def test_random_cutout_2d():
     layer = sk.nn.RandomCutout2D((3, 3), 1)
     x = jnp.ones((1, 10, 10))
-    y = layer(x, key=jax.random.PRNGKey(0))
+    y = layer(x, key=jax.random.key(0))
     npt.assert_equal(y.shape, (1, 10, 10))
 
 
 def test_random_cutout_3d():
     layer = sk.nn.RandomCutout3D((3, 3, 3), 1)
     x = jnp.ones((1, 10, 10, 10))
-    y = layer(x, key=jax.random.PRNGKey(0))
+    y = layer(x, key=jax.random.key(0))
     npt.assert_equal(y.shape, (1, 10, 10, 10))
 
 
@@ -64,5 +64,5 @@ def test_random_tree_eval_optional_key():
     x = jnp.ones((1, 10))
     y = sk.tree_eval(layer)(x)  # no need to pass a key with tree_eval
     npt.assert_allclose(x, y)
-    y = sk.tree_eval(layer)(x, key=jax.random.PRNGKey(0))  # key is ignored in Identity
+    y = sk.tree_eval(layer)(x, key=jax.random.key(0))  # key is ignored in Identity
     npt.assert_allclose(x, y)

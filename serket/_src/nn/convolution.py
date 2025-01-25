@@ -686,7 +686,7 @@ class Conv1D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.Conv1D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5))
@@ -711,7 +711,7 @@ class Conv1D(ConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.Conv1D(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -774,7 +774,7 @@ class Conv2D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.Conv2D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5))
@@ -799,7 +799,7 @@ class Conv2D(ConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.Conv2D(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -862,7 +862,7 @@ class Conv3D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.Conv3D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5, 5))
@@ -887,7 +887,7 @@ class Conv3D(ConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.Conv3D(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -950,7 +950,7 @@ class FFTConv1D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.FFTConv1D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5))
@@ -975,7 +975,7 @@ class FFTConv1D(ConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.FFTConv1D(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1038,7 +1038,7 @@ class FFTConv2D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.FFTConv2D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5))
@@ -1063,7 +1063,7 @@ class FFTConv2D(ConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.FFTConv2D(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1126,7 +1126,7 @@ class FFTConv3D(ConvND):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.FFTConv3D(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5, 5))
@@ -1151,7 +1151,7 @@ class FFTConv3D(ConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.FFTConv3D(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1294,7 +1294,7 @@ class Conv1DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.Conv1DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5))
@@ -1319,7 +1319,7 @@ class Conv1DTranspose(ConvNDTranspose):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.Conv1DTranspose(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1385,7 +1385,7 @@ class Conv2DTranspose(ConvNDTranspose):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.Conv2DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5))
@@ -1410,7 +1410,7 @@ class Conv2DTranspose(ConvNDTranspose):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.Conv2DTranspose(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1477,7 +1477,7 @@ class Conv3DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.Conv3DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5, 5))
@@ -1502,7 +1502,7 @@ class Conv3DTranspose(ConvNDTranspose):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.Conv3DTranspose(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1569,7 +1569,7 @@ class FFTConv1DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.FFTConv1DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5))
@@ -1594,7 +1594,7 @@ class FFTConv1DTranspose(ConvNDTranspose):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.FFTConv1DTranspose(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1661,7 +1661,7 @@ class FFTConv2DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.FFTConv2DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5))
@@ -1686,7 +1686,7 @@ class FFTConv2DTranspose(ConvNDTranspose):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.FFTConv2DTranspose(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1753,7 +1753,7 @@ class FFTConv3DTranspose(ConvNDTranspose):
         >>> import serket as sk
         >>> import jax
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> layer = sk.nn.FFTConv3DTranspose(1, 2, 3, key=key)
         >>> # single sample
         >>> input = jnp.ones((1, 5, 5, 5))
@@ -1778,7 +1778,7 @@ class FFTConv3DTranspose(ConvNDTranspose):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.FFTConv3DTranspose(None, 12, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1896,7 +1896,7 @@ class DepthwiseConv1D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.DepthwiseConv1D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
@@ -1915,7 +1915,7 @@ class DepthwiseConv1D(DepthwiseConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.DepthwiseConv1D(None, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -1971,7 +1971,7 @@ class DepthwiseConv2D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.DepthwiseConv2D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
@@ -1990,7 +1990,7 @@ class DepthwiseConv2D(DepthwiseConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.DepthwiseConv2D(None, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2046,7 +2046,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.DepthwiseConv3D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
@@ -2065,7 +2065,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.DepthwiseConv3D(None, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2121,7 +2121,7 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.DepthwiseFFTConv1D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (6, 16)
@@ -2140,7 +2140,7 @@ class DepthwiseFFTConv1D(DepthwiseConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.DepthwiseFFTConv1D(None, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2196,7 +2196,7 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.DepthwiseFFTConv2D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (6, 16, 16)
@@ -2215,7 +2215,7 @@ class DepthwiseFFTConv2D(DepthwiseConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.DepthwiseFFTConv2D(None, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2271,7 +2271,7 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.DepthwiseFFTConv3D(3, 3, depth_multiplier=2, strides=2, key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (6, 16, 16, 16)
@@ -2290,7 +2290,7 @@ class DepthwiseFFTConv3D(DepthwiseConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.DepthwiseFFTConv3D(None, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2447,7 +2447,7 @@ class SeparableConv1D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.SeparableConv1D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
@@ -2466,7 +2466,7 @@ class SeparableConv1D(SeparableConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.SeparableConv1D(None, 2, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2533,7 +2533,7 @@ class SeparableConv2D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.SeparableConv2D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
@@ -2552,7 +2552,7 @@ class SeparableConv2D(SeparableConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.SeparableConv2D(None, 2, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2619,7 +2619,7 @@ class SeparableConv3D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.SeparableConv3D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
@@ -2638,7 +2638,7 @@ class SeparableConv3D(SeparableConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.SeparableConv3D(None, 2, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2705,7 +2705,7 @@ class SeparableFFTConv1D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.SeparableFFTConv1D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
@@ -2724,7 +2724,7 @@ class SeparableFFTConv1D(SeparableConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.SeparableFFTConv1D(None, 2, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2791,7 +2791,7 @@ class SeparableFFTConv2D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.SeparableFFTConv2D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
@@ -2810,7 +2810,7 @@ class SeparableFFTConv2D(SeparableConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.SeparableFFTConv2D(None, 2, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2877,7 +2877,7 @@ class SeparableFFTConv3D(SeparableConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.SeparableFFTConv3D(3, 3, 3, depth_multiplier=2, key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
@@ -2896,7 +2896,7 @@ class SeparableFFTConv3D(SeparableConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.SeparableFFTConv3D(None, 2, 3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -2968,7 +2968,7 @@ class SpectralConv1D(SpectralConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.SpectralConv1D(3, 3, modes=1, key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
@@ -2987,7 +2987,7 @@ class SpectralConv1D(SpectralConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.SpectralConv1D(None, 2, modes=3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -3026,7 +3026,7 @@ class SpectralConv2D(SpectralConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.SpectralConv2D(3, 3, modes=(1, 2), key=key)
         >>> l1(jnp.ones((3, 32 ,32))).shape
         (3, 32, 32)
@@ -3045,7 +3045,7 @@ class SpectralConv2D(SpectralConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.SpectralConv2D(None, 2, modes=3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -3084,7 +3084,7 @@ class SpectralConv3D(SpectralConvND):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.SpectralConv3D(3, 3, modes=(1, 2, 2), key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
@@ -3103,7 +3103,7 @@ class SpectralConv3D(SpectralConvND):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.SpectralConv3D(None, 2, modes=3, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -3281,7 +3281,7 @@ class Conv1DLocal(ConvNDLocal):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.Conv1DLocal(3, 3, 3, in_size=(32,), key=key)
         >>> l1(jnp.ones((3, 32))).shape
         (3, 32)
@@ -3300,7 +3300,7 @@ class Conv1DLocal(ConvNDLocal):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.Conv1DLocal(None, 3, 3, in_size=None, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -3363,7 +3363,7 @@ class Conv2DLocal(ConvNDLocal):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.Conv2DLocal(3, 3, 3, in_size=(32, 32), key=key)
         >>> l1(jnp.ones((3, 32, 32))).shape
         (3, 32, 32)
@@ -3382,7 +3382,7 @@ class Conv2DLocal(ConvNDLocal):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.Conv2DLocal(None, 3, 3, in_size=None, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
@@ -3445,7 +3445,7 @@ class Conv3DLocal(ConvNDLocal):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> l1 = sk.nn.Conv3DLocal(3, 3, 3, in_size=(32, 32, 32), key=key)
         >>> l1(jnp.ones((3, 32, 32, 32))).shape
         (3, 32, 32, 32)
@@ -3464,7 +3464,7 @@ class Conv3DLocal(ConvNDLocal):
         >>> import jax.random as jr
         >>> import jax
         >>> input = jnp.ones((5, 10, 10, 10))
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> lazy = sk.nn.Conv3DLocal(None, 3, 3, in_size=None, key=key)
         >>> _, material = sk.value_and_tree(lambda lazy: lazy(input))(lazy)
         >>> print(material.in_features)
