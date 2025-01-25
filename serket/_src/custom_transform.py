@@ -69,7 +69,7 @@ def tree_state(tree: T, **kwargs) -> T:
         >>> # state function accept the `layer` and  input array
         >>> @sk.tree_state.def_state(LayerWithState)
         ... def _(leaf, *, input: jax.Array) -> jax.Array:
-        ...    return jax.random.normal(jax.random.PRNGKey(0), input.shape)
+        ...    return jax.random.normal(jax.random.key(0), input.shape)
         >>> sk.tree_state(LayerWithState(), input=jax.numpy.ones((1, 1))).shape
         (1, 1)
 
@@ -77,7 +77,7 @@ def tree_state(tree: T, **kwargs) -> T:
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> import jax.random as jr
-        >>> tree = [1, 2, sk.nn.BatchNorm(5, key=jr.PRNGKey(0))]
+        >>> tree = [1, 2, sk.nn.BatchNorm(5, key=jr.key(0))]
         >>> sk.tree_state(tree)
         [NoState(), NoState(), BatchNormState(
           running_mean=f32[5](μ=0.00, σ=0.00, ∈[0.00,0.00]),

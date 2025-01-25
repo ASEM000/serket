@@ -21,7 +21,7 @@ import serket as sk
 
 
 def test_embed():
-    table = sk.nn.Embedding(10, 3, key=jax.random.PRNGKey(0))
+    table = sk.nn.Embedding(10, 3, key=jax.random.key(0))
     x = jnp.array([9])
     assert table(x).shape == (1, 3)
 
@@ -67,7 +67,7 @@ def test_general_linear_shape(
         in_axis=in_axis,
         out_features=out_features,
         out_axis=out_axis,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     assert layer(x).shape == desired_shape
 
@@ -78,7 +78,7 @@ def test_linear():
         in_features=(1, 2),
         in_axis=(0, 1),
         out_features=5,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     assert layer(x).shape == (3, 4, 5)
 
@@ -87,7 +87,7 @@ def test_linear():
         in_features=(1, 2),
         in_axis=(0, -3),
         out_features=5,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     assert layer(x).shape == (3, 4, 5)
 
@@ -96,7 +96,7 @@ def test_linear():
         in_features=(2, 3),
         in_axis=(1, -2),
         out_features=5,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     assert layer(x).shape == (1, 4, 5)
 
@@ -105,7 +105,7 @@ def test_linear():
             in_features=2,
             in_axis=(1, -2),
             out_features=5,
-            key=jax.random.PRNGKey(0),
+            key=jax.random.key(0),
         )
 
     with pytest.raises(ValueError):
@@ -113,7 +113,7 @@ def test_linear():
             in_features=(2, 3),
             in_axis=2,
             out_features=5,
-            key=jax.random.PRNGKey(0),
+            key=jax.random.key(0),
         )
 
     with pytest.raises(ValueError):
@@ -121,7 +121,7 @@ def test_linear():
             in_features=(1,),
             in_axis=(0, -3),
             out_features=5,
-            key=jax.random.PRNGKey(0),
+            key=jax.random.key(0),
         )
 
     with pytest.raises(TypeError):
@@ -129,7 +129,7 @@ def test_linear():
             in_features=(1, "s"),
             in_axis=(0, -3),
             out_features=5,
-            key=jax.random.PRNGKey(0),
+            key=jax.random.key(0),
         )
 
     with pytest.raises(TypeError):
@@ -137,17 +137,17 @@ def test_linear():
             in_features=(1, 2),
             in_axis=(0, "s"),
             out_features=3,
-            key=jax.random.PRNGKey(0),
+            key=jax.random.key(0),
         )
 
 
 def test_mlp():
     x = jnp.linspace(0, 1, 100)[:, None]
 
-    x = jax.random.normal(jax.random.PRNGKey(0), (10, 1))
-    w1 = jax.random.normal(jax.random.PRNGKey(1), (1, 10))
-    w2 = jax.random.normal(jax.random.PRNGKey(2), (10, 10))
-    w3 = jax.random.normal(jax.random.PRNGKey(3), (10, 4))
+    x = jax.random.normal(jax.random.key(0), (10, 1))
+    w1 = jax.random.normal(jax.random.key(1), (1, 10))
+    w2 = jax.random.normal(jax.random.key(2), (10, 10))
+    w3 = jax.random.normal(jax.random.key(3), (10, 4))
 
     y = x @ w1
     y = jax.nn.tanh(y)
@@ -162,7 +162,7 @@ def test_mlp():
         num_hidden_layers=2,
         act="tanh",
         bias_init=None,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
 
     layer = layer.at["in_weight"].set(w1.T)
@@ -175,13 +175,13 @@ def test_mlp():
 def test_mlp_bias():
     x = jnp.linspace(0, 1, 100)[:, None]
 
-    x = jax.random.normal(jax.random.PRNGKey(0), (10, 1))
-    w1 = jax.random.normal(jax.random.PRNGKey(1), (1, 10))
-    w2 = jax.random.normal(jax.random.PRNGKey(2), (10, 10))
-    w3 = jax.random.normal(jax.random.PRNGKey(3), (10, 4))
-    b1 = jax.random.normal(jax.random.PRNGKey(4), (10,))
-    b2 = jax.random.normal(jax.random.PRNGKey(5), (10,))
-    b3 = jax.random.normal(jax.random.PRNGKey(6), (4,))
+    x = jax.random.normal(jax.random.key(0), (10, 1))
+    w1 = jax.random.normal(jax.random.key(1), (1, 10))
+    w2 = jax.random.normal(jax.random.key(2), (10, 10))
+    w3 = jax.random.normal(jax.random.key(3), (10, 4))
+    b1 = jax.random.normal(jax.random.key(4), (10,))
+    b2 = jax.random.normal(jax.random.key(5), (10,))
+    b3 = jax.random.normal(jax.random.key(6), (4,))
 
     y = x @ w1 + b1
     y = jax.nn.tanh(y)
@@ -196,7 +196,7 @@ def test_mlp_bias():
         num_hidden_layers=2,
         act="tanh",
         bias_init="zeros",
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
 
     layer = layer.at["in_weight"].set(w1.T)

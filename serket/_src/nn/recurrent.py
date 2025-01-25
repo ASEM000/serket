@@ -94,7 +94,7 @@ class SimpleRNNCell(TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> # 10-dimensional input, 20-dimensional hidden state
-        >>> cell = sk.nn.SimpleRNNCell(10, 20, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.SimpleRNNCell(10, 20, key=jr.key(0))
         >>> # 20-dimensional hidden state
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(cell)
@@ -114,7 +114,7 @@ class SimpleRNNCell(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.SimpleRNNCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.SimpleRNNCell(None, 20, key=jr.key(0))
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(lazy)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -213,7 +213,7 @@ class LinearCell(TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> # 10-dimensional input, 20-dimensional hidden state
-        >>> cell = sk.nn.LinearCell(10, 20, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.LinearCell(10, 20, key=jr.key(0))
         >>> # 20-dimensional hidden state
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(cell)
@@ -233,7 +233,7 @@ class LinearCell(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.LinearCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.LinearCell(None, 20, key=jr.key(0))
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(lazy)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -309,7 +309,7 @@ class LSTMCell(TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> # 10-dimensional input, 20-dimensional hidden state
-        >>> cell = sk.nn.LSTMCell(10, 20, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.LSTMCell(10, 20, key=jr.key(0))
         >>> # 20-dimensional hidden state
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(cell)
@@ -329,7 +329,7 @@ class LSTMCell(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.LSTMCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.LSTMCell(None, 20, key=jr.key(0))
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(lazy)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -440,7 +440,7 @@ class GRUCell(TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> # 10-dimensional input, 20-dimensional hidden state
-        >>> cell = sk.nn.GRUCell(10, 20, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.GRUCell(10, 20, key=jr.key(0))
         >>> # 20-dimensional hidden state
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(cell)
@@ -460,7 +460,7 @@ class GRUCell(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.GRUCell(None, 20, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.GRUCell(None, 20, key=jr.key(0))
         >>> input = jnp.ones(10) # 10 features
         >>> state = sk.tree_state(lazy)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -644,7 +644,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.ConvLSTM1DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.ConvLSTM1DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -663,7 +663,7 @@ class ConvLSTM1DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.ConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvLSTM1DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(lazy, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -701,7 +701,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.FFTConvLSTM1DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.FFTConvLSTM1DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -720,7 +720,7 @@ class FFTConvLSTM1DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.FFTConvLSTM1DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvLSTM1DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -758,7 +758,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.ConvLSTM2DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.ConvLSTM2DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -777,7 +777,7 @@ class ConvLSTM2DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.ConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvLSTM2DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(lazy, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -815,7 +815,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.FFTConvLSTM2DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.FFTConvLSTM2DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -834,7 +834,7 @@ class FFTConvLSTM2DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.FFTConvLSTM2DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvLSTM2DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(lazy, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -872,7 +872,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.ConvLSTM3DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.ConvLSTM3DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -891,7 +891,7 @@ class ConvLSTM3DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.ConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvLSTM3DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -929,7 +929,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.FFTConvLSTM3DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.FFTConvLSTM3DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -948,7 +948,7 @@ class FFTConvLSTM3DCell(ConvLSTMNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.FFTConvLSTM3DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvLSTM3DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -1068,7 +1068,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.ConvGRU1DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.ConvGRU1DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -1087,7 +1087,7 @@ class ConvGRU1DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.ConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvGRU1DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -1122,7 +1122,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.FFTConvGRU1DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.FFTConvGRU1DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -1141,7 +1141,7 @@ class FFTConvGRU1DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.FFTConvGRU1DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvGRU1DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -1176,7 +1176,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.ConvGRU2DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.ConvGRU2DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -1195,7 +1195,7 @@ class ConvGRU2DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.ConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvGRU2DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -1230,7 +1230,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.FFTConvGRU2DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.FFTConvGRU2DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -1249,7 +1249,7 @@ class FFTConvGRU2DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.FFTConvGRU2DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvGRU2DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -1284,7 +1284,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.ConvGRU3DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.ConvGRU3DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -1303,7 +1303,7 @@ class ConvGRU3DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.ConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.ConvGRU3DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(lazy, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -1338,7 +1338,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> cell = sk.nn.FFTConvGRU3DCell(10, 2, 3, key=jr.PRNGKey(0))
+        >>> cell = sk.nn.FFTConvGRU3DCell(10, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> output, state = cell(input, state)
@@ -1357,7 +1357,7 @@ class FFTConvGRU3DCell(ConvGRUNDCell):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> lazy = sk.nn.FFTConvGRU3DCell(None, 2, 3, key=jr.PRNGKey(0))
+        >>> lazy = sk.nn.FFTConvGRU3DCell(None, 2, 3, key=jr.key(0))
         >>> input = jnp.ones((10, 4, 4, 4))  # time, in_features, spatial dimensions
         >>> state = sk.tree_state(cell, input=input)
         >>> _, material = sk.value_and_tree(lambda cell: cell(input, state))(cell)
@@ -1392,7 +1392,7 @@ def scan_cell(
         >>> import jax
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> key = jr.PRNGKey(0)
+        >>> key = jr.key(0)
         >>> cell = sk.nn.SimpleRNNCell(1, 2, key=key)
         >>> state = sk.tree_state(cell)
         >>> input = jnp.ones([10, 1])
@@ -1407,7 +1407,7 @@ def scan_cell(
         >>> import jax
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
-        >>> k1, k2 = jr.split(jr.PRNGKey(0))
+        >>> k1, k2 = jr.split(jr.key(0))
         >>> cell1 = sk.nn.SimpleRNNCell(1, 2, key=k1)
         >>> cell2 = sk.nn.SimpleRNNCell(1, 2, key=k2)
         >>> state1, state2 = sk.tree_state((cell1, cell2))
@@ -1426,7 +1426,7 @@ def scan_cell(
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> import numpy.testing as npt
-        >>> k1, k2 = jr.split(jr.PRNGKey(0))
+        >>> k1, k2 = jr.split(jr.key(0))
         >>> cell1 = sk.nn.LSTMCell(1, 2, bias_init=None, key=k1)
         >>> cell2 = sk.nn.LSTMCell(2, 1, bias_init=None, key=k2)
         >>> def cell(input, state):

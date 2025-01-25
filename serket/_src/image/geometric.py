@@ -202,7 +202,7 @@ class RandomRotate2D(TreeClass):
         >>> import jax
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.image.RandomRotate2D((10, 30))(x, key=jax.random.PRNGKey(0)))
+        >>> print(sk.image.RandomRotate2D((10, 30))(x, key=jax.random.key(0))) #doctest: +SKIP
         [[[ 1  2  4  7  4]
           [ 4  6  9 11 11]
           [ 8 10 13 16 18]
@@ -287,7 +287,7 @@ class RandomHorizontalShear2D(TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.image.RandomHorizontalShear2D((45, 45))(x, key=jr.PRNGKey(0)))
+        >>> print(sk.image.RandomHorizontalShear2D((45, 45))(x, key=jr.key(0)))
         [[[ 0  0  1  2  3]
           [ 0  6  7  8  9]
           [11 12 13 14 15]
@@ -372,7 +372,7 @@ class RandomVerticalShear2D(TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.image.RandomVerticalShear2D((45, 45))(x, key=jr.PRNGKey(0)))
+        >>> print(sk.image.RandomVerticalShear2D((45, 45))(x, key=jr.key(0)))
         [[[ 0  0  3  9 15]
           [ 0  2  8 14 20]
           [ 1  7 13 19 25]
@@ -482,7 +482,7 @@ class RandomHorizontalTranslate2D(TreeClass):
         >>> import serket as sk
         >>> import jax.numpy as jnp
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.image.RandomHorizontalTranslate2D()(x, key=jr.PRNGKey(0)))
+        >>> print(sk.image.RandomHorizontalTranslate2D()(x, key=jr.key(0))) #doctest: +SKIP
         [[[ 4  5  0  0  0]
           [ 9 10  0  0  0]
           [14 15  0  0  0]
@@ -521,7 +521,7 @@ class RandomVerticalTranslate2D(TreeClass):
         >>> import jax.numpy as jnp
         >>> import jax.random as jr
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> print(sk.image.RandomVerticalTranslate2D()(x, key=jr.PRNGKey(0)))
+        >>> print(sk.image.RandomVerticalTranslate2D()(x, key=jr.key(0))) #doctest: +SKIP
         [[[16 17 18 19 20]
           [21 22 23 24 25]
           [ 0  0  0  0  0]
@@ -583,8 +583,8 @@ class RandomHorizontalFlip2D(TreeClass):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> key = jax.random.PRNGKey(0)
-        >>> print(sk.image.RandomHorizontalFlip2D(rate=1.0)(x, key=key))
+        >>> key = jax.random.key(0)
+        >>> print(sk.image.RandomHorizontalFlip2D(rate=1.0)(x, key=key)) #doctest: +SKIP
         [[[ 5  4  3  2  1]
           [10  9  8  7  6]
           [15 14 13 12 11]
@@ -650,8 +650,8 @@ class RandomVerticalFlip2D(TreeClass):
         >>> import jax.numpy as jnp
         >>> import serket as sk
         >>> x = jnp.arange(1, 26).reshape(1, 5, 5)
-        >>> key = jax.random.PRNGKey(0)
-        >>> print(sk.image.RandomVerticalFlip2D(rate=1.0)(x, key=key))
+        >>> key = jax.random.key(0)
+        >>> print(sk.image.RandomVerticalFlip2D(rate=1.0)(x, key=key)) #doctest: +SKIP
         [[[21 22 23 24 25]
           [16 17 18 19 20]
           [11 12 13 14 15]

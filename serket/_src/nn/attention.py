@@ -137,9 +137,9 @@ class MultiHeadAttention(TreeClass):
         >>> v_features = 6
         >>> q_length = 4
         >>> kv_length = 2
-        >>> mask = jr.uniform(jr.PRNGKey(0), (batch, num_heads, q_length, kv_length))
+        >>> mask = jr.uniform(jr.key(0), (batch, num_heads, q_length, kv_length))
         >>> mask = (mask > 0.5).astype(jnp.float32)
-        >>> k1, k2, k3, k4 = jr.split(jr.PRNGKey(0), 4)
+        >>> k1, k2, k3, k4 = jr.split(jr.key(0), 4)
         >>> q = jr.uniform(k1, (batch, q_length, q_features))
         >>> k = jr.uniform(k2, (batch, kv_length, k_features))
         >>> v = jr.uniform(k3, (batch, kv_length, v_features))
@@ -151,7 +151,7 @@ class MultiHeadAttention(TreeClass):
         ...    drop_rate=0.0,
         ...    key=k4,
         ... )
-        >>> print(layer(q, k, v, mask=mask, key=jr.PRNGKey(1)).shape)
+        >>> print(layer(q, k, v, mask=mask, key=jr.key(1)).shape)
         (3, 4, 4)
 
     Note:
@@ -161,7 +161,7 @@ class MultiHeadAttention(TreeClass):
           instantiated layer.
 
         >>> import serket as sk
-        >>> layer = sk.nn.MultiHeadAttention(1, 1, key=jr.PRNGKey(0))
+        >>> layer = sk.nn.MultiHeadAttention(1, 1, key=jr.key(0))
         >>> print(repr(layer.dropout))
         Dropout(drop_rate=0.0, drop_axes=None)
         >>> print(repr(sk.tree_eval(layer).dropout))
@@ -177,7 +177,7 @@ class MultiHeadAttention(TreeClass):
 
         >>> import jax.random as jr
         >>> import serket as sk
-        >>> k1, k2, k3, k4, k5 = jr.split(jr.PRNGKey(0), 5)
+        >>> k1, k2, k3, k4, k5 = jr.split(jr.key(0), 5)
         >>> q = jr.uniform(k1, (3, 2, 6))
         >>> k = jr.uniform(k2, (3, 2, 6))
         >>> v = jr.uniform(k3, (3, 2, 6))

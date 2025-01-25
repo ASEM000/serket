@@ -29,22 +29,22 @@ import serket as sk
 def test_depthwise_fft_conv():
     x = jnp.ones([10, 1])
     npt.assert_allclose(
-        sk.nn.DepthwiseFFTConv1D(10, 3, key=jax.random.PRNGKey(0))(x),
-        sk.nn.DepthwiseConv1D(10, 3, key=jax.random.PRNGKey(0))(x),
+        sk.nn.DepthwiseFFTConv1D(10, 3, key=jax.random.key(0))(x),
+        sk.nn.DepthwiseConv1D(10, 3, key=jax.random.key(0))(x),
         atol=1e-4,
     )
 
     x = jnp.ones([10, 1, 1])
     npt.assert_allclose(
-        sk.nn.DepthwiseFFTConv2D(10, 3, key=jax.random.PRNGKey(0))(x),
-        sk.nn.DepthwiseConv2D(10, 3, key=jax.random.PRNGKey(0))(x),
+        sk.nn.DepthwiseFFTConv2D(10, 3, key=jax.random.key(0))(x),
+        sk.nn.DepthwiseConv2D(10, 3, key=jax.random.key(0))(x),
         atol=1e-4,
     )
 
     x = jnp.ones([10, 1, 1, 1])
     npt.assert_allclose(
-        sk.nn.DepthwiseFFTConv3D(10, 3, key=jax.random.PRNGKey(0))(x),
-        sk.nn.DepthwiseConv3D(10, 3, key=jax.random.PRNGKey(0))(x),
+        sk.nn.DepthwiseFFTConv3D(10, 3, key=jax.random.key(0))(x),
+        sk.nn.DepthwiseConv3D(10, 3, key=jax.random.key(0))(x),
         atol=1e-4,
     )
 
@@ -52,29 +52,29 @@ def test_depthwise_fft_conv():
 def test_conv_transpose():
     x = jnp.ones([10, 4])
     npt.assert_allclose(
-        sk.nn.Conv1DTranspose(10, 4, 3, key=jax.random.PRNGKey(0))(x),
-        sk.nn.FFTConv1DTranspose(10, 4, 3, key=jax.random.PRNGKey(0))(x),
+        sk.nn.Conv1DTranspose(10, 4, 3, key=jax.random.key(0))(x),
+        sk.nn.FFTConv1DTranspose(10, 4, 3, key=jax.random.key(0))(x),
         atol=1e-4,
     )
 
     x = jnp.ones([10, 4])
     npt.assert_allclose(
-        sk.nn.Conv1DTranspose(10, 4, 3, dilation=2, key=jax.random.PRNGKey(0))(x),
-        sk.nn.FFTConv1DTranspose(10, 4, 3, dilation=2, key=jax.random.PRNGKey(0))(x),
+        sk.nn.Conv1DTranspose(10, 4, 3, dilation=2, key=jax.random.key(0))(x),
+        sk.nn.FFTConv1DTranspose(10, 4, 3, dilation=2, key=jax.random.key(0))(x),
         atol=1e-5,
     )
 
     x = jnp.ones([10, 4, 4])
     npt.assert_allclose(
-        sk.nn.Conv2DTranspose(10, 4, 3, key=jax.random.PRNGKey(0))(x),
-        sk.nn.FFTConv2DTranspose(10, 4, 3, key=jax.random.PRNGKey(0))(x),
+        sk.nn.Conv2DTranspose(10, 4, 3, key=jax.random.key(0))(x),
+        sk.nn.FFTConv2DTranspose(10, 4, 3, key=jax.random.key(0))(x),
         atol=1e-4,
     )
 
     x = jnp.ones([10, 4, 4, 4])
     npt.assert_allclose(
-        sk.nn.Conv3DTranspose(10, 4, 3, dilation=2, key=jax.random.PRNGKey(0))(x),
-        sk.nn.FFTConv3DTranspose(10, 4, 3, dilation=2, key=jax.random.PRNGKey(0))(x),
+        sk.nn.Conv3DTranspose(10, 4, 3, dilation=2, key=jax.random.key(0))(x),
+        sk.nn.FFTConv3DTranspose(10, 4, 3, dilation=2, key=jax.random.key(0))(x),
         atol=1e-5,
     )
 
@@ -82,22 +82,22 @@ def test_conv_transpose():
 def test_separable_conv():
     x = jnp.ones([10, 4])
     npt.assert_allclose(
-        sk.nn.SeparableConv1D(10, 4, 3, key=jax.random.PRNGKey(0))(x),
-        sk.nn.SeparableFFTConv1D(10, 4, 3, key=jax.random.PRNGKey(0))(x),
+        sk.nn.SeparableConv1D(10, 4, 3, key=jax.random.key(0))(x),
+        sk.nn.SeparableFFTConv1D(10, 4, 3, key=jax.random.key(0))(x),
         atol=1e-4,
     )
 
     x = jnp.ones([10, 4, 4])
     npt.assert_allclose(
-        sk.nn.SeparableConv2D(10, 4, 3, key=jax.random.PRNGKey(0))(x),
-        sk.nn.SeparableFFTConv2D(10, 4, 3, key=jax.random.PRNGKey(0))(x),
+        sk.nn.SeparableConv2D(10, 4, 3, key=jax.random.key(0))(x),
+        sk.nn.SeparableFFTConv2D(10, 4, 3, key=jax.random.key(0))(x),
         atol=1e-4,
     )
 
     x = jnp.ones([10, 4, 4, 4])
     npt.assert_allclose(
-        sk.nn.SeparableConv3D(10, 4, 3, key=jax.random.PRNGKey(0))(x),
-        sk.nn.SeparableFFTConv3D(10, 4, 3, key=jax.random.PRNGKey(0))(x),
+        sk.nn.SeparableConv3D(10, 4, 3, key=jax.random.key(0))(x),
+        sk.nn.SeparableFFTConv3D(10, 4, 3, key=jax.random.key(0))(x),
         atol=1e-4,
     )
 
@@ -109,7 +109,7 @@ def test_conv1D():
         kernel_size=2,
         padding="same",
         strides=1,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
 
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2], dtype=jnp.float32))  # OIW
@@ -122,7 +122,7 @@ def test_conv1D():
         kernel_size=2,
         padding="same",
         strides=2,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2], dtype=jnp.float32))
     x = jnp.arange(1, 11).reshape([1, 10]).astype(jnp.float32)
@@ -135,7 +135,7 @@ def test_conv1D():
         kernel_size=2,
         padding="VALID",
         strides=1,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2], dtype=jnp.float32))
     x = jnp.arange(1, 11).reshape([1, 10]).astype(jnp.float32)
@@ -197,7 +197,7 @@ def test_conv1D():
     )
 
     layer = sk.nn.Conv1D(
-        1, 2, 3, padding=2, strides=1, dilation=2, key=jax.random.PRNGKey(0)
+        1, 2, 3, padding=2, strides=1, dilation=2, key=jax.random.key(0)
     )
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
@@ -212,7 +212,7 @@ def test_conv1D():
         strides=1,
         dilation=2,
         bias_init=None,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     layer = layer.at["weight"].set(w)
     npt.assert_allclose(layer(x), y)
@@ -220,7 +220,7 @@ def test_conv1D():
 
 def test_conv2D():
     layer = sk.nn.Conv2D(
-        in_features=1, out_features=1, kernel_size=2, key=jax.random.PRNGKey(0)
+        in_features=1, out_features=1, kernel_size=2, key=jax.random.key(0)
     )
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2, 2], dtype=jnp.float32))  # OIHW
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
@@ -237,7 +237,7 @@ def test_conv2D():
         out_features=1,
         kernel_size=2,
         padding="VALID",
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     layer = layer.at["weight"].set(jnp.ones([1, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
@@ -253,7 +253,7 @@ def test_conv2D():
         ),
     )
 
-    layer = sk.nn.Conv2D(1, 2, 2, padding="same", strides=2, key=jax.random.PRNGKey(0))
+    layer = sk.nn.Conv2D(1, 2, 2, padding="same", strides=2, key=jax.random.key(0))
     layer = layer.at["weight"].set(jnp.ones([2, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
 
@@ -267,7 +267,7 @@ def test_conv2D():
         ),
     )
 
-    layer = sk.nn.Conv2D(1, 2, 2, padding="same", strides=1, key=jax.random.PRNGKey(0))
+    layer = sk.nn.Conv2D(1, 2, 2, padding="same", strides=1, key=jax.random.key(0))
     layer = layer.at["weight"].set(jnp.ones([2, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
 
@@ -286,7 +286,7 @@ def test_conv2D():
     )
 
     layer = sk.nn.Conv2D(
-        1, 2, 2, padding="same", strides=1, bias_init=None, key=jax.random.PRNGKey(0)
+        1, 2, 2, padding="same", strides=1, bias_init=None, key=jax.random.key(0)
     )
     layer = layer.at["weight"].set(jnp.ones([2, 1, 2, 2], dtype=jnp.float32))
     x = jnp.arange(1, 17).reshape([1, 4, 4]).astype(jnp.float32)
@@ -307,7 +307,7 @@ def test_conv2D():
 
 
 def test_conv3D():
-    layer = sk.nn.Conv3D(1, 3, 3, key=jax.random.PRNGKey(0))
+    layer = sk.nn.Conv3D(1, 3, 3, key=jax.random.key(0))
     layer = layer.at["weight"].set(jnp.ones([3, 1, 3, 3, 3]))
     layer = layer.at["bias"].set(jnp.zeros([3, 1, 1, 1]))
     npt.assert_allclose(
@@ -340,7 +340,7 @@ def test_conv1dtranspose():
     b = jnp.array([[[0.0]]])
 
     layer = sk.nn.Conv1DTranspose(
-        4, 1, 3, padding=2, strides=1, dilation=2, key=jax.random.PRNGKey(0)
+        4, 1, 3, padding=2, strides=1, dilation=2, key=jax.random.key(0)
     )
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
@@ -355,7 +355,7 @@ def test_conv1dtranspose():
         strides=1,
         dilation=2,
         bias_init=None,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     layer = layer.at["weight"].set(w)
     y = jnp.array([[0.27022034, 0.24495776, -0.00368674]])
@@ -411,7 +411,7 @@ def test_conv2dtranspose():
     b = jnp.array([[[0.0]]])
 
     layer = sk.nn.Conv2DTranspose(
-        3, 1, 3, padding=2, strides=1, dilation=2, key=jax.random.PRNGKey(0)
+        3, 1, 3, padding=2, strides=1, dilation=2, key=jax.random.key(0)
     )
 
     layer = layer.at["weight"].set(w)
@@ -438,7 +438,7 @@ def test_conv2dtranspose():
         strides=1,
         dilation=2,
         bias_init=None,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
 
     layer = layer.at["weight"].set(w)
@@ -609,7 +609,7 @@ def test_conv3dtranspose():
     b = jnp.array([[[[0.0]]]])
 
     layer = sk.nn.Conv3DTranspose(
-        4, 1, 3, padding=2, strides=1, dilation=2, key=jax.random.PRNGKey(0)
+        4, 1, 3, padding=2, strides=1, dilation=2, key=jax.random.key(0)
     )
     layer = layer.at["weight"].set(w)
     layer = layer.at["bias"].set(b)
@@ -646,7 +646,7 @@ def test_conv3dtranspose():
         strides=1,
         dilation=2,
         bias_init=None,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     layer = layer.at["weight"].set(w)
 
@@ -717,7 +717,7 @@ def test_depthwise_conv1d():
     )
 
     layer = sk.nn.DepthwiseConv1D(
-        in_features=5, kernel_size=3, depth_multiplier=2, key=jax.random.PRNGKey(0)
+        in_features=5, kernel_size=3, depth_multiplier=2, key=jax.random.key(0)
     )
     layer = layer.at["weight"].set(w)
 
@@ -782,7 +782,7 @@ def test_depthwise_conv2d():
         ]
     )
 
-    layer = sk.nn.DepthwiseConv2D(2, 3, key=jax.random.PRNGKey(0))
+    layer = sk.nn.DepthwiseConv2D(2, 3, key=jax.random.key(0))
     layer = layer.at["weight"].set(w)
 
     npt.assert_allclose(y, layer(x), atol=1e-5)
@@ -814,7 +814,7 @@ def test_seperable_conv1d():
         out_features=1,
         kernel_size=3,
         depth_multiplier=2,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
 
     layer = layer.at["depthwise_weight"].set(w1)
@@ -895,7 +895,7 @@ def test_seperable_conv2d():
         out_features=1,
         kernel_size=3,
         depth_multiplier=2,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
 
     layer_jax = layer_jax.at["depthwise_weight"].set(w1)
@@ -908,7 +908,7 @@ def test_seperable_conv2d():
         out_features=1,
         kernel_size=3,
         depth_multiplier=2,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     layer_jax = layer_jax.at["depthwise_weight"].set(w1)
     layer_jax = layer_jax.at["pointwise_weight"].set(w2)
@@ -1042,7 +1042,7 @@ def test_conv1d_local():
         strides=2,
         in_size=(28,),
         padding="valid",
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
 
     layer = layer.at["weight"].set(w)
@@ -1081,7 +1081,7 @@ def test_conv2d_local():
         in_size=(4, 4),
         padding="valid",
         strides=2,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     layer = layer.at["weight"].set(w)
 
@@ -1090,80 +1090,80 @@ def test_conv2d_local():
 
 def test_in_feature_error():
     with pytest.raises(ValueError):
-        sk.nn.Conv1D(0, 1, 2, key=jax.random.PRNGKey(0))
+        sk.nn.Conv1D(0, 1, 2, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv2D(0, 1, 2, key=jax.random.PRNGKey(0))
+        sk.nn.Conv2D(0, 1, 2, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv3D(0, 1, 2, key=jax.random.PRNGKey(0))
+        sk.nn.Conv3D(0, 1, 2, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv1DLocal(0, 1, 2, in_size=(2,), key=jax.random.PRNGKey(0))
+        sk.nn.Conv1DLocal(0, 1, 2, in_size=(2,), key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv2DLocal(0, 1, 2, in_size=(2, 2), key=jax.random.PRNGKey(0))
+        sk.nn.Conv2DLocal(0, 1, 2, in_size=(2, 2), key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv1DTranspose(0, 1, 3, key=jax.random.PRNGKey(0))
+        sk.nn.Conv1DTranspose(0, 1, 3, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv2DTranspose(0, 1, 3, key=jax.random.PRNGKey(0))
+        sk.nn.Conv2DTranspose(0, 1, 3, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv3DTranspose(0, 1, 3, key=jax.random.PRNGKey(0))
+        sk.nn.Conv3DTranspose(0, 1, 3, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.DepthwiseConv1D(0, 1, key=jax.random.PRNGKey(0))
+        sk.nn.DepthwiseConv1D(0, 1, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.DepthwiseConv2D(0, 1, key=jax.random.PRNGKey(0))
+        sk.nn.DepthwiseConv2D(0, 1, key=jax.random.key(0))
 
 
 def test_out_feature_error():
     with pytest.raises(ValueError):
-        sk.nn.Conv1D(1, 0, 2, key=jax.random.PRNGKey(0))
+        sk.nn.Conv1D(1, 0, 2, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv2D(1, 0, 2, key=jax.random.PRNGKey(0))
+        sk.nn.Conv2D(1, 0, 2, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv3D(1, 0, 2, key=jax.random.PRNGKey(0))
+        sk.nn.Conv3D(1, 0, 2, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv1DLocal(1, 0, 2, in_size=(2,), key=jax.random.PRNGKey(0))
+        sk.nn.Conv1DLocal(1, 0, 2, in_size=(2,), key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv2DLocal(1, 0, 2, in_size=(2, 2), key=jax.random.PRNGKey(0))
+        sk.nn.Conv2DLocal(1, 0, 2, in_size=(2, 2), key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv1DTranspose(1, 0, 3, key=jax.random.PRNGKey(0))
+        sk.nn.Conv1DTranspose(1, 0, 3, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv2DTranspose(1, 0, 3, key=jax.random.PRNGKey(0))
+        sk.nn.Conv2DTranspose(1, 0, 3, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv3DTranspose(1, 0, 3, key=jax.random.PRNGKey(0))
+        sk.nn.Conv3DTranspose(1, 0, 3, key=jax.random.key(0))
 
 
 def test_groups_error():
     with pytest.raises(ValueError):
-        sk.nn.Conv1D(1, 1, 2, groups=0, key=jax.random.PRNGKey(0))
+        sk.nn.Conv1D(1, 1, 2, groups=0, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv2D(1, 1, 2, groups=0, key=jax.random.PRNGKey(0))
+        sk.nn.Conv2D(1, 1, 2, groups=0, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv3D(1, 1, 2, groups=0, key=jax.random.PRNGKey(0))
+        sk.nn.Conv3D(1, 1, 2, groups=0, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv1DTranspose(1, 1, 3, groups=0, key=jax.random.PRNGKey(0))
+        sk.nn.Conv1DTranspose(1, 1, 3, groups=0, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv2DTranspose(1, 1, 3, groups=0, key=jax.random.PRNGKey(0))
+        sk.nn.Conv2DTranspose(1, 1, 3, groups=0, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
-        sk.nn.Conv3DTranspose(1, 1, 3, groups=0, key=jax.random.PRNGKey(0))
+        sk.nn.Conv3DTranspose(1, 1, 3, groups=0, key=jax.random.key(0))
 
 
 @pytest.mark.parametrize(
@@ -1178,7 +1178,7 @@ def test_groups_error():
     ],
 )
 def test_lazy_conv(layer, array, expected_shape):
-    lazy = layer(None, 1, 3, key=jax.random.PRNGKey(0))
+    lazy = layer(None, 1, 3, key=jax.random.key(0))
     value, material = sk.value_and_tree(lambda layer: layer(array))(lazy)
 
     assert value.shape == expected_shape
@@ -1186,10 +1186,10 @@ def test_lazy_conv(layer, array, expected_shape):
 
 
 def test_lazy_conv_local():
-    layer = sk.nn.Conv1DLocal(None, 1, 3, in_size=(3,), key=jax.random.PRNGKey(0))
+    layer = sk.nn.Conv1DLocal(None, 1, 3, in_size=(3,), key=jax.random.key(0))
     _, layer = sk.value_and_tree(lambda layer: layer(jnp.ones([10, 3])))(layer)
     assert layer.in_features == 10
-    layer = sk.nn.Conv1DLocal(2, 1, 2, in_size=None, key=jax.random.PRNGKey(0))
+    layer = sk.nn.Conv1DLocal(2, 1, 2, in_size=None, key=jax.random.key(0))
 
     with pytest.raises(ValueError):
         # should raise error because in_features is specified = 2 and
@@ -1250,7 +1250,7 @@ def test_conv_keras(
     ndim,
 ):
     shape = [4] + [10] * ndim
-    x = jax.random.uniform(jax.random.PRNGKey(0), shape)
+    x = jax.random.uniform(jax.random.key(0), shape)
     layer_keras = keras_layer(
         filters=3,
         kernel_size=kernel_size,
@@ -1266,7 +1266,7 @@ def test_conv_keras(
         padding=padding,
         dilation=dilation,
         strides=strides,
-        key=jax.random.PRNGKey(0),
+        key=jax.random.key(0),
     )
     layer_keras.build((1, *shape))
 
@@ -1322,7 +1322,7 @@ def test_conv_keras(
 #     ndim,
 # ):
 #     shape = [4] + [10] * ndim
-#     x = jax.random.uniform(jax.random.PRNGKey(0), shape)
+#     x = jax.random.uniform(jax.random.key(0), shape)
 #     layer_keras = keras_layer(
 #         kernel_size=kernel_size,
 #         depth_multiplier=4,
@@ -1336,7 +1336,7 @@ def test_conv_keras(
 #         padding=padding,
 #         strides=strides,
 #         depth_multiplier=4,
-#         key=jax.random.PRNGKey(0),
+#         key=jax.random.key(0),
 #     )
 #     layer_keras.build((1, *shape))
 
@@ -1354,7 +1354,7 @@ def test_conv_keras(
 
 
 def test_spectral_conv_1d():
-    layer = sk.nn.SpectralConv1D(1, 2, modes=10, key=jax.random.PRNGKey(0))
+    layer = sk.nn.SpectralConv1D(1, 2, modes=10, key=jax.random.key(0))
     layer = (
         layer.at["weight_r"]
         .set(
@@ -1512,7 +1512,7 @@ def test_spectral_conv_1d():
 
 
 def test_spectral_conv_2d():
-    layer_ = sk.nn.SpectralConv2D(1, 2, modes=(4, 3), key=jax.random.PRNGKey(0))
+    layer_ = sk.nn.SpectralConv2D(1, 2, modes=(4, 3), key=jax.random.key(0))
 
     w_r = jnp.stack(
         [
@@ -1796,7 +1796,7 @@ def test_spectral_conv_3d():
         ]
     )
 
-    layer_ = sk.nn.SpectralConv3D(1, 2, modes=(3, 2, 3), key=jax.random.PRNGKey(0))
+    layer_ = sk.nn.SpectralConv3D(1, 2, modes=(3, 2, 3), key=jax.random.key(0))
     layer_ = layer_.at["weight_r"].set(w_r).at["weight_i"].set(w_i)
     x_ = jnp.array(
         [

@@ -19,22 +19,22 @@ import serket as sk
 
 def test_sequential():
     model = sk.Sequential(lambda x: x)
-    assert model(1.0, key=jax.random.PRNGKey(0)) == 1.0
+    assert model(1.0, key=jax.random.key(0)) == 1.0
 
     model = sk.Sequential(lambda x: x + 1, lambda x: x + 1)
-    assert model(1.0, key=jax.random.PRNGKey(0)) == 3.0
+    assert model(1.0, key=jax.random.key(0)) == 3.0
 
     model = sk.Sequential(lambda x, key: x)
-    assert model(1.0, key=jax.random.PRNGKey(0)) == 1.0
+    assert model(1.0, key=jax.random.key(0)) == 1.0
 
 
 def test_sequential_getitem():
     model = sk.Sequential(lambda x: x + 1, lambda x: x + 1)
     assert model[0](1.0) == 2.0
     assert model[1](1.0) == 2.0
-    assert model[0:1](1.0, key=jax.random.PRNGKey(0)) == 2.0
-    assert model[1:2](1.0, key=jax.random.PRNGKey(0)) == 2.0
-    assert model[0:2](1.0, key=jax.random.PRNGKey(0)) == 3.0
+    assert model[0:1](1.0, key=jax.random.key(0)) == 2.0
+    assert model[1:2](1.0, key=jax.random.key(0)) == 2.0
+    assert model[0:2](1.0, key=jax.random.key(0)) == 3.0
 
 
 def test_sequential_len():
