@@ -383,7 +383,7 @@ class LSTMCell(TreeClass):
 
         self.in_hidden_to_hidden = Linear(
             in_features=in_features + hidden_features,
-            out_features=hidden_features,
+            out_features=hidden_features * 4,
             weight_init=lambda *_: jnp.concatenate([i2h.weight, h2h.weight], axis=-1),
             bias_init=lambda *_: i2h.bias,
             dtype=dtype,

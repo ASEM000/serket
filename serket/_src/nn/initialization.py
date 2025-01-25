@@ -14,34 +14,36 @@
 from __future__ import annotations
 
 from collections.abc import Callable as ABCCallable
-from typing import get_args
+from typing import Callable, get_args
 
 import jax
 import jax.nn.initializers as ji
+import jax.numpy as jnp
 import jax.tree_util as jtu
 
 from serket._src.utils.typing import InitFuncType, InitLiteral, InitType
 
-inits: list[InitFuncType] = [
-    ji.he_normal(),
-    ji.he_uniform(),
-    ji.glorot_normal(),
-    ji.glorot_uniform(),
-    ji.lecun_normal(),
-    ji.lecun_uniform(),
+inits: list[InitType] = [
+    ji.he_normal(in_axis=1, out_axis=0),
+    ji.he_uniform(in_axis=1, out_axis=0),
+    ji.glorot_normal(in_axis=1, out_axis=0),
+    ji.glorot_uniform(in_axis=1, out_axis=0),
+    ji.lecun_normal(in_axis=1, out_axis=0),
+    ji.lecun_uniform(in_axis=1, out_axis=0),
     ji.normal(),
     ji.uniform(),
     ji.ones,
     ji.zeros,
-    ji.xavier_normal(),
-    ji.xavier_uniform(),
+    ji.xavier_normal(in_axis=1, out_axis=0),
+    ji.xavier_uniform(in_axis=1, out_axis=0),
     ji.orthogonal(),
 ]
 
-init_map: dict[str, InitType] = dict(zip(get_args(InitLiteral), inits))
+
+init_map: dict[str, Callable[..., InitType]] = dict(zip(get_args(InitLiteral), inits))
 
 
-def resolve_init(init):
+def resolve_init(init) -> jtu.Partial[InitFuncType]:
     if isinstance(init, str):
         try:
             return jtu.Partial(jax.tree_map(lambda x: x, init_map[init]))

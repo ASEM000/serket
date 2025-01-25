@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import functools as ft
+import math
 from typing import Sequence
 
 import jax
@@ -209,9 +210,15 @@ class Linear(sk.TreeClass):
 
         k1, k2 = jr.split(key)
 
-        weight_shape = (*out_features, *in_features)
+        weight_shape = (math.prod(out_features), math.prod(in_features))
         self.weight = resolve_init(weight_init)(k1, weight_shape, dtype)
-        self.bias = resolve_init(bias_init)(k2, out_features, dtype)
+        self.bias = resolve_init(bias_init)(k2, (math.prod(out_features),), dtype)
+
+        if self.weight is not None:
+            self.weight = self.weight.reshape(out_features + in_features)
+
+        if self.bias is not None:
+            self.bias = self.bias.reshape(out_features)
 
     @ft.partial(maybe_lazy_call, is_lazy=is_lazy_call, updates=updates)
     def __call__(self, input: jax.Array) -> jax.Array:
@@ -405,10 +412,14 @@ class MLP(sk.TreeClass):
         self.in_bias = resolve_init(bias_init)(k2, (hidden_features,), dtype)
 
         k3, k4 = jr.split(mid_key)
-        mid_weight_shape = (num_hidden_layers, hidden_features, hidden_features)
-        self.mid_weight = resolve_init(weight_init)(k3, mid_weight_shape, dtype)
-        mid_bias_shape = (num_hidden_layers, hidden_features)
-        self.mid_bias = resolve_init(bias_init)(k4, mid_bias_shape, dtype)
+
+        init_func = jax.vmap(resolve_init(weight_init), in_axes=(0, None, None))
+        k3s = jr.split(k3, num_hidden_layers)
+        self.mid_weight = init_func(k3s, (hidden_features, hidden_features), dtype)
+
+        init_func = jax.vmap(resolve_init(bias_init), in_axes=(0, None, None))
+        k4s = jr.split(k4, num_hidden_layers)
+        self.mid_bias = init_func(k4s, (hidden_features,), dtype)
 
         k5, k6 = jr.split(out_key)
         out_weight_shape = (out_features, hidden_features)
