@@ -10,7 +10,7 @@
 |[**Quick Example**](#QuickExample)
 
 ![Tests](https://github.com/ASEM000/serket/actions/workflows/tests.yml/badge.svg)
-![pyver](https://img.shields.io/badge/python-3.9%203.9%203.10%203.12-blue)
+![pyver](https://img.shields.io/badge/python-3.10%203.11%203.12%203.13-blue)
 ![codestyle](https://img.shields.io/badge/codestyle-black-black)
 [![codecov](https://codecov.io/gh/ASEM000/serket/branch/main/graph/badge.svg?token=C6NXOK9EVS)](https://codecov.io/gh/ASEM000/serket)
 [![Documentation Status](https://readthedocs.org/projects/serket/badge/?version=latest)](https://serket.readthedocs.io/?badge=latest)
