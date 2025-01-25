@@ -413,15 +413,13 @@ class MLP(sk.TreeClass):
 
         k3, k4 = jr.split(mid_key)
 
-        mid_weight_shape = (num_hidden_layers, hidden_features, hidden_features)
-        init_fn = jax.vmap(resolve_init(weight_init), in_axes=(0, None, None))
+        init_func = jax.vmap(resolve_init(weight_init), in_axes=(0, None, None))
         k3s = jr.split(k3, num_hidden_layers)
-        self.mid_weight = init_fn(k3s, mid_weight_shape, dtype)
+        self.mid_weight = init_func(k3s, (hidden_features, hidden_features), dtype)
 
-        init_fn = jax.vmap(resolve_init(bias_init), in_axes=(0, None, None))
+        init_func = jax.vmap(resolve_init(bias_init), in_axes=(0, None, None))
         k4s = jr.split(k4, num_hidden_layers)
-        mid_bias_shape = (num_hidden_layers, hidden_features)
-        self.mid_bias = init_fn(k4s, mid_bias_shape, dtype)
+        self.mid_bias = init_func(k4s, (hidden_features,), dtype)
 
         k5, k6 = jr.split(out_key)
         out_weight_shape = (out_features, hidden_features)
