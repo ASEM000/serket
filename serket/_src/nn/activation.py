@@ -341,7 +341,7 @@ def resolve_act(act):
         return act
     if isinstance(act, str):
         try:
-            return jax.tree_map(lambda x: x, act_map[act])
+            return jax.tree_util.tree_map(lambda x: x, act_map[act])
         except KeyError:
             raise ValueError(f"Unknown {act=}, available activations: {list(act_map)}")
     raise TypeError(f"Unknown activation type {type(act)}.")
